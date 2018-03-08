@@ -53,7 +53,7 @@ import unitissue from './routes/unitissue';
 import productLots from './routes/productLots';
 import abcVenRoute from './routes/abcVen';
 import periodRoute from "./routes/period";
-// import borrowRoute from './routes/borrow';
+
 import transferRoute from './routes/transfer';
 // common route
 import internalissueRoute from "./routes/internalIssue";
