@@ -1,0 +1,56 @@
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+    style.
+      html, body {
+      margin: 0;
+      font-size: 16px;
+      font-family: 'TH Sarabun New';
+      }
+
+      /*table*/
+      table {
+        border-spacing: 0;
+        border-collapse: collapse;
+        width: 100%;
+        border:1px solid black;
+      }
+      table tbody td,table thead th{border:1px solid black;}
+
+  body
+    div(style="text-align:center;")
+      p(style="font-size: 20px;")
+        strong รายการจ่ายยาและเวชภัณฑ์
+      div(style="float:left;width:50%;text-align:left") เอกสารเลขที่ : #{internalissueId} 
+      div(style="float:left;width:50%") วันที่จ่าย #{internalissueDate}
+      div(style="float:left;width:50%;text-align:left") คลังที่จ่าย : #{warehouse} 
+      div(style="float:left;width:50%") หน่วยเบิก #{unitissue}
+      table
+        thead
+          tr
+            th #
+            th ชื่อยา
+            th หน่วยนับ
+            th จำนวนเบิก
+            th ราคาต่อหน่วย
+            th ราคารวม
+            th หมายเหตุ
+          tbody
+            - var y = 0
+            for b in detail
+              - y++
+              tr
+                td(style="width: 5%;text-align: center;") #{y}
+                td(style="width: 35%;text-align: left;") #{b.product_name}
+                td(style="text-align: center;width: 10%;") #{b.large_unit}
+                td(style="text-align: center; width: 20%;") #{b.pay_qty} x #{b.small_qty} #{b.small_unit}
+                td(style="text-align: center; width: 15%;") #{b.cost_unit}
+                td(style="text-align: center; width: 15%;") #{b.pay_qty * b.cost_unit}
+                td(style="text-align: center; width: 25%;")
+ 
+
+      div(style="margin-top:50px;")
+        div(style='float:left;width:50%;text-align:left;') ลงชื่อ : ....................................................... (ผู้จ่าย) 
+        div(style='float:left;') ลงชื่อ : ....................................................... (ผู้เบิก) 

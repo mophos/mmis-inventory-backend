@@ -1,0 +1,46 @@
+link(rel='stylesheet', type='text/css', href='/reset.css')
+link(rel='stylesheet', type='text/css', href='/mystyle.css')
+link(rel='stylesheet', type='text/css', href='/print.css' media='print')
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    br
+    .center.bold ใบเบิกจ่ายเวชภัณฑ์
+    .center วันที่ #{date}
+    div(style="text-align:center;")
+        p(style="font-size: 15px;")
+        | หน่วยเบิก #{unitissue}
+        |<br> หน่วยจ่าย #{warehouse}
+    table.table.table-bordered.center(style="width: 90%;")
+      thead
+        tr
+          th #
+          th รายการ
+          th ขนาดบรรจุ
+          th จำนวนเบิก
+          th จำนวนจ่าย
+          th เลขที่ผลิต
+          th ราคา
+          th หมายเหตุ
+      tbody
+        - var y = 0
+        - var v = 0
+        - var x = 0
+          for a in productDisbursement
+            for b in productDisbursement[v]
+              - y++
+                tr
+                  td(style="width: 20px;") #{y}
+                  td(style="width: 100px;") #{b.generic_name}
+                  td(style="text-align: left;") #{b.small_qty} #{b.small_unit}
+                  td(style="text-align: center;") #{qty[x]} #{b.large_unit}
+                  td
+                  td
+                  td
+                  td
+              - x++
+            - v++

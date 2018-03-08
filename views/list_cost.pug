@@ -1,0 +1,78 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    center
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='5') #{hospitalName}
+        tr
+          td.center.bold(colspan='5' ) รายงานมูลค่ายาและเวชภัณฑ์คงคลัง
+        tr
+          td.left(colspan='5') ณ วันที่ #{date}
+        tr
+          th.center ลำดับที่
+          th.left รายการ
+          th
+          th.right มูลค่าคงคลัง
+          th.right ยอดรวม
+      tbody
+      - y=1
+      for a in list_cost
+        if(a.generic_type_name=='เวชภัณฑ์ยา')
+          tr
+            td.center #{y}
+            if(y==1)
+              - y++
+              td #{a.generic_type_name}
+            else
+              - y++
+              td 
+            td #{a.drug_account_name}
+            td.right #{a.cost}
+            if(y==3)
+              td.right #{drug}
+            else
+              td
+          
+      for a in list_cost
+        if(a.generic_type_name=='เวชภัณฑ์มิใช่ยา')
+          tr
+            td.center #{y}
+            td #{a.generic_type_name}
+            td #{a.drug_account_name}
+            td.right #{a.cost}
+            td.right #{a.cost}
+            - y++
+      for a in list_cost
+        if(a.generic_type_name=='เวชภัณฑ์อื่นๆ')
+          tr
+            td.center #{y}
+            if(y==4)
+              - y++
+              td #{a.generic_type_name}
+            else
+              - y++
+              td 
+            td #{a.drug_account_name}
+            td.right #{a.cost}
+            if(y==7)
+              td.right #{supot}
+            else 
+              td
+      for a in list_cost
+        if(a.generic_type_name=='อื่นๆ')
+          tr
+            td.center #{y}
+            td #{a.generic_type_name}
+            td #{a.drug_account_name}
+            td.right #{a.cost}
+            td.right #{ot}
+      tfooter 
+        tr
+          td.dash-top.right(colspan=5) รวมมูลค่าทั้งสิ้น #{sumt} บาท

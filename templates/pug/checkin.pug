@@ -1,0 +1,244 @@
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+    style.
+      html, body {
+      margin: 0;
+      padding: 10px;
+      font-size: 11px;
+      font-family: 'TH Sarabun New';
+      }
+
+      .small-space-line {
+        line-height: 85%;
+      }
+
+      /*table*/
+      table {
+      border-spacing: 0;
+      border-collapse: collapse;
+      }
+      td,
+      th {
+      padding: 0;
+      }
+      table {
+      background-color: transparent;
+      }
+      caption {
+      padding-top: 8px;
+      padding-bottom: 8px;
+      color: #777;
+      text-align: left;
+      }
+      th {
+      text-align: center;
+      }
+      .table {
+      width: 100%;
+      max-width: 100%;
+      margin-bottom: 20px;
+      }
+      .table > thead > tr > th,
+      .table > tbody > tr > th,
+      .table > tfoot > tr > th,
+      .table > thead > tr > td,
+      .table > tbody > tr > td,
+      .table > tfoot > tr > td {
+      padding: 2px;
+      line-height: 1.42857143;
+      vertical-align: top;
+      border-top: 1px solid #333232;
+      }
+      .table > thead > tr > th {
+      vertical-align: bottom;
+      border-bottom: 2px solid #333232;
+      }
+      .table > caption + thead > tr:first-child > th,
+      .table > colgroup + thead > tr:first-child > th,
+      .table > thead:first-child > tr:first-child > th,
+      .table > caption + thead > tr:first-child > td,
+      .table > colgroup + thead > tr:first-child > td,
+      .table > thead:first-child > tr:first-child > td {
+      border-top: 0;
+      }
+      .table > tbody + tbody {
+      border-top: 2px solid #333232;
+      }
+      .table .table {
+      background-color: #fff;
+      }
+      .table-condensed > thead > tr > th,
+      .table-condensed > tbody > tr > th,
+      .table-condensed > tfoot > tr > th,
+      .table-condensed > thead > tr > td,
+      .table-condensed > tbody > tr > td,
+      .table-condensed > tfoot > tr > td {
+      padding: 1px;
+      }
+      .table-bordered {
+      border: 1px solid #333232;
+      }
+      .table-bordered > thead > tr > th,
+      .table-bordered > tbody > tr > th,
+      .table-bordered > tfoot > tr > th,
+      .table-bordered > thead > tr > td,
+      .table-bordered > tbody > tr > td,
+      .table-bordered > tfoot > tr > td {
+      border: 1px solid #333232;
+      }
+      .table-bordered > thead > tr > th,
+      .table-bordered > thead > tr > td {
+      border-bottom-width: 2px;
+      }
+      .table-striped > tbody > tr:nth-of-type(odd) {
+      background-color: #f9f9f9;
+      }
+      .table-hover > tbody > tr:hover {
+      background-color: #f5f5f5;
+      }
+      table col[class*="col-"] {
+      position: static;
+      display: table-column;
+      float: none;
+      }
+      table td[class*="col-"],
+      table th[class*="col-"] {
+      position: static;
+      display: table-cell;
+      float: none;
+      }
+      .table > thead > tr > td.active,
+      .table > tbody > tr > td.active,
+      .table > tfoot > tr > td.active,
+      .table > thead > tr > th.active,
+      .table > tbody > tr > th.active,
+      .table > tfoot > tr > th.active,
+      .table > thead > tr.active > td,
+      .table > tbody > tr.active > td,
+      .table > tfoot > tr.active > td,
+      .table > thead > tr.active > th,
+      .table > tbody > tr.active > th,
+      .table > tfoot > tr.active > th {
+      background-color: #f5f5f5;
+      }
+      .table-hover > tbody > tr > td.active:hover,
+      .table-hover > tbody > tr > th.active:hover,
+      .table-hover > tbody > tr.active:hover > td,
+      .table-hover > tbody > tr:hover > .active,
+      .table-hover > tbody > tr.active:hover > th {
+      background-color: #e8e8e8;
+      }
+      .table-responsive {
+      min-height: .01%;
+      overflow-x: auto;
+      }
+
+      table.center {
+        margin-left:auto; 
+        margin-right:auto;
+      }
+
+  body(style='font-size: 16px;width:90%;margin-left:5%;margin-top: 50px;')
+    .head(style='height: 65px;')
+      img(src='https://www.uppic.org/image-E684_594A3029.jpg', border='0', width='50px', style='float: left')
+      center
+        b(style='font-size: 17px;') บันทึกข้อความ
+    b ส่วนราชการ
+    |  กลุ่มงานเภสัชกรรม โรงพยาบาล...
+    br
+    div(style='width: 50%;float: left;') 
+      b ที่
+      |  อบ.0032.1123
+    | วันที่ 2 กันยายน 2559
+    br
+    b เรื่อง
+    |  รายงานผลการตรวจรับพัสดุ
+    br
+    b เรียน
+    |  ผู้ว่าราชการจังหวัดอุบลราชธานี
+    br
+    b อ้างถึง
+    |  บันทึกข้อความ ที่ อบ0032.125946
+    div
+      div(style='width:50px;height: 1px;float:left;')
+      | ตามที่อ้างถึง บัดนี้คณะกรรมการผู้มีรายนามข้างท้ายนี้ ได้พร้อมกันตรวจรับเวชภัณฑ์ยา ณ คลังเวชภัณฑ์ โรงพยาบาลสรรพสิทธ์ประสงค์ ซึ่งบริษัท ซิลลิค ปาร์มา จำกัด ได้ส่งมอบเวชภัณฑ์ยาตามใบสั่งซื้อเลขที่ PU15544 ลงวันที่  26 สิงหาคม 2559 กำหนดส่งภายใน 30 วัน ครบกำหนดวันส่งของในวันที่ 25 กันยายน 2559 ตามใบส่งเวชภัณฑ์ยาเลขที่22678818 ลงวันที่ 30 สิงหาคม 2559 เป็นที่เรียบร้อย เพื่่อใช้ในงานรักษาพยาบาล ของโรงพยาบาล
+    div โดยมีรายละเอียดการตรวจรับดังนี้
+    center
+      table(width='100%', border='1')
+        thead
+          tr
+            th #
+            th รายการ
+            th หน่วยนับ
+            th จำนวน
+            th ราคาหน่วยละ
+            th ราคาสินค้า
+        tbody
+          tr
+            td(width='5%') 1.
+            td(width='50%')
+            td(width='12%')
+            td(width='9%')
+            td(width='12%')
+            td(width='12%')
+          tr
+            td 2.
+            td
+            td
+            td
+            td
+            td
+    div
+      div(style='width:50px;height: 1px;float:left;')
+      | รวม 2 รายการ เป็นเงินทั้งสิ้น 400 บาท (สี่ร้อยบาทถ้วน) คณะกรรมการได้ตรวจรับเวชภัณฑ์ยาถูกต้องครบถ้วนตามเงื่อนไขเมื่อวันที่ 2 กันยยายน 2559 และได้ส่งมอบเวชภัรฑ์แก่เจ้าหน้าที่พัสดุรับไว้เป็นการถูกต้องแล้วในวันนี้ คณะกรรมการจึงพร้อมกันลงลายมือชื่อไว้เป็นหลักฐาน
+    br
+    br
+    div(style='width:50%;float:left;')
+      div(style='width:50px;height: 1px;float:left;')
+      | จึงเรียนมาเพื่อโปรดทราบ
+      br
+      br
+      div(style='float: left;')
+        div(style='text-align: center')
+          | ลงชื่อ......................................................ประธานกรรมการ
+          br
+          | (นางชุติมา แถวบันทึก)
+          br
+          | เภสัชกรชำนาญการ
+          br
+          br
+          | ลงชื่อ......................................................กรรมการ
+          br
+          | (นางณฐมน สุคนนท์)
+          br
+          | เภสัชกรชำนาญการ
+          br
+          br
+          | ลงชื่อ......................................................กรรมการ
+          br
+          | (นางสาวนฤมล บุญสรรค์)
+          br
+          | เภสัชกรปฏิบัติการ
+    div(style='width:50%;float:left;')
+      div(style='width:50px;height: 1px;float:left;')
+      | ข้าพเจ้าได้รับมอบพัสดุข้างต้นจากคณะกรรมการฯเข้าคลังไว้เป็นที่เรียบร้อย
+      div(style='text-align: center')
+        br
+        br
+        | ลงชื่อ......................................................เจ้าหน้าที่คลัง
+        br
+        | (นางวาสนา เทียนจารุวัฒนา)
+        br
+        br
+        br
+        br
+        br
+        br
+        | ลงชื่อ......................................................
+        br
+        | (นายชลิต ทองประยูร)
+        br
+        | ผู้อำนวยการโรงพยาบาลสรรพสิทธิประ

@@ -1,0 +1,50 @@
+include css.pug
+style(media='print').
+  @page { size: landscape; }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='13') #{hospitalName}
+        tr
+          td.center.bold(colspan='13' ) รายงานเวชภัณฑ์ที่จะหมดอายุ (อีก 180 วัน)
+        tr
+          td.left(colspan='13') ณ วันที่ #{today}
+        tr
+          th #
+          th รหัสการค้า
+          th.left ชื่อการค้า
+          th รูปแบบ
+          th รหัสบริษัท
+          th.left บริษัท
+          th วันที่หมดอายุ
+          th จำนวน
+          th หน่วย
+          th.right มูลค่า
+          th สถานที่เก็บ
+
+        tbody
+          - var y = 0
+          for b in detail
+            - y++
+            tr
+              td.center #{y}
+              td #{b.generic_id}
+              td #{b.generic_name}
+              td.center #{b.dosage_name}
+              td.center #{b.labeler_id}
+              td.left #{b.labeler_name}
+              td.center #{b.expired_date}
+              td.center #{b.qty} x #{b.small_qty}
+              td.center #{b.large_unit}
+              td.right #{b.cost}
+              td.center #{b.warehouse_name}
+        tfooter
+          tr
+            td.dash-top.right(colspan="11") จำนวน #{y} รายการ | มูลค่ารวม #{sum} บาท

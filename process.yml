@@ -1,0 +1,5 @@
+apps:
+  - script   : 'app/bin/www.js'
+    name     : 'API'
+    exec_mode: 'cluster'
+    instances: 3

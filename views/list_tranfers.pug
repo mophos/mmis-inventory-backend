@@ -1,0 +1,63 @@
+include css.pug
+doctype html
+style.
+  @page{
+   margin-top: 0.7cm;
+   margin-left: 1cm;
+   margin-right: 1cm;
+   margin-bottom: 2cm;
+ }
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    - for(var i in tranferId) 
+      table.table
+        thead
+          tr 
+            td.center.bold(colspan='9') #{hospitalName} 
+          tr 
+            td.center.bold(colspan='9') ใบจัดเวชภัณฑ์ตามใบเบิก
+          tr 
+            td.left(colspan='9') ใบเบิกเลขที่ #{_tranfers[i][0].transfer_code}
+          tr 
+            td.left(colspan='9') วันที่เบิก #{_tranfers[i][0].transfer_date}
+          tr 
+            td.left(colspan='9') หน่วยงานที่เบิก #{_tranfers[i][0].dst_warehouse_name}
+        tbody
+        - y = 0
+        for a in _tranfers[i]
+          tr.dash-top
+            td(style='border:none;') รหัสยา 
+            td(colspan='8') : #{a.product_id}
+          tr
+            td ชื่อสามัญ
+            td(colspan='6') : #{a.generic_name}
+          tr
+            td หน่วยบรรจุ
+            td : #{a.large_unit}
+            td
+            td
+            td(align="right") รูปแบบ
+            td(colspan='2')  : #{a.small_unit}
+            td จำนวนเบิก
+            td #{a.large_qty} #{a.large_unit} (#{a.qty} #{a.small_unit})
+          tr
+            td
+            td.left(colspan='3') ชื่อทางการค้า 
+            td จำนวนเบิก
+            td วันหมดอายุ
+            td ที่เก็บ
+            td เลขทะเบียน
+            td คงเหลือ
+          tr.dash-bottom
+            td(colspan='4').left #{a.product_name}
+            td #{a.large_qty} #{a.large_unit} (#{a.qty} #{a.small_unit})
+            td #{a.expired_date}
+            td #{a.src_warehouse_name}
+            td 
+            td #{a.remain_qty} #{a.large_unit} (#{a.qty} #{a.small_unit})
+          - y++
+      .pagebreak

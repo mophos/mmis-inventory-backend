@@ -1,0 +1,60 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table
+      thead
+        tr 
+          td.center.bold(colspan='8') #{hospitalName} 
+        tr 
+          td.center.bold(colspan='8') ใบนำส่งเวชภัณฑ์เข้าคลัง
+        tr 
+          td.left(colspan='8') ตั้งแต่เลขใบรับที่ #{sID} - #{eID}
+      tbody
+      for item in array2
+        for a in item
+          if(a.receive_other_id!='')
+            tr.dash-top
+              td(colspan='2') เลขที่รับ  : #{a.receive_code}
+              td(colspan='3') วันที่รับ : #{a.receive_date}
+              td(colspan='3') เลขที่ใบส่งของ : #{a.delivery_code}
+            tr
+              td(colspan='2') รหัสผู้บริจาก : #{a.donator_id}
+              td(colspan='3') ผู้บริจาก : #{a.donator_name}
+              td(colspan='3') มูลค่า #{a.costs}
+            tr
+              td รหัสเวชภัณฑ์
+              td รายการเวชภัณฑ์
+              td ที่เก็บ
+              td จำนวนรับ
+              td วันหมดอายุ
+              td Lot No.
+              td ผู้ผลิต
+              td เลขทะเบียน
+            tr
+            td #{a.generic_id}
+            td #{a.generic_name}
+            td #{a.location_name}
+            td #{a.receive_qty}x#{a.small_qty}
+            td #{a.expired_date}
+            td #{a.lot_no}
+            td #{a.labeler_name_m}
+            td 
+          -check=a.receive_other_id
+          if(a.receive_other_id=='')
+            tr
+              td คงคลัง
+              td #{a.generic_name}
+              td #{a.location_name}
+              td #{a.receive_qty}x#{a.small_qty}#{a.small_unit}(#{a.large_unit})
+              td #{a.expired_date}
+              td #{a.lot_no}
+              td #{a.donator_name}
+              td 
+      
+      tr.tbfooter
+          td(colspan='8')

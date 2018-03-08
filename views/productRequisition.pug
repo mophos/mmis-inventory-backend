@@ -1,0 +1,18 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    strong ใบจัดเวชภัณฑ์ตามใบเบิก
+    br 
+    | วันที่เบิก #{date} 
+    strong เลขที่ #{no}
+    br 
+    | วันที่เบิก #{date} 
+    br 
+    | หน่วยงานที่เบิก #{unitissue}
+    for b in productRequisition
+      p #{b.generic_id}

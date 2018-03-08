@@ -1,0 +1,50 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    .center.bold #{hospitalName}
+      br
+      | สรุปการเบิกยาแยกตามหน่วยเบิก
+      br 
+    .center ประจำเดือน #{month}
+    .left ณ วันที่ #{today}
+    hr
+    .bold สรุปการเบิกทั้งสิ้น
+    table(style='line-height:1.5em')
+      tbody
+        tr
+          td.left(style="width:30%") จำนวนใบเบิกทั้งสิ้น
+          td.right(style="width:15%") #{count_sum_requis}
+          td.left(style="width:10%") &nbsp;ใบ
+          td(style="width:15%")
+          td
+        tr
+          td.left จำนวนรายการเบิกทั้งสิ้น
+          td.right #{count_sum_requis_item}
+          td.left &nbsp;รายการ
+          td
+          td
+        tr
+          td.left มูลค่าเบิกทั้งสิ้น
+          td.right #{count_sum_requis_cost}
+          td.left &nbsp;บาท
+          td
+          td
+    br
+    table.table
+      tbody  
+        tr
+          td.bold(style='width:200px') แยกรายการตามประเภท
+          td.right(style='width:200px') จำนวนรายการทั้งสิ้น
+          td.right(style='width:200px') มูลค่าเบิกทั้งสิ้น
+      - for (var i = 1; i < count_requis.length; i++) {
+        tr
+          td.left #{count_requis[i].count_requis}
+          td.right #{count_requis[i].count_requis_item} รายการ
+          td.right #{count_requis[i].cost} บาท
+      - }
+    hr

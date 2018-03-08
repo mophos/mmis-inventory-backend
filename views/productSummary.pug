@@ -1,0 +1,50 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table.table-bordered.center
+      thead
+        tr
+          td.center.bold(colspan='6') #{hospitalName}
+        tr
+          td.center.bold(colspan='6' ) สรุปงานคลังเวชภัณฑ์
+        tr
+          td.center(colspan='6') ประจำเดือน #{date}
+        tr
+          td.left(colspan='6') ณ วันที่ #{today}
+        tr
+          th ลำดับที่
+          th.left รายการ
+          th.right ยอดคงคลังยกมาจากเดือนพฤษภาคม
+          th.right รับเข้าคลัง<br>(ใน 1 เดือน)
+          th.right จ่ายออกจากคลัง<br>(ใน 1 เดือน)
+          th.right เหลือคงคลัง<br>(เมื่อสิ้นเดือน)
+      tbody
+        tr
+          td 1
+          td.left ยาในบัญชียาหลัก
+          td.right #{productSummary1_1}
+          td.right #{productSummary1_2}
+          td.right #{productSummary1_3}
+          td.right #{productSummary1_4}
+        tr
+          td 2
+          td.left ยานอกบัญชียาหลัก
+          td.right #{productSummary2_1}
+          td.right #{productSummary2_2}
+          td.right #{productSummary2_3}
+          td.right #{productSummary2_4}
+        tr
+          td 3
+          td.left เวชภัณฑ์ที่ไม่ใช่ยา
+          td.right #{productSummary3_1}
+          td.right #{productSummary3_2}
+          td.right #{productSummary3_3}
+          td.right #{productSummary3_4}
+      tfooter
+        tr
+          td.tbfooter(colspan="6")

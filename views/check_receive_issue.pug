@@ -1,0 +1,55 @@
+include css.pug
+style(media='print').
+  @page { size: landscape; }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table
+      thead
+        tr 
+          td.center.bold(colspan='9') #{hospitalName} 
+        tr 
+          td.center.bold(colspan='9') รายงานการตรวจสอบการรับ-จ่ายยา ประจำปีงบประมาณ #{year}
+        tr 
+          td.center(colspan='9') ตั้งแต่วันที่ #{startDate} ถึง #{endDate}
+        tr 
+          td.left(colspan='9') ณ วันที่ #{today}
+        tr
+          th #
+          th.left รายการ
+          th.left ขนาดบรรจุ
+          th.right ราคาต่อขนาดบรรจุ
+          th.right ยอดยกมา
+          th.right รับ
+          th.right จ่าย
+          th.right คงเหลือ
+          th.right มูลค่าคงเหลือ
+      tbody
+      - y=0
+      for a in check_receive_issue
+        - y++
+        tr
+          td.left #{y}
+          td.left #{a.generic_name}
+          td.left #{a.unit_name}
+          td.right #{a.cost_unit}
+          td.right #{a.summit_qty}
+          td.right #{a.receive_qty}
+          td.right #{a.issue_qty}
+          td.right #{a.balance}
+          td.right #{a.sum}
+      tfoot 
+        tr.tbfooter
+          td.center(colspan='9')
+            div(style='width:33%;float:left;') ลงชื่อ......................................................ประธานกรรมการ
+            div(style='width:33%;float:left;') ลงชื่อ......................................................กรรมการ
+            div(style='width:33%;float:left;') ลงชื่อ......................................................กรรมการ
+        tr
+          td.center(colspan='9')
+            div(style='width:33%;float:left;') (......................................................)
+            div(style='width:33%;float:left;') (......................................................)
+            div(style='width:33%;float:left;') (......................................................)

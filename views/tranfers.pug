@@ -1,0 +1,92 @@
+include css.pug
+doctype html
+style.
+  @page{
+   margin-top: 1.0cm;
+   margin-left: 1.0cm;
+   margin-right: 1.0cm;
+ }
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print  
+    - for(var i in tranferId)
+      - var c=0
+      - for (var p in _tmpTranfer[i])
+        span.page
+        br
+        .center
+          .bold #{hospitalName}
+          .bold ใบอนุมัติเบิกเวชภัณฑ์
+        br
+        table.table
+          thead
+            tr 
+              td.left(colspan='5') เลขที่ใบเบิก #{_tmpTranfer[i][p][0].transfer_code}
+              td.right(colspan='5') วันที่อนุมัติ #{today}
+            tr
+              td.left(colspan='10') หน่วยงานที่เบิก : #{_tmpTranfer[i][p][0].dst_warehouse_name}  
+            tr
+              td.left(colspan='10') อนุมัติให้เบิกเวชภัณฑ์ตามรายการต่อไปนี้
+            tr 
+              th.left #
+              th.left(style="font-size: 13pt;") รหัสยา
+              th.left(style="font-size: 13pt;") ชื่อเวชภัณฑ์
+              th.left(style="font-size: 13pt;") รูปแบบ
+              th.left(style="font-size: 13pt;") หน่วย
+              th.left(style="font-size: 13pt;") lot
+              th.right(style="font-size: 13pt;") จำนวนเบิก
+              th.right(style="font-size: 13pt;") มูลค่า
+              th.right(style="font-size: 13pt;") วันหมดอายุ
+              th.right(style="font-size: 13pt;") รวมมูลค่า
+          tbody
+          - var y=0
+          for a in  _tmpTranfer[i][p]
+            - y++
+            - c++
+            tr 
+              td(style="font-size: 13pt;") #{y} &nbsp;
+              td(style="font-size: 13pt;") #{a.products_code}
+              td(style="font-size: 13pt;") #{a.product_name}
+              //- td 
+              if(a.dosage_name !== null)
+                  td(style="font-size: 13pt;") #{a.dosage_name}
+              else
+                  td -
+              td(style="font-size: 13pt;") #{a.small_unit}
+              td(style="font-size: 13pt;") #{a.lot_no}
+              td.right(style="font-size: 13pt;") #{a.product_qty} x #{a.qty} #{a.small_unit}
+              td.right(style="font-size: 13pt;") #{a.cost}
+              td.right(style="font-size: 13pt;") #{a.expired_date}
+              td.right(style="font-size: 13pt;") #{a.sum}
+          tfoot
+            tr.dash-top
+              td(colspan='10' height='10px;')
+            tr
+              td.right(colspan='10') รวมทั้งหมด #{y} รายการ | คิดเป็นมูลค่า #{_tmpSum[i][p]} บาท
+            tr 
+            td(colspan='10') &nbsp; 
+            tr 
+              td(colspan='10') &nbsp; 
+            tr 
+              td.center(colspan='5') ลงชื่อ..................................................(ผู้เบิก)
+                br
+                | (..................................................)
+              td.center(colspan='5') ลงชื่อ..................................................(ผู้จ่าย)
+                br
+                | (..................................................)
+            tr 
+              td(colspan='10') &nbsp; 
+            tr 
+              td(colspan='10') &nbsp; 
+            tr 
+              td.center(colspan='5') ลงชื่อ..................................................(ผู้อนุมัติ)
+                br
+                | (..................................................)
+              td.center(colspan='5') ลงชื่อ..................................................(ผู้รับ)
+                br
+                | (..................................................)
+        if(y == _tmpTranfer[i][p].length)
+          .pagebreak

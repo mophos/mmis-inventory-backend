@@ -1,0 +1,45 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='7')  #{hospitalName}
+        tr
+          td.center.bold(colspan='7') สถานะเวชภัณฑ์คงคลัง
+        tr
+          td.left(colspan='7') ณ วันที่ #{today}
+        tr 
+          th.left #
+          th.left รหัส
+          th.left ชื่อเวชภัณฑ์
+          th.left หน่วย
+          th.right ปริมาณต่ำสุด
+          th.right ปริมาณคงคลัง
+          th.right มูลค่าคงคลัง
+      tbody
+      - y=0
+      for a in status_generic
+        - y++
+        tr
+          td.left #{y})
+          td.left #{a.generic_id}
+          td.left #{a.generic_name}
+          td.left #{a.unit_name}
+          td.right #{a.min_qty}
+          td.right #{a.qty}
+          td.right #{a.cost}
+      tfoot.tbfooter
+        tr 
+          td
+          td
+          td
+          td
+          td
+          td
+          td

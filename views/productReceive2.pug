@@ -1,0 +1,68 @@
+include css.pug
+style(media='print').
+  @page { 
+    margin-top: 1.5cm;
+    margin-left: 0.5cm;
+    margin-right: 0.5cm;
+  }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table
+      thead
+        tr
+          td.center.bold.head(colspan='10' style="font-size: 13pt;") #{hospitalName}
+        tr
+          td.center.bold.head(colspan='10' style="font-size: 13pt;") รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ
+        tr
+          td.left(colspan='10' style="font-size: 13pt;") ณ วันที่ #{today}
+        tr.dash-top(style="font-size: 13pt;")
+          td.left เลขที่รับ
+          td.left วันรับของ
+          td.left เลขที่ใบสั่งซื้อ
+          td.left เลขที่ใบส่งของ
+          td.left บริษัทผู้จำหน่าย
+          td.right 
+          td(colspan='2').center ส่วนลด
+          td.center วิธีจัดซื้อ
+          td.center ประเภทงบ
+        tr.dash-bottom(style="font-size: 13pt;")
+          td 
+          td.left รหัสยา
+          td(colspan='3').left รายการยา
+          td จำนวนสั่ง
+          td จำนวนที่รับ
+          td.left .
+          td.center มูลค่า
+          td.center วันหมดอายุ
+      tbody
+        - var y = 0
+          for b in productReceive
+            - y++
+              tr(style="font-size: 13pt;")
+                td.left #{b.receive_code}
+                td.left #{b.receive_date}
+                td.left #{b.purchase_order_number}
+                td.left #{b.delivery_code}
+                td.left #{b.labeler_name}
+                td
+                td.right #{b.discount_percent}
+                td.right #{b.discount_cash}
+                td.right &nbsp;#{b.bid_name}
+                td.right #{b.bgtype_name}
+              tr(style="font-size: 13pt;")
+                td
+                td #{b.generic_id}
+                td.left(colspan='3')  #{b.generic_name}
+                td.left #{b.reqty} x #{b.qty} (#{b.unit_name})
+                td.right #{b.receive_qty}
+                td.right #{b.unit_name}
+                td.right #{b.total_cost}
+                td.right #{b.expired_date}
+      tfooter
+        tr
+          td.tbfooter(colspan="10")

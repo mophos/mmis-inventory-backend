@@ -1,0 +1,36 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    .center.bold #{hospitalName}
+      br
+      | รายงานเรียงลำดับมูลค่าสูงสุดของกลุ่มเวชภัณฑ์จ่ายออกคลัง
+      br 
+    .center ประจำเดือน #{month}
+    .left ณ วันที่ #{today}
+    table.table
+      thead
+        tr 
+          th.left ลำดับ
+          th.left กลุ่มเวชภัณฑ์
+          th.right มูลค่า ED (บาท)
+          th.right มูลค่า NED (บาท)
+      tbody
+      - y=0
+      for a in maxcost_group_issue
+        - y++
+        tr
+          td.left #{y} 
+          td.left #{a.group_name}
+          td.right #{a.ed}
+          td.right #{a.ned}
+      tfoot.tbfooter
+        tr 
+          td
+          td
+          td
+          td

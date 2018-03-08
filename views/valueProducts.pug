@@ -1,0 +1,61 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    center
+    table.table.table-bordered.center
+      thead
+        tr
+          td.center.bold(colspan='5') #{hospitalName}
+        tr
+          td.center.bold(colspan='5' ) ใบจัดเวชภัณฑ์ตามใบเบิก
+        tr
+          td.left(colspan='5') ณ วันที่ #{date}
+        tr
+          th ลำดับที่
+          th รายการ
+          th มูลค่าคงคลัง
+          th ยอดรวม
+          th หมายเหตุ
+      tbody
+        tr
+          td 1.
+          td ยา
+          td
+          td
+          td
+        tr
+          td
+          td - ยาในบัญชียาหลัก
+          td #{valueDrug1}
+          td
+          td
+        tr
+          td
+          td - ยานอกบัญชียาหลัก
+          td #{valueDrug2}
+          td #{sumvalueDrug}
+          td
+        tr(style='height: 20px;')
+          td
+          td
+          td
+          td 
+          td
+        tr
+          td 2.
+          td เวชภัณฑ์ที่ไม่ใช่ยา
+          td #{valueSup}
+          td #{valueSup}
+          td
+        tr(style='border-top: 1px dashed black')
+          td
+          td
+          td 
+            b รวมมูลค่าทั้งสิ้น
+          td #{sumvalue}
+          td

@@ -1,0 +1,41 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='5')  #{hospitalName}
+        tr
+          td.center.bold(colspan='5') รายงานเรียงลำดับมูลค่าสูงสุดของเวชภัณฑ์จ่ายออกจากคลัง
+        tr
+          td.center(colspan='5') ประจำเดือน #{month}
+        tr
+          td.left(colspan='5') ณ วันที่ #{today}
+        tr 
+          th.left #
+          th.left รหัสเวชภัณฑ์
+          th.left ชื่อเวชภัณฑ์
+          th.left ประเภท
+          th.right มูลค่า (บาท)
+      tbody
+      - y=0
+      for a in maxcost_issue
+        - y++
+        tr
+          td.left #{y})
+          td.left #{a.generic_id}
+          td.left  #{a.generic_name}
+          td.left #{a.drug_account_name}
+          td.right #{a.cost}
+      tfoot.tbfooter
+        tr 
+          td
+          td
+          td
+          td
+          td

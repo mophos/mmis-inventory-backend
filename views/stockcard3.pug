@@ -1,0 +1,61 @@
+include css.pug
+style(media='print').
+  @page { size: landscape; }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='11') #{hospitalName}
+        tr
+          td.center.bold(colspan='11') บัญชีคุมพัสดุ (วัสดุ)
+        tr
+          td.left(colspan='11') รหัสสามัญ : #{stockcard[0].product_id} ,รหัสการค้า : #{stockcard[0].generic_id}
+        tr
+          td.left(colspan='11') ชื่อเวชภัณฑ์ : #{stockcard[0].product_name} [#{stockcard[0].generic_name}]
+        tr
+          td.left(colspan='11') หน่วย : #{stockcard[0].unit_name}
+        tr
+          td.right(colspan='11') ณ วันที่ #{today}
+        tr
+          th.mid.center ลำดับ
+          th.mid.center วันที่ตัด
+          th.mid.center สถานะ
+          //- th.mid.center เลขที่รับ/จ่าย
+          th.mid.center ต้นทาง
+          th.mid.center ปลายทาง
+          th.mid.right จำนวนรับ
+          th.mid.right มูลค่ารับ
+          th.mid.right จำนวนจ่าย
+          th.mid.right มูลค่าจ่าย
+          th.mid.right จน.คงคลัง
+          th.mid.right หน่วย
+      tbody
+      - var y = 0
+        for b in stockcard
+          - y++
+          tr
+            td.center #{y} 
+            td.center #{b.stock_date} 
+            td.center 
+              if(b.transaction_type=='REV')
+                | รับ
+              else if(b.transaction_type=='IST')
+                | จ่าย  
+            //- td.center #{b.document_ref_id}
+            td.center #{b.warehouse_src}
+            td.center #{b.warehouse_dst}
+            td.right #{b.in_qty}
+            td.right #{b.in_unit_cost}
+            td.right #{b.out_qty}
+            td.right #{b.out_unit_cost}
+            td.right #{b.balance_qty}
+            td.right #{b.unit_name}
+      tfooter
+        tr.tbfooter
+          td(colspan='11')

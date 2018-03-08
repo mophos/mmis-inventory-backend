@@ -1,0 +1,41 @@
+include css.pug
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    span.page
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='7') #{hospitalName}
+        tr
+          td.center.bold(colspan='7' ) รายงานเวชภัณฑ์คงเหลือ
+        tr
+          td.center.bold(colspan='7' ) คลัง : #{productBalanceWarehouse[0].warehouse_name}
+        tr
+          td.left(colspan='7' ) ณ วันที่ #{today}
+        tr
+          th.left ชื่อทางการค้า
+          th.left ชื่อสามัญ
+          th.left Lot No.
+          th.right คงเหลือ
+          th.right หน่วย
+          th.right มูลค่าต่อหน่วย
+          th.right มูลค่ารวม
+      tbody
+      - var y = 0
+        for b in productBalanceWarehouse
+          - y++
+          tr
+            td.left #{b.product_name}
+            td.left #{b.generic_name}
+            td.left #{b.lot_no}
+            td.right #{b.qty}
+            td.right #{b.unit_name}
+            td.right #{b.cost}
+            td.right #{b.sum}
+        tfooter
+          tr
+            td.tbfooter.right(colspan="7")

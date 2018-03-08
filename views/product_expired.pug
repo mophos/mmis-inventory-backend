@@ -1,0 +1,62 @@
+include css.pug
+style(media='print').
+  @page { size: landscape; }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    span.page
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='13') #{hospitalName}
+        tr
+          td.center.bold(colspan='13' ) รายงานเวชภัณฑ์ที่จะหมดอายุ
+        tr
+          td.center(colspan='13') คลัง : #{wareHouseName} , ชื่อการค้า : #{genericName}
+        tr
+          td.center(colspan='13') วันหมดอายุ ตั้งแต่วันที่ #{startDate} ถึงวันที่ #{endDate} (อีก #{day} วัน)
+        tr
+          td.left(colspan='13' ) ณ วันที่ #{today}
+        tr
+          th #
+          th.left รหัสเวชภัณฑ์  &nbsp;
+          th.left ชื่อเวชภัณฑ์
+          th.left รูปแบบ
+          th.left บริษัท
+          th.left Lot No.
+          th วันที่หมดอายุ
+          th.right จำนวน
+          th หน่วย
+          th.right มูลค่า &nbsp;
+          if(wareHouseName!='ทุกคลังสินค้า')
+            th.left สถานที่เก็บ
+          if(wareHouseName=='ทุกคลังสินค้า')
+              th.left คลังสินค้า
+              th.left สถานที่เก็บ
+      tbody
+      - var y = 0
+        for b in product_expired
+          - y++
+          tr
+            td.top.center #{y})
+            td.top.left #{b.working_code} &nbsp;
+            td.top(style="width:25%;") #{b.generic_name} (#{b.product_name})
+            td.top.left #{b.dosage_name}
+            td.top.left(style="width:13%;") #{b.labeler_name}
+            td.top.left #{b.lot_id}
+            td.top.center #{b.expired_date}
+            td.top.right #{b.qty}
+            td.top.center #{b.small_unit}
+            td.top.right #{b.cost} &nbsp;
+            if(wareHouseName!='ทุกคลังสินค้า')
+              td.top.left #{b.location_name}
+            if(wareHouseName=='ทุกคลังสินค้า')
+              td.top.left #{b.warehouse_name}
+              td.top.left #{b.location_name}
+        tfooter
+          tr
+            td.tbfooter.right(colspan="13") จำนวน #{y} รายการ | มูลค่ารวม #{sum} บาท

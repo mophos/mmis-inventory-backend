@@ -1,0 +1,228 @@
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+    style.
+      html, body {
+      margin: 0;
+      padding: 10px; 
+      font-size: 11px;
+      font-family: 'TH Sarabun New';
+      }
+
+      .small-space-line {
+        line-height: 85%;
+      }
+
+      /*table*/
+      table {
+      border-spacing: 0;
+      border-collapse: collapse;
+      }
+      td,
+      th {
+      padding: 0;
+      }
+      table {
+      background-color: transparent;
+      }
+      caption {
+      padding-top: 8px;
+      padding-bottom: 8px;
+      color: #777;
+      text-align: left;
+      }
+      th {
+      text-align: center;
+      }
+      .table {
+      width: 100%;
+      max-width: 100%;
+      margin-bottom: 20px;
+      }
+      .table > thead > tr > th,
+      .table > tbody > tr > th,
+      .table > tfoot > tr > th,
+      .table > thead > tr > td,
+      .table > tbody > tr > td,
+      .table > tfoot > tr > td {
+      padding: 2px;
+      line-height: 1.42857143;
+      vertical-align: top;
+      border-top: 1px solid #333232;
+      }
+      .table > thead > tr > th {
+      vertical-align: bottom;
+      border-bottom: 2px solid #333232;
+      }
+      .table > caption + thead > tr:first-child > th,
+      .table > colgroup + thead > tr:first-child > th,
+      .table > thead:first-child > tr:first-child > th,
+      .table > caption + thead > tr:first-child > td,
+      .table > colgroup + thead > tr:first-child > td,
+      .table > thead:first-child > tr:first-child > td {
+      border-top: 0;
+      }
+      .table > tbody + tbody {
+      border-top: 2px solid #333232;
+      }
+      .table .table {
+      background-color: #fff;
+      }
+      .table-condensed > thead > tr > th,
+      .table-condensed > tbody > tr > th,
+      .table-condensed > tfoot > tr > th,
+      .table-condensed > thead > tr > td,
+      .table-condensed > tbody > tr > td,
+      .table-condensed > tfoot > tr > td {
+      padding: 1px;
+      }
+      .table-bordered {
+      border: 1px solid #333232;
+      }
+      .table-bordered > thead > tr > th,
+      .table-bordered > tbody > tr > th,
+      .table-bordered > tfoot > tr > th,
+      .table-bordered > thead > tr > td,
+      .table-bordered > tbody > tr > td,
+      .table-bordered > tfoot > tr > td {
+      border: 1px solid #333232;
+      }
+      .table-bordered > thead > tr > th,
+      .table-bordered > thead > tr > td {
+      border-bottom-width: 2px;
+      }
+      .table-striped > tbody > tr:nth-of-type(odd) {
+      background-color: #f9f9f9;
+      }
+      .table-hover > tbody > tr:hover {
+      background-color: #f5f5f5;
+      }
+      table col[class*="col-"] {
+      position: static;
+      display: table-column;
+      float: none;
+      }
+      table td[class*="col-"],
+      table th[class*="col-"] {
+      position: static;
+      display: table-cell;
+      float: none;
+      }
+      .table > thead > tr > td.active,
+      .table > tbody > tr > td.active,
+      .table > tfoot > tr > td.active,
+      .table > thead > tr > th.active,
+      .table > tbody > tr > th.active,
+      .table > tfoot > tr > th.active,
+      .table > thead > tr.active > td,
+      .table > tbody > tr.active > td,
+      .table > tfoot > tr.active > td,
+      .table > thead > tr.active > th,
+      .table > tbody > tr.active > th,
+      .table > tfoot > tr.active > th {
+      background-color: #f5f5f5;
+      }
+      .table-hover > tbody > tr > td.active:hover,
+      .table-hover > tbody > tr > th.active:hover,
+      .table-hover > tbody > tr.active:hover > td,
+      .table-hover > tbody > tr:hover > .active,
+      .table-hover > tbody > tr.active:hover > th {
+      background-color: #e8e8e8;
+      }
+      .table-responsive {
+      min-height: .01%;
+      overflow-x: auto;
+      }
+
+      table.center {
+        margin-left:auto; 
+        margin-right:auto;
+      }
+
+  body(style='font-size: 16px;width:90%;margin-left:5%;margin-top:20px;')
+    center
+      b(style='font-size: 17px;') ใบสั่งซื้อยา/เวชภัณฑ์ที่มิใช่ยา
+    div(style='float: right;width: 30%;')
+      | เลขที่ใบสั่งซื้อ PU5912G157
+      br
+      | ส่วนราชการ โรงพยาบาลสรรพสิทธิประสงค์
+      br
+      | ที่อยู่ 122 ถ.สรรพสิทธิ์ ต.ในเมือง อ.เมือง
+      br
+      | จ.อุบลราชธานี 34000 โทร 045-254906
+    div(style='height: 100px;width: 70%;')
+    div(style='margin-left:50%;') วันที่ 6 กันยายน 2559
+    div(style='') เรียน บริษัท พาตารแลบ (2517) จํากัด
+    div(style='float: left;') ที่อยู่
+    div(style='float:left;width: 90%;margin-left: 4px;')
+      | 51 หมูที่ 3 ถนนเลียบคลอง 7 (ธัญบุรี-ลําลูกกา) ต.บึงคําพรอย อ.ลําลูกกา จ.ปทุมธานี 12150 โทรศัพท์ 085-4545554
+      | เลขประจําตัวผูเสียภาษี 0105551058432
+    br
+    br
+    br
+    | โรงพยาบาลสรรพสิทธิประสงค์ มีความประสงค์ที่จะซื้อเวชภัณฑยา ตามรายการดังต่อไปนี้
+    center
+      table.table.table-bordered.center(style="width: 100%;")
+        thead
+          tr
+            th ลำดับ
+            th รายการยา
+            th หน่วยนับ
+            th จำนวน
+            th ราคาหน่วยละ
+            th จำนวนเงิน
+        tbody
+        - var y = 0
+        for b in order
+          - y++
+            tr
+              td(style="text-align: center;") #{y}
+              td #{b.product_id}
+              td
+              td
+              td
+              td
+    br
+    div(style='float: left;width: 50%;height: 100px;')
+      | รวม 1 รายการ
+      br
+      | ส่วนลด 0.00 % และ 0.00 บาท
+    div(style='float: right;width: 50%;height: 100px;text-align: right')
+      | รวมเป็นเงิน 4,800.00บาท
+      br
+      | คิดเป็นส่วนลด 0.00 บาท
+      br
+      | เป็นเงินสุทธิ 4,800.00 บาท
+      br
+      | (สี่พันแปดร้อยบาทถ้วน)
+    div
+      | การสั่งซื้อ อยู่ภายใต้เงื่อนไขดังต่อใบนี้
+      br
+      | 1.กำหนดส่งมอบภายใน 30 วัน นับภัดจากวันที่ผู้ขายได้รับใบสั่งซื้อ
+      br
+      | 2.สถานที่ส่งมอบ คลังเวชภัณฑ์ กลุ่มงานเภสัชกรรม โรงพยาบาลสรรพสิทธิประสงค์
+      br
+      | 3.ผู้ขายจะต้องรับประกันคุณภาพของสิ่งของที่ส่งมอบ เป็นเวลาอย่างน้อย 1 ปี นับแต่วันส่งมอบของ
+      br
+      | 4.สงวนสิทธิค่าปรับกรณีส่งมอบเกินกำหนดเวลา โดยคิดค่าปรับเป็นรายวัน ในอัตราร้อยละ 0.2 ของราคาสิ่งของในส่วนที่ยังไม่ได้รับมอบ
+      br
+      | 5.ส่วนราชการสงวนสิทธิ์ที่จะไม่รับมอบถ้าปรากฏว่าสินค้ามีลักษณะไม่ตรงตามรายการที่ระบุไว้ในใบสั่งซื้อ ซึ่งผู้ขายจะต้องดําเนินการเปลี่ยนใหม่ให้ถูกต้องตามใบสั่งซื้อทุกประการ
+    br
+    br
+    br
+    br
+    div(style='float: left;width: 50%;text-align: center;')
+      | ลงชื่อ..........................................................ผู้รับใบสั่งซื้อ
+      br
+      | (................................................)&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+      br
+      | วันที่............./............./.............&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+    div(style='float: left;width: 50%;text-align: center;')
+      | ลงชื่อ..........................................................ผู้รับใบสั่งซื้อ
+      br
+      | (นางอุษณีย์ กิตติวงศ์สุนทร)&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+      br
+      | ทำหน้าที่ หัวหน้าเจ้าหน้าที่พัสดุ&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+      

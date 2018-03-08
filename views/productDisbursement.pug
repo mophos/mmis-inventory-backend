@@ -1,0 +1,41 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    br
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='8')  #{hospitalName}
+        tr
+          td.center.bold(colspan='8') ใบเบิกจ่ายเวชภัณฑ์
+        tr
+          td.center(colspan='8') หน่วยจ่าย #{productDisbursement[0].warehouse_name2} , หน่วยเบิก #{productDisbursement[0].warehouse_name}
+        tr
+          td.left(colspan='8') ณ วันที่ #{today}
+        tr
+          th #
+          th รายการ
+          th ขนาดบรรจุ
+          th จำนวนจ่าย
+          th.right ราคาต่อหน่วย
+          th.right ราคา
+          th เลขที่ผลิต
+          th หมายเหตุ
+      tbody
+      - var y = 0
+        for b in productDisbursement
+          - y++
+            tr
+              td.left #{y}
+              td.left #{b.product_name}
+              td.center #{b.unit_qty} #{b.small_unit_name}(1 #{b.large_unit_name})
+              td.center #{b.pay_qty/b.unit_qty} #{b.large_unit_name}
+              td.right #{unit_cost[y-1]}
+              td.right #{cost[y-1]}
+              td.center #{b.lot_no}
+              td

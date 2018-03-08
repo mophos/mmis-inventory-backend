@@ -1,0 +1,256 @@
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+    style.
+      html, body {
+      margin: 0;
+      padding: 10px;
+      font-size: 10px;
+      font-family: 'TH Sarabun New';
+      }
+
+      .small-space-line {
+        line-height: 85%;
+      }
+
+      /*table*/
+      table {
+      border-spacing: 0;
+      border-collapse: collapse;
+      }
+      td,
+      th {
+      padding: 0;
+      }
+      table {
+      background-color: transparent;
+      }
+      caption {
+      padding-top: 8px;
+      padding-bottom: 8px;
+      color: #777;
+      text-align: left;
+      }
+      th {
+      text-align: center;
+      }
+      .table {
+      width: 100%;
+      max-width: 100%;
+      margin-bottom: 20px;
+      }
+      .table > thead > tr > th,
+      .table > tbody > tr > th,
+      .table > tfoot > tr > th,
+      .table > thead > tr > td,
+      .table > tbody > tr > td,
+      .table > tfoot > tr > td {
+      padding: 2px;
+      line-height: 1.42857143;
+      vertical-align: top;
+      border-top: 1px solid #333232;
+      }
+      .table > thead > tr > th {
+      vertical-align: bottom;
+      border-bottom: 2px solid #333232;
+      }
+      .table > caption + thead > tr:first-child > th,
+      .table > colgroup + thead > tr:first-child > th,
+      .table > thead:first-child > tr:first-child > th,
+      .table > caption + thead > tr:first-child > td,
+      .table > colgroup + thead > tr:first-child > td,
+      .table > thead:first-child > tr:first-child > td {
+      border-top: 0;
+      }
+      .table > tbody + tbody {
+      border-top: 2px solid #333232;
+      }
+      .table .table {
+      background-color: #fff;
+      }
+      .table-condensed > thead > tr > th,
+      .table-condensed > tbody > tr > th,
+      .table-condensed > tfoot > tr > th,
+      .table-condensed > thead > tr > td,
+      .table-condensed > tbody > tr > td,
+      .table-condensed > tfoot > tr > td {
+      padding: 1px;
+      }
+      .table-bordered {
+      border: 1px solid #333232;
+      }
+      .table-bordered > thead > tr > th,
+      .table-bordered > tbody > tr > th,
+      .table-bordered > tfoot > tr > th,
+      .table-bordered > thead > tr > td,
+      .table-bordered > tbody > tr > td,
+      .table-bordered > tfoot > tr > td {
+      border: 1px solid #333232;
+      }
+      .table-bordered > thead > tr > th,
+      .table-bordered > thead > tr > td {
+      border-bottom-width: 2px;
+      }
+      .table-striped > tbody > tr:nth-of-type(odd) {
+      background-color: #f9f9f9;
+      }
+      .table-hover > tbody > tr:hover {
+      background-color: #f5f5f5;
+      }
+      table col[class*="col-"] {
+      position: static;
+      display: table-column;
+      float: none;
+      }
+      table td[class*="col-"],
+      table th[class*="col-"] {
+      position: static;
+      display: table-cell;
+      float: none;
+      }
+      .table > thead > tr > td.active,
+      .table > tbody > tr > td.active,
+      .table > tfoot > tr > td.active,
+      .table > thead > tr > th.active,
+      .table > tbody > tr > th.active,
+      .table > tfoot > tr > th.active,
+      .table > thead > tr.active > td,
+      .table > tbody > tr.active > td,
+      .table > tfoot > tr.active > td,
+      .table > thead > tr.active > th,
+      .table > tbody > tr.active > th,
+      .table > tfoot > tr.active > th {
+      background-color: #f5f5f5;
+      }
+      .table-hover > tbody > tr > td.active:hover,
+      .table-hover > tbody > tr > th.active:hover,
+      .table-hover > tbody > tr.active:hover > td,
+      .table-hover > tbody > tr:hover > .active,
+      .table-hover > tbody > tr.active:hover > th {
+      background-color: #e8e8e8;
+      }
+      .table-responsive {
+      min-height: .01%;
+      overflow-x: auto;
+      }
+
+      table.center {
+        margin-left:auto; 
+        margin-right:auto;
+      }
+
+  body
+    style(type='text/css').
+      body{
+      width: 100%;
+      float: left;
+      display: inline-block;
+      line-height: 1.2em;
+      font-size: 16px;
+      color: black; 
+      }
+      div.content{
+      margin-left: 15%;
+      width: 100%;
+      float: left;
+      display: inline-block;
+      margin-left: 5%;
+      }
+      div.box{
+      width: 40%;
+      float: left;
+      display: inline-block;
+      margin-left: 5%;
+      }
+      div.text{
+      width: 80%;
+      float: left;
+      display: inline-block;
+      margin-left: 5%;
+      }
+    .content
+      .box
+        label(style='margin-left: 11%;') เลขที่รับ #{receiveId}
+      .box
+        label(style='margin-left: -32%; font-size: 18px; font-weight: bold;') บันทึกการตรวจรับพัสดุ
+        br
+        p(style='margin-left: 26.5%;') เขียนที่ โรงพยาบาลสิงห์บุรี
+        br
+        p(style='margin-top: -7%; margin-left: -32%;') วันที่ #{receiveDate}
+        br
+        p(style='margin-top: -7%; margin-left: 26.5%;') ลงวันที่ .....................
+      .box
+        p(style='margin-top: -12%; margin-left: 20%;') ตามบันทึกที่ /17/0355
+      .text
+        p
+          | &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+          | ได้แต่งตั้งคณะกรรมการตรวจรับพัสดุนั้น &nbsp&nbsp
+          | บัดนี้คณะกรรมการตรวจรับพัสดุได้ร่วมกันตรวจพัสดุซึ่ง 
+          br
+          | 			&nbsp&nbsp&nbsp&nbsp
+          | 			#{labelerName}
+          | 			&nbsp&nbsp&nbsp
+          | 			ผู้ขายได้นำส่งมอบเมื่อ วันที่ #{receiveDate}
+          | 			&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+          | 			ตามใบส่งของเลขที่ #{deliveryCode} จำนวน #{productQty} รายการ 
+          | 			&nbsp&nbsp&nbsp
+          | 			รวมเป็นเงินสุทธิ #{totalCost} บาท (#{thaiBath}) 
+          | 			&nbsp&nbsp&nbsp&nbsp&nbsp
+          | 			เห็นว่ามีปริมาณและคุณภาพถูกต้องครบถ้วน และได้ส่งมอบให้เจ้าหน้าที่พัสดุรับไว้เรียบร้อยแล้ว 
+          br
+          br
+          label(style='margin-left: 30%;') จึงพร้อมกันลงลายมือชื่อไว้เป็นหลักฐาน
+        p(style='margin-left: 30%;')
+          | (ลงชื่อ).....................................................ประธานกรรมการตรวจรับพัสดุ 
+          br
+          label(style='margin-left: 8%;') (นางสาวลิดาภัณฑ์ รุ่งอุทัย)
+        p(style='margin-left: 30%;')
+          | (ลงชื่อ).....................................................กรรมการตรวจรับพัสดุ 
+          br
+          label(style='margin-left: 8%;') (นายธนาเทพ วันเพียร)
+        p(style='margin-left: 30%;')
+          | (ลงชื่อ).....................................................กรรมการตรวจรับพัสดุ 
+          br
+          label(style='margin-left: 8%;') (นางปราณี ค้ำชู)
+        p
+        p
+          | &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+          | ได้รับมอบพัสดุรายการข้างต้นจากคณะกรรมการตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
+        p(style='margin-left: 5.2%;')
+          | (ลงชื่อ).....................................................เจ้าหน้าที่พัสดุ 
+          br
+          label(style='margin-left: 8%;') (นางสาวปาจรีย์ น้อยนาค)
+        p
+          | &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+          | เรียน ผู้ว่าราชการจังหวัดสิงห์บุรี 
+          br
+          | 			&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+          | 			&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+          | 			คณะกรรมการได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ 0 ภายในกำหนด 0 เกินกำหนด เห็นควรอนุมัติให้เบิกจ่าย
+          | 			&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspเงินบำรุงโรงพยาบาลประจำปีงบประมาน 2560 แก่ผู้ขายต่อไป
+        br
+        //- p(style='margin-left: 20%;')
+        //-   | ................................................................ 
+        //-   br
+        //-   label(style='margin-left: 8%;')
+        //-     | (นายอภิชัย วรภัทรชัย) 
+        //-     br
+        //-     | 				&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+        //-     | 				เภสัชกรชำนาญการพิเศษ 
+        //-     br
+        //-     | 				&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+        //-     | 				หัวหน้าเจ้าหน้าที่พัสดุ
+        //- br
+        label(style='margin-left: 35%;') ทราบ
+        br
+        p(style='margin-left: 25%;')
+          | ................................................................ 
+          br
+          label(style='margin-left: 8%;')
+              | (นางสาววนิดา สาดตระกูลวัฒนา) 
+              br
+              label(style='margin-left: 8.5%;') ผู้อำนวยการโรงพยาบาลสิงห์บุรี
+              br
+              label(style='margin-left: 5%;') ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด

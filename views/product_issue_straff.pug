@@ -1,0 +1,75 @@
+include css.pug
+style(media='print').
+  @page { size: landscape; }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    - for(var i in  issueBody )
+      span.page
+      table.table
+        thead
+          tr
+            td.center.bold(colspan='5') #{hospitalName}
+          tr
+            td.center.bold(colspan='5' ) รายงานตัดจ่ายสินค้า
+          tr
+            td.left(colspan='5') ใบตัดจ่ายเลขที่ : #{issueBody[i].issue_code}
+          tr
+            td.left(colspan='5') ณ วันที่ #{today}
+          tr
+            td.left(colspan='5') วันที่ตัดจ่าย : #{issue_date[i]}
+          tr
+            td.left(colspan='5') ประเภท : #{issueBody[i].ref_document}
+          tr
+            td.left(colspan='5') คลัง #{issueListDetail[0][0].warehouse_name}  มีความประสงค์ขอตัดจ่ายเวชภัณฑ์ จำนวน #{count} รายการ ดังต่อไปนี้
+          tr
+            th.center #
+            th.center ชื่อสินค้า  
+            th.center จำนวนจ่าย
+            th.center Lot No.
+            th.center วันหมดอายุ
+        tbody
+        - for(var b in issueListDetail[i] )
+            tr
+              td.center #{(b*1)+1})
+              td.left(style="") #{issueListDetail[i][b].generic_name} (#{issueListDetail[i][b].product_name})              
+              td.right #{issueListDetail[i][b].qty / issueListDetail[i][b].unit_conversion_qty} #{issueListDetail[i][b].from_unit_name} x (#{issueListDetail[i][b].conversion_qty} #{issueListDetail[i][b].to_unit_name}) = #{issueListDetail[i][b].qty} #{issueListDetail[i][b].to_unit_name}
+              td.center(style="") #{issueListDetail[i][b].lot_no}
+              if(issueListDetail[i][b].expired_date !== 'Invalid dateNaN')
+                td.center #{issueListDetail[i][b].expired_date}   
+              else
+                  td.center -
+        tfooter
+          tr
+            td.tbfooter.right(colspan="5")
+            br
+        table(style='width:60%;margin-left:25%;')
+          tr
+            td(colspan='5' height='60px;')
+          tr
+            td.right ลงชื่อ
+            td.center ...................................................................................
+            td.left ผู้ตัดจ่าย
+          tr
+            td
+            td.center (...................................................................................)
+            td
+          tr
+            td(colspan='5' height='40px;')
+          tr
+            td.right ลงชื่อ
+            td.center ...................................................................................
+            td.left หัวหน้าฝ่าย/กลุ่มงาน/งาน
+          tr
+            td
+            td.center (...................................................................................)
+            td
+          tr
+            td(colspan='5' height='40px;')
+      .pagebreak
+
+            

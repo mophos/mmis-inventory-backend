@@ -1,0 +1,55 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table
+      thead
+        tr 
+          td.center.bold(colspan='8') #{hospitalName} 
+        tr 
+          td.center.bold(colspan='8') ใบจัดเวชภัณฑ์ตามใบเบิก
+        tr 
+          td.center(colspan='8') วันที่เบิก
+        tr 
+          td.left(colspan='8') ใบเบิกเลขที่
+        tr 
+          td.left(colspan='8') วันที่อนุมัติเบิก
+        tr 
+          td.left(colspan='8') ณ วันที่ #{today}
+      tbody
+        tr.dash-top
+          td(style='border:none;') รหัสยา  
+          td(colspan='8') : 123
+        tr
+          td ชื่อสามัญ
+          td(colspan='6') : abc
+          td จำนวนขอเบิก
+          td 104 x 45
+        tr
+          td หน่วยบรรจุ
+          td : tab
+          td
+          td
+          td(align="right") รูปแบบ
+          td(colspan='2')  : dosage
+          td จำนวนเบิก
+          td 104 x 45
+        tr
+          td
+          td(colspan='3') ชื่อทางการค้า
+          td จำนวนเบิก
+          td วันหมดอายุ
+          td ที่เก็บ
+          td เลขทะเบียน
+          td คงเหลือ
+        tr.dash-bottom
+          td(colspan='4') asd
+          td 104 x 45
+          td 12/45/55
+          td
+          td
+          td 104 x 45

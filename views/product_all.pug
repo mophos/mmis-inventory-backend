@@ -1,0 +1,39 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='7') #{hospitalName}
+        tr
+          td.center.bold(colspan='7' ) รายการสินค้าทั้งหมด
+        tr
+          td.left(colspan='7') ณ วันที่ #{today}
+        tr
+          th.left #
+          th.left &nbsp; Trade Code  
+          th.left Trade Name
+          th.left Generic Code
+          th.left Generic Name
+          th.left Base Unit 
+          th.left Generic Type
+      tbody
+        - var i = 0
+        for p in productAll
+          - i++
+          tr
+            td.left #{i}
+            td.left &nbsp; #{p.trade_code}
+            td.left #{p.product_name}
+            td.left #{p.generic_code}
+            td.left #{p.generic_name}
+            td.left #{p.base_unit_name}
+            td.left #{p.generic_type_name}
+      tfooter
+        tr
+          td.tbfooter.right(colspan="7")

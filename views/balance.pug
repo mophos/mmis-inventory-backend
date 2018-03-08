@@ -1,0 +1,38 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    center
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='5') #{hospitalName}
+        tr
+          td.center.bold(colspan='5' ) รายงานเวชภัณฑ์คงคลัง
+        tr
+          td.center.bold(colspan='5' ) คลัง : 
+        tr
+          td.left(colspan='5') ณ วันที่ #{date}
+        tr
+          th.center ลำดับที่
+          th.left รายการ
+          th.right จำนวนคงคลัง
+          th.right มูลค่าคงคลัง
+          th.left &nbsp;คลัง
+      tbody
+      - var y=0
+      for a in balance
+        -y++
+        tr
+          td.center #{y}
+          td.left #{a.product_name}
+          td.right #{a.qty}
+          td.right #{a.cost}
+          td.left &nbsp;#{a.warehouse_name}
+      tfooter
+        tr
+          td.dash-top.right(colspan=5) รวมมูลค่าทั้งสิ้น #{sumt} บาท

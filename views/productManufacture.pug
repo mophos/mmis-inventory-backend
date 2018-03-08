@@ -1,0 +1,46 @@
+include css.pug
+style(media='print').
+  @page { size: landscape; }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    span.page
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='8') #{hospitalName}
+        tr
+          td.center.bold(colspan='8' ) รายงานการผลิตยา
+        tr
+          td.center(colspan='8') ตั้งแต่วันที่ #{startDate} ถึง #{endDate} 
+        tr
+          td.left(colspan='8' ) ณ วันที่ #{today}
+        tr
+          th #
+          th.right วันที่รับสินค้า &nbsp;
+          th.left รหัสเวชภัณฑ์ 
+          th.left ชื่อเวชภัณฑ์
+          th.left Lot No.
+          th.right วันที่หมดอายุ
+          th.right จำนวน
+          th.right มูลค่า &nbsp;
+      tbody
+      - var y = 0
+        for b in productManufacture
+          - y++
+          tr
+            td.center #{y})
+            td.right #{b.receive_date} &nbsp;
+            td.left #{b.working_code} 
+            td(style="width:25%;") #{b.product_name}
+            td.left #{b.lot_no}
+            td.right #{b.expired_date}
+            td.right #{b.receive_qty} #{b.small_unit}
+            td.right #{b.cost} &nbsp;
+        tfooter
+          tr
+            td.tbfooter.right(colspan="8") จำนวน #{y} รายการ | มูลค่ารวม #{sum} บาท

@@ -1,0 +1,76 @@
+include css.pug
+style(type='text/css').
+  body{
+  font-family:'THSarabunNewIT';
+  }
+style(type='text/css' media='print').
+   @page{
+   margin-top: 1.5cm;
+   margin-left: 2.5cm;
+   margin-right: 2cm;
+  }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success.btnprint(onclick='window.print()') Print
+    img(src='/krut.png', height='60px')
+    .headkut.h1 บันทึกข้อความ
+    p.h2
+      | ส่วนราชการ
+      label.h3(style='margin-top: 5px;')  &nbsp;#{hospitalName}
+    p.h2(style='width:50%;float: left;')
+      | ที่
+      label.h3(style='margin-top: 5px;')  อบ 0032.310(Fix)
+    b.h2(style='width:50%;float: left;')
+      | วันที่ 
+      label.h3 &nbsp;#{today}
+    br
+    b.h2 เรื่อง 
+    | ขออนุมัติเบิกเงิน [ ] งบประมาณ , [ ] บำรุง
+    hr
+
+
+    .enter เรียน ผู้อำนวยการ#{hospitalName}
+    .fontspace
+    | ตามบันทึกที่ อบ 0032.305/1254 ลงวันที่ 24 กรกฎาคม 2560 ขอซื้อ/จ้าง เวชภัณฑ์ยา จำนวน 65,484.00 บาท (หกหมื่นห้าพันสี่ร้อยแปดสิบสี่บาท)
+    .enter
+    .fontspace
+    | บัดนี้ บริษัท ซิลลิคฟาร์มา จำกัด ได้จัดส่งเวชภัณฑ์ยาเสร็จเรียบร้อยแล้ว และได้ตรวจรับไว้เป็นการถูกต้องเรียบร้อยแล้ว จึงเห็นควรเบิกจ่ายเงินจำนวน 65,484.00 บาท (หกหมื่นห้าพันสี่ร้อยแปดสิบสี่บาท) เพื่อจ่ายให้ บริษัท ซิลลิคฟาร์มา จำกัด ต่อไป
+    .enter
+    .fontspace
+    | จึงเรียนมาเพื่ออนุมัติ
+    br
+    br 
+    br 
+    br
+    div(style="width:50%;float:right;text-align:center") ลงชื่อ............................................................
+      br
+      | (นางพิศมัย ภารการ)
+      br 
+      | เจ้าพนักงานกาสรเงินและบัญชี
+    br
+    br 
+    br 
+    br
+    br 
+    br
+    div(style="width:50%;float:right;text-align:center") ลงชื่อ............................................................
+      br
+      | (นางสาวพรทิพย์ สมวัน)
+      br 
+      | นักจัดการงานทั่วไปชำนาญการ
+    br
+    br 
+    br 
+    br
+    br 
+    br
+    div(style="width:50%;float:right;") อนุมัติ
+      div(style="text-align:center") ลงชื่อ............................................................
+        br
+        | (นายดนัย เจียรกูล)
+        br 
+        | นายแพทย์(ด้านเวชกรรมป้องกัน)เชี่ยวชาญรักษาการในตำแหน่งผู้อำนวยการ #{hospitalName}

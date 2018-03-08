@@ -1,0 +1,74 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    br
+    center.head
+     b
+      | ใบตรวจรับพัสดุ
+     table(style='line-height: 1.1em;width:100%;')
+      tr
+        td.left ใบรับเลขที่ #{receive.receive_code}
+        td.right(style='width: 50%;') เขียนที่ #{hospitalName}
+      tr
+        td
+        td.left วันที่ #{date}
+    .fontspace
+    .left(style='padding-bottom: 7pt;') ตามคำสั่งบันทึกข้อความโรงพยาบาลเขื่องใน ที่ #{boox_prefix}/___ ลงวันที่ ____________________ ได้แต่งตั้งคณะกรรมการตรวจรับพัสดุเวชภัณฑ์ยาของโรงพยาบาลเขื่องใน นั้น
+    .fontspace
+    .left(style='padding-bottom: 7pt;') บัดนี้ คณะกรรมการผู้มีนามข้างท้ายนี้ได้พร้อมกันตรวจรับเวชภัณฑ์ยา ณ #{hospitalName} ซึ่ง#{receive.labeler_name} ผู้ขายได้นำส่งตาม ใบส่งของ / ใบกำกับภาษี บันทึกตกลง / จ้าง เลขที่ #{receive.purchase_order_book_number} ลงวันที่ #{receive.order_date} และตาม ใบส่งของ / ใบกำกับ เลขที่ #{receive.delivery_code} ลงวันที่ #{receive.delivery_date} ดังปรากฎรายละเอียดต่อไปนี้
+    table.table
+      thead
+        tr
+          td(colspan='5').tbfooter
+        - var y = 0
+        for r in receiveItem
+          - y++
+          tr
+            td #{y}
+            td #{r.generic_name}
+            td(width='10%') #{r.receive_qty}x#{r.unit_name}
+            td ราคาต่อหน่วย #{r.unit_price} บาท
+            td.right รวม #{r.cost} บาท
+      tfooter
+        tr
+          td(colspan='5').tbfooter
+        tr
+          td
+          td(colspan='2' style='padding-top: 10px;') ภาษีมูลค่าเพิ่มจำนวน 7 % เป็นเงิน  
+          td
+          td.right(style='border-bottom: 1px dashed black') #{vat} บาท
+        tr
+          td
+          td(colspan='2') รวมเป็นเงินทั้งสิ้น  
+          td
+          td.right(style='border-bottom: 1px dashed black;') #{pricevat} บาท
+    .left(style='padding-top: 7pt;') เห็นว่ามีปริมาณและคุณภาพถูกต้องครบถ้วน ตามหลักฐานที่ตกลงกันไว้เมื่อ 25 กรกฎาคม 2560 และได้ส่งมอบแก่เจ้าหน้าที่พัสดุโรงพยาบาลเขื่องในรับไว้เป็นการดูแลถูกต้องแล้ววันนี้ คณะกรรมการจึงพร้อมกันลงลายมือชื่อไว้เป็นหลักฐาน
+    br
+    table.table
+      tr
+        td(style='padding-top: 60px;width:50%;').center (ลงชื่อ)........................................#{receiveCommiittee[0].position_name}
+        td(style='padding-top: 60px;width:50%;').center (ลงชื่อ)........................................#{receiveCommiittee[1].position_name}
+      tr
+        td.center(style='width:50%;') (#{receiveCommiittee[0].title}#{receiveCommiittee[0].fname} #{receiveCommiittee[0].lname})
+        td.center(style='width:50%;') (#{receiveCommiittee[1].title}#{receiveCommiittee[1].fname} #{receiveCommiittee[1].lname})
+      tr
+        td.center(style='width:50%;') ตำแหน่ง #{receiveCommiittee[0].position}
+        td.center(style='width:50%;') ตำแหน่ง #{receiveCommiittee[1].position}
+      
+      tr
+        td(style='padding-top: 40;width:50%;')
+        td.center(style='padding-top: 40;width:50%;') ได้รับพัสดุขั้นบัญชีไว้เรียบร้อยแล้ว
+      tr
+        td(style='padding-top: 50px;width:50%;').center (ลงชื่อ)........................................#{receiveCommiittee[2].position_name}
+        td(style='padding-top: 50px;width:50%;').center (ลงชื่อ)........................................ผู้สั่งซื้อ
+      tr
+        td.center(style='width:50%;') (#{receiveCommiittee[2].title}#{receiveCommiittee[2].fname} #{receiveCommiittee[2].lname})
+        td.center(style='width:50%;') (#{receiveUser.title}#{receiveUser.fname} #{receiveUserlname})
+      tr
+        td.center(style='width:50%;') ตำแหน่ง #{receiveCommiittee[2].position}
+        td.center(style='width:50%;') ตำแหน่ง #{receiveUser.position} 081

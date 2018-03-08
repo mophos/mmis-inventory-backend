@@ -1,0 +1,70 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    br
+    .center.bold ใบโอนเวชภัณฑ์
+    br
+    .left ใบโอนเลขที่ #{tranfer[0].transfer_code}
+    .left ณ วันที่ #{today}
+    br
+    .fontspace
+    | คลัง #{tranfer[0].src_warehouse_name}  มีความประสงค์ขอโอนเวชภัณฑ์ ไปยังคลัง #{tranfer[0].dst_warehouse_name}  จำนวน #{tranferCount[0].count} รายการ ดังต่อไปนี้
+    br
+    table.table
+      thead.dash-top.dash-bottom
+        tr
+          td.center ลำดับ
+          td.center รายการ
+          td.center จำนวน
+          td.center lot
+          td.center วันหมดอายุ
+      tbody
+      - y = 0
+      for a in tranfer
+        -y++
+        tr
+          td.center #{y}
+          td.left #{a.product_name} (#{a.generic_name})
+          td.right #{a.transfer_qty} #{a.large_unit} x (#{a.qty}  #{a.small_unit}) = #{a.transfer_qty*a.qty} #{a.small_unit}
+          td.center #{a.lot_no}
+          td.center #{a.expired_date}
+      tfooter
+        tr
+          td(colspan='5').tbfooter
+      br
+      table(style='width:60%;margin-left:25%;')
+        tr
+          td(colspan='5' height='60px;')
+        tr
+          td.right ลงชื่อ
+          td.center ...................................................................................
+          td.left ผู้โอน
+        tr
+          td
+          td.center (...................................................................................)
+          td
+        tr
+          td(colspan='5' height='40px;')
+        tr
+          td.right ลงชื่อ
+          td.center ...................................................................................
+          td.left หัวหน้าฝ่าย/กลุ่มงาน/งาน
+        tr
+          td
+          td.center (...................................................................................)
+          td
+        tr
+          td(colspan='5' height='40px;')
+        tr
+          td.right ลงชื่อ
+          td.center ...................................................................................
+          td.left ผู้รับโอน
+        tr
+          td
+          td.center (...................................................................................)
+          td

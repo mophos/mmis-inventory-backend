@@ -1,0 +1,56 @@
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+    style.
+      html, body {
+      margin: 0;
+      font-size: 16px;
+      font-family: 'TH Sarabun New';
+      }
+
+      /*table*/
+      table {
+        border-spacing: 0;
+        border-collapse: collapse;
+        width: 100%;
+        border:1px solid black;
+      }
+      table tbody td,table thead th{border:1px solid black;}
+
+
+  body
+      div(style="text-align:center;")
+        p(style="font-size: 20px;")
+          strong รายการเบิกยาและเวชภัณฑ์
+        div(style="float:left;width:50%;text-align:left") เอกสารเลขที่ : #{requisitionId} 
+        div(style="float:left;width:50%") วันที่เบิก #{requisitionDate}
+        div(style="float:left;width:50%;text-align:left") คลังที่เบิก : #{wm_requisition_name} 
+        div(style="float:left;width:50%") หน่วยเบิก : #{wm_withdraw_name}
+      table
+        thead
+          tr
+            th #
+            th ชื่อยา
+            th หน่วยนับ
+            th จำนวนเบิก
+            th ราคาต่อหน่วย
+            th ราคารวม
+            th หมายเหตุ
+
+          tbody
+            - var y = 0
+            for b in detail
+              - y++
+              tr
+                td(style="width: 5%;text-align: center;") #{y}
+                td(style="width: 35%;") #{b.product_name}
+                td(style="text-align: center;width: 10%;") #{b.small_unit}
+                td(style="text-align: center; width: 20%;") #{b.requisition_qty} #{b.small_unit}
+                td(style="text-align: center; width: 15%;") #{b.cost} 
+                td(style="text-align: center; width: 15%;") #{b.requisition_qty * b.cost}
+                td(style="text-align: center; width: 25%;")
+      div(style="margin-top:50px;")
+        div(style='float: left;width:50%;') ลงชื่อ : ....................................................... (ผู้เบิก) 
+        div(style='float:left;') ลงชื่อ : ....................................................... (หัวหน้ากลุ่มงาน) 
