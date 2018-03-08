@@ -90,7 +90,7 @@ import transferDashboardRoute from './routes/transferDashboard';
 
 import staffRoute from './routes/staff';
 import settingRoute from './routes/setting';
-
+import versionRoute from './routes/version'
 const app: express.Express = express();
 
 //view engine setup
@@ -98,7 +98,7 @@ app.set('views', path.join(__dirname, '../views'));
 app.set('view engine', 'pug');
 
 app.use(logger('dev'));
-app.use(bodyParser.json({limit: '5mb'}));
+app.use(bodyParser.json({ limit: '5mb' }));
 app.use(bodyParser.urlencoded({ extended: false, limit: '5mb' }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../public')));
@@ -206,6 +206,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/api-test', testRoute);
+app.use('/version',versionRoute);
 app.use('/generics', checkAuth, genericRoute);
 app.use('/generics-medical-supplies', checkAuth, adminAuth, genericMedicalSuppliesRoute);
 app.use('/labelers', checkAuth, adminAuth, labelerRoute);
@@ -228,9 +229,9 @@ app.use('/transfer-dashboard', checkAuth, adminAuth, transferDashboardRoute);
 app.use('/alert-expired', checkAuth, adminAuth, alertExpiredRoute);
 app.use('/productlots', checkAuth, adminAuth, productLots);
 app.use('/abc-ven', checkAuth, adminAuth, abcVenRoute);
-app.use('/period', checkAuth,  adminAuth,periodRoute);
-app.use('/transectiontype', checkAuth,  adminAuth,transectionTypeRoute);
-app.use('/receiveothertype', checkAuth,  adminAuth,receiveotherTypeRoute);
+app.use('/period', checkAuth, adminAuth, periodRoute);
+app.use('/transectiontype', checkAuth, adminAuth, transectionTypeRoute);
+app.use('/receiveothertype', checkAuth, adminAuth, receiveotherTypeRoute);
 // app.use('/borrows', checkAuth, adminAuth, borrowRoute);
 app.use('/transfer', checkAuth, adminAuth, transferRoute);
 app.use('/production-units', checkAuth, adminAuth, productionUnitRoute);
@@ -251,7 +252,7 @@ app.use('/requisition', checkAuth, adminAuth, requisitionRoute);
 app.use('/reports/products', checkAuth, reportProductRoute);
 app.use('/reports/requisition', reportRequisitionRoute);
 app.use('/reports/inventory', reportInventoryRoute);
-app.use('/reports/internalissue',reportInternalissueRoute);
+app.use('/reports/internalissue', reportInternalissueRoute);
 
 // staff
 app.use('/staff', checkAuth, staffAuth, staffRoute);
@@ -267,9 +268,10 @@ app.use('/users', checkAuth, userRoute);
 
 app.use('/units', checkAuth, unitsRoute);
 // setting
+
 app.use('/setting', checkAuth, settingRoute);
 
-app.use('/', indexRoute);
+app.use('/', checkAuth, indexRoute);
 //temperature
 app.use('/temperature', temperatureRoute);
 
