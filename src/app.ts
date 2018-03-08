@@ -90,7 +90,7 @@ import transferDashboardRoute from './routes/transferDashboard';
 
 import staffRoute from './routes/staff';
 import settingRoute from './routes/setting';
-
+import versionRoute from './routes/version'
 const app: express.Express = express();
 
 //view engine setup
@@ -206,6 +206,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/api-test', testRoute);
+app.use('/version',versionRoute);
 app.use('/generics', checkAuth, genericRoute);
 app.use('/generics-medical-supplies', checkAuth, adminAuth, genericMedicalSuppliesRoute);
 app.use('/labelers', checkAuth, adminAuth, labelerRoute);
@@ -267,6 +268,7 @@ app.use('/users', checkAuth, userRoute);
 
 app.use('/units', checkAuth, unitsRoute);
 // setting
+
 app.use('/setting', checkAuth, settingRoute);
 
 app.use('/', checkAuth, indexRoute);

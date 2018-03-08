@@ -39,10 +39,6 @@ router.get('/test-stockcard', wrap(async (req, res, next) => {
   res.send({ ok: true });
 }));
 
-router.get('/version', (req, res, next) => {
-  res.send({ ok: true, version: 'v2.0.0', build: '20170917' });
-});
-
 // export default router;
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
