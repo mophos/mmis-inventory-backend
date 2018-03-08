@@ -890,8 +890,8 @@ AND r.requisition_order_id = '${requisId}' and rci.confirm_qty != 0
     comma(num) {
         if (num === null) { return ('0.00'); }
         let minus = false;
-        if(num < 0) {
-            minus =true;
+        if (num < 0) {
+            minus = true;
             num = Math.abs(num);
         }
         var number = +num
@@ -907,9 +907,9 @@ AND r.requisition_order_id = '${requisId}' and rci.confirm_qty != 0
             if (c == 3 && num[i - 1] != null) { c = 0; num2 = ',' + num[i] + num2 }
             else num2 = num[i] + num2
         }
-        if(minus){
+        if (minus) {
             return '-' + num2 + '.' + deci;
-        }else{
+        } else {
             return num2 + '.' + deci;
         }
 
@@ -1135,7 +1135,7 @@ AND r.requisition_order_id = '${requisId}' and rci.confirm_qty != 0
 	            and wp.warehouse_id = ${warehouseId}
             GROUP BY
             wp.product_id`
-            return knex.raw(sql)
+        return knex.raw(sql)
     }
 
     tranferCount(knex: Knex, tranferId) {
@@ -1337,8 +1337,10 @@ OR sc.ref_src like ?
     invenCommittee(knex: Knex, receiveID) {
         let sql = `SELECT
         pc.committee_id,
+        pc.committee_name,
         pcp.people_id,
         pcp.position_name,
+        upp.position_name as pname,
         ut.title_name,
         p.fname,
         p.lname,
@@ -1349,14 +1351,15 @@ OR sc.ref_src like ?
     JOIN pc_committee_people pcp ON pc.committee_id = pcp.committee_id
     JOIN um_people p ON p.people_id = pcp.people_id
     JOIN um_titles ut ON ut.title_id = p.title_id
+    JOIN um_positions as upp on upp.position_id = p.position_id
     LEFT JOIN um_positions up ON up.position_id = p.position_id
     WHERE
         wr.receive_id = ?
     ORDER BY
-        p.position_id ASC`;
+        pc.committee_id`;
         return knex.raw(sql, receiveID);
     }
-    getChief(knex: Knex, typeId) {
+    getChief(knex: Knex, typeCode: any) {
         //ดึงหัวหน้าเจ้าหน้าที่พัสดุ ส่ง 4 เข้ามา
         return knex.select('t.title_name as title', 'p.fname', 'p.lname', 'upos.position_name', 'upot.type_name as position')
             .from('um_purchasing_officer as upo')
@@ -1364,8 +1367,7 @@ OR sc.ref_src like ?
             .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
             .join('um_positions as upos', 'upos.position_id', 'p.position_id')
             .join('um_purchasing_officer_type as upot', 'upot.type_id', 'upo.type_id')
-            .where('upo.type_id', typeId)
-            .where('upo.isactive', '1')
+            .where('upot.type_code', typeCode)
     }
     getPoror(knex: Knex, id: any) {
         return knex('view_um_purchasing_officer')
@@ -1376,6 +1378,17 @@ OR sc.ref_src like ?
             .leftJoin('pc_purchasing_order as po', 'po.purchase_order_id', 'wr.purchase_order_id')
             .where('wr.receive_id', receiveID)
     }
+
+    staffReceive(knex: Knex) {
+        return knex('um_people as u')
+            .select('*', 'p.position_name as pname')
+            .join('um_positions as p', 'p.position_id', 'u.position_id')
+            .join('um_titles as t', 't.title_id', 'u.title_id')
+            .join('um_purchasing_officer as up', 'up.people_id', 'u.people_id')
+            .join('um_purchasing_officer_type as upt', 'upt.type_id', 'up.type_id')
+            .where('upt.type_code', 'STAFF_RECEIVE');
+    }
+
     balance(knex: Knex, productId, warehouseId) {
         return knex.select('ww.warehouse_name', 'wp.product_id', 'mp.product_name')
             .sum('wp.qty as qty').sum('wp.cost as cost')
