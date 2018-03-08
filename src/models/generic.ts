@@ -31,34 +31,42 @@ export class GenericModel {
       .orderBy('generic_name')
       .limit(10);
   }
+
   warehouseSearchAutocomplete(knex: Knex, warehouseId: any, q: any) {
-    let _q = `%${q}%`
-    //  knex('mm_generics mg')
-    // .select('mg.generic_id','mg.generic_name','mg.working_code')
-    // .join('mm_products mp','mg.generic_id','mp.generic_id')
-    // .join('wm_product wm','wm.product_id','mp.product_id')
-    // .where(w => {
-    //   w.where('mg.generic_name', 'like', _q)
-    //     .orWhere('mg.working_code', 'like', _q)
-    //     .orWhere('mg.short_code', 'like', _q)
-    //     .orWhere('mg.keywords', 'like', _q)
-    // })
-    // .orderBy('mg.generic_name')
-    // .limit(10);
-    let sql =`select mg.working_code,mg.generic_name,mg.generic_id,sum(wm.qty) as qty,u.unit_name,wm.unit_generic_id 
-    from mm_generics mg 
-    join mm_products mp on mg.generic_id=mp.generic_id
-    join wm_products wm on wm.product_id = mp.product_id
-    left join mm_units u on u.unit_id=mg.primary_unit_id
-    where (mg.generic_name like '${_q}' 
-    or mg.working_code like '${_q}'
-    or mg.short_code like '${_q}'
-    or mg.keywords like '${_q}')
-    and wm.warehouse_id = '${warehouseId}'
-    group by wm.product_id
-    order by mg.generic_name
-    limit 10`
-    return knex.raw(sql);
+    let _q = `%${q}%`;
+
+    let subQuery = knex('wm_products as wp')
+      .select(knex.raw('sum(wp.qty)'))
+      .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
+      .whereRaw('mp.generic_id=mg.generic_id')
+      .where('wp.warehouse_id', warehouseId)
+      .as('qty');
+    
+    return knex('mm_generics as mg')
+      .select('mg.generic_id', 'mg.generic_name', 'mg.working_code', subQuery)
+      .where(w => {
+        w.where('mg.generic_name', 'like', _q)
+          .orWhere('mg.working_code', 'like', _q)
+          .orWhere('mg.short_code', 'like', _q)
+          .orWhere('mg.keywords', 'like', _q)
+      })
+      .orderBy('mg.generic_name')
+      .limit(10);
+    
+    // let sql =`select mg.working_code,mg.generic_name,mg.generic_id,sum(wm.qty) as qty,u.unit_name,wm.unit_generic_id 
+    // from mm_generics mg 
+    // join mm_products mp on mg.generic_id=mp.generic_id
+    // join wm_products wm on wm.product_id = mp.product_id
+    // left join mm_units u on u.unit_id=mg.primary_unit_id
+    // where (mg.generic_name like '${_q}' 
+    // or mg.working_code like '${_q}'
+    // or mg.short_code like '${_q}'
+    // or mg.keywords like '${_q}')
+    // and wm.warehouse_id = '${warehouseId}'
+    // group by wm.product_id
+    // order by mg.generic_name
+    // limit 10`
+    // return knex.raw(sql);
   }
   searchGenericZeroWarehouse(knex: Knex, query: any, warehouseId: any) {
     let _query = `%${query}%`;

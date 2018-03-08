@@ -22,7 +22,7 @@ router.get('/types', co(async (req, res, next) => {
 
     try {
       let rs = await genericModel.getGenericTypes(db, _pgs);
-      
+
       res.send({ ok: true, rows: rs });
     } catch (error) {
       res.send({ ok: false, error: error.message });
@@ -57,16 +57,13 @@ router.get('/warehouse/search/autocomplete', async (req, res, next) => {
   let db = req.db;
   let q = req.query.q;
   let warehouseId = req.decoded.warehouseId;
+
   try {
-    let rs: any = await genericModel.warehouseSearchAutocomplete(db,warehouseId,q);
-    if (rs[0].length) {
-      res.send(rs[0]);
-    } else {
-      res.send([]);
-    }
+    let rs: any = await genericModel.warehouseSearchAutocomplete(db, warehouseId, q);
+    res.send(rs);
   } catch (error) {
     console.log(error);
-    
+
     res.send({ ok: false, error: error.messgae });
   } finally {
     db.destroy();
@@ -149,9 +146,9 @@ router.post('/allocate', async (req, res, next) => {
             genericQty = genericQty - (obj.product_qty * x.conversion_qty);
           }
         } else {
-          if (i === (products.length - 1)) { 
+          if (i === (products.length - 1)) {
             if (x.remain_qty >= genericQty) {
-              if ((genericQty % x.conversion_qty) === 0) { 
+              if ((genericQty % x.conversion_qty) === 0) {
                 obj.product_qty = genericQty / x.conversion_qty;
                 x.remain_qty = x.remain_qty - (obj.product_qty * x.conversion_qty);
                 genericQty = genericQty - (obj.product_qty * x.conversion_qty);
@@ -161,7 +158,7 @@ router.post('/allocate', async (req, res, next) => {
                 genericQty = genericQty - (obj.product_qty * x.conversion_qty);
               }
             } else {
-              if ((x.remain_qty % x.conversion_qty) === 0) { 
+              if ((x.remain_qty % x.conversion_qty) === 0) {
                 obj.product_qty = x.remain_qty / x.conversion_qty;
                 x.remain_qty = x.remain_qty - (obj.product_qty * x.conversion_qty);
                 genericQty = genericQty - (obj.product_qty * x.conversion_qty);
@@ -173,7 +170,7 @@ router.post('/allocate', async (req, res, next) => {
             }
           } else {
             if (x.remain_qty >= genericQty) {
-              if ((genericQty % x.conversion_qty) === 0) { 
+              if ((genericQty % x.conversion_qty) === 0) {
                 obj.product_qty = x.genericQty / x.conversion_qty;
                 x.remain_qty = x.remain_qty - (obj.product_qty * x.conversion_qty);
                 genericQty = 0;
@@ -183,7 +180,7 @@ router.post('/allocate', async (req, res, next) => {
                 genericQty = genericQty - (obj.product_qty * x.conversion_qty);
               }
             } else {
-              if ((x.remain_qty % x.conversion_qty) === 0) { 
+              if ((x.remain_qty % x.conversion_qty) === 0) {
                 obj.product_qty = x.remain_qty / x.conversion_qty;
                 x.remain_qty = x.remain_qty - (obj.product_qty * x.conversion_qty);
                 genericQty = genericQty - (obj.product_qty * x.conversion_qty);
@@ -195,7 +192,7 @@ router.post('/allocate', async (req, res, next) => {
             }
           }
         }
-        
+
         results.push(obj);
       });
     });
