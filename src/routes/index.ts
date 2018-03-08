@@ -889,7 +889,10 @@ router.get('/report/tranfers', wrap(async (req, res, next) => {
   let _sum: any = [];
   let _tmpSum: any = [];
   let _tmpTranfer: any = []
-  let page: any = 30;
+  let page: any = req.decoded.WM_TRANSFER_REPORT_APPROVE;
+  // let page: any = req.decoded.WM_TRANSFER_REPORT_APPROVE;
+  // console.log(page);
+  
   for (let id in tranferId) {
     tranfer = await inventoryReportModel.tranfer(db, tranferId[id]);
     const _tmp = _.chunk(tranfer[0], page)
