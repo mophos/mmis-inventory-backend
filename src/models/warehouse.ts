@@ -350,8 +350,10 @@ export class WarehouseModel {
   getRequisitionTemplate(knex: Knex, templateId: any) {
     let sql = `
       select wrt.template_id, wrt.src_warehouse_id, wrt.dst_warehouse_id,
-      ws.warehouse_name as src_warehouse_name, 
+      ws.warehouse_name as src_warehouse_name,
+      ws.short_code as src_warehouse_code, 
       wd.warehouse_name as dst_warehouse_name, 
+      wd.short_code as dst_warehouse_code, 
       wrt.template_subject, wrt.created_date
       from wm_requisition_template as wrt
       inner join wm_warehouses as ws on wrt.src_warehouse_id = ws.warehouse_id
