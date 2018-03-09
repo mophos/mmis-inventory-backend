@@ -34,7 +34,7 @@ router.get('/', wrap(async (req, res, next) => {
   }
 }));
 
-router.get('/warehouse', wrap(async (req, res, next) => {
+router.get('/warehouse', wrap(async(req, res, next) => {
   let db = req.db;
 
   try {
@@ -227,29 +227,14 @@ router.get('/products/:warehouseId', wrap(async (req, res, next) => {
     }
   } else {
     res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
-  }
+  }  
 }));
 
-router.get('/get-mappings-generics', wrap(async (req, res, next) => {
+router.get('/get-mappings', wrap(async (req, res, next) => {
   let db = req.db;
   let hospcode = req.decoded.his_hospcode;
-
   try {
-    let results = await warehouseModel.getMappingsGenerics(db, hospcode);
-    res.send({ ok: true, rows: results[0] });
-  } catch (error) {
-    res.send({ ok: false, error: error.message })
-  } finally {
-    db.destroy();
-  }
-}));
-
-router.get('/get-mappings-products/:generic_id', wrap(async (req, res, next) => {
-  let db = req.db;
-  let hospcode = req.decoded.his_hospcode;
-  let genericId = req.params.generic_id
-  try {
-    let results = await warehouseModel.getMappingsProducts(db, hospcode, genericId);
+    let results = await warehouseModel.getMappings(db, hospcode);
     res.send({ ok: true, rows: results[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message })
@@ -362,7 +347,7 @@ router.get('/search-select2', (req, res, next) => {
       res.send({ ok: false, error: error })
     })
     .finally(() => {
-      db.destroy();
+    db.destroy();
     });
 });
 
@@ -478,8 +463,8 @@ router.post('/warehouseproducttemplate', wrap(async (req, res, next) => {
 
 //แสดง template ทั้งหมด
 router.get('/warehouseproducttemplate', wrap(async (req, res, next) => {
-  let db = req.db;
-  try {
+   let db = req.db;
+   try {
     let reqult = await warehouseModel.getallRequisitionTemplate(db);
     res.send({ ok: true, rows: reqult[0] });
   } catch (error) {
@@ -492,7 +477,7 @@ router.get('/warehouseproducttemplate', wrap(async (req, res, next) => {
 
 // remove req template
 router.delete('/requisition/remove-template/:templateId', wrap(async (req, res, next) => {
-  let db = req.db;
+ let db = req.db;
   try {
 
     let templateId = req.params.templateId;
@@ -527,7 +512,7 @@ router.get('/alltemplateinwarehouse/:warehouseId', wrap(async (req, res, next) =
 router.get('/templateinwarehouse/:srcWarehouseId/:dstWarehouseId', wrap(async (req, res, next) => {
   let db = req.db;
   try {
-
+    
     let srcWarehouseId = req.params.srcWarehouseId;
     let dstWarehouseId = req.params.dstWarehouseId;
     let reqult = await warehouseModel.getRequisitionTemplateInwarehouse(db, srcWarehouseId, dstWarehouseId);
@@ -626,7 +611,7 @@ router.delete('/:warehouseId', (req, res, next) => {
 router.get('/warehousetemplate/:templateId', wrap(async (req, res, next) => {
   let db = req.db;
   try {
-
+   
     let templateId = req.params.templateId;
 
     let reqult = await warehouseModel.getRequisitionTemplate(db, templateId);
@@ -707,7 +692,7 @@ router.get('/get-shippingnetwork-list/:warehouseId/:type', wrap(async (req, res,
 router.post('/receive-planning', wrap(async (req, res, next) => {
   let db = req.db;
   try {
-
+    
     let warehouseId = req.body.warehouseId;
     let generics = req.body.generics;
 
@@ -741,7 +726,7 @@ router.post('/receive-planning', wrap(async (req, res, next) => {
 router.get('/receive-planning', wrap(async (req, res, next) => {
   let db = req.db;
   try {
-
+    
     let rs = await warehouseModel.getReceivePlanning(db);
     res.send({ ok: true, rows: rs });
   } catch (error) {
@@ -754,7 +739,7 @@ router.get('/receive-planning', wrap(async (req, res, next) => {
 }));
 
 router.get('/receive-planning/generics/:warehouseId', wrap(async (req, res, next) => {
-  let db = req.db;
+ let db = req.db;
   try {
     let warehouseId = req.params.warehouseId;
     let rs = await warehouseModel.getReceivePlanningGenericList(db, warehouseId);
@@ -769,9 +754,9 @@ router.get('/receive-planning/generics/:warehouseId', wrap(async (req, res, next
 }));
 
 router.get('/receive-planning/generics-by-types/:genericTypeId', wrap(async (req, res, next) => {
-  let db = req.db;
+ let db = req.db;
   try {
-
+    
     let genericTypeId = req.params.genericTypeId;
     let rs = await warehouseModel.getGenericWithGenericTypes(db, genericTypeId);
     res.send({ ok: true, rows: rs });
@@ -787,7 +772,7 @@ router.get('/receive-planning/generics-by-types/:genericTypeId', wrap(async (req
 router.get('/receive-planning/generics-all', wrap(async (req, res, next) => {
   let db = req.db;
   try {
-
+    
     let rs = await warehouseModel.getAllGenerics(db);
     res.send({ ok: true, rows: rs });
   } catch (error) {
@@ -858,7 +843,7 @@ router.get('/productImport', wrap(async (req, res, next) => {
   let warehouseId = req.query.warehouseId
   let rows = [];
   try {
-    rows = await warehouseModel.getWarehouseProductImport(db, warehouseId);
+    rows = await warehouseModel.getWarehouseProductImport(db,warehouseId);
     res.send({ ok: true, rows: rows });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -871,7 +856,7 @@ router.get('/productImportList', wrap(async (req, res, next) => {
   let working = req.query.working
   let rows = [];
   try {
-    rows = await warehouseModel.getProductImport(db, working);
+    rows = await warehouseModel.getProductImport(db,working);
     res.send({ ok: true, rows: rows });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -900,29 +885,29 @@ router.get('/export/excel', wrap(async (req, res, next) => {
   let db = req.db;
 
   fse.ensureDirSync(process.env.TMP_PATH);
-
+  
   if (templateId) {
     try {
       let _tableName = `template`;
 
       let result = await productModel.getAllProductInTemplate(db, templateId);
       let r = [];
-      let i = 0;
+      let i=0;
       result[0].forEach(v => {
         i++;
-        let unit = '';
-        if (v.large_unit || v.qty || v.small_unit) {
-          unit = v.large_unit + '(' + v.qty + ' ' + v.small_unit + ')';
+        let unit='';
+        if(v.large_unit || v.qty || v.small_unit){
+             unit = v.large_unit + '(' + v.qty + ' ' + v.small_unit + ')';
         }
-        r.push({
-          'ลำดับ': i,
-          'รหัส': v.working_code,
-          'ชื่อสินค้า': v.generic_name,
-          'หน่วย': unit
+         r.push({
+          'ลำดับ':i,
+          'รหัส':v.working_code,
+          'ชื่อสินค้า':v.generic_name,
+          'หน่วย':unit
         })
       });
       // console.log(result);
-
+      
       // create tmp file
       let tmpFile = `${_tableName}-${moment().format('x')}.xls`;
       tmpFile = path.join(process.env.TMP_PATH, tmpFile);
