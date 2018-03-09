@@ -759,5 +759,16 @@ export class ReceiveModel {
   getPurchaseCheckExpire(knex: Knex, genericId) {
     return knex('wm_generic_expired_alert').where('generic_id', genericId);
   }
+  updateCost(knex: Knex, productsData){
+    let sql = [];
+    productsData.forEach(v => {
+      let _sql = `
+      UPDATE mm_unit_generics
+      SET cost=${v.cost}
+      WHERE unit_generic_id='${v.unit_generic_id}' `;
+      sql.push(_sql);
+    });
+    let query = sql.join(';');
+    return knex.raw(query);
+  }
 }
-

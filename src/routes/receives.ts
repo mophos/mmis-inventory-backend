@@ -1352,5 +1352,29 @@ router.get('/purchases/check-expire', co(async (req, res, nex) => {
 }
 ));
 
+router.put('/update/cost', co(async (req, res, nex) => {
+
+  let db = req.db;
+  let products = req.body.products;
+  let productsData = [];
+  products.forEach((v: any) => {
+    let pdata: any = {
+      unit_generic_id: v.unit_generic_id,
+      cost: v.cost
+    }
+    productsData.push(pdata);
+  });
+    try {
+      const rows = await receiveModel.updateCost(db, productsData);
+      res.send({ ok: true, rows: rows[0] });
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+
+
+}));
+
 
 export default router;
