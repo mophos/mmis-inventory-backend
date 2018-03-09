@@ -1,1 +1,1 @@
-# MMIS Inventory-Backend
+# MMIS Inventory-Backend  [![Build Status](https://travis-ci.org/mophos/mmis-inventory-backend.svg?branch=develop)](https://travis-ci.org/mophos/mmis-inventory-backend)
