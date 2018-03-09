@@ -900,7 +900,7 @@ router.get('/report/tranfers', wrap(async (req, res, next) => {
         x.sum = inventoryReportModel.comma((x.cost * (x.product_qty / x.qty)))
         x.cost = inventoryReportModel.comma(x.cost)
         x.product_qty = inventoryReportModel.commaQty(x.product_qty / x.qty)
-        x.expired_date = moment(x.expired_date).isValid() ? moment(x.expired_date).format('DD/MM/') + (moment(x.expired_date).get('year') + 543) : '-';
+        x.expired_date = moment(x.expired_date).isValid() ? moment(x.expired_date).format('DD/MM/') + (moment(x.expired_date).get('year')) : '-';
         x.approve_date = moment(x.approve_date).isValid() ? moment(x.approve_date).format('D MMMM ') + (moment(x.approve_date).get('year') + 543) : '-';
       });
       _sum.push(inventoryReportModel.comma(sum))
@@ -1070,7 +1070,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let no = check_receive[0].no
   let committee = await inventoryReportModel.invenCommittee(db, receiveID);
   committee = committee[0];
-  console.log('+++++++++++++++++++++++++', committee[0])
+  
   if (committee[0] === undefined) { res.render('no_commitee'); }
   // let getChief = await inventoryReportModel.getChief(db, '1')
   // let nameChief = getChief[0].title + " " + getChief[0].fname + "  " + getChief[0].lname
