@@ -500,6 +500,16 @@ export class ReceiveModel {
     return knex.raw(queries);
   }
 
+  adjustCost(knex: Knex, data: any[]) {
+    let sqls = [];
+    data.forEach(v => {
+        let sql =`
+          UPDATE mm_unit_generics set cost = ${v.cost} where unit_generic_id = ${v.unit_generic_id}`;
+      sqls.push(sql);
+    });
+    let queries = sqls.join(';');
+    return knex.raw(queries);
+  }
   removeReceive(knex: Knex, receiveId: string, peopleUserId: any) {
     return knex('wm_receives')
       .where('receive_id', receiveId)
@@ -749,5 +759,16 @@ export class ReceiveModel {
   getPurchaseCheckExpire(knex: Knex, genericId) {
     return knex('wm_generic_expired_alert').where('generic_id', genericId);
   }
+  updateCost(knex: Knex, productsData){
+    let sql = [];
+    productsData.forEach(v => {
+      let _sql = `
+      UPDATE mm_unit_generics
+      SET cost=${v.cost}
+      WHERE unit_generic_id='${v.unit_generic_id}' `;
+      sql.push(_sql);
+    });
+    let query = sql.join(';');
+    return knex.raw(query);
+  }
 }
-

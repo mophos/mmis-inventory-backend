@@ -655,7 +655,7 @@ AND r.requisition_order_id = '${requisId}' and rci.confirm_qty != 0
         AND wrd	.unit_generic_id = vap.unit_generic_id
         JOIN mm_products mp ON mp.product_id = wp.product_id
         JOIN mm_labelers ml2 ON mp.m_labeler_id = ml2.labeler_id
-        JOIN wm_locations wl ON wl.location_id = wp.location_id`
+        left JOIN wm_locations wl ON wl.location_id = wp.location_id`
         return (knex.raw(sql))
     }
 
