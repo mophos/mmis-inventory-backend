@@ -1850,7 +1850,6 @@ router.get('/requisition/templates/:srcWarehouseId/:dstWarehouseId', async (req,
 router.get('/requisition/templates-items/:templateId', async (req, res, next) => {
   let db = req.db;
   let templateId = req.params.templateId;
-  console.log(req.params);
   try {
     let rs: any = await orderModel.getTemplateItems(db, templateId);
     res.send({ ok: true, rows: rs[0] });

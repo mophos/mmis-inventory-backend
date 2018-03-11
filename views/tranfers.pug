@@ -49,7 +49,10 @@ html
             tr 
               td(style="font-size: 13pt;") #{y} &nbsp;
               td(style="font-size: 13pt;") #{a.products_code}
-              td(style="font-size: 13pt;") #{a.product_name}
+              td(style="font-size: 13pt;") 
+                label #{a.generic_name}
+                br
+                label(style="font-size: 11pt;") #{a.product_name}
               //- td 
               if(a.dosage_name !== null)
                   td(style="font-size: 13pt;") #{a.dosage_name}
