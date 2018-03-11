@@ -33,7 +33,7 @@ export class GenericModel {
   }
 
   warehouseSearchAutocomplete(knex: Knex, warehouseId: any, q: any) {
-    let _q = `%${q}%`;
+    let _q = `${q}%`;
 
     let subQuery = knex('wm_products as wp')
       .select(knex.raw('sum(wp.qty)'))
