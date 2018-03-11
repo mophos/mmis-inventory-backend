@@ -724,7 +724,7 @@ router.post('/waiting', co(async (req, res, next) => {
     results.forEach((v: any) => {
       let obj: any = {
         receive_id: v.receive_id,
-        purchase_id: v.purchase_id,
+        purchase_order_id: v.purchase_order_id,
         receive_date: v.receive_date,
         delivery_date: v.delivery_date,
         delivery_code: v.delivery_code,
@@ -738,6 +738,8 @@ router.post('/waiting', co(async (req, res, next) => {
       }
       data.push(obj);
     });
+    console.log(data);
+    
     res.send({ ok: true, rows: data, total: total });
   } catch (error) {
     console.log(error);

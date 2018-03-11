@@ -889,7 +889,7 @@ router.get('/report/tranfers', wrap(async (req, res, next) => {
   let page: any = req.decoded.WM_TRANSFER_REPORT_APPROVE;
   // let page: any = req.decoded.WM_TRANSFER_REPORT_APPROVE;
   // console.log(page);
-  
+
   for (let id in tranferId) {
     tranfer = await inventoryReportModel.tranfer(db, tranferId[id]);
     const _tmp = _.chunk(tranfer[0], page)
@@ -1092,6 +1092,60 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     invenChief: invenChief
   });
 }));
+
+router.get('/report/check/receives', wrap(async (req, res, next) => {
+  let db = req.db;
+  let PO_ID = req.query.PO_ID
+  let receiveID: any = []
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let master = hosdetail[0].managerName;
+  let bahtText:any =[]
+  let generic_name:any = []
+  let _generic_name:any = []
+  let hospitalName = hosdetail[0].hospname;
+  let province = hosdetail[0].province;
+  moment.locale('th');
+  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  const receive = await inventoryReportModel.receiveByPoId(db, PO_ID)
+  _.forEach(receive, opject => {
+    receiveID.push(opject.receive_id)
+  })
+
+  let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
+  check_receive = check_receive[0];
+
+  _.forEach(check_receive, opject => {
+    opject.receive_date = moment(opject.receive_date).format('D MMMM YYYY');
+    opject.delivery_date = moment(opject.delivery_date).format('D MMMM ') + (moment(opject.delivery_date).get('year') + 543);
+    bahtText.push(inventoryReportModel.bahtText(opject.total_price));
+    opject.total_price = inventoryReportModel.comma(opject.total_price);
+    generic_name.push(opject.generic_type_name)
+  })
+  generic_name = _.join(_.uniq(generic_name), ', ')
+  let committee = await inventoryReportModel.invenCommittee(db, receiveID[0]);
+  committee = committee[0];
+  console.log(check_receive.length)
+  if (committee[0] === undefined) { res.render('no_commitee'); }
+  let invenChief = await inventoryReportModel.inven2Chief(db, receiveID[0])
+  let staffReceive = await inventoryReportModel.staffReceive(db);
+  let chief = await inventoryReportModel.getChief(db, 'CHIEF')
+
+  res.render('check_receives', {
+    chief: chief[0],
+    staffReceive: staffReceive[0],
+    master: master,
+    hospitalName: hospitalName,
+    today: today,
+    check_receive: check_receive,
+    length: check_receive.length,
+    province: province,
+    bahtText: bahtText,
+    committee: committee,
+    invenChief: invenChief,
+    generic_name:generic_name
+  });
+}));
+
 router.get('/report/balance', wrap(async (req, res, next) => {
   let db = req.db;
   let productId = req.query.productId
