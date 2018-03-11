@@ -16,143 +16,148 @@ html
     title report
   body
     button.btn.btn-sm.btn-success.btnprint(onclick='window.print()') Print
-    .center.bold บันทึกการตรวจรับพัสดุ
-    br
-    table.table
-      tr
-        td.right วันที่ #{today}
-    br
-    .fontspace
-    | ตามกรรมการผู้มีรายนามและตำแหน่งข้างท้าย ได้พร้อมกันตรวจรับ #{generic_name}
-    | ซึ่ง #{check_receive[0].labeler_name} ผู้ขายได้นำส่งตามใบสั่งซื้อของ#{hospitalName}
-    | เลขที่ #{check_receive[0].purchase_order_number} ลงวันที่ #{check_receive[0].receive_date} 
-    | เพื่อใช้ในงานการรักษาของ#{hospitalName}
-    - if(length <= 4)
-      br
-      | ดังปรากฏรายละเอียดตรวจรับ คือ #{length}
-      table.table
-        - var i = 0
-          for v in check_receive
-            tr
-              td.right #{v.generic_type_name} 
-              td.right &nbsp;&nbsp;#{v.amount_qty}&nbsp;&nbsp;
-              td.left รายการ 
-              td.right ตามใบส่งของเลขที่ &nbsp;
-              td.left #{v.delivery_code} 
-              td.right เป็นเงิน 
-              td.right #{v.total_price} &nbsp;
-              td.left บาท 
-              td.left (#{bahtText[i]})
-            br
-            - i++
-    - else
-      br
-      br
-      | ดังปรากฏรายละเอียดตรวจรับตามใบแนบเลขที่ #{check_receive[0].purchase_order_number}-๑
-      br
-    br
-    | คณะกรรมการตรวจรับพัสดุเห็นว่ามีปริมาณและคุณภาพถูกต้องครบถ้วน และได้ส่งมอบให้เจ้าหน้าที่พัสดุรับไว้เรียบร้อยแล้ว 
-    br
-    | จึงพร้อมกันลงลายมือชื่อไว้เป็นหลักฐาน
-    br
-    br
-    table(style="width: 90%; margin-left: 5%;")
-       - var c = 0
-            for v in committee
-              - c++ 
-                tr
-                  td.right(width="5%") (ลงชื่อ)
-                  td.center(width="50%") ........................................................... 
-                  td.right #{v.position_name}
-                  td.left &nbsp;ตำแหน่ง #{v.pname}
-                tr
-                  td
-                  td.center (#{v.title_name}#{v.fname} #{v.lname})
-                  td.center 
-                  td
-                tr
-                  td
-                  td.center(height='20px')
-                  td
-                  td
-    | ได้รับมอบพัสดุรายการข้างต้นจากคณะกรรมการตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
-    br
-    table(style="width: 90%; margin-left: 5%;")
-      tr
-        td.right(width="5%") (ลงชื่อ)
-        td.center(width="50%") ...........................................................
-        td.right #{staffReceive.type_name}
-        td.left &nbsp;ตำแหน่ง #{staffReceive.position_name}
-      tr
-        td
-        td.center ( #{staffReceive.title_name}#{staffReceive.fname}  #{staffReceive.lname} )
-        td
-        td
-    br
-    | เรียน  ผู้ว่าราชการจังหวัด#{province}
-    br
-    .fontspace
-    | คณะกรรมการได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่ายเงินบำรุงโรงพยาบาลประจำปีงบประมาน 2561 แก่ผู้ขายต่อไป
-    br
-    br
-    br
-    table(style='width:90%;margin-left:5%;')
-      tr
-        td.right(width="5%") (ลงชื่อ)
-        td.center(width="50%") ...........................................................
-        td.left 
-      tr
-        td
-        td.center (#{chief.title}#{chief.fname}  #{chief.lname})
-        td
-      tr
-        td
-        td.center #{chief.position_name}
-        td
-      tr
-        td
-        td.center #{chief.position}
-        td
-      tr
-        td
-        td(style="height:50px;")
-        td
-      tr
-        td
-        td(style="height:90px;").center ทราบ
-        td
-      tr
-        td.right(width="5%") (ลงชื่อ)
-        td.center(width="50%") ...........................................................
-        td.left 
-      tr
-        td.center 
-        td.center  
-          | (#{master})
+    - var s = 0
+      for v in check_receive
+        .center.bold บันทึกการตรวจรับพัสดุ
+        br
+        table.table
+          tr
+            td.right วันที่ #{today}
+        br
+        .fontspace
+        | ตามกรรมการผู้มีรายนามและตำแหน่งข้างท้าย ได้พร้อมกันตรวจรับ #{generic_name[s]}
+        | ซึ่ง #{check_receive[s][0].labeler_name} ผู้ขายได้นำส่งตามใบสั่งซื้อของ#{hospitalName}
+        | เลขที่ #{check_receive[s][0].purchase_order_number} ลงวันที่ #{check_receive[s][0].receive_date} 
+        | เพื่อใช้ในงานการรักษาของ#{hospitalName}
+        - if(length[s] <= 4)
           br
-          | ผู้อำนวยการ#{hospitalName}
-        td
-    .pagebreak
-    - if(length > 4)
-      .center.bold รายละเอียดตรวจรับ(ใบแนบ)
-      br
-      table.table
-        tr
-          td.left เลขที่ #{check_receive[0].purchase_order_number}-๑
-      br
-      br
-      table.table
-        - var i = 0
-          for v in check_receive
+          | ดังปรากฏรายละเอียดตรวจรับ คือ
+          br
+          table.table
+            - var i = 0
+              for v in check_receive[s]
+                tr
+                  td.right #{v.generic_type_name} 
+                  td.right &nbsp;&nbsp;#{v.amount_qty}&nbsp;&nbsp;
+                  td.left รายการ 
+                  td.right ตามใบส่งของเลขที่ &nbsp;
+                  td.left #{v.delivery_code} 
+                  td.right เป็นเงิน 
+                  td.right #{v.total_price} &nbsp;
+                  td.left บาท 
+                  td.left (#{bahtText[s][i]})
+                - i++
+              br
+        - else
+          br
+          br
+          | ดังปรากฏรายละเอียดตรวจรับตามใบแนบเลขที่ #{check_receive[s][0].purchase_order_number}-๑
+          br
+        br
+        | คณะกรรมการตรวจรับพัสดุเห็นว่ามีปริมาณและคุณภาพถูกต้องครบถ้วน และได้ส่งมอบให้เจ้าหน้าที่พัสดุรับไว้เรียบร้อยแล้ว 
+        br
+        | จึงพร้อมกันลงลายมือชื่อไว้เป็นหลักฐาน
+        br
+        br
+        table(style="width: 90%; margin-left: 5%;")
+          - var c = 0
+                for v in committee[s]
+                  - c++ 
+                    tr
+                      td.right(width="5%") (ลงชื่อ)
+                      td.center(width="50%") ........................................................... 
+                      td.right #{v.position_name}
+                      td.left &nbsp;ตำแหน่ง #{v.pname}
+                    tr
+                      td
+                      td.center (#{v.title_name}#{v.fname} #{v.lname})
+                      td.center 
+                      td
+                    tr
+                      td
+                      td.center(height='20px')
+                      td
+                      td
+        | ได้รับมอบพัสดุรายการข้างต้นจากคณะกรรมการตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
+        br
+        table(style="width: 90%; margin-left: 5%;")
+          tr
+            td.right(width="5%") (ลงชื่อ)
+            td.center(width="50%") ...........................................................
+            td.right #{staffReceive.type_name}
+            td.left &nbsp;ตำแหน่ง #{staffReceive.position_name}
+          tr
+            td
+            td.center ( #{staffReceive.title_name}#{staffReceive.fname}  #{staffReceive.lname} )
+            td
+            td
+        br
+        | เรียน  ผู้ว่าราชการจังหวัด#{province}
+        br
+        .fontspace
+        | คณะกรรมการได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่ายเงินบำรุงโรงพยาบาลประจำปีงบประมาน 2561 แก่ผู้ขายต่อไป
+        br
+        br
+        br
+        table(style='width:90%;margin-left:5%;')
+          tr
+            td.right(width="5%") (ลงชื่อ)
+            td.center(width="50%") ...........................................................
+            td.left 
+          tr
+            td
+            td.center (#{chief.title}#{chief.fname}  #{chief.lname})
+            td
+          tr
+            td
+            td.center #{chief.position_name}
+            td
+          tr
+            td
+            td.center #{chief.position}
+            td
+          tr
+            td
+            td(style="height:50px;")
+            td
+          tr
+            td
+            td(style="height:90px;").center ทราบ
+            td
+          tr
+            td.right(width="5%") (ลงชื่อ)
+            td.center(width="50%") ...........................................................
+            td.left 
+          tr
+            td.center 
+            td.center  
+              | (#{master})
+              br
+              | ผู้อำนวยการ#{hospitalName}
+            td
+        .pagebreak
+        - if(length > 4)
+          .center.bold รายละเอียดตรวจรับ(ใบแนบ)
+          br
+          table.table
             tr
-              td.right #{v.generic_type_name} 
-              td.right &nbsp;&nbsp;#{v.amount_qty}&nbsp;&nbsp;
-              td.left รายการ 
-              td.right ตามใบส่งของเลขที่ &nbsp;
-              td.left #{v.delivery_code} 
-              td.right เป็นเงิน 
-              td.right #{v.total_price} &nbsp;
-              td.left บาท 
-              td.left (#{bahtText[i]})
-            br
-            - i++
+              td.left เลขที่ #{check_receive[0].purchase_order_number}-๑
+          br
+          br
+          table.table
+            - var i = 0
+              for v in check_receive[s]
+                tr
+                  td.right #{v.generic_type_name} 
+                  td.right &nbsp;&nbsp;#{v.amount_qty}&nbsp;&nbsp;
+                  td.left รายการ 
+                  td.right ตามใบส่งของเลขที่ &nbsp;
+                  td.left #{v.delivery_code} 
+                  td.right เป็นเงิน 
+                  td.right #{v.total_price} &nbsp;
+                  td.left บาท 
+                  td.left (#{bahtText[s][i]})
+                br
+              - i++  
+        - s++
+        .pagebreak

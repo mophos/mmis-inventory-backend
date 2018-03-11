@@ -932,8 +932,6 @@ router.get('/report/tranfers2', wrap(async (req, res, next) => {
   for (let id in tranferId) {
     tranfer = await inventoryReportModel.tranfer2(db, tranferId[id]);
     _tranfers.push(tranfer[0])
-    console.log('--------------------------------------------');
-    console.log(tranfer[0][0]);
     _tranfers[id].forEach(value => {
       value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD MMMM ') + (moment(value.expired_date).get('year') + 543) : '-';
       value.transfer_date = moment(value.transfer_date).isValid() ? moment(value.transfer_date).format('D MMMM ') + (moment(value.transfer_date).get('year') + 543) : '-';
@@ -1056,24 +1054,34 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
   let qty = 0;
+  let bahtText: any = []
+  let committee: any = []
+  let invenChief: any = []
   check_receive = check_receive[0];
-  check_receive.forEach(value => {
-    qty++;
-  });
+  // check_receive.forEach(value => {
+  //   qty++;
+  // });
+  for (let v in check_receive) {
+    check_receive[v].receive_date = moment(check_receive[v].receive_date).format('D MMMM YYYY');
+    check_receive[v].delivery_date = moment(check_receive[v].delivery_date).format('D MMMM ') + (moment(check_receive[v].delivery_date).get('year') + 543);
+    let _bahtText = inventoryReportModel.bahtText(check_receive[v].total_price);
+    bahtText.push(_bahtText)
+    check_receive[v].total_price = inventoryReportModel.comma(check_receive[v].total_price);
+  }
+  // let no = check_receive[0].no
+  for (let i in receiveID) {
+    let _committee = await inventoryReportModel.invenCommittee(db, receiveID[i]);
+    committee.push(_committee[0]);
+    let _invenChief = await inventoryReportModel.inven2Chief(db, receiveID[i])
+    invenChief.push(_invenChief[0]);
+  }
+  // let _committee = await inventoryReportModel.invenCommittee(db, receiveID);
+  // committee = committee[0];
 
-  check_receive[0].receive_date = moment(check_receive[0].receive_date).format('D MMMM YYYY');
-  check_receive[0].delivery_date = moment(check_receive[0].delivery_date).format('D MMMM ') + (moment(check_receive[0].delivery_date).get('year') + 543);
-  let bahtText = inventoryReportModel.bahtText(check_receive[0].total_price);
-  check_receive[0].total_price = inventoryReportModel.comma(check_receive[0].total_price);
-
-  let no = check_receive[0].no
-  let committee = await inventoryReportModel.invenCommittee(db, receiveID);
-  committee = committee[0];
-  
   if (committee[0] === undefined) { res.render('no_commitee'); }
   // let getChief = await inventoryReportModel.getChief(db, '1')
   // let nameChief = getChief[0].title + " " + getChief[0].fname + "  " + getChief[0].lname
-  let invenChief = await inventoryReportModel.inven2Chief(db, receiveID)
+  // let invenChief = await inventoryReportModel.inven2Chief(db, receiveID)
   let staffReceive = await inventoryReportModel.staffReceive(db);
   let chief = await inventoryReportModel.getChief(db, 'CHIEF')
 
@@ -1081,55 +1089,82 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     chief: chief[0],
     staffReceive: staffReceive[0],
     master: master,
-    qty: qty,
+    // qty: qty,
     hospitalName: hospitalName,
     today: today,
     check_receive: check_receive,
     province: province,
     bahtText: bahtText,
-    no: no,
+    // no: no,
     committee: committee,
-    invenChief: invenChief
+    invenChief: invenChief,
+    receiveID:receiveID
   });
 }));
 
 router.get('/report/check/receives', wrap(async (req, res, next) => {
   let db = req.db;
-  let PO_ID = req.query.PO_ID
+  let rc_ID = req.query.receiveID
   let receiveID: any = []
   let hosdetail = await inventoryReportModel.hospital(db);
   let master = hosdetail[0].managerName;
-  let bahtText:any =[]
-  let generic_name:any = []
-  let _generic_name:any = []
+  let bahtText: any = []
+  let generic_name: any = []
+  let _receive: any = []
+  let check_receive: any = []
+  let committees: any = []
+  let invenChief: any = []
+  let length: any = []
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
-  const receive = await inventoryReportModel.receiveByPoId(db, PO_ID)
-  _.forEach(receive, opject => {
-    receiveID.push(opject.receive_id)
+  const receive = await inventoryReportModel.receiveSelect(db, rc_ID)
+  for (let i in receive) {
+    const receivePo = await inventoryReportModel.receiveByPoId(db, receive[i].purchase_order_id)
+    receiveID.push(receivePo)
+  }
+  for (let i in receiveID) {
+    let _check_receive: any = []
+    let committee: any = []
+    for (let ii in receiveID[i]) {
+      let _check = await inventoryReportModel.checkReceive(db, receiveID[i][ii].receive_id);
+      _check_receive.push(_check[0][0]);
+    }
+    committee = await inventoryReportModel.invenCommittee(db, receiveID[i][0].receive_id);
+    committees.push(committee[0]);
+    let _invenChief = await inventoryReportModel.inven2Chief(db, receiveID[i][0].receive_id)
+    invenChief.push(_invenChief)
+    length.push(_check_receive.length);
+    check_receive.push(_check_receive);
+  }
+  _.forEach(check_receive, opjects => {
+    let _generic_name: any = []
+    let _bahtText: any = []
+    _.forEach(opjects, opject => {
+      opject.receive_date = moment(opject.receive_date).format('D MMMM YYYY');
+      opject.delivery_date = moment(opject.delivery_date).format('D MMMM ') + (moment(opject.delivery_date).get('year') + 543);
+      _bahtText.push(inventoryReportModel.bahtText(opject.total_price));
+      opject.total_price = inventoryReportModel.comma(opject.total_price);
+      _generic_name.push(opject.generic_type_name)
+
+    })
+    bahtText.push(_bahtText)
+    _generic_name = _.join(_.uniq(_generic_name), ', ')
+    generic_name.push(_generic_name)
   })
 
-  let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
-  check_receive = check_receive[0];
-
-  _.forEach(check_receive, opject => {
-    opject.receive_date = moment(opject.receive_date).format('D MMMM YYYY');
-    opject.delivery_date = moment(opject.delivery_date).format('D MMMM ') + (moment(opject.delivery_date).get('year') + 543);
-    bahtText.push(inventoryReportModel.bahtText(opject.total_price));
-    opject.total_price = inventoryReportModel.comma(opject.total_price);
-    generic_name.push(opject.generic_type_name)
-  })
-  generic_name = _.join(_.uniq(generic_name), ', ')
-  let committee = await inventoryReportModel.invenCommittee(db, receiveID[0]);
-  committee = committee[0];
-  console.log(check_receive.length)
-  if (committee[0] === undefined) { res.render('no_commitee'); }
-  let invenChief = await inventoryReportModel.inven2Chief(db, receiveID[0])
+  // console.log(check_receive.length)
+  if (committees === undefined) { res.render('no_commitee'); }
   let staffReceive = await inventoryReportModel.staffReceive(db);
   let chief = await inventoryReportModel.getChief(db, 'CHIEF')
-
+  // res.send({ 
+  //   check_receive: check_receive, 
+  //   generic_name: generic_name, 
+  //   committees: committees, 
+  //   length: length, 
+  //   invenChief:invenChief 
+  // })
   res.render('check_receives', {
     chief: chief[0],
     staffReceive: staffReceive[0],
@@ -1137,12 +1172,12 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     hospitalName: hospitalName,
     today: today,
     check_receive: check_receive,
-    length: check_receive.length,
+    length: length,
     province: province,
     bahtText: bahtText,
-    committee: committee,
+    committee: committees,
     invenChief: invenChief,
-    generic_name:generic_name
+    generic_name: generic_name
   });
 }));
 
