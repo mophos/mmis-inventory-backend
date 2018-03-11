@@ -280,7 +280,7 @@ router.get('/generics-requisition/:requisitionId', async (req, res, next) => {
             }
           } else {
             if ((reqQty % x.conversion_qty) === 0 && x.remain_qty > 0) {
-              obj.pay_qty = 0; // Math.floor(x.remain_qty / x.conversion_qty);
+              obj.pay_qty = Math.floor(x.remain_qty / x.conversion_qty);
               reqQty -= x.remain_qty;
             } else {
               obj.pay_qty = 0;
