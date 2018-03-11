@@ -130,6 +130,7 @@ router.post('/save', co(async (req, res, next) => {
   let db = req.db;
   let _summary = req.body.summary;
   let _generics = req.body.generics;
+  let warehouseId = req.decoded.warehouseId;
   const approveAuto = req.decoded.WM_TRANSFER_APPROVE === 'N' ? true : false;
 
   if (_generics.length && _summary) {
@@ -166,20 +167,23 @@ router.post('/save', co(async (req, res, next) => {
 
           let products = [];
           g.products.forEach(p => {
-            products.push({
-              transfer_id: transferId,
-              transfer_generic_id: rsTransferGeneric[0],
-              wm_product_id: p.wm_product_id,
-              product_qty: p.product_qty * p.conversion_qty,
-              create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-              create_by: req.decoded.people_user_id
-            });
+            if (p.product_qty != 0) {
+              products.push({
+                transfer_id: transferId,
+                transfer_generic_id: rsTransferGeneric[0],
+                wm_product_id: p.wm_product_id,
+                product_qty: p.product_qty * p.conversion_qty,
+                create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+                create_by: req.decoded.people_user_id
+              });
+            }
+
           });
           await transferModel.saveTransferProduct(db, products);
         }
 
         if (approveAuto) {
-          await approve(db, transferId);
+          await approve(db, transferId, warehouseId);
         }
 
         res.send({ ok: true });
@@ -256,9 +260,9 @@ router.put('/save/:transferId', co(async (req, res, next) => {
 router.post('/approve-all', co(async (req, res, next) => {
   let db = req.db;
   let transferIds = req.body.transferIds;
-
+  let warehouseId = req.decoded.warehouseId;
   try {
-    await approve(db, transferIds);
+    await approve(db, transferIds, warehouseId);
     res.send({ ok: true });
   } catch (error) {
     throw error;
@@ -302,138 +306,122 @@ router.get('/product-warehouse-lots/:productId/:warehouseId', co(async (req, res
 
 }));
 
-const approve = (async (db: Knex, transferIds: any[]) => {
+const approve = (async (db: Knex, transferIds: any[], warehouseId: any) => {
   let results = await transferModel.getProductListIds(db, transferIds);
   let dstProducts = [];
   let srcProducts = [];
   let srcWarehouseId = null;
+  let balances = [];
+  for (let v of results) {
+    if (+v.product_qty != 0) {
+      let obj: any = {};
+      let id = uuid();
 
-  results.forEach((v: any) => {
-    let obj: any = {};
-    let id = uuid();
+      obj.wm_product_id = id;
+      obj.dst_warehouse_id = v.dst_warehouse_id;
+      obj.src_warehouse_id = v.src_warehouse_id;
+      obj.current_balance_dst = v.balance_dst;
+      obj.current_balance_src = v.balance_src;
+      obj.product_id = v.product_id;
+      obj.generic_id = v.generic_id;
+      obj.unit_generic_id = v.unit_generic_id;
+      obj.transfer_code = v.transfer_code;
+      obj.qty = +v.product_qty;
+      obj.price = v.price;
+      obj.cost = v.cost;
+      obj.lot_no = v.lot_no;
+      obj.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
+      obj.location_id = v.location_id;
+      obj.people_user_id = v.people_user_id;
+      obj.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
+      dstProducts.push(obj);
 
-    obj.wm_product_id = id;
-    obj.dst_warehouse_id = v.dst_warehouse_id;
-    obj.src_warehouse_id = v.src_warehouse_id;
-    obj.current_balance_dst = v.balance_dst;
-    obj.current_balance_src = v.balance_src;
-    obj.product_id = v.product_id;
-    obj.generic_id = v.generic_id;
-    obj.unit_generic_id = v.unit_generic_id;
-    obj.transfer_code = v.transfer_code;
-    obj.qty = +v.product_qty;
-    obj.price = v.price;
-    obj.cost = v.cost;
-    obj.lot_no = v.lot_no;
-    obj.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
-    obj.location_id = v.location_id;
-    obj.people_user_id = v.people_user_id;
-    obj.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
+      // get balance 
+      let obj_remaint_dst: any = {}
+      let obj_remain_src: any = {}
+      let remain_dst = await transferModel.getProductRemainByTransferIds(db, v.product_id, v.dst_warehouse_id);
+      for (let v of remain_dst[0]) {
+        obj_remaint_dst.product_id = v.product_id;
+        obj_remaint_dst.warehouse_id = v.warehouse_id;
+        obj_remaint_dst.balance = v.balance;
+        obj_remaint_dst.unit_generic_id = v.unit_generic_id;
+      }
+      let remain_src = await transferModel.getProductRemainByTransferIds(db, v.product_id, v.src_warehouse_id);
+      for (let v of remain_src[0]) {
+        obj_remain_src.product_id = v.product_id;
+        obj_remain_src.warehouse_id = v.warehouse_id;
+        obj_remain_src.balance = v.balance;
+        obj_remain_src.unit_generic_id = v.unit_generic_id;
+      }
+      balances.push(obj_remaint_dst);
+      balances.push(obj_remain_src);
 
-    dstProducts.push(obj);
-  });
-
+    }
+  }
   let srcBalances = [];
   let dstBalances = [];
 
   srcProducts = _.clone(dstProducts);
 
   // =================================== TRANSFER IN ========================
-
-  dstProducts.forEach((v: any) => {
-    let idx = _.findIndex(dstBalances, {
-      product_id: v.product_id,
-      lot_no: v.lot_no,
-      expired_date: v.expired_date,
-      dst_warehouse_id: v.dst_warehouse_id
-    });
-    if (idx === -1) {
-      dstBalances.push({
-        product_id: v.product_id,
-        lot_no: v.lot_no,
-        expired_date: v.expired_date,
-        dst_warehouse_id: v.dst_warehouse_id,
-        balance_dst: v.current_balance_dst
-      });
-    }
-  });
-
-  srcProducts.forEach((v: any) => {
-    let idx = _.findIndex(srcBalances, {
-      product_id: v.product_id,
-      lot_no: v.lot_no,
-      expired_date: v.expired_date,
-      src_warehouse_id: v.src_warehouse_id
-    });
-    if (idx === -1) {
-      srcBalances.push({
-        product_id: v.product_id,
-        lot_no: v.lot_no,
-        expired_date: v.expired_date,
-        src_warehouse_id: v.src_warehouse_id,
-        balance_src: v.current_balance_src
-      });
-    }
-  });
-
   let data = [];
 
   dstProducts.forEach(v => {
-    let objIn: any = {};
-    objIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-    objIn.product_id = v.product_id;
-    objIn.generic_id = v.generic_id;
-    objIn.unit_generic_id = v.unit_generic_id;
-    objIn.transaction_type = TransactionType.TRANSFER_IN;
-    objIn.document_ref_id = v.transfer_code;
-    objIn.in_qty = v.qty;
-    objIn.in_unit_cost = v.cost;
-    let dstBalance = 0;
-    let dstIdx = _.findIndex(dstBalances, {
-      product_id: v.product_id,
-      dst_warehouse_id: v.dst_warehouse_id,
-      lot_no: v.lot_no,
-      expired_date: moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null,
-    });
-    if (dstIdx > -1) {
-      dstBalance = dstBalances[dstIdx].balance_dst + v.qty;
-      dstBalances[dstIdx].balance += v.qty;
+    if (v.qty != 0) {
+      let objIn: any = {};
+      objIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+      objIn.product_id = v.product_id;
+      objIn.generic_id = v.generic_id;
+      objIn.unit_generic_id = v.unit_generic_id;
+      objIn.transaction_type = TransactionType.TRANSFER_IN;
+      objIn.document_ref_id = v.transfer_code;
+      objIn.in_qty = v.qty;
+      objIn.in_unit_cost = v.cost;
+      let dstBalance = 0;
+      let dstIdx = _.findIndex(balances, {
+        product_id: v.product_id,
+        warehouse_id: v.dst_warehouse_id,
+      });
+      if (dstIdx > -1) {
+        dstBalance = balances[dstIdx].balance + v.qty;
+        balances[dstIdx].balance += v.qty;
+      }
+      objIn.balance_qty = dstBalance;
+      objIn.balance_unit_cost = v.cost;
+      objIn.ref_src = v.src_warehouse_id;
+      objIn.ref_dst = v.dst_warehouse_id;
+      objIn.comment = 'รับโอน';
+      data.push(objIn);
     }
-    objIn.balance_qty = dstBalance;
-    objIn.balance_unit_cost = v.cost;
-    objIn.ref_src = v.src_warehouse_id;
-    objIn.ref_dst = v.dst_warehouse_id;
-    objIn.comment = 'รับโอน';
-    data.push(objIn);
   });
 
   srcProducts.forEach(v => {
-    let objOut: any = {};
-    objOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-    objOut.product_id = v.product_id;
-    objOut.generic_id = v.generic_id;
-    objOut.unit_generic_id = v.unit_generic_id;
-    objOut.transaction_type = TransactionType.TRANSFER_OUT;
-    objOut.document_ref_id = v.transfer_code;
-    objOut.out_qty = v.qty;
-    objOut.out_unit_cost = v.cost;
-    let srcBalance = 0;
-    let srcIdx = _.findIndex(srcBalances, {
-      product_id: v.product_id,
-      src_warehouse_id: v.src_warehouse_id,
-      lot_no: v.lot_no,
-      expired_date: v.expired_date
-    });
-    if (srcIdx > -1) {
-      srcBalance = srcBalances[srcIdx].balance_src - v.qty;
-      srcBalances[srcIdx].balance -= v.qty;
+    if (v.qty != 0) {
+      let objOut: any = {};
+      objOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+      objOut.product_id = v.product_id;
+      objOut.generic_id = v.generic_id;
+      objOut.unit_generic_id = v.unit_generic_id;
+      objOut.transaction_type = TransactionType.TRANSFER_OUT;
+      objOut.document_ref_id = v.transfer_code;
+      objOut.out_qty = v.qty;
+      objOut.out_unit_cost = v.cost;
+      let srcBalance = 0;
+      let srcIdx = _.findIndex(balances, {
+        product_id: v.product_id,
+        warehouse_id: v.src_warehouse_id,
+      });
+      if (srcIdx > -1) {
+        srcBalance = balances[srcIdx].balance - v.qty;
+        balances[srcIdx].balance -= v.qty;
+      }
+      objOut.balance_qty = srcBalance;
+      objOut.balance_unit_cost = v.cost;
+      objOut.ref_src = v.src_warehouse_id;
+      objOut.ref_dst = v.dst_warehouse_id;
+      objOut.comment = 'โอน';
+      data.push(objOut);
     }
-    objOut.balance_qty = srcBalance;
-    objOut.balance_unit_cost = v.cost;
-    objOut.ref_src = v.src_warehouse_id;
-    objOut.ref_dst = v.dst_warehouse_id;
-    objOut.comment = 'โอน';
-    data.push(objOut);
   });
 
   await transferModel.saveDstProducts(db, dstProducts);
