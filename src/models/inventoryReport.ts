@@ -1447,9 +1447,10 @@ OR sc.ref_src like ?
         LEFT JOIN pc_purchasing_order ppo ON ppo.purchase_order_id=wr.purchase_order_id
         LEFT JOIN mm_generic_types mgt ON ppo.generic_type_id = mgt.generic_type_id
         WHERE wr.receive_id in (${receiveID})
-        GROUP BY wr.receive_id`
+        GROUP BY ppo.purchase_order_number`
         return (knex.raw(sql))
     }
+    
     checkReceives(knex: Knex, po_ID) {
         let sql = `SELECT wr.receive_id,
         wr.receive_code,
