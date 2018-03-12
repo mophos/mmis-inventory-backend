@@ -205,7 +205,7 @@ router.post('/import', co(async (req, res, next) => {
 
       // console.log(hisProducts);
       let wmProducts = await hisTransactionModel.getProductInWarehouseForImport(db, warehouseIds, productIds);
-      console.log(wmProducts);
+      // console.log(wmProducts);
       
       let unCutStockIds = [];
       let cutStockIds = [];
@@ -273,7 +273,7 @@ router.post('/import', co(async (req, res, next) => {
                 };
 
                 stockCards.push(data);
-                // save stockcard
+
               }
             }
           }));
@@ -313,7 +313,10 @@ router.post('/import', co(async (req, res, next) => {
         obj.ref_src = v.ref_src;
         obj.ref_dst = v.ref_dst;
         obj.comment = v.comment;
-        data.push(obj);
+
+        if (obj.out_qty > 0) {
+          data.push(obj);
+        }
       });
 
       // save transaction status
