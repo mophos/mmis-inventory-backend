@@ -29,7 +29,7 @@ html
           td ชื่อสามัญ
           td(colspan='6') : #{a.generic_name}
           td จำนวนขอเบิก
-          td #{a.requisition_qty}
+          td #{a.requisition_qty} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
         tr
           td หน่วยบรรจุ
           td : #{a.large_unit}
@@ -38,7 +38,7 @@ html
           td(align="right") รูปแบบ
           td(colspan='2')  : #{a.small_unit}
           td จำนวนเบิก
-          td #{a.confirm_qty}
+          td #{a.confirm_qty} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
         tr
           td
           td.left(colspan='3') ชื่อทางการค้า 
@@ -49,8 +49,8 @@ html
           td คงเหลือ
         tr.dash-bottom
           td(colspan='4').left #{a.product_name}
-          td #{a.requisition_qty}
+          td #{a.requisition_qty} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
           td #{a.expired_date}
           td #{a.warehouse_name}
           td 
-          td #{a.total}
+          td #{a.total} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
