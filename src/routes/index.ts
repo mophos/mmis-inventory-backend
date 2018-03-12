@@ -256,11 +256,12 @@ router.get('/report/maxcost/group/issue/:date', wrap(async (req, res, next) => {
 }));//ทำFrontEndแล้ว //ตรวจสอบแล้ว 14-9-60
 
 
-router.get('/report/generic/stock/:genericId/:startDate/:endDate', wrap(async (req, res, next) => {
+router.get('/report/generic/stock/:genericId', wrap(async (req, res, next) => {
   let db = req.db;
   let genericId = req.params.genericId;
-  let startDate = req.params.startDate;
-  let endDate = req.params.endDate;
+  let startDate = req.query.startDate;
+  let endDate = req.query.endDate;
+  let warehouseId = req.query.warehouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   // if (genericId == 0) { genericId = '%%'; }
@@ -268,14 +269,14 @@ router.get('/report/generic/stock/:genericId/:startDate/:endDate', wrap(async (r
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
-  let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 23:59:59';
+  let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
   console.log(_endDate);
 
   startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
   endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
   // if (generic_stock[0] === undefined) { check = "error"; }
   // if (check == "error") { res.render('error404'); }
-  let generic_stock = await inventoryReportModel.generic_stock(db, genericId, startDate, _endDate)
+  let generic_stock = await inventoryReportModel.generic_stock(db, genericId, _startDate, _endDate,warehouseId)
   generic_stock = generic_stock[0];
   let generic_name = generic_stock[0].generic_name
   let small_unit = generic_stock[0].unit_name
@@ -283,8 +284,8 @@ router.get('/report/generic/stock/:genericId/:startDate/:endDate', wrap(async (r
 
   generic_stock.forEach(v => {
     v.stock_date = moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543);
-    v.in_unit_cost = inventoryReportModel.comma(+v.in_qty * +v.in_unit_cost);
-    v.out_unit_cost = inventoryReportModel.comma(+v.out_qty * +v.out_unit_cost);
+    v.in_cost = inventoryReportModel.comma(+v.in_qty * +v.balance_unit_cost);
+    v.out_cost = inventoryReportModel.comma(+v.out_qty * +v.balance_unit_cost);
     v.balance_unit_cost = inventoryReportModel.comma(+v.balance_qty * +v.balance_unit_cost);
     v.in_qty = inventoryReportModel.commaQty(v.in_qty);
     v.out_qty = inventoryReportModel.commaQty(v.out_qty);
@@ -1044,10 +1045,9 @@ router.get('/report/productDisbursement/:internalissueId', wrap(async (req, res,
 router.get('/report/check/receive', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID = req.query.receiveID
-
+  receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
   let hosdetail = await inventoryReportModel.hospital(db);
   let master = hosdetail[0].managerName;
-
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
   moment.locale('th');
@@ -1058,9 +1058,6 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let committee: any = []
   let invenChief: any = []
   check_receive = check_receive[0];
-  // check_receive.forEach(value => {
-  //   qty++;
-  // });
   for (let v in check_receive) {
     check_receive[v].receive_date = moment(check_receive[v].receive_date).format('D MMMM YYYY');
     check_receive[v].delivery_date = moment(check_receive[v].delivery_date).format('D MMMM ') + (moment(check_receive[v].delivery_date).get('year') + 543);
@@ -1068,20 +1065,13 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     bahtText.push(_bahtText)
     check_receive[v].total_price = inventoryReportModel.comma(check_receive[v].total_price);
   }
-  // let no = check_receive[0].no
   for (let i in receiveID) {
     let _committee = await inventoryReportModel.invenCommittee(db, receiveID[i]);
     committee.push(_committee[0]);
     let _invenChief = await inventoryReportModel.inven2Chief(db, receiveID[i])
     invenChief.push(_invenChief[0]);
   }
-  // let _committee = await inventoryReportModel.invenCommittee(db, receiveID);
-  // committee = committee[0];
-
   if (committee[0] === undefined) { res.render('no_commitee'); }
-  // let getChief = await inventoryReportModel.getChief(db, '1')
-  // let nameChief = getChief[0].title + " " + getChief[0].fname + "  " + getChief[0].lname
-  // let invenChief = await inventoryReportModel.inven2Chief(db, receiveID)
   let staffReceive = await inventoryReportModel.staffReceive(db);
   let chief = await inventoryReportModel.getChief(db, 'CHIEF')
 
@@ -1089,16 +1079,14 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     chief: chief[0],
     staffReceive: staffReceive[0],
     master: master,
-    // qty: qty,
     hospitalName: hospitalName,
     today: today,
     check_receive: check_receive,
     province: province,
     bahtText: bahtText,
-    // no: no,
     committee: committee,
     invenChief: invenChief,
-    receiveID:receiveID
+    receiveID: receiveID
   });
 }));
 
@@ -1147,24 +1135,14 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
       _bahtText.push(inventoryReportModel.bahtText(opject.total_price));
       opject.total_price = inventoryReportModel.comma(opject.total_price);
       _generic_name.push(opject.generic_type_name)
-
     })
     bahtText.push(_bahtText)
     _generic_name = _.join(_.uniq(_generic_name), ', ')
     generic_name.push(_generic_name)
   })
-
-  // console.log(check_receive.length)
   if (committees === undefined) { res.render('no_commitee'); }
   let staffReceive = await inventoryReportModel.staffReceive(db);
   let chief = await inventoryReportModel.getChief(db, 'CHIEF')
-  // res.send({ 
-  //   check_receive: check_receive, 
-  //   generic_name: generic_name, 
-  //   committees: committees, 
-  //   length: length, 
-  //   invenChief:invenChief 
-  // })
   res.render('check_receives', {
     chief: chief[0],
     staffReceive: staffReceive[0],

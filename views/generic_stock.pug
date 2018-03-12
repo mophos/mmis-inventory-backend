@@ -32,17 +32,17 @@ html
           th.center(colspan='2',style="border-bottom: 0px") มูลค่า
           th.center(colspan='2',style="border-bottom: 0px") จำนวนคงคลัง
         tr
-          th(style="border-top: 0px")
-          th(style="border-top: 0px")
-          th(style="border-top: 0px")
-          th(style="border-top: 0px")
-          th(style="border-top: 0px")
-          th.right รับ
-          th.right จ่าย
-          th.right รับ
-          th.right จ่าย
-          th.right จำนวน
-          th.right มูลค่า
+          th
+          th
+          th
+          th
+          th
+          th.center รับ
+          th.center จ่าย
+          th.center รับ
+          th.center จ่าย
+          th.center จำนวน
+          th.center มูลค่า
       tbody
       - y=0
       for a in generic_stock
@@ -52,11 +52,23 @@ html
           td.left(style="width: 100px;") #{a.stock_date}
           td.left #{a.comment}
           td.left #{a.document_ref_id}
-          td.left #{a.warehouse_name}
+          td.left 
+            if(a.warehouse_name)
+              | #{a.warehouse_name}
+            else
+              | -
           td.right #{a.in_qty} 
           td.right #{a.out_qty}
-          td.right #{a.in_unit_cost}
-          td.right #{a.out_unit_cost}
+          td.right
+            if(a.in_qty !== 0)
+              | #{a.in_cost}
+            else
+              | 0
+          td.right
+            if(a.out_qty !== 0)
+              | #{a.out_cost}
+            else
+              | 0
           td.right #{a.balance_qty}
           td.right #{a.balance_unit_cost}
       tfoot 

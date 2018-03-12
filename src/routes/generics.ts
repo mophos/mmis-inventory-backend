@@ -89,6 +89,7 @@ router.get('/search-warehouse-zero-autocomplete', co(async (req, res, next) => {
   }
 
 }));
+
 router.post('/allocate', async (req, res, next) => {
 
   let db = req.db;
