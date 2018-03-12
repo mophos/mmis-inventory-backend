@@ -1,10 +1,9 @@
-'use strict';
+const uuid = require('uuid/v4');
 
 import * as express from 'express';
 import * as moment from 'moment';
 import * as co from 'co-express';
 import * as _ from 'lodash';
-
 import * as path from 'path';
 import * as fs from 'fs';
 import * as fse from 'fs-extra';
@@ -32,10 +31,12 @@ import { ProductLotsModel } from '../models/productLots';
 import { TransactionType } from '../interfaces/basic';
 import { StockCard } from '../models/stockcard';
 import { HisTransactionModel } from '../models/hisTransaction';
+import { WarehouseModel } from '../models/warehouse';
 
 const hisTransactionModel = new HisTransactionModel();
 const stockCardModel = new StockCard();
 const productLotsModel = new ProductLotsModel();
+const warehouseModel = new WarehouseModel();
 
 const router = express.Router();
 
@@ -102,6 +103,54 @@ router.post('/upload', upload.single('file'), co(async (req, res, next) => {
     } else {
       res.send({ ok: false, error: 'ไม่พบข้อมูลที่ต้องการนำเข้า' })
     }
+  } else {
+    res.send({ ok: false, error: 'Header ไม่ถูกต้อง' })
+  }
+
+}));
+
+// upload issue transaction
+router.post('/upload/issue', upload.single('file'), co(async (req, res, next) => {
+  let db = req.db;
+  let filePath = req.file.path;
+  let hospcode = req.decoded.his_hospcode;
+  let warehouseId = req.decoded.warehouseId;
+
+  // get warehouse mapping
+  let rsWarehouseMapping: any = await warehouseModel.getStaffMappingsGenerics(db, hospcode, warehouseId);
+  const workSheetsFromFile = xlsx.parse(`${filePath}`);
+
+  let excelData = workSheetsFromFile[0].data;
+  let maxRecord = excelData.length;
+
+  let header = excelData[0];
+
+  // check headers 
+  if (header[0].toUpperCase() === 'ICODE' && header[2].toUpperCase() === 'QTY') {
+    let _data = [];
+    let genericIds = [];
+    let id = uuid();
+    // x = 0 = header      
+    for (let x = 1; x < maxRecord; x++) {
+      let obj: any = {
+        uuid: id,
+        icode: excelData[x][0],
+        qty: excelData[x][2],
+        people_user_id: req.decoded.people_user_id,
+      }
+
+      _data.push(obj);
+    }
+
+    await hisTransactionModel.removeIssueTransaction(db, req.decoded.people_user_id);
+    await hisTransactionModel.saveIssueTransaction(db, _data);
+    
+    rimraf.sync(filePath);
+    // get data
+    let rs: any = await hisTransactionModel.getIssueTransactionMappingData(db, id, hospcode);
+    // remove temp file 
+    res.send({ ok: true, rows: rs });
+
   } else {
     res.send({ ok: false, error: 'Header ไม่ถูกต้อง' })
   }
