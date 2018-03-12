@@ -9,11 +9,7 @@ import { SerialModel } from '../models/serial';
 import { StockCard } from '../models/stockcard';
 import { IssueModel } from '../models/issue'
 import { TIMEOUT } from 'dns';
-<<<<<<< HEAD
-import { assertJSXClosingElement } from 'babel-types';
-=======
 import { awaitExpression } from 'babel-types';
->>>>>>> 10890ca97df44787215eebf6fdeba99a0abec894
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const serialModel = new SerialModel();
