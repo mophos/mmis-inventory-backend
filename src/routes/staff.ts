@@ -1216,10 +1216,17 @@ router.get('/issue-transaction/generic-warehouse-lots/:genericId/:warehouseId', 
 router.get('/issue-transaction', co(async (req, res, next) => {
   let db = req.db;
   let warehouseId = req.decoded.warehouseId;
+  let limit = +req.query.limit || 20;
+  let offset = +req.query.offset || 0;
+  let status = req.query.status;
+
   try {
-    let rs = await issueModel.getListWarehouse(db, warehouseId);
-    res.send({ ok: true, rows: rs[0] });
+    let rs = await issueModel.getListWarehouse(db, warehouseId, limit, offset, status);
+    let rsTotal = await issueModel.getListWarehouseTotal(db, warehouseId, status);
+
+    res.send({ ok: true, rows: rs, total: rsTotal[0].total });
   } catch (error) {
+    console.log(error); 
     res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
