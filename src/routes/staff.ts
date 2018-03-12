@@ -2266,12 +2266,12 @@ router.get('/report/issue', async (req, res, next) => {
     hospitalName: hospitalName, issueBody: issueBody, issueListDetail: issueListDetail, issue_date: issue_date, today: today
   });
 });
+
 router.post('/products/all', co(async (req, res, next) => {
   let query = req.body.query;
   let genericTypes = req.body.genericTypes;
   let db = req.db;
-  console.log(genericTypes);
-  
+
   try {
     const rs:any = await productModel.getProductAllStaff(db,query,genericTypes);
     res.send({ ok: true ,rows: rs[0]});
@@ -2282,4 +2282,53 @@ router.post('/products/all', co(async (req, res, next) => {
   }
 
 }));
+
+// upload issue transaction
+router.post('/upload/issue', upload.single('file'), co(async (req, res, next) => {
+  let db = req.db;
+  let filePath = req.file.path;
+  let hospcode = req.decoded.his_hospcode;
+  let warehouseId = req.decoded.warehouseId;
+
+  // get warehouse mapping
+  let rsWarehouseMapping: any = await warehouseModel.getStaffMappingsGenerics(db, hospcode, warehouseId);
+  const workSheetsFromFile = xlsx.parse(`${filePath}`);
+
+  let excelData = workSheetsFromFile[0].data;
+  let maxRecord = excelData.length;
+
+  let header = excelData[0];
+
+  // check headers 
+  if (header[0].toUpperCase() === 'ICODE' && header[2].toUpperCase() === 'QTY') {
+    let _data = [];
+    let genericIds = [];
+    let id = uuid();
+    // x = 0 = header      
+    for (let x = 1; x < maxRecord; x++) {
+      let obj: any = {
+        uuid: id,
+        icode: excelData[x][0],
+        qty: excelData[x][2],
+        people_user_id: req.decoded.people_user_id,
+      }
+
+      _data.push(obj);
+    }
+
+    await hisTransactionModel.removeIssueTransaction(db, req.decoded.people_user_id);
+    await hisTransactionModel.saveIssueTransaction(db, _data);
+    
+    rimraf.sync(filePath);
+    // get data
+    let rs: any = await hisTransactionModel.getIssueTransactionMappingData(db, id, hospcode);
+    // remove temp file 
+    res.send({ ok: true, rows: rs });
+
+  } else {
+    res.send({ ok: false, error: 'Header ไม่ถูกต้อง' })
+  }
+
+}));
+
 export default router;
