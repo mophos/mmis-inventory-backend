@@ -59,10 +59,12 @@ router.post('/upload', upload.single('file'), co(async (req, res, next) => {
   if (header[0].toUpperCase() === 'DATE_SERV' &&
     header[1].toUpperCase() === 'SEQ' &&
     header[2].toUpperCase() === 'HN' &&
-    header[3].toUpperCase() === 'ICODE' &&
+    header[3].toUpperCase() === 'DRUG_CODE' &&
     header[4].toUpperCase() === 'QTY' &&
-    header[5].toUpperCase() === 'DEPARTMENT') {
-
+    header[5].toUpperCase() === 'WAREHOUSE_CODE') {
+    
+    // 'DATE_SERV', 'SEQ', 'HN', 'DRUG_CODE', 'QTY', 'WAREHOUSE_CODE'
+    
     let _data: any = [];
     // x = 0 = header      
     for (let x = 1; x < maxRecord; x++) {
@@ -201,7 +203,10 @@ router.post('/import', co(async (req, res, next) => {
         warehouseIds.push(v.warehouse_id);
       });
 
+      // console.log(hisProducts);
       let wmProducts = await hisTransactionModel.getProductInWarehouseForImport(db, warehouseIds, productIds);
+      console.log(wmProducts);
+      
       let unCutStockIds = [];
       let cutStockIds = [];
       let stockCards = [];
