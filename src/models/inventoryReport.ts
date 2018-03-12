@@ -522,55 +522,54 @@ export class InventoryReportModel {
         // where wr.requisition_id=?`
         let sql = `
         SELECT
-	mg.generic_name,
-	mg.generic_id,
-	r.requisition_code,
-	r.requisition_order_id,
-	r.requisition_date,
-	wh.warehouse_name,
-	mp.product_id,
-	mp.product_name,
-	(
-		SELECT
-			roi.requisition_qty
-		FROM
-			wm_requisition_order_items roi
-		WHERE
-			roi.requisition_order_id = r.requisition_order_id
-		AND mg.generic_id = roi.generic_id
-	) AS requisition_qty,
-	vr.total,
-	mus.unit_name AS small_unit,
-	wp.cost,
-	wp.lot_no,
-	wp.expired_date,
-	mg.primary_unit_id,
-	mup.from_unit_id,
-	mul.unit_name AS large_unit,
-	mup.to_unit_id,
-	mup.qty AS unit_qty,
-	mg.generic_id,
-	mg.generic_name,
-	r.wm_withdraw,
-	r.wm_requisition,
-	r.updated_at,
-	wp.wm_product_id,
-	rci.confirm_qty
-FROM
-	wm_requisition_orders r
-LEFT JOIN wm_requisition_confirms rc ON rc.requisition_order_id = r.requisition_order_id
-LEFT JOIN wm_requisition_confirm_items rci ON rci.confirm_id = rc.confirm_id
-LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
-LEFT JOIN mm_products AS mp ON mp.product_id = wp.product_id
-LEFT JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
-LEFT JOIN mm_unit_generics AS mup ON wp.unit_generic_id = mup.unit_generic_id
-LEFT JOIN mm_units AS mul ON mup.from_unit_id = mul.unit_id
-LEFT JOIN mm_units AS mus ON mup.to_unit_id = mus.unit_id
-LEFT JOIN wm_warehouses wh ON wh.warehouse_id = r.wm_requisition
-LEFT JOIN view_remain_all_products AS vr ON wp.product_id = vr.product_id
-WHERE
-	rc.is_approve = 'Y'
-AND r.requisition_order_id = '${requisId}' and rci.confirm_qty != 0
+        mg.generic_name,
+        mg.generic_id,
+        r.requisition_code,
+        r.requisition_order_id,
+        r.requisition_date,
+        wh.warehouse_name,
+        mp.product_id,
+        mp.product_name,
+        (
+            SELECT
+                roi.requisition_qty
+            FROM
+                wm_requisition_order_items roi
+            WHERE
+                roi.requisition_order_id = r.requisition_order_id
+            AND mg.generic_id = roi.generic_id
+        ) AS requisition_qty,
+        if(rc.is_approve='N',vr.total-rci.confirm_qty,vr.total) as total,
+        mus.unit_name AS small_unit,
+        wp.cost,
+        wp.lot_no,
+        wp.expired_date,
+        mg.primary_unit_id,
+        mup.from_unit_id,
+        mul.unit_name AS large_unit,
+        mup.to_unit_id,
+        mup.qty AS unit_qty,
+        mg.generic_id,
+        mg.generic_name,
+        r.wm_withdraw,
+        r.wm_requisition,
+        r.updated_at,
+        wp.wm_product_id,
+        rci.confirm_qty
+    FROM
+        wm_requisition_orders r
+    LEFT JOIN wm_requisition_confirms rc ON rc.requisition_order_id = r.requisition_order_id
+    LEFT JOIN wm_requisition_confirm_items rci ON rci.confirm_id = rc.confirm_id
+    LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
+    LEFT JOIN mm_products AS mp ON mp.product_id = wp.product_id
+    LEFT JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
+    LEFT JOIN mm_unit_generics AS mup ON wp.unit_generic_id = mup.unit_generic_id
+    LEFT JOIN mm_units AS mul ON mup.from_unit_id = mul.unit_id
+    LEFT JOIN mm_units AS mus ON mup.to_unit_id = mus.unit_id
+    LEFT JOIN wm_warehouses wh ON wh.warehouse_id = r.wm_withdraw
+    LEFT JOIN view_remain_product_in_warehouse AS vr ON wp.product_id = vr.product_id and vr.warehouse_id = r.wm_withdraw
+    WHERE
+    r.requisition_order_id = '${requisId}' and rci.confirm_qty != 0
      order by
      wp.expired_date`
         return (knex.raw(sql))

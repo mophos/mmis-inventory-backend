@@ -345,6 +345,7 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any) => {
         obj_remaint_dst.warehouse_id = v.warehouse_id;
         obj_remaint_dst.balance = v.balance;
         obj_remaint_dst.unit_generic_id = v.unit_generic_id;
+        obj_remaint_dst.balance_generic = v.balance_generic;
       }
       let remain_src = await transferModel.getProductRemainByTransferIds(db, v.product_id, v.src_warehouse_id);
       for (let v of remain_src[0]) {
@@ -352,6 +353,7 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any) => {
         obj_remain_src.warehouse_id = v.warehouse_id;
         obj_remain_src.balance = v.balance;
         obj_remain_src.unit_generic_id = v.unit_generic_id;
+        obj_remain_src.balance_generic = v.balance_generic;
       }
       balances.push(obj_remaint_dst);
       balances.push(obj_remain_src);
@@ -378,6 +380,7 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any) => {
       objIn.in_qty = v.qty;
       objIn.in_unit_cost = v.cost;
       let dstBalance = 0;
+      let dstBalanceGeneric = 0;
       let dstIdx = _.findIndex(balances, {
         product_id: v.product_id,
         warehouse_id: v.dst_warehouse_id,
@@ -385,11 +388,14 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any) => {
       if (dstIdx > -1) {
         dstBalance = balances[dstIdx].balance + v.qty;
         balances[dstIdx].balance += v.qty;
+        dstBalanceGeneric = balances[dstIdx].balance_generic + v.qty;
+        balances[dstIdx].balance_generic += v.qty;
       }
       objIn.balance_qty = dstBalance;
       objIn.balance_unit_cost = v.cost;
       objIn.ref_src = v.src_warehouse_id;
       objIn.ref_dst = v.dst_warehouse_id;
+      objIn.balance_generic_qty = dstBalanceGeneric;
       objIn.comment = 'รับโอน';
       data.push(objIn);
     }
@@ -407,6 +413,7 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any) => {
       objOut.out_qty = v.qty;
       objOut.out_unit_cost = v.cost;
       let srcBalance = 0;
+      let srcBalanceGeneric = 0;
       let srcIdx = _.findIndex(balances, {
         product_id: v.product_id,
         warehouse_id: v.src_warehouse_id,
@@ -414,11 +421,14 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any) => {
       if (srcIdx > -1) {
         srcBalance = balances[srcIdx].balance - v.qty;
         balances[srcIdx].balance -= v.qty;
+        srcBalanceGeneric = balances[srcIdx].balance_generic - v.qty;
+        balances[srcIdx].balance_generic -= v.qty;
       }
       objOut.balance_qty = srcBalance;
       objOut.balance_unit_cost = v.cost;
       objOut.ref_src = v.src_warehouse_id;
       objOut.ref_dst = v.dst_warehouse_id;
+      objOut.balance_generic_qty = srcBalanceGeneric;
       objOut.comment = 'โอน';
       data.push(objOut);
     }
