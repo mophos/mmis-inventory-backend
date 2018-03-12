@@ -927,25 +927,27 @@ router.get('/report/tranfers2', wrap(async (req, res, next) => {
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let tranfer: any;
   let tranferCount: any;
+  let _tranferId: any = [];
   let _tranfers: any = [];
   let _tranferCounts: any = [];
+ let index:any = 0
   for (let id in tranferId) {
     tranfer = await inventoryReportModel.tranfer2(db, tranferId[id]);
-    _tranfers.push(tranfer[0])
-    _tranfers[id].forEach(value => {
-      value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD MMMM ') + (moment(value.expired_date).get('year') + 543) : '-';
-      value.transfer_date = moment(value.transfer_date).isValid() ? moment(value.transfer_date).format('D MMMM ') + (moment(value.transfer_date).get('year') + 543) : '-';
-      value.approve_date = moment(value.approve_date).isValid() ? moment(value.approve_date).format('DD MMMM ') + (moment(value.approve_date).get('year') + 543) : '-';
-      value.product_qty = inventoryReportModel.commaQty(value.product_qty);
-      value.remain_qty = inventoryReportModel.commaQty(value.remain_qty);
-    });
+    if (tranfer[0][0] !== undefined) {
+      _tranfers.push(tranfer[0])
+      _tranfers[index].forEach(value => {
+        value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD MMMM ') + (moment(value.expired_date).get('year') + 543) : '-';
+        value.transfer_date = moment(value.transfer_date).isValid() ? moment(value.transfer_date).format('D MMMM ') + (moment(value.transfer_date).get('year') + 543) : '-';
+        value.approve_date = moment(value.approve_date).isValid() ? moment(value.approve_date).format('DD MMMM ') + (moment(value.approve_date).get('year') + 543) : '-';
+        value.product_qty = inventoryReportModel.commaQty(value.product_qty);
+        value.remain_qty = inventoryReportModel.commaQty(value.remain_qty);
+      });
+      _tranferId.push(tranferId[id])
+      ++index
+    }
   }
-
-
-  // res.send(_tranferCounts)
-  res.render('list_tranfers', { hospitalName: hospitalName, today: today, _tranfers: _tranfers, _tranferCounts: _tranferCounts, tranferId: tranferId });
-  // // console.log('++++++++++++++++++++++++++++++++++++++++',tranferId);
-  // res.send({_tranfers,_tranferCounts})
+  if (_tranfers[0] === undefined) res.render('error404');
+  res.render('list_tranfers', { hospitalName: hospitalName, today: today, _tranfers: _tranfers, _tranferCounts: _tranferCounts, tranferId: _tranferId });
 }));
 
 router.get('/report/stockcard2/:productId/:startDate/:endDate', wrap(async (req, res, next) => {
