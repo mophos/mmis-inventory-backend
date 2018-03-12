@@ -386,60 +386,40 @@ export class WarehouseModel {
 
   getMappingsGenerics(knex: Knex, hospcode: any) {
     let sql = `
-        SELECT
-      g.generic_id,
-      g.generic_name,
-      COUNT(h.his) as his,
-      u.unit_name AS base_unit_name 
-    FROM
-      mm_products AS p
-      LEFT JOIN wm_his_mappings AS h ON h.mmis = p.product_id 
-      AND h.hospcode = ?
-      LEFT JOIN mm_generics AS g ON g.generic_id = p.generic_id
-      JOIN mm_units AS u ON u.unit_id = p.primary_unit_id 
-    WHERE
-      p.mark_deleted = 'N' 
-    GROUP BY
-      g.generic_id
-    ORDER BY
-      g.generic_name
+      select g.generic_id, g.generic_name, g.working_code, 
+      g.generic_id as mmis, group_concat(h.his) as his, ifnull(h.conversion, 1) as conversion,
+      u.unit_name as base_unit_name
+      from mm_generics as g
+      left join wm_his_mappings as h on h.mmis=g.generic_id and h.hospcode=?
+      inner join mm_units as u on u.unit_id=g.primary_unit_id
+      where g.mark_deleted='N'
+      and g.is_active='Y'
+      group by g.generic_id
+      order by g.generic_name
+      
   `;
     return knex.raw(sql, [hospcode]);
   }
 
-  getMappingsProducts(knex: Knex, hospcode: any, genericId: any) {
-    let sql = `SELECT
-      p.product_id,
-      p.product_name,
-      h.mmis,
-      h.his,
-      u.unit_name AS base_unit_name 
-    FROM
-      mm_products AS p
-      LEFT JOIN wm_his_mappings AS h ON h.mmis = p.product_id 
-      AND h.hospcode = ?
-      LEFT JOIN mm_generics AS g ON g.generic_id = p.generic_id
-      JOIN mm_units AS u ON u.unit_id = p.primary_unit_id 
-    WHERE
-      g.generic_id = ? AND
-      p.mark_deleted = 'N' 
-    ORDER BY
-      g.generic_name
-  `;
-    return knex.raw(sql, [hospcode,genericId]);
-  }
-
-  getStaffMappings(knex: Knex, hospcode: any, warehouseId: any) {
+  getStaffMappingsGenerics(knex: Knex, hospcode: any, warehouseId: any) {
     let sql = `
-      select group_concat(hm.his) as his, hm.mmis,
-      mp.product_id, mp.product_name, mg.generic_name, mg.generic_id, mg.working_code as generic_working_code, mp.working_code as trade_working_code
-      from wm_his_mappings as hm
-      inner join mm_products as mp on mp.product_id=hm.mmis
-      inner join mm_generics as mg on mg.generic_id=mp.generic_id
-      where hm.hospcode=?
-      and hm.mmis in (select product_id from wm_products where warehouse_id=?)
-      group by hm.mmis
-      order by mp.product_name
+      select g.generic_id, g.generic_name, g.working_code, 
+      g.generic_id as mmis, group_concat(h.his) as his, ifnull(h.conversion, 1) as conversion,
+      u.unit_name as base_unit_name
+      from mm_generics as g
+      left join wm_his_mappings as h on h.mmis=g.generic_id and h.hospcode=?
+      inner join mm_units as u on u.unit_id=g.primary_unit_id
+      where g.mark_deleted='N'
+      and g.is_active='Y'
+      and g.generic_id in (
+        select mp.generic_id
+        from wm_products as wp 
+        inner join mm_products as mp on mp.product_id=wp.product_id
+        where wp.warehouse_id=?
+      )
+      group by g.generic_id
+      order by g.generic_name
+      
   `;
     return knex.raw(sql, [hospcode, warehouseId]);
   }
