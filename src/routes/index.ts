@@ -1053,7 +1053,6 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let province = hosdetail[0].province;
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
-  let checkItems = await inventoryReportModel.checkItems(db, receiveID);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
 
   let qty = 0;
@@ -1061,10 +1060,6 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let committee: any = []
   let invenChief: any = []
   check_receive = check_receive[0];
-<<<<<<< HEAD
-
-=======
->>>>>>> 96c8b925e6cf2116cdfb19098fac116921a6e390
   for (let v in check_receive) {
     check_receive[v].receive_date = moment(check_receive[v].receive_date).format('D MMMM YYYY');
     check_receive[v].delivery_date = moment(check_receive[v].delivery_date).format('D MMMM ') + (moment(check_receive[v].delivery_date).get('year') + 543);
@@ -1072,23 +1067,13 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     bahtText.push(_bahtText)
     check_receive[v].total_price = inventoryReportModel.comma(check_receive[v].total_price);
   }
-<<<<<<< HEAD
-
-=======
->>>>>>> 96c8b925e6cf2116cdfb19098fac116921a6e390
   for (let i in receiveID) {
     let _committee = await inventoryReportModel.invenCommittee(db, receiveID[i]);
     committee.push(_committee[0]);
     let _invenChief = await inventoryReportModel.inven2Chief(db, receiveID[i])
     invenChief.push(_invenChief[0]);
   }
-<<<<<<< HEAD
-
   if (committee[0] === undefined) { res.render('no_commitee'); }
-
-=======
-  if (committee[0] === undefined) { res.render('no_commitee'); }
->>>>>>> 96c8b925e6cf2116cdfb19098fac116921a6e390
   let staffReceive = await inventoryReportModel.staffReceive(db);
   let chief = await inventoryReportModel.getChief(db, 'CHIEF');
 
