@@ -9,6 +9,7 @@ import { SerialModel } from '../models/serial';
 import { StockCard } from '../models/stockcard';
 import { IssueModel } from '../models/issue'
 import { TIMEOUT } from 'dns';
+import { awaitExpression } from 'babel-types';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const serialModel = new SerialModel();
@@ -1053,6 +1054,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
+
   let qty = 0;
   let bahtText: any = []
   let committee: any = []
@@ -1073,7 +1075,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   }
   if (committee[0] === undefined) { res.render('no_commitee'); }
   let staffReceive = await inventoryReportModel.staffReceive(db);
-  let chief = await inventoryReportModel.getChief(db, 'CHIEF')
+  let chief = await inventoryReportModel.getChief(db, 'CHIEF');
 
   res.render('check_receive', {
     chief: chief[0],

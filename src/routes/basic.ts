@@ -224,7 +224,7 @@ router.get('/search-donator', co(async(req, res, next) => {
 
   let db = req.db;
   let query = req.query.q;
-
+  
   try {
     let rows = await basicModel.searchDonator(db, query);
     res.send(rows);
