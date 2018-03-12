@@ -324,16 +324,6 @@ export class ProductModel {
       });
   }
 
-  getProductRemainByWarehouseNoLot(knex: Knex, productId: any, warehouseId: any) {
-    return knex('wm_products')
-    .sum('qty').as('qty')
-      .where({
-        warehouse_id: warehouseId,
-        product_id: productId,
-      })
-      .groupBy('product_id')
-  }
-  
   getProductUnitConversion(knex: Knex, genericId: any) {
     return knex('mm_unit_generics as up')
       .select('up.unit_generic_id', 'up.from_unit_id as unit_id', 'u.unit_name as from_unit_name', 'u.unit_name', 'u2.unit_name as primary_unit_name', 'up.qty')

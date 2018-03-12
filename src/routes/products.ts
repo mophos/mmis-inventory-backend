@@ -140,24 +140,6 @@ router.post('/remain/warehouse', co(async (req, res, next) => {
 
 }));
 
-router.get('/remain/warehouse', co(async (req, res, next) => {
-  
-    let db = req.db;
-    let productId = req.query.productId;
-    let warehouseId = req.decoded.warehouseId;
-  
-    try {
-      let rs = await productModel.getProductRemainByWarehouseNoLot(db, productId, warehouseId);
-      let remain = rs.length ? rs[0].qty : 0;
-      res.send({ ok: true, rows: remain });
-    } catch (error) {
-      res.send({ ok: false, error: error.message });
-    } finally {
-      db.destroy();
-    }
-  
-  }));
-
 router.get('/listall', co(async (req, res, next) => {
 
   let db = req.db;

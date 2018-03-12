@@ -699,19 +699,20 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
           let withdrawWarehouseId = preReq[0].wm_withdraw;
 
           requisitionProducts.forEach(v => {
-            if (v.confirm_qty != 0) {
-              wmProductIds.push(v.wm_product_id);
-              dstProducts.push({
-                qty: v.confirm_qty,
-                wm_product_id: v.wm_product_id,
-                warehouse_id: withdrawWarehouseId
-              });
 
-              items.push({
-                qty: v.confirm_qty,
-                wm_product_id: v.wm_product_id
-              });
-            }
+            wmProductIds.push(v.wm_product_id);
+
+            dstProducts.push({
+              qty: v.confirm_qty,
+              wm_product_id: v.wm_product_id,
+              warehouse_id: withdrawWarehouseId
+            });
+
+            items.push({
+              qty: v.confirm_qty,
+              wm_product_id: v.wm_product_id
+            });
+
           });
 
           let rsWmProducts = await orderModel.getWmProducs(db, wmProductIds);
@@ -746,7 +747,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
           });
 
           // create stockcard detail
-          let sc: any = await orderModel.getRequisitionOrderItem(db, confirmId);
+          let sc: any = await orderModel.getRequisitionOrderItem(db, confirmId);          
           sc[0].forEach(v => {
             let objStockcardOut: any = {}
             let objStockcardIn: any = {}
@@ -760,7 +761,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             objStockcardOut.in_unit_cost = 0;
             objStockcardOut.out_qty = v.confirm_qty;
             objStockcardOut.out_unit_cost = v.cost;
-            objStockcardOut.balance_qty = v.src_balance_qty - v.confirm_qty;
+            objStockcardOut.balance_qty = v.src_balance_qty-v.confirm_qty;
             objStockcardOut.balance_unit_cost = v.cost;
             objStockcardOut.ref_src = v.src_warehouse;
             objStockcardOut.ref_dst = v.dst_warehouse;
@@ -777,7 +778,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             objStockcardIn.in_unit_cost = v.cost;
             objStockcardIn.out_qty = 0
             objStockcardIn.out_unit_cost = 0
-            objStockcardIn.balance_qty = v.dst_balance_qty + v.confirm_qty;
+            objStockcardIn.balance_qty = v.dst_balance_qty+v.confirm_qty;
             objStockcardIn.balance_unit_cost = v.cost;
             objStockcardIn.ref_src = v.dst_warehouse;
             objStockcardIn.ref_dst = v.src_warehouse;
@@ -787,9 +788,9 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
           console.log('********************************************');
           console.log(stockCard);
           console.log('********************************************');
-
+          
           // save stock card
-          await orderModel.saveStockCard(db, stockCard);
+          await orderModel.saveStockCard(db,stockCard);
           // save true data
           await productModel.saveProducts(db, products);
           await orderModel.decreaseQty(db, dstProducts);
@@ -797,7 +798,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
           res.send({ ok: true });
         }
       } else {
-        res.send({ ok: false, error: 'วันที่เบิกไม่ถูกต้อง' });
+        res.send({ok:false,error:'วันที่เบิกไม่ถูกต้อง'});
         // await orderModel.saveApproveConfirmOrder(db, confirmId, approveData);
 
         // // save product to wm_products

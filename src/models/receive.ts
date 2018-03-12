@@ -771,22 +771,4 @@ export class ReceiveModel {
     let query = sql.join(';');
     return knex.raw(query);
   }
-
-  getProductRemainByReceiveOtherIds(knex: Knex, receiveIds: any, warehouseId: any) {
-    let sql=`SELECT wp.product_id,sum(wp.qty) as balance,wp.warehouse_id from wm_receive_other_detail rd
-    join wm_products wp on rd.product_id=wp.product_id
-    where receive_other_id in (${receiveIds})
-    and wp.warehouse_id='${warehouseId}'
-    GROUP BY wp.product_id,wp.warehouse_id`;
-    return knex.raw(sql);
-  }
-
-  getProductRemainByReceiveIds(knex: Knex, receiveIds: any, warehouseId: any) {
-    let sql=`SELECT wp.product_id,sum(wp.qty) as balance,wp.warehouse_id from wm_receive_detail rd
-    join wm_products wp on rd.product_id=wp.product_id
-    where receive_id in (${receiveIds})
-    and wp.warehouse_id='${warehouseId}'
-    GROUP BY wp.product_id,wp.warehouse_id`;
-    return knex.raw(sql);
-  }
 }

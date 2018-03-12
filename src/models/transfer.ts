@@ -213,7 +213,7 @@ export class TransferModel {
     return knex('wm_transfer_product as d')
       .select('d.*', 'ug.qty as conversion_qty', 'p.lot_no',
         'p.expired_date', 'p.cost', 'p.price', 'p.product_id',
-        'mp.generic_id', 't.*', 'tg.*', subBalanceSrc, subBalanceDst,'p.unit_generic_id')
+        'mp.generic_id', 't.*', 'tg.*', subBalanceSrc, subBalanceDst)
       .innerJoin('wm_transfer as t', 't.transfer_id', 'd.transfer_id')
       .joinRaw('join wm_transfer_generic as tg on tg.transfer_id = d.transfer_id and tg.transfer_generic_id = d.transfer_generic_id')
       .joinRaw(`inner join wm_products as p on p.wm_product_id=d.wm_product_id`)
@@ -322,20 +322,4 @@ export class TransferModel {
     return knex.raw(sql, [transferId]);
   }
 
-  getProductRemainByTransferIds(knex: Knex, productId: any, warehouseId: any) {
-    let sql=`SELECT
-      wp.product_id,
-      sum(wp.qty) AS balance,
-      wp.warehouse_id,
-      wp.unit_generic_id
-    FROM
-      wm_products wp
-    WHERE
-      wp.product_id= '${productId}'
-    AND wp.warehouse_id = '${warehouseId}'
-    GROUP BY
-      wp.product_id,
-      wp.warehouse_id`;
-    return knex.raw(sql);
-  }
 }

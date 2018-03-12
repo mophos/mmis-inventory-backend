@@ -77,20 +77,12 @@ export class StockCard {
     current_timestamp() as stock_date, 
     wp.product_id as product_id, 
     mg.generic_id as generic_id, 
-    wp.unit_generic_id as unit_generic_id, 
-    '${TransactionType.ADJUST}' as transaction_type, 
+    NULL as unit_generic_id, 
+    ? as transaction_type, 
     adj.id as document_ref_id, 
-    ${adjQty} as in_qty, 
+    ? as in_qty, 
     wp.cost as in_unit_cost, 
-    (
-      SELECT
-        sum(wp2.qty)
-      FROM
-        wm_products wp2
-      WHERE
-        wp2.product_id = wp.product_id
-      AND wp2.warehouse_id = wp.warehouse_id
-    ) AS balance_qty,
+    sum(wp.qty) as balance_qty, 
     wp.cost as balance_unit_cost,
     wp.warehouse_id as ref_src, 
     '' as ref_dst, 
@@ -99,10 +91,10 @@ export class StockCard {
     inner join wm_products as wp on wp.wm_product_id=adj.wm_product_id
     inner join mm_products as mp on mp.product_id=wp.product_id
     left join mm_generics as mg on mg.generic_id=mp.generic_id
-    where adj.id=${adjId}
+    where adj.id=?
     `;
 
-    return db.raw(sql);
+    return db.raw(sql, [TransactionType.ADJUST, adjQty, adjId]);
 
   }
 
@@ -114,20 +106,12 @@ export class StockCard {
     current_timestamp() as stock_date, 
     wp.product_id as product_id, 
     mg.generic_id as generic_id, 
-    wp.unit_generic_id as unit_generic_id, 
-    '${TransactionType.ADJUST}' as transaction_type, 
+    NULL as unit_generic_id, 
+    ? as transaction_type, 
     adj.id as document_ref_id, 
-    ${adjQty} as out_qty, 
+    ? as out_qty, 
     wp.cost as out_unit_cost, 
-    (
-      SELECT
-        sum(wp2.qty)
-      FROM
-        wm_products wp2
-      WHERE
-        wp2.product_id = wp.product_id
-      AND wp2.warehouse_id = wp.warehouse_id
-    ) AS balance_qty,
+    sum(wp.qty) as balance_qty, 
     wp.cost as balance_unit_cost,
     wp.warehouse_id as ref_src, 
     '' as ref_dst, 
@@ -136,10 +120,10 @@ export class StockCard {
     inner join wm_products as wp on wp.wm_product_id=adj.wm_product_id
     inner join mm_products as mp on mp.product_id=wp.product_id
     left join mm_generics as mg on mg.generic_id=mp.generic_id
-    where adj.id=${adjId}
+    where adj.id=?
     `;
 
-    return db.raw(sql);
+    return db.raw(sql, [TransactionType.ADJUST, adjQty, adjId]);
 
   }
 
