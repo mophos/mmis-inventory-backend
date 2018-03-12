@@ -1347,6 +1347,32 @@ OR sc.ref_src like ?
         LEFT JOIN pc_purchasing_order ppo ON ppo.purchase_order_id=wr.purchase_order_id
         LEFT JOIN mm_generic_types mgt ON ppo.generic_type_id = mgt.generic_type_id
         WHERE wr.receive_id in (${receiveID})
+        GROUP BY ppo.purchase_order_number`
+        return (knex.raw(sql))
+    }
+    checkItems(knex: Knex, receiveID) {
+        let sql = `SELECT wr.receive_id,
+        wr.receive_code,
+        wr.receive_date,
+        wr.delivery_code,
+        ROUND(sum(wrd.receive_qty*wrd.cost),2) AS total_price,
+        wrd.receive_qty,
+        wrt.receive_type_name,
+        wr.purchase_order_id,
+        ml.labeler_name,
+        wr.delivery_date,
+        ppo.purchase_order_book_number,
+        ppo.purchase_order_number,
+        COUNT(*) amount_qty,
+        mgt.generic_type_name
+        FROM wm_receives wr
+        JOIN wm_receive_detail wrd ON wrd.receive_id=wr.receive_id
+        LEFT JOIN wm_warehouses wh ON wh.warehouse_id=wrd.warehouse_id
+        LEFT JOIN mm_labelers ml ON ml.labeler_id=wrd.vendor_labeler_id
+        LEFT JOIN wm_receive_types wrt ON wrt.receive_type_id=wr.receive_type_id
+        LEFT JOIN pc_purchasing_order ppo ON ppo.purchase_order_id=wr.purchase_order_id
+        LEFT JOIN mm_generic_types mgt ON ppo.generic_type_id = mgt.generic_type_id
+        WHERE wr.receive_id in (${receiveID})
         GROUP BY wr.receive_id`
         return (knex.raw(sql))
     }

@@ -9,6 +9,7 @@ import { SerialModel } from '../models/serial';
 import { StockCard } from '../models/stockcard';
 import { IssueModel } from '../models/issue'
 import { TIMEOUT } from 'dns';
+import { awaitExpression } from 'babel-types';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const serialModel = new SerialModel();
@@ -1052,15 +1053,15 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let province = hosdetail[0].province;
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  let checkItems = await inventoryReportModel.checkItems(db, receiveID);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
+
   let qty = 0;
   let bahtText: any = []
   let committee: any = []
   let invenChief: any = []
   check_receive = check_receive[0];
-  // check_receive.forEach(value => {
-  //   qty++;
-  // });
+
   for (let v in check_receive) {
     check_receive[v].receive_date = moment(check_receive[v].receive_date).format('D MMMM YYYY');
     check_receive[v].delivery_date = moment(check_receive[v].delivery_date).format('D MMMM ') + (moment(check_receive[v].delivery_date).get('year') + 543);
@@ -1068,37 +1069,31 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     bahtText.push(_bahtText)
     check_receive[v].total_price = inventoryReportModel.comma(check_receive[v].total_price);
   }
-  // let no = check_receive[0].no
+
   for (let i in receiveID) {
     let _committee = await inventoryReportModel.invenCommittee(db, receiveID[i]);
     committee.push(_committee[0]);
     let _invenChief = await inventoryReportModel.inven2Chief(db, receiveID[i])
     invenChief.push(_invenChief[0]);
   }
-  // let _committee = await inventoryReportModel.invenCommittee(db, receiveID);
-  // committee = committee[0];
 
   if (committee[0] === undefined) { res.render('no_commitee'); }
-  // let getChief = await inventoryReportModel.getChief(db, '1')
-  // let nameChief = getChief[0].title + " " + getChief[0].fname + "  " + getChief[0].lname
-  // let invenChief = await inventoryReportModel.inven2Chief(db, receiveID)
+
   let staffReceive = await inventoryReportModel.staffReceive(db);
-  let chief = await inventoryReportModel.getChief(db, 'CHIEF')
+  let chief = await inventoryReportModel.getChief(db, 'CHIEF');
 
   res.render('check_receive', {
     chief: chief[0],
     staffReceive: staffReceive[0],
     master: master,
-    // qty: qty,
     hospitalName: hospitalName,
     today: today,
     check_receive: check_receive,
     province: province,
     bahtText: bahtText,
-    // no: no,
     committee: committee,
     invenChief: invenChief,
-    receiveID:receiveID
+    receiveID: receiveID
   });
 }));
 
