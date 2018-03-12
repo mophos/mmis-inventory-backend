@@ -219,7 +219,7 @@ export class RequisitionOrderModel {
     floor(roi.requisition_qty/ugo.qty) as requisition_qty,
     ugo.qty as order_conversion_qty, uof.unit_name as order_from_unit_name,
     uot.unit_name as order_to_unit_name,
-   	rci.confirm_qty as small_confirm_qty,
+   	(rci.confirm_qty*ugc.qty) as small_confirm_qty,
     floor(sum(rci.confirm_qty/ugc.qty)) as confirm_qty, ugc.qty as confirm_conversion_qty, 
     ucf.unit_name as confirm_from_unit_name, uct.unit_name as confirm_to_unit_name
     from wm_requisition_order_items as roi

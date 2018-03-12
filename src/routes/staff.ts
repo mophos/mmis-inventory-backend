@@ -1216,10 +1216,17 @@ router.get('/issue-transaction/generic-warehouse-lots/:genericId/:warehouseId', 
 router.get('/issue-transaction', co(async (req, res, next) => {
   let db = req.db;
   let warehouseId = req.decoded.warehouseId;
+  let limit = +req.query.limit || 20;
+  let offset = +req.query.offset || 0;
+  let status = req.query.status;
+
   try {
-    let rs = await issueModel.getListWarehouse(db, warehouseId);
-    res.send({ ok: true, rows: rs[0] });
+    let rs = await issueModel.getListWarehouse(db, warehouseId, limit, offset, status);
+    let rsTotal = await issueModel.getListWarehouseTotal(db, warehouseId, status);
+
+    res.send({ ok: true, rows: rs, total: rsTotal[0].total });
   } catch (error) {
+    console.log(error); 
     res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
@@ -2249,7 +2256,7 @@ router.get('/report/issue', async (req, res, next) => {
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   for (let ii in issue_id) {
-    let i: any = issue_body[0].filter(person => person.issue_id == +issue_id[ii]);
+    let i: any = issue_body.filter(person => person.issue_id == +issue_id[ii]);
     issueBody.push(i[0])
     issue_date.push(moment(i[0].issue_date).format('D MMMM ') + (moment(i[0].issue_date).get('year') + 543));
     let ListDetail: any = await issueModel.getProductList(db, issue_id[ii]);
@@ -2259,12 +2266,12 @@ router.get('/report/issue', async (req, res, next) => {
     hospitalName: hospitalName, issueBody: issueBody, issueListDetail: issueListDetail, issue_date: issue_date, today: today
   });
 });
+
 router.post('/products/all', co(async (req, res, next) => {
   let query = req.body.query;
   let genericTypes = req.body.genericTypes;
   let db = req.db;
-  console.log(genericTypes);
-  
+
   try {
     const rs:any = await productModel.getProductAllStaff(db,query,genericTypes);
     res.send({ ok: true ,rows: rs[0]});
@@ -2275,4 +2282,53 @@ router.post('/products/all', co(async (req, res, next) => {
   }
 
 }));
+
+// upload issue transaction
+router.post('/upload/issue', upload.single('file'), co(async (req, res, next) => {
+  let db = req.db;
+  let filePath = req.file.path;
+  let hospcode = req.decoded.his_hospcode;
+  let warehouseId = req.decoded.warehouseId;
+
+  // get warehouse mapping
+  let rsWarehouseMapping: any = await warehouseModel.getStaffMappingsGenerics(db, hospcode, warehouseId);
+  const workSheetsFromFile = xlsx.parse(`${filePath}`);
+
+  let excelData = workSheetsFromFile[0].data;
+  let maxRecord = excelData.length;
+
+  let header = excelData[0];
+
+  // check headers 
+  if (header[0].toUpperCase() === 'ICODE' && header[2].toUpperCase() === 'QTY') {
+    let _data = [];
+    let genericIds = [];
+    let id = uuid();
+    // x = 0 = header      
+    for (let x = 1; x < maxRecord; x++) {
+      let obj: any = {
+        uuid: id,
+        icode: excelData[x][0],
+        qty: excelData[x][2],
+        people_user_id: req.decoded.people_user_id,
+      }
+
+      _data.push(obj);
+    }
+
+    await hisTransactionModel.removeIssueTransaction(db, req.decoded.people_user_id);
+    await hisTransactionModel.saveIssueTransaction(db, _data);
+    
+    rimraf.sync(filePath);
+    // get data
+    let rs: any = await hisTransactionModel.getIssueTransactionMappingData(db, id, hospcode);
+    // remove temp file 
+    res.send({ ok: true, rows: rs });
+
+  } else {
+    res.send({ ok: false, error: 'Header ไม่ถูกต้อง' })
+  }
+
+}));
+
 export default router;

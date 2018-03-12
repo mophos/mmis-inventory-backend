@@ -58,7 +58,6 @@ router.post('/', co(async (req, res, next) => {
       _genericIds.push(v.generic_id);
       _generics.push(obj);
       let issue_generic_id = await issueModel.saveGenerics(db, _generics);
-      console.log('v.items',v.items);
       
       for (let e of v.items) {      
         let objP: any = {};
@@ -73,7 +72,6 @@ router.post('/', co(async (req, res, next) => {
         _products.push(objP);
         _cutProduct.push(cutProduct);
         await issueModel.saveProducts(db, _products);
-         console.log(_products);
          
       }
     }
@@ -306,6 +304,7 @@ router.get('/generic/qty/:genericId/:warehouseId', co(async (req, res, next) => 
   }
 
 }));
+
 router.get('/generic/product/qty/:genericId', co(async (req, res, next) => {
 
   let db = req.db;
@@ -323,6 +322,7 @@ router.get('/generic/product/qty/:genericId', co(async (req, res, next) => {
   }
 
 }));
+
 router.get('/generic-warehouse-lots/:genericId/:warehouseId', co(async (req, res, next) => {
 
   let db = req.db;
@@ -344,10 +344,16 @@ router.get('/generic-warehouse-lots/:genericId/:warehouseId', co(async (req, res
 
 router.get('/', co(async (req, res, next) => {
   let db = req.db;
+  let limit = +req.query.limit || 20;
+  let offset = +req.query.offset || 0;
+  let status = req.query.status || null;
+
   let warehouseId = req.decoded.warehouseId;
   try {
-    let rs = await issueModel.getList(db);
-    res.send({ ok: true, rows: rs[0] });
+    let rs = await issueModel.getList(db, +limit, offset, status);
+    let rsTotal = await issueModel.getListTotal(db, status);
+
+    res.send({ ok: true, rows: rs, total: +rsTotal[0].total });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
