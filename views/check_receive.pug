@@ -28,13 +28,11 @@ html
         br
         .fontspace
         | ตามบันทึกที่ #{check_receive[c].purchase_order_number} ลงวันที่ #{check_receive[c].receive_date} ได้แต่งตั้งคณะกรรมการตรวจรับพัสดุนั้น บัดนี้คณะกรรมการตรวจรับพัสดุได้ร่วมกันตรวจพัสดุซึ่ง 
-        | #{check_receive[c].labeler_name} ผู้ขายได้นำส่งมอบเมื่อ วันที่ #{check_receive[c].delivery_date} ตามใบส่งของเลขที่ #{check_receive[c].delivery_code} จำนวน #{check_receive[c].amount_qty} รายการ 
+        | #{check_receive[c].labeler_name} ผู้ขายได้นำส่งมอบเมื่อ วันที่ #{today} ตามใบส่งของเลขที่ #{check_receive[c].delivery_code} จำนวน #{check_receive[c].amount_qty} รายการ 
         |	รวมเป็นเงินสุทธิ #{check_receive[c].total_price} บาท (#{bahtText[c]}) 
         br
-        .fontspace
         | คณะกรรมการตรวจรับพัสดุเห็นว่ามีปริมาณและคุณภาพถูกต้องครบถ้วน และได้ส่งมอบให้เจ้าหน้าที่พัสดุรับไว้เรียบร้อยแล้ว 
         br
-        .fontspace
         | จึงพร้อมกันลงลายมือชื่อไว้เป็นหลักฐาน
         br
         br
@@ -58,6 +56,8 @@ html
                       td
                       td
         | ได้รับมอบพัสดุรายการข้างต้นจากคณะกรรมการตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
+        br
+        br
         br
         table(style="width: 90%; margin-left: 5%;")
           tr
@@ -113,6 +113,8 @@ html
               | (#{master})
               br
               | ผู้อำนวยการ#{hospitalName}
+              br
+              | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{province}
             td
         - c++ 
         .pagebreak

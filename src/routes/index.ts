@@ -9,7 +9,11 @@ import { SerialModel } from '../models/serial';
 import { StockCard } from '../models/stockcard';
 import { IssueModel } from '../models/issue'
 import { TIMEOUT } from 'dns';
+<<<<<<< HEAD
 import { assertJSXClosingElement } from 'babel-types';
+=======
+import { awaitExpression } from 'babel-types';
+>>>>>>> 10890ca97df44787215eebf6fdeba99a0abec894
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const serialModel = new SerialModel();
@@ -102,6 +106,7 @@ router.get('/report/list/requis/:requisId', wrap(async (req, res, next) => {
       value.expired_date = moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543);
       value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty);
       value.total = inventoryReportModel.commaQty(value.total);
+      value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty);
     })
 
     let boox_prefix = await inventoryReportModel.boox_prefix(db);
@@ -1063,6 +1068,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
+
   let qty = 0;
   let bahtText: any = []
   let committee: any = []
@@ -1083,7 +1089,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   }
   if (committee[0] === undefined) { res.render('no_commitee'); }
   let staffReceive = await inventoryReportModel.staffReceive(db);
-  let chief = await inventoryReportModel.getChief(db, 'CHIEF')
+  let chief = await inventoryReportModel.getChief(db, 'CHIEF');
 
   res.render('check_receive', {
     chief: chief[0],

@@ -214,6 +214,31 @@ export class IssueModel {
       GROUP BY
         wp2.product_id
     ) AS balance_unit_cost,
+    (
+      SELECT
+        sum(wp.qty)
+      FROM
+        wm_products wp
+      WHERE
+        wp.product_id IN (
+          SELECT
+            mp.product_id
+          FROM
+            mm_products mp
+          WHERE
+            mp.generic_id IN (
+              SELECT
+                generic_id
+              FROM
+                mm_products mp
+              WHERE
+                mp.product_id = sp.product_id
+            )
+        )
+      AND wp.warehouse_id = '${warehouseId}'
+      GROUP BY
+        wp.warehouse_id
+    )-sp.qty AS balance_generic,
     ss.issue_id as ref_src,
     ts.transaction_name
   FROM

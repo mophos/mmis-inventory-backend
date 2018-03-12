@@ -773,20 +773,122 @@ export class ReceiveModel {
   }
 
   getProductRemainByReceiveOtherIds(knex: Knex, receiveIds: any, warehouseId: any) {
-    let sql=`SELECT wp.product_id,sum(wp.qty) as balance,wp.warehouse_id from wm_receive_other_detail rd
-    join wm_products wp on rd.product_id=wp.product_id
-    where receive_other_id in (${receiveIds})
-    and wp.warehouse_id='${warehouseId}'
-    GROUP BY wp.product_id,wp.warehouse_id`;
+    let sql=`SELECT
+    rd.product_id,
+    rd.warehouse_id,
+    IFNULL(
+      (
+        SELECT
+          sum(wp.qty)
+        FROM
+          wm_products wp
+        WHERE
+          wp.product_id = rd.product_id
+        AND wp.warehouse_id = rd.warehouse_id
+        GROUP BY
+          wp.product_id
+      ),
+      0
+    ) AS balance,
+    (
+      SELECT
+        sum(wp.qty)
+      FROM
+        wm_products wp
+      WHERE
+        wp.product_id IN (
+          SELECT
+            mp.product_id
+          FROM
+            mm_products mp
+          WHERE
+            mp.generic_id IN (
+              SELECT
+                generic_id
+              FROM
+                mm_products mp
+              WHERE
+                mp.product_id = rd.product_id
+            )
+        )
+      AND wp.warehouse_id = rd.warehouse_id
+      GROUP BY
+        wp.warehouse_id
+    ) AS balance_generic
+  FROM
+    wm_receive_other_detail rd
+  WHERE
+    rd.receive_other_id IN (${receiveIds})
+  AND rd.warehouse_id = '${warehouseId}'`;
     return knex.raw(sql);
   }
 
   getProductRemainByReceiveIds(knex: Knex, receiveIds: any, warehouseId: any) {
-    let sql=`SELECT wp.product_id,sum(wp.qty) as balance,wp.warehouse_id from wm_receive_detail rd
-    join wm_products wp on rd.product_id=wp.product_id
-    where receive_id in (${receiveIds})
-    and wp.warehouse_id='${warehouseId}'
-    GROUP BY wp.product_id,wp.warehouse_id`;
+    // let sql=`SELECT wp.product_id,sum(wp.qty) as balance,wp.warehouse_id,
+    // (
+    //   SELECT
+    //     sum(wm.qty)
+    //   FROM
+    //     wm_products wm
+    //   JOIN mm_products mp ON wm.product_id = mp.product_id
+    //   WHERE
+    //     wm.product_id = wp.product_id
+    //   AND wm.warehouse_id = wp.warehouse_id
+    //   GROUP BY
+    //     mp.generic_id
+    // ) AS balance_generic
+    // from wm_receive_detail rd
+    // join wm_products wp on rd.product_id=wp.product_id
+    // where rd.receive_id in (${receiveIds})
+    // and rd.warehouse_id='${warehouseId}'
+    // GROUP BY wp.product_id,wp.warehouse_id`;
+    let sql=`SELECT
+      rd.product_id,
+      rd.warehouse_id,
+      IFNULL(
+        (
+          SELECT
+            sum(wp.qty)
+          FROM
+            wm_products wp
+          WHERE
+            wp.product_id = rd.product_id
+          AND wp.warehouse_id = rd.warehouse_id
+          GROUP BY
+            wp.product_id
+        ),
+        0
+      ) AS balance,
+      (
+        SELECT
+          sum(wp.qty)
+        FROM
+          wm_products wp
+        WHERE
+          wp.product_id IN (
+            SELECT
+              mp.product_id
+            FROM
+              mm_products mp
+            WHERE
+              mp.generic_id IN (
+                SELECT
+                  generic_id
+                FROM
+                  mm_products mp
+                WHERE
+                  mp.product_id = rd.product_id
+              )
+          )
+        AND wp.warehouse_id = rd.warehouse_id
+        GROUP BY
+          wp.warehouse_id
+      ) AS balance_generic
+    FROM
+      wm_receive_detail rd
+    WHERE
+      rd.receive_id IN (${receiveIds})
+    AND rd.warehouse_id = '${warehouseId}'`
     return knex.raw(sql);
   }
 }

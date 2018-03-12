@@ -923,17 +923,20 @@ router.post('/approve', co(async (req, res, next) => {
       obj.in_unit_cost = v.cost;
 
       let balance = 0;
-      let idx = _.findIndex(balances, {
+      let balance_generic = 0; let idx = _.findIndex(balances, {
         product_id: v.product_id,
         warehouse_id: v.warehouse_id
       });
 
       if (idx > -1) {
         balance = balances[idx].balance + v.qty;
+        balance_generic = balances[idx].balance_generic + v.qty;
         balances[idx].balance += v.qty;
+        balances[idx].balance_generic += v.qty;
       }
 
       obj.balance_qty = balance;
+      obj.balance_generic_qty = balance_generic;
       obj.balance_unit_cost = v.cost;
       obj.ref_src = v.vendor_labeler_id;
       obj.ref_dst = v.warehouse_id;
@@ -1014,6 +1017,10 @@ router.post('/other/approve', co(async (req, res, next) => {
     let warehouseId = req.decoded.warehouseId;
     let balances = await receiveModel.getProductRemainByReceiveOtherIds(db, receiveIds, warehouseId);
     balances = balances[0];
+    
+    console.log('******************************');
+    console.log(balances);
+    console.log('******************************');
 
     // save stockcard
     let data = [];
@@ -1030,16 +1037,21 @@ router.post('/other/approve', co(async (req, res, next) => {
       obj.in_unit_cost = v.cost;
 
       let balance = 0;
+      let balance_generic = 0;
       let idx = _.findIndex(balances, {
         product_id: v.product_id,
         warehouse_id: v.warehouse_id
       });
+
       if (idx > -1) {
         balance = balances[idx].balance + v.qty;
+        balance_generic = balances[idx].balance_generic + v.qty;
         balances[idx].balance += v.qty;
+        balances[idx].balance_generic += v.qty;
       }
 
       obj.balance_qty = balance;
+      obj.balance_generic_qty = balance_generic;
       obj.balance_unit_cost = v.cost;
       obj.ref_src = v.donator_id;
       obj.ref_dst = v.warehouse_id;

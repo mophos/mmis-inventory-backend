@@ -110,6 +110,7 @@ router.post('/', co(async (req, res, next) => {
           objStockcard.ref_src = rs.ref_src;
           objStockcard.ref_dst = warehouseId;
           objStockcard.comment = rs.transaction_name;
+          objStockcard.balance_generic_qty = rs.balance_generic;
           data.push(objStockcard)
         }
       });
@@ -227,6 +228,7 @@ router.post('/approve', co(async (req, res, next) => {
         objStockcard.ref_src = e.ref_src;
         objStockcard.ref_dst = warehouseId;
         objStockcard.comment = e.transaction_name;
+        objStockcard.balance_generic_qty = e.balance_generic;
         data.push(objStockcard)      
         cutProduct.cutQty = e.out_qty;
         cutProduct.wm_product_id = e.wm_product_id;
