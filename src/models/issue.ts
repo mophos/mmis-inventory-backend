@@ -127,15 +127,33 @@ export class IssueModel {
         return knex.raw(sql)
   }
 
-  getList(knex: Knex, limit: number = 15, offset: number = 0) {
-    let sql = `
-    select ss.*, ts.transaction_name, (select count(*) from wm_issue_generics as sd where sd.issue_id=ss.issue_id) as total
-    from wm_issue_summary as ss
-    left join wm_transaction_issues as ts on ts.transaction_id=ss.transaction_issue_id
-    order by ss.issue_id desc
-    `;
+  getList(knex: Knex, limit: number = 15, offset: number = 0, status: any = '') {
 
-    return knex.raw(sql);
+    let subQuery = knex('wm_issue_generics as sd')
+      .select(knex.raw('count(*) as total'))
+      .whereRaw('sd.issue_id=ss.issue_id')
+      .as('total');
+    
+    let query = knex('wm_issue_summary as ss')
+      .select('ss.*', 'ts.transaction_name', subQuery)
+      .leftJoin('wm_transaction_issues as ts', 'ts.transaction_id', 'ss.transaction_issue_id')
+      .orderBy('ss.issue_id', 'desc');
+  
+    if (status) {
+      query.where('ss.approved', status)
+    }
+      
+    return query.limit(limit).offset(offset);
+
+  }
+
+  getListTotal(knex: Knex, status: any = '') {
+    let query = knex('wm_issue_summary as ss')
+      .select(knex.raw('count(*) as total'))
+    if (status) {
+      query.where('ss.approved', status);
+    }
+    return query;  
   }
 
     getListWarehouse(knex: Knex, warehouseId: any, limit: number = 15, offset: number = 0) {
