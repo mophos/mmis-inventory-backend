@@ -141,4 +141,26 @@ export class HisTransactionModel {
       .where('product_id', productId);
   }
 
+  saveIssueTransaction(db: Knex, data: any[]) {
+    return db('tmp_import_issue')
+      .insert(data);
+  }
+
+  getIssueTransactionMappingData(db: Knex, uuid: any, hospcode: any) {
+    return db('tmp_import_issue as t')
+      .select('h.mmis', db.raw('sum(t.qty) as issue_qty'), 'g.generic_id', 'g.generic_name')
+      .innerJoin('wm_his_mappings as h', 'h.his', 't.icode')
+      .innerJoin('mm_generics as g', 'g.generic_id', 'h.mmis')
+      .where('h.hospcode', hospcode)
+      .where('uuid', uuid)
+      .groupBy('h.mmis');
+  
+  }
+
+  removeIssueTransaction(db: Knex, peopleUserId: any) {
+    return db('tmp_import_issue')
+      .where('people_user_id', peopleUserId)  
+      .del();
+  }
+
 }

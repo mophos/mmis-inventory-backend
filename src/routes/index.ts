@@ -878,7 +878,7 @@ router.get('/report/tranfers', wrap(async (req, res, next) => {
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   moment.locale('th');
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(' HH:mm') + ' น.';
+  let today = moment(new Date()).format('D MMMM ') + (+moment(new Date()).get('year') + 543);
   let tranfer: any;
   let tranferCount: any;
   let _tranfers: any = [];
