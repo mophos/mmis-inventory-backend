@@ -392,10 +392,10 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any) => {
         balances[dstIdx].balance_generic += v.qty;
       }
       objIn.balance_qty = dstBalance;
+      objIn.balance_generic_qty = dstBalanceGeneric;
       objIn.balance_unit_cost = v.cost;
       objIn.ref_src = v.src_warehouse_id;
       objIn.ref_dst = v.dst_warehouse_id;
-      objIn.balance_generic_qty = dstBalanceGeneric;
       objIn.comment = 'รับโอน';
       data.push(objIn);
     }

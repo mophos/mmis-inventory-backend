@@ -684,7 +684,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
         if (isClose) {
           res.send({ ok: false, error: 'บัญชีถูกปิดแล้ว' });
         } else {
-          await orderModel.saveApproveConfirmOrder(db, confirmId, approveData);
+          // await orderModel.saveApproveConfirmOrder(db, confirmId, approveData);
 
           // save product to wm_products
           let preReq = await orderModel.getPreRequisitionDetail(db, confirmId);
@@ -744,9 +744,36 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
               products.push(obj);
             }
           });
-
+          console.log('/*/*/*/*/*/*/*');
+          
           // create stockcard detail
           let sc: any = await orderModel.getRequisitionOrderItem(db, confirmId);
+          let balances = [];
+          for (let s of sc[0]) {
+            console.log('*****************************');
+            console.log(s);
+            console.log('*****************************');
+
+            let srcObjBalance: any = {};
+            let dstObjBalance: any = {};
+            let srcBalance = await orderModel.getBalance(db, s.product_id, s.src_warehouse);
+            srcBalance[0].forEach(v => {
+              srcObjBalance.product_id = v.product_id;
+              srcObjBalance.warehouse_id = v.warehouse_id;
+              srcObjBalance.balance_qty = v.balance;
+              srcObjBalance.balance_generic_qty = v.balance_generic;
+            });
+            balances.push(srcObjBalance);
+            let dstBalance = await orderModel.getBalance(db, s.product_id, s.dst_warehouse)
+            dstBalance[0].forEach(v => {
+              dstObjBalance.product_id = v.product_id;
+              dstObjBalance.warehouse_id = v.warehouse_id;
+              dstObjBalance.balance_qty = v.balance;
+              dstObjBalance.balance_generic_qty = v.balance_generic;
+            });
+            balances.push(dstObjBalance);
+          }
+
           sc[0].forEach(v => {
             let objStockcardOut: any = {}
             let objStockcardIn: any = {}
@@ -760,7 +787,23 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             objStockcardOut.in_unit_cost = 0;
             objStockcardOut.out_qty = v.confirm_qty;
             objStockcardOut.out_unit_cost = v.cost;
-            objStockcardOut.balance_qty = v.src_balance_qty - v.confirm_qty;
+
+            let srcBalance = 0;
+            let srcBalanceGeneric = 0;
+            let srcIdx = _.findIndex(balances, {
+              product_id: v.product_id,
+              warehouse_id: v.src_warehouse,
+            });
+            if (srcIdx > -1) {
+              srcBalance = balances[srcIdx].balance_qty;
+              balances[srcIdx].balance_qty -= v.qty;
+              srcBalanceGeneric = balances[srcIdx].balance_generic_qty;
+              balances[srcIdx].balance_generic_qty -= v.qty;
+            }
+            objStockcardOut.balance_qty = +srcBalance - +v.confirm_qty;
+            objStockcardOut.balance_generic_qty = +srcBalanceGeneric - +v.confirm_qty;
+
+
             objStockcardOut.balance_unit_cost = v.cost;
             objStockcardOut.ref_src = v.src_warehouse;
             objStockcardOut.ref_dst = v.dst_warehouse;
@@ -777,20 +820,30 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             objStockcardIn.in_unit_cost = v.cost;
             objStockcardIn.out_qty = 0
             objStockcardIn.out_unit_cost = 0
-            objStockcardIn.balance_qty = v.dst_balance_qty + v.confirm_qty;
+
+            let dstBalance = 0;
+            let dstBalanceGeneric = 0;
+            let dstIdx = _.findIndex(balances, {
+              product_id: v.product_id,
+              warehouse_id: v.dst_warehouse,
+            });
+            if (dstIdx > -1) {
+              dstBalance = balances[dstIdx].balance_qty;
+              balances[dstIdx].balance_qty += v.qty;
+              dstBalanceGeneric = balances[dstIdx].balance_generic_qty;
+              balances[dstIdx].balance_generic_qty += v.qty;
+            }
+            objStockcardIn.balance_qty = +dstBalance + +v.confirm_qty;
+            objStockcardIn.balance_generic_qty = +dstBalanceGeneric + +v.confirm_qty;
             objStockcardIn.balance_unit_cost = v.cost;
             objStockcardIn.ref_src = v.dst_warehouse;
             objStockcardIn.ref_dst = v.src_warehouse;
             objStockcardIn.comment = 'เบิก';
             stockCard.push(objStockcardIn);
           })
-          console.log('********************************************');
-          console.log(stockCard);
-          console.log('********************************************');
-
           // save stock card
           await orderModel.saveStockCard(db, stockCard);
-          // save true data
+          // // save true data
           await productModel.saveProducts(db, products);
           await orderModel.decreaseQty(db, dstProducts);
 
