@@ -2,6 +2,7 @@ include css.pug
 style(type='text/css').
   body{
   font-family:'THSarabunNewIT';
+  font-size: 16pt;
   }
 style(type='text/css' media='print').
    @page{
@@ -23,16 +24,13 @@ html
         table.table
           tr
             td.right วันที่ #{today}
-        br
         .fontspace
         | ตามกรรมการผู้มีรายนามและตำแหน่งข้างท้าย ได้พร้อมกันตรวจรับ #{generic_name[s]}
         | ซึ่ง #{check_receive[s][0].labeler_name} ผู้ขายได้นำส่งตามใบสั่งซื้อของ#{hospitalName}
         | เลขที่ #{check_receive[s][0].purchase_order_number} ลงวันที่ #{check_receive[s][0].receive_date} 
         | เพื่อใช้ในงานการรักษาของ#{hospitalName}
         - if(length[s] <= 4)
-          br
           | ดังปรากฏรายละเอียดตรวจรับ คือ
-          br
           table.table
             - var i = 0
               for v in check_receive[s]
@@ -45,55 +43,51 @@ html
                   td.right เป็นเงิน 
                   td.right #{v.total_price} &nbsp;
                   td.left บาท 
-                  td.left (#{bahtText[s][i]})
+                  td.left 
                 - i++
+            tr
+              td(colspan='6').right รวมเป็นเงิน
+              td.right #{totalPrice} &nbsp;
+              td(colspan='2').left บาท
               br
         - else
-          br
-          br
           | ดังปรากฏรายละเอียดตรวจรับตามใบแนบเลขที่ #{check_receive[s][0].purchase_order_number}-๑
-          br
-        br
         | คณะกรรมการตรวจรับพัสดุเห็นว่ามีปริมาณและคุณภาพถูกต้องครบถ้วน และได้ส่งมอบให้เจ้าหน้าที่พัสดุรับไว้เรียบร้อยแล้ว 
-        br
         | จึงพร้อมกันลงลายมือชื่อไว้เป็นหลักฐาน
-        br
         br
         table(style="width: 90%; margin-left: 5%;")
           - var c = 0
                 for v in committee[s]
                   - c++ 
                     tr
+                      td
+                      td(style="height:20px;")
+                      td 
+                      td
+                    tr
                       td.right(width="5%") (ลงชื่อ)
                       td.center(width="50%") ........................................................... 
-                      td.right #{v.position_name}
-                      td.left &nbsp;ตำแหน่ง #{v.pname}
+                      td.left ตำแหน่ง #{v.pname}
+                      td.left &nbsp;#{v.position_name}
                     tr
                       td
                       td.center (#{v.title_name}#{v.fname} #{v.lname})
                       td.center 
                       td
-                    tr
-                      td
-                      td.center(height='20px')
-                      td
-                      td
         | ได้รับมอบพัสดุรายการข้างต้นจากคณะกรรมการตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
         br
         br
-        br
-        table(style="width: 90%; margin-left: 5%;")
+        table(style="width: 100%;")
           tr
             td.right(width="5%") (ลงชื่อ)
             td.center(width="50%") ...........................................................
-            td.right #{staffReceive.type_name}
-            td.left &nbsp;ตำแหน่ง #{staffReceive.position_name}
+            td.left ตำแหน่ง #{staffReceive.position_name}
+            td.left &nbsp; #{staffReceive.type_name}
           tr
             td
             td.center ( #{staffReceive.title_name}#{staffReceive.fname}  #{staffReceive.lname} )
             td
             td
-        br
         | เรียน  ผู้ว่าราชการจังหวัด#{province}
         br
         .fontspace
