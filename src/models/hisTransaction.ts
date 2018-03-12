@@ -68,15 +68,14 @@ export class HisTransactionModel {
 
   getHisTransaction(db: Knex, hospcode: any) {
     let sql = `
-    select tt.*, hm.mmis, hm.conversion, w.warehouse_name, w.warehouse_id,
-    mp.generic_id, mp.working_code, mg.generic_name, mu.unit_name
+    select tt.*, hm.mmis, hm.conversion, w.warehouse_name, w.warehouse_id, 
+    mg.generic_name, mg.working_code, mu.unit_name
     from wm_his_transaction as tt
     inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode
     inner join wm_warehouses as w on w.warehouse_id=tt.mmis_warehouse
-    inner join wm_products as wp on wp.product_id=hm.mmis and wp.warehouse_id=w.warehouse_id
-    inner join mm_products as mp on mp.product_id=wp.product_id
-    inner join mm_generics as mg on mg.generic_id=mp.generic_id
-    left join mm_units as mu on mu.unit_id=mp.primary_unit_id
+    inner join mm_generics as mg on mg.generic_id=hm.mmis
+    left join mm_units as mu on mu.unit_id=mg.primary_unit_id
+      
     where tt.is_cut_stock='N'
     and tt.hospcode=?
     group by tt.transaction_id
@@ -87,23 +86,61 @@ export class HisTransactionModel {
 
   // get his transaction for issue
   getHisTransactionForImport(db: Knex, transactionIds: any[]) {
-    let subQuery = db('wm_products as wp')
-      // .select(db.raw('sum(wp.qty) as total'))
-      .sum('wp.qty')
-      .as('total')
-      .whereRaw('wp.product_id=hm.mmis')
-      .groupBy('wp.product_id');
+    /*
+    select tt.transaction_id, tt.date_serv, tt.hn, tt.seq, tt.mmis_warehouse as warehouse_id,
+    mp.product_id, tt.qty*hm.conversion as qty,
+    (
+    	select sum(wp.qty) as total
+    	from wm_products as wp
+    	where wp.product_id=mp.product_id and wp.warehouse_id=tt.mmis_warehouse
+    ) as total
+    from wm_his_transaction as tt
+    inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode
+    inner join wm_warehouses as w on w.warehouse_id=tt.mmis_warehouse
+    inner join mm_generics as mg on mg.generic_id=hm.mmis
+    inner join mm_products as mp on mp.generic_id=mg.generic_id
 
+    where tt.is_cut_stock='N'
+    and tt.hospcode='10692'
+    group by mp.product_id
+    having total > 0
+    order by tt.date_serv ASC
+    */
+   
+    let subQuery = db('wm_products as wp')
+      .select(db.raw('sum(wp.qty)'))
+      .whereRaw('wp.product_id=mp.product_id and wp.warehouse_id=tt.mmis_warehouse')
+      .as('total');
+    
     return db('wm_his_transaction as tt')
-      .select('tt.transaction_id', 'tt.hn', 'tt.seq', 'tt.mmis_warehouse as warehouse_id', db.raw('(tt.qty*hm.conversion) as qty'),
-      'hm.mmis as product_id', 'tt.date_serv', subQuery)
+      .select('tt.transaction_id', 'tt.date_serv', 'tt.hn', 'tt.seq', 'tt.mmis_warehouse as warehouse_id',
+        'mp.product_id', db.raw('tt.qty * hm.conversion as qty'), subQuery)
       .joinRaw('inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode')
-      // .innerJoin('wm_warehouses as w', 'w.his_dep_code', 'tt.warehouse_code')
-      // .joinRaw('inner join wm_products as wp on wp.product_id=hm.mmis and wp.warehouse_id=w.warehouse_id')
+      .innerJoin('mm_generics as mg', 'mg.generic_id', 'hm.mmis')
+      .innerJoin('mm_products as mp', 'mp.generic_id', 'mg.generic_id')
       .whereIn('tt.transaction_id', transactionIds)
-      .where('tt.is_cut_stock', '!=', 'Y')
-      .groupBy('tt.transaction_id')
+      .groupBy('mp.product_id')
+      .havingRaw('total>0')
       .orderBy('tt.date_serv', 'ASC');
+    
+    // let subQuery = db('wm_products as wp')
+    //   // .select(db.raw('sum(wp.qty) as total'))
+    //   .sum('wp.qty')
+    //   .as('total')
+    //   .whereRaw('wp.product_id=hm.mmis')
+    //   .groupBy('wp.product_id');
+
+    // return db('wm_his_transaction as tt')
+    //   .select(
+    //   'tt.transaction_id', 'tt.hn', 'tt.seq', 'tt.mmis_warehouse as warehouse_id',
+    //   db.raw('(tt.qty*hm.conversion) as qty'),
+    //   'hm.mmis as product_id', 'tt.date_serv', subQuery)
+    //   .joinRaw('inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode')
+    //   .innerJoin('mm_products as mp', 'mp.generic_id', 'hh.mmis')
+    //   .whereIn('tt.transaction_id', transactionIds)
+    //   .where('tt.is_cut_stock', '!=', 'Y')
+    //   .groupBy('tt.transaction_id')
+    //   .orderBy('tt.date_serv', 'ASC');
   }
 
   getProductInWarehouseForImport(db: Knex, warehouseIds: any[], productIds: any[]) {
