@@ -217,6 +217,7 @@ export class InventoryReportModel {
         let sql = `SELECT
         ws.product_id,
         ws.generic_id,
+        mg.generic_name,
         ws.stock_date,
         ws.transaction_type,
         ws.comment,
@@ -262,9 +263,9 @@ export class InventoryReportModel {
         ws.in_qty * ws.balance_unit_cost,
         ws.out_qty * ws.balance_unit_cost
     ) AS cost,
-     ws.balance_qty,
+     ws.balance_generic_qty,
      ws.balance_unit_cost,
-     ws.balance_qty * ws.balance_unit_cost AS balance_amount
+     ws.balance_generic_qty * ws.balance_unit_cost AS balance_amount
     FROM
         wm_stock_card AS ws
     JOIN mm_generics AS mg ON mg.generic_id = ws.generic_id
@@ -282,7 +283,7 @@ export class InventoryReportModel {
     )
     LEFT JOIN wm_warehouses AS ww ON
     IF (
-        ws.transaction_type = "TRN_OUT" || ws.transaction_type = "IST" || ws.transaction_type = "REQ_OUT" || ws.transaction_type = "ADD_OUT" || ws.transaction_type = "REQ_IN",
+        ws.transaction_type = "TRN_OUT" || ws.transaction_type = "REQ_OUT" || ws.transaction_type = "ADD_OUT" || ws.transaction_type = "REQ_IN",
         ww.warehouse_id = ws.ref_dst,
         ''
     )
@@ -295,7 +296,7 @@ export class InventoryReportModel {
     LEFT JOIN mm_units AS mu ON mg.primary_unit_id = mu.unit_id
     LEFT JOIN mm_generic_dosages AS mgd ON mg.dosage_id = mgd.dosage_id
     WHERE
-    
+    (
     IF (
         ws.transaction_type = "REV",
         ws.ref_dst = '${warehouseId}',
@@ -355,7 +356,8 @@ export class InventoryReportModel {
         ws.ref_src = '${warehouseId}',
         ''
     )
-    AND ws.generic_id = ${genericId}
+    )
+    AND ws.generic_id = '${genericId}'
     AND ws.stock_date BETWEEN '${startDate}'
     AND '${endDate}'
     ORDER BY
