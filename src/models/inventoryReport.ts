@@ -283,7 +283,7 @@ export class InventoryReportModel {
     )
     LEFT JOIN wm_warehouses AS ww ON
     IF (
-        ws.transaction_type = "TRN_OUT" || ws.transaction_type = "IST" || ws.transaction_type = "REQ_OUT" || ws.transaction_type = "ADD_OUT" || ws.transaction_type = "REQ_IN",
+        ws.transaction_type = "TRN_OUT" || ws.transaction_type = "REQ_OUT" || ws.transaction_type = "ADD_OUT" || ws.transaction_type = "REQ_IN",
         ww.warehouse_id = ws.ref_dst,
         ''
     )
