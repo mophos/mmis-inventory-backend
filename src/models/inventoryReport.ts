@@ -213,50 +213,151 @@ export class InventoryReportModel {
             ned DESC`
         return knex.raw(sql, [startdate, enddate])
     }
-    generic_stock(knex: Knex, genericId, startDate, endDate) {
+    generic_stock(knex: Knex, genericId, startDate, endDate, warehouseId) {
         let sql = `SELECT
         ws.product_id,
         ws.generic_id,
-        mg.generic_name,
         ws.stock_date,
         ws.transaction_type,
         ws.comment,
         ws.document_ref_id,
-    IF (ml.labeler_name IS NOT NULL,ml.labeler_name,ww.warehouse_name) AS warehouse_name,
-        ww.warehouse_id,
-        ws.in_qty,
-        ws.out_qty,
-        ws.balance_qty,
-        ws.in_unit_cost,
-        ws.out_unit_cost,
-        ws.balance_unit_cost,
         mu.unit_name,
-        mgd.dosage_name
-        
+        mgd.dosage_name,
+    
+    IF (
+        ww.warehouse_name IS NOT NULL,
+        ww.warehouse_name,
+    
+    IF (
+        ml.labeler_name IS NOT NULL,
+        ml.labeler_name,
+    
+    IF (
+        wa.warehouse_name IS NOT NULL,
+        wa.warehouse_name,
+    
+    IF (
+        dt.donator_name IS NOT NULL,
+        dt.donator_name,
+        NULL
+    )
+    )
+    )
+    ) AS warehouse_name,
+    
+    IF (
+        ws.transaction_type = "TRN_IN" || ws.transaction_type = "REV" || ws.transaction_type = "REV_OTHER" || ws.transaction_type = "ADJUST" || ws.transaction_type = "REQ_IN" || ws.transaction_type = "ADD_IN",
+        ws.in_qty,
+        '0'
+    ) AS in_qty,
+    
+    IF (
+        ws.transaction_type = "TRN_OUT" || ws.transaction_type = "ADJUST" || ws.transaction_type = "IST" || ws.transaction_type = "REQ_OUT" || ws.transaction_type = "ADD_OUT",
+        ws.out_qty,
+        '0'
+    ) AS out_qty,
+    
+    IF (
+        ws.transaction_type = "TRN_IN" || ws.transaction_type = "REV" || ws.transaction_type = "REV_OTHER",
+        ws.in_qty * ws.balance_unit_cost,
+        ws.out_qty * ws.balance_unit_cost
+    ) AS cost,
+     ws.balance_qty,
+     ws.balance_unit_cost,
+     ws.balance_qty * ws.balance_unit_cost AS balance_amount
     FROM
-        wm_stock_card AS ws 
-        JOIN mm_generics AS mg ON mg.generic_id = ws.generic_id
-        
-        LEFT JOIN mm_labelers AS ml ON
-    IF
-        ( ws.transaction_type = "REV", CONVERT ( ml.labeler_id, INTEGER ) = ws.ref_src, '' )
-        
-        LEFT JOIN wm_warehouses AS ww ON
-    IF
-        (ws.transaction_type = "TRN_IN" || ws.transaction_type = "IST" || ws.transaction_type = "REV_OTHER" || ws.transaction_type = "ADD_IN",ww.warehouse_id = ws.ref_dst,'')
-    OR
-    IF
-        (ws.transaction_type = "TRN_OUT" || ws.transaction_type = "ADJUST" || ws.transaction_type = "REQ_OUT" || ws.transaction_type = "ADD_OUT",ww.warehouse_id = ws.ref_src,'')
-    OR
-    IF ( ws.transaction_type = "REQ_IN" ,ww.warehouse_id = ws.ref_src,'')
-        LEFT JOIN mm_units AS mu ON mg.primary_unit_id = mu.unit_id
-
-        LEFT JOIN mm_generic_dosages AS mgd ON mg.dosage_id = mgd.dosage_id
-        
+        wm_stock_card AS ws
+    JOIN mm_generics AS mg ON mg.generic_id = ws.generic_id
+    LEFT JOIN mm_labelers AS ml ON
+    IF (
+        ws.transaction_type = "REV",
+        CONVERT (ml.labeler_id, INTEGER) = ws.ref_src,
+        ''
+    )
+    LEFT JOIN wm_donators AS dt ON
+    IF (
+        ws.transaction_type = "REV_OTHER",
+        CONVERT (dt.donator_id, INTEGER) = ws.ref_src,
+        ''
+    )
+    LEFT JOIN wm_warehouses AS ww ON
+    IF (
+        ws.transaction_type = "TRN_OUT" || ws.transaction_type = "IST" || ws.transaction_type = "REQ_OUT" || ws.transaction_type = "ADD_OUT" || ws.transaction_type = "REQ_IN",
+        ww.warehouse_id = ws.ref_dst,
+        ''
+    )
+    LEFT JOIN wm_warehouses AS wa ON
+    IF (
+        ws.transaction_type = "TRN_IN" || ws.transaction_type = "ADD_IN",
+        wa.warehouse_id = ws.ref_src,
+        ''
+    )
+    LEFT JOIN mm_units AS mu ON mg.primary_unit_id = mu.unit_id
+    LEFT JOIN mm_generic_dosages AS mgd ON mg.dosage_id = mgd.dosage_id
     WHERE
-    IF
-        ( ws.generic_id = '${genericId}', ws.generic_id, '' ) 
-    and ws.stock_date between '${startDate}' and '${endDate}'
+    
+    IF (
+        ws.transaction_type = "REV",
+        ws.ref_dst = '${warehouseId}',
+        ''
+    )
+    OR
+    IF (
+        ws.transaction_type = "TRN_IN",
+        ws.ref_dst = '${warehouseId}',
+        ''
+    )
+    OR
+    IF (
+        ws.transaction_type = "TRN_OUT",
+        ws.ref_src = '${warehouseId}',
+        ''
+    )
+    OR
+    IF (
+        ws.transaction_type = "ADJUST",
+        ws.ref_src = '${warehouseId}',
+        ''
+    )
+    OR
+    IF (
+        ws.transaction_type = "IST",
+        ws.ref_dst = '${warehouseId}',
+        ''
+    )
+    OR
+    IF (
+        ws.transaction_type = "REV_OTHER",
+        ws.ref_dst = '${warehouseId}',
+        ''
+    )
+    OR
+    IF (
+        ws.transaction_type = "REQ_OUT",
+        ws.ref_src = '${warehouseId}',
+        ''
+    )
+    OR
+    IF (
+        ws.transaction_type = "REQ_IN",
+        ws.ref_src = '${warehouseId}',
+        ''
+    )
+    OR
+    IF (
+        ws.transaction_type = "ADD_IN",
+        ws.ref_dst = '${warehouseId}',
+        ''
+    )
+    OR
+    IF (
+        ws.transaction_type = "ADD_OUT",
+        ws.ref_src = '${warehouseId}',
+        ''
+    )
+    AND ws.generic_id = ${genericId}
+    AND ws.stock_date BETWEEN '${startDate}'
+    AND '${endDate}'
     ORDER BY
         ws.stock_date
     `
@@ -421,55 +522,54 @@ export class InventoryReportModel {
         // where wr.requisition_id=?`
         let sql = `
         SELECT
-	mg.generic_name,
-	mg.generic_id,
-	r.requisition_code,
-	r.requisition_order_id,
-	r.requisition_date,
-	wh.warehouse_name,
-	mp.product_id,
-	mp.product_name,
-	(
-		SELECT
-			roi.requisition_qty
-		FROM
-			wm_requisition_order_items roi
-		WHERE
-			roi.requisition_order_id = r.requisition_order_id
-		AND mg.generic_id = roi.generic_id
-	) AS requisition_qty,
-	vr.total,
-	mus.unit_name AS small_unit,
-	wp.cost,
-	wp.lot_no,
-	wp.expired_date,
-	mg.primary_unit_id,
-	mup.from_unit_id,
-	mul.unit_name AS large_unit,
-	mup.to_unit_id,
-	mup.qty AS unit_qty,
-	mg.generic_id,
-	mg.generic_name,
-	r.wm_withdraw,
-	r.wm_requisition,
-	r.updated_at,
-	wp.wm_product_id,
-	rci.confirm_qty
-FROM
-	wm_requisition_orders r
-LEFT JOIN wm_requisition_confirms rc ON rc.requisition_order_id = r.requisition_order_id
-LEFT JOIN wm_requisition_confirm_items rci ON rci.confirm_id = rc.confirm_id
-LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
-LEFT JOIN mm_products AS mp ON mp.product_id = wp.product_id
-LEFT JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
-LEFT JOIN mm_unit_generics AS mup ON wp.unit_generic_id = mup.unit_generic_id
-LEFT JOIN mm_units AS mul ON mup.from_unit_id = mul.unit_id
-LEFT JOIN mm_units AS mus ON mup.to_unit_id = mus.unit_id
-LEFT JOIN wm_warehouses wh ON wh.warehouse_id = r.wm_requisition
-LEFT JOIN view_remain_all_products AS vr ON wp.product_id = vr.product_id
-WHERE
-	rc.is_approve = 'Y'
-AND r.requisition_order_id = '${requisId}' and rci.confirm_qty != 0
+        mg.generic_name,
+        mg.generic_id,
+        r.requisition_code,
+        r.requisition_order_id,
+        r.requisition_date,
+        wh.warehouse_name,
+        mp.product_id,
+        mp.product_name,
+        (
+            SELECT
+                roi.requisition_qty
+            FROM
+                wm_requisition_order_items roi
+            WHERE
+                roi.requisition_order_id = r.requisition_order_id
+            AND mg.generic_id = roi.generic_id
+        ) AS requisition_qty,
+        if(rc.is_approve='N',vr.total-rci.confirm_qty,vr.total) as total,
+        mus.unit_name AS small_unit,
+        wp.cost,
+        wp.lot_no,
+        wp.expired_date,
+        mg.primary_unit_id,
+        mup.from_unit_id,
+        mul.unit_name AS large_unit,
+        mup.to_unit_id,
+        mup.qty AS unit_qty,
+        mg.generic_id,
+        mg.generic_name,
+        r.wm_withdraw,
+        r.wm_requisition,
+        r.updated_at,
+        wp.wm_product_id,
+        rci.confirm_qty
+    FROM
+        wm_requisition_orders r
+    LEFT JOIN wm_requisition_confirms rc ON rc.requisition_order_id = r.requisition_order_id
+    LEFT JOIN wm_requisition_confirm_items rci ON rci.confirm_id = rc.confirm_id
+    LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
+    LEFT JOIN mm_products AS mp ON mp.product_id = wp.product_id
+    LEFT JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
+    LEFT JOIN mm_unit_generics AS mup ON wp.unit_generic_id = mup.unit_generic_id
+    LEFT JOIN mm_units AS mul ON mup.from_unit_id = mul.unit_id
+    LEFT JOIN mm_units AS mus ON mup.to_unit_id = mus.unit_id
+    LEFT JOIN wm_warehouses wh ON wh.warehouse_id = r.wm_withdraw
+    LEFT JOIN view_remain_product_in_warehouse AS vr ON wp.product_id = vr.product_id and vr.warehouse_id = r.wm_withdraw
+    WHERE
+    r.requisition_order_id = '${requisId}' and rci.confirm_qty != 0
      order by
      wp.expired_date`
         return (knex.raw(sql))
@@ -1347,9 +1447,10 @@ OR sc.ref_src like ?
         LEFT JOIN pc_purchasing_order ppo ON ppo.purchase_order_id=wr.purchase_order_id
         LEFT JOIN mm_generic_types mgt ON ppo.generic_type_id = mgt.generic_type_id
         WHERE wr.receive_id in (${receiveID})
-        GROUP BY wr.receive_id`
+        GROUP BY ppo.purchase_order_number`
         return (knex.raw(sql))
     }
+    
     checkReceives(knex: Knex, po_ID) {
         let sql = `SELECT wr.receive_id,
         wr.receive_code,

@@ -58,7 +58,6 @@ router.post('/', co(async (req, res, next) => {
       _genericIds.push(v.generic_id);
       _generics.push(obj);
       let issue_generic_id = await issueModel.saveGenerics(db, _generics);
-      console.log('v.items',v.items);
       
       for (let e of v.items) {      
         let objP: any = {};
@@ -73,7 +72,6 @@ router.post('/', co(async (req, res, next) => {
         _products.push(objP);
         _cutProduct.push(cutProduct);
         await issueModel.saveProducts(db, _products);
-         console.log(_products);
          
       }
     }
@@ -93,32 +91,29 @@ router.post('/', co(async (req, res, next) => {
       rs = rs[0];
       let data = [];
       rs.forEach(element => {
-        let objStockcard: any = {}
-        objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-        objStockcard.product_id = rs.product_id;
-        objStockcard.generic_id = rs.generic_id;
-        objStockcard.unit_generic_id = rs.unit_generic_id;
-        objStockcard.transaction_type = 'ADJUST';
-        objStockcard.document_ref_id = id[0];
-        objStockcard.in_qty = 0;
-        objStockcard.in_unit_cost = 0;
-        objStockcard.out_qty = rs.out_qty;
-        objStockcard.out_unit_cost = rs.out_unit_cost;
-        objStockcard.balance_qty = rs.balance_qty;
-        objStockcard.balance_unit_cost = rs.balance_unit_cost;
-        objStockcard.ref_src = rs.ref_src;
-        objStockcard.ref_dst = warehouseId;
-        objStockcard.comment = rs.transaction_name;
-        data.push(objStockcard)
+        if(rs.out_qty != 0){
+          let objStockcard: any = {}
+          objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+          objStockcard.product_id = rs.product_id;
+          objStockcard.generic_id = rs.generic_id;
+          objStockcard.unit_generic_id = rs.unit_generic_id;
+          objStockcard.transaction_type = 'ADJUST';
+          objStockcard.document_ref_id = id[0];
+          objStockcard.in_qty = 0;
+          objStockcard.in_unit_cost = 0;
+          objStockcard.out_qty = rs.out_qty;
+          objStockcard.out_unit_cost = rs.out_unit_cost;
+          objStockcard.balance_qty = rs.balance_qty;
+          objStockcard.balance_unit_cost = rs.balance_unit_cost;
+          objStockcard.ref_src = rs.ref_src;
+          objStockcard.ref_dst = warehouseId;
+          objStockcard.comment = rs.transaction_name;
+          objStockcard.balance_generic_qty = rs.balance_generic;
+          data.push(objStockcard)
+        }
       });
       await stockCardModel.saveFastStockTransaction(db, data);
     }
-
-    
-    
-
-    
-
 
     res.send({ ok: true });
   } catch (error) {
@@ -213,27 +208,30 @@ router.post('/approve', co(async (req, res, next) => {
     let data = [];
     let _cutProduct = [];
     rs[0].forEach(e => {
-      let objStockcard: any = {};
-      let cutProduct: any = {};
-      objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-      objStockcard.product_id = e.product_id;
-      objStockcard.generic_id = e.generic_id;
-      objStockcard.unit_generic_id = e.unit_generic_id;
-      objStockcard.transaction_type = 'ADJUST';
-      objStockcard.document_ref_id = v;
-      objStockcard.in_qty = 0;
-      objStockcard.in_unit_cost = 0;
-      objStockcard.out_qty = e.out_qty;
-      objStockcard.out_unit_cost = e.out_unit_cost;
-      objStockcard.balance_qty = e.balance_qty;
-      objStockcard.balance_unit_cost = e.balance_unit_cost;
-      objStockcard.ref_src = e.ref_src;
-      objStockcard.ref_dst = warehouseId;
-      objStockcard.comment = e.transaction_name;
-      data.push(objStockcard)      
-      cutProduct.cutQty = e.out_qty;
-      cutProduct.wm_product_id = e.wm_product_id;
-      _cutProduct.push(cutProduct);
+      if(rs.out_qty != 0){
+        let objStockcard: any = {};
+        let cutProduct: any = {};
+        objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+        objStockcard.product_id = e.product_id;
+        objStockcard.generic_id = e.generic_id;
+        objStockcard.unit_generic_id = e.unit_generic_id;
+        objStockcard.transaction_type = 'IST';
+        objStockcard.document_ref_id = v;
+        objStockcard.in_qty = 0;
+        objStockcard.in_unit_cost = 0;
+        objStockcard.out_qty = e.out_qty;
+        objStockcard.out_unit_cost = e.out_unit_cost;
+        objStockcard.balance_qty = e.balance_qty;
+        objStockcard.balance_unit_cost = e.balance_unit_cost;
+        objStockcard.ref_src = e.ref_src;
+        objStockcard.ref_dst = warehouseId;
+        objStockcard.comment = e.transaction_name;
+        objStockcard.balance_generic_qty = e.balance_generic;
+        data.push(objStockcard)      
+        cutProduct.cutQty = e.out_qty;
+        cutProduct.wm_product_id = e.wm_product_id;
+        _cutProduct.push(cutProduct);
+      }
     });
 
     let a = await issueModel.updateSummaryApprove(db, v, summary);    
@@ -306,6 +304,7 @@ router.get('/generic/qty/:genericId/:warehouseId', co(async (req, res, next) => 
   }
 
 }));
+
 router.get('/generic/product/qty/:genericId', co(async (req, res, next) => {
 
   let db = req.db;
@@ -323,6 +322,7 @@ router.get('/generic/product/qty/:genericId', co(async (req, res, next) => {
   }
 
 }));
+
 router.get('/generic-warehouse-lots/:genericId/:warehouseId', co(async (req, res, next) => {
 
   let db = req.db;
@@ -344,10 +344,16 @@ router.get('/generic-warehouse-lots/:genericId/:warehouseId', co(async (req, res
 
 router.get('/', co(async (req, res, next) => {
   let db = req.db;
+  let limit = +req.query.limit || 20;
+  let offset = +req.query.offset || 0;
+  let status = req.query.status || null;
+
   let warehouseId = req.decoded.warehouseId;
   try {
-    let rs = await issueModel.getList(db);
-    res.send({ ok: true, rows: rs[0] });
+    let rs = await issueModel.getList(db, +limit, offset, status);
+    let rsTotal = await issueModel.getListTotal(db, status);
+
+    res.send({ ok: true, rows: rs, total: +rsTotal[0].total });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {

@@ -9,6 +9,7 @@ import { SerialModel } from '../models/serial';
 import { StockCard } from '../models/stockcard';
 import { IssueModel } from '../models/issue'
 import { TIMEOUT } from 'dns';
+import { awaitExpression } from 'babel-types';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const serialModel = new SerialModel();
@@ -101,6 +102,7 @@ router.get('/report/list/requis/:requisId', wrap(async (req, res, next) => {
       value.expired_date = moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543);
       value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty);
       value.total = inventoryReportModel.commaQty(value.total);
+      value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty);
     })
 
     let boox_prefix = await inventoryReportModel.boox_prefix(db);
@@ -256,11 +258,12 @@ router.get('/report/maxcost/group/issue/:date', wrap(async (req, res, next) => {
 }));//ทำFrontEndแล้ว //ตรวจสอบแล้ว 14-9-60
 
 
-router.get('/report/generic/stock/:genericId/:startDate/:endDate', wrap(async (req, res, next) => {
+router.get('/report/generic/stock/:genericId', wrap(async (req, res, next) => {
   let db = req.db;
   let genericId = req.params.genericId;
-  let startDate = req.params.startDate;
-  let endDate = req.params.endDate;
+  let startDate = req.query.startDate;
+  let endDate = req.query.endDate;
+  let warehouseId = req.query.warehouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   // if (genericId == 0) { genericId = '%%'; }
@@ -268,14 +271,14 @@ router.get('/report/generic/stock/:genericId/:startDate/:endDate', wrap(async (r
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
-  let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 23:59:59';
+  let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
   console.log(_endDate);
 
   startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
   endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
   // if (generic_stock[0] === undefined) { check = "error"; }
   // if (check == "error") { res.render('error404'); }
-  let generic_stock = await inventoryReportModel.generic_stock(db, genericId, startDate, _endDate)
+  let generic_stock = await inventoryReportModel.generic_stock(db, genericId, _startDate, _endDate, warehouseId)
   generic_stock = generic_stock[0];
   let generic_name = generic_stock[0].generic_name
   let small_unit = generic_stock[0].unit_name
@@ -283,8 +286,8 @@ router.get('/report/generic/stock/:genericId/:startDate/:endDate', wrap(async (r
 
   generic_stock.forEach(v => {
     v.stock_date = moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543);
-    v.in_unit_cost = inventoryReportModel.comma(+v.in_qty * +v.in_unit_cost);
-    v.out_unit_cost = inventoryReportModel.comma(+v.out_qty * +v.out_unit_cost);
+    v.in_cost = inventoryReportModel.comma(+v.in_qty * +v.balance_unit_cost);
+    v.out_cost = inventoryReportModel.comma(+v.out_qty * +v.balance_unit_cost);
     v.balance_unit_cost = inventoryReportModel.comma(+v.balance_qty * +v.balance_unit_cost);
     v.in_qty = inventoryReportModel.commaQty(v.in_qty);
     v.out_qty = inventoryReportModel.commaQty(v.out_qty);
@@ -358,7 +361,7 @@ router.get('/report/issueStraff', wrap(async (req, res, next) => {
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   for (let ii in issue_id) {
-    let i: any = issue_body[0].filter(person => person.issue_id == +issue_id[ii]);
+    let i: any = issue_body.filter(person => person.issue_id == +issue_id[ii]);
     issueBody.push(i[0])
     issue_date.push(moment(i[0].issue_date).format('D MMMM ') + (moment(i[0].issue_date).get('year') + 543));
 
@@ -397,7 +400,7 @@ router.get('/report/issue', wrap(async (req, res, next) => {
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   for (let ii in issue_id) {
-    let i: any = issue_body[0].filter(person => person.issue_id == +issue_id[ii]);
+    let i: any = issue_body.filter(person => person.issue_id == +issue_id[ii]);
     issueBody.push(i[0])
     issue_date.push(moment(i[0].issue_date).format('D MMMM ') + (moment(i[0].issue_date).get('year') + 543));
 
@@ -877,7 +880,7 @@ router.get('/report/tranfers', wrap(async (req, res, next) => {
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   moment.locale('th');
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(' HH:mm') + ' น.';
+  let today = moment(new Date()).format('D MMMM ') + (+moment(new Date()).get('year') + 543);
   let tranfer: any;
   let tranferCount: any;
   let _tranfers: any = [];
@@ -1054,6 +1057,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
+
   let qty = 0;
   let bahtText: any = []
   let committee: any = []
@@ -1074,7 +1078,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   }
   if (committee[0] === undefined) { res.render('no_commitee'); }
   let staffReceive = await inventoryReportModel.staffReceive(db);
-  let chief = await inventoryReportModel.getChief(db, 'CHIEF')
+  let chief = await inventoryReportModel.getChief(db, 'CHIEF');
 
   res.render('check_receive', {
     chief: chief[0],
@@ -1127,6 +1131,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     length.push(_check_receive.length);
     check_receive.push(_check_receive);
   }
+  let totalPrice: any = 0;
   _.forEach(check_receive, opjects => {
     let _generic_name: any = []
     let _bahtText: any = []
@@ -1134,9 +1139,11 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
       opject.receive_date = moment(opject.receive_date).format('D MMMM YYYY');
       opject.delivery_date = moment(opject.delivery_date).format('D MMMM ') + (moment(opject.delivery_date).get('year') + 543);
       _bahtText.push(inventoryReportModel.bahtText(opject.total_price));
+      totalPrice += opject.total_price;
       opject.total_price = inventoryReportModel.comma(opject.total_price);
       _generic_name.push(opject.generic_type_name)
     })
+    totalPrice = inventoryReportModel.comma(totalPrice);
     bahtText.push(_bahtText)
     _generic_name = _.join(_.uniq(_generic_name), ', ')
     generic_name.push(_generic_name)
@@ -1145,6 +1152,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
   let staffReceive = await inventoryReportModel.staffReceive(db);
   let chief = await inventoryReportModel.getChief(db, 'CHIEF')
   res.render('check_receives', {
+    totalPrice: totalPrice,
     chief: chief[0],
     staffReceive: staffReceive[0],
     master: master,
