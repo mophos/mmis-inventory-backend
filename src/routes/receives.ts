@@ -739,7 +739,7 @@ router.post('/waiting', co(async (req, res, next) => {
       data.push(obj);
     });
     console.log(data);
-    
+
     res.send({ ok: true, rows: data, total: total });
   } catch (error) {
     console.log(error);
@@ -887,8 +887,8 @@ router.post('/approve', co(async (req, res, next) => {
         balance: v.balance,
         receive_code: v.receive_code,
         qty: (v.receive_qty * v.conversion_qty),
-        price: v.cost / (v.receive_qty * v.conversion_qty),
-        cost: v.cost / (v.receive_qty * v.conversion_qty),
+        price: (v.cost * v.receive_qty) / (v.receive_qty * v.conversion_qty),
+        cost: (v.cost * v.receive_qty) / (v.receive_qty * v.conversion_qty),
         lot_no: v.lot_no,
         expired_date: moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date, 'YYYY-MM-DD').format('YYYY-MM-DD') : null,
         unit_generic_id: v.unit_generic_id,
@@ -904,32 +904,15 @@ router.post('/approve', co(async (req, res, next) => {
       adjust_price.push(obj_adjust);
     });
 
+    // get balance
+    let warehouseId = req.decoded.warehouseId;
+    let balances = await receiveModel.getProductRemainByReceiveIds(db, receiveIds, warehouseId);
+    balances = balances[0];
     // save stockcard
-    let balances = [];
-
-    products.forEach((v: any) => {
-      let idx = _.findIndex(balances, {
-        product_id: v.product_id,
-        lot_no: v.lot_no,
-        expired_date: v.expired_date,
-        warehouse_id: v.warehouse_id
-      });
-
-      if (idx === -1) {
-        balances.push({
-          product_id: v.product_id,
-          lot_no: v.lot_no,
-          expired_date: v.expired_date,
-          warehouse_id: v.warehouse_id,
-          balance: v.balance
-        });
-      }
-    });
-
     let data = [];
     products.forEach(v => {
       let obj: any = {};
-      
+
       obj.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
       obj.product_id = v.product_id;
       obj.generic_id = v.generic_id;
@@ -942,8 +925,6 @@ router.post('/approve', co(async (req, res, next) => {
       let balance = 0;
       let idx = _.findIndex(balances, {
         product_id: v.product_id,
-        lot_no: v.lot_no,
-        expired_date: v.expired_date,
         warehouse_id: v.warehouse_id
       });
 
@@ -957,17 +938,16 @@ router.post('/approve', co(async (req, res, next) => {
       obj.ref_src = v.vendor_labeler_id;
       obj.ref_dst = v.warehouse_id;
       obj.comment = 'รับเข้าคลังจากใบสั่งซื้อ';
-      data.push(obj);     
+      data.push(obj);
     });
 
-    // console.log(data);
 
     // stock card receive
     await receiveModel.saveProducts(db, products);
     await stockcard.saveFastStockTransaction(db, data);
-    await receiveModel.adjustCost(db,adjust_price);
+    await receiveModel.adjustCost(db, adjust_price);
     console.log(adjust_price);
-    
+
     res.send({ ok: true });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -988,7 +968,6 @@ router.post('/other/approve', co(async (req, res, next) => {
     let approveDatas = [];
     _.forEach(receiveIds, (v: any) => {
       let _approveData = {
-        // approve_id: moment().format('x'),
         approve_date: approveDate,
         created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
         people_user_id: req.decoded.people_user_id,
@@ -1009,7 +988,6 @@ router.post('/other/approve', co(async (req, res, next) => {
       // let id = moment().add(10, 'ms').format('x');
       let id = uuid();
 
-      // let reqQty = +v.requisition_qty || 0;
       let obj: any = {
         wm_product_id: id,
         warehouse_id: v.warehouse_id,
@@ -1017,10 +995,9 @@ router.post('/other/approve', co(async (req, res, next) => {
         generic_id: v.generic_id,
         receive_code: v.receive_code,
         balance: v.balance,
-        // qty: (v.receive_qty * v.conversion_qty) - reqQty,
         qty: (v.receive_qty * v.conversion_qty),
-        price: v.cost / (v.receive_qty * v.conversion_qty),
-        cost: v.cost / (v.receive_qty * v.conversion_qty),
+        price: (v.cost * v.receive_qty) / (v.receive_qty * v.conversion_qty),
+        cost: (v.cost * v.receive_qty) / (v.receive_qty * v.conversion_qty),
         lot_no: v.lot_no,
         expired_date: moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date, 'YYYY-MM-DD').format('YYYY-MM-DD') : null,
         unit_generic_id: v.unit_generic_id,
@@ -1033,27 +1010,12 @@ router.post('/other/approve', co(async (req, res, next) => {
       products.push(obj);
     });
 
+    // get balance
+    let warehouseId = req.decoded.warehouseId;
+    let balances = await receiveModel.getProductRemainByReceiveOtherIds(db, receiveIds, warehouseId);
+    balances = balances[0];
+
     // save stockcard
-    let balances = [];
-
-    products.forEach((v: any) => {
-      let idx = _.findIndex(balances, {
-        product_id: v.product_id,
-        lot_no: v.lot_no,
-        expired_date: v.expired_date,
-        warehouse_id: v.warehouse_id
-      });
-      if (idx === -1) {
-        balances.push({
-          product_id: v.product_id,
-          lot_no: v.lot_no,
-          expired_date: v.expired_date,
-          warehouse_id: v.warehouse_id,
-          balance: v.balance
-        });
-      }
-    });
-
     let data = [];
 
     products.forEach(v => {
@@ -1070,8 +1032,6 @@ router.post('/other/approve', co(async (req, res, next) => {
       let balance = 0;
       let idx = _.findIndex(balances, {
         product_id: v.product_id,
-        lot_no: v.lot_no,
-        expired_date: v.expired_date,
         warehouse_id: v.warehouse_id
       });
       if (idx > -1) {
@@ -1086,8 +1046,6 @@ router.post('/other/approve', co(async (req, res, next) => {
       obj.comment = 'รับเข้าคลังแบบอื่นๆ';
       data.push(obj);
     });
-
-    // console.log(data);
 
     await receiveModel.saveProducts(db, products);
     await stockcard.saveFastStockTransaction(db, data);
@@ -1289,11 +1247,11 @@ router.get('/purchases/check-holiday', co(async (req, res, nex) => {
   date = moment(date).format('YYYY-MM-DD');
   let dateNotYear = '2000' + moment(date).format('-MM-DD');
   console.log('..............');
-  
+
   console.log(date);
-  
-  const lastWeek:  any = moment(date).format('d');
-console.log(lastWeek);
+
+  const lastWeek: any = moment(date).format('d');
+  console.log(lastWeek);
 
   if (lastWeek == 0 || lastWeek == 6) {
     res.send({ ok: false, error: 'วันที่คุณเลือกเป็นวันหยุดราชการ จะรับสินค้าหรือไม่' });
@@ -1330,7 +1288,7 @@ router.get('/purchases/check-expire', co(async (req, res, nex) => {
     console.log(expired_date);
     moment.locale('th');
     console.log(moment(expired_date));
-    
+
     diffday = moment(expired_date).diff(moment(), 'days');
     console.log(diffday);
 
@@ -1366,14 +1324,14 @@ router.put('/update/cost', co(async (req, res, nex) => {
     }
     productsData.push(pdata);
   });
-    try {
-      const rows = await receiveModel.updateCost(db, productsData);
-      res.send({ ok: true, rows: rows[0] });
-    } catch (error) {
-      res.send({ ok: false, error: error.message });
-    } finally {
-      db.destroy();
-    }
+  try {
+    const rows = await receiveModel.updateCost(db, productsData);
+    res.send({ ok: true, rows: rows[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
 
 
 }));
