@@ -277,7 +277,7 @@ router.get('/report/generic/stock/:genericId', wrap(async (req, res, next) => {
   endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
   // if (generic_stock[0] === undefined) { check = "error"; }
   // if (check == "error") { res.render('error404'); }
-  let generic_stock = await inventoryReportModel.generic_stock(db, genericId, _startDate, _endDate,warehouseId)
+  let generic_stock = await inventoryReportModel.generic_stock(db, genericId, _startDate, _endDate, warehouseId)
   generic_stock = generic_stock[0];
   let generic_name = generic_stock[0].generic_name
   let small_unit = generic_stock[0].unit_name
@@ -1128,6 +1128,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     length.push(_check_receive.length);
     check_receive.push(_check_receive);
   }
+  let totalPrice: any = 0;
   _.forEach(check_receive, opjects => {
     let _generic_name: any = []
     let _bahtText: any = []
@@ -1135,9 +1136,11 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
       opject.receive_date = moment(opject.receive_date).format('D MMMM YYYY');
       opject.delivery_date = moment(opject.delivery_date).format('D MMMM ') + (moment(opject.delivery_date).get('year') + 543);
       _bahtText.push(inventoryReportModel.bahtText(opject.total_price));
+      totalPrice += opject.total_price;
       opject.total_price = inventoryReportModel.comma(opject.total_price);
       _generic_name.push(opject.generic_type_name)
     })
+    totalPrice = inventoryReportModel.comma(totalPrice);
     bahtText.push(_bahtText)
     _generic_name = _.join(_.uniq(_generic_name), ', ')
     generic_name.push(_generic_name)
@@ -1146,6 +1149,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
   let staffReceive = await inventoryReportModel.staffReceive(db);
   let chief = await inventoryReportModel.getChief(db, 'CHIEF')
   res.render('check_receives', {
+    totalPrice: totalPrice,
     chief: chief[0],
     staffReceive: staffReceive[0],
     master: master,
