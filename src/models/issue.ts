@@ -156,28 +156,59 @@ export class IssueModel {
     return query;  
   }
 
-    getListWarehouse(knex: Knex, warehouseId: any, limit: number = 15, offset: number = 0) {
-    let sql = `
-    SELECT
-    ss.*, ts.transaction_name,
-    (
-      SELECT
-        count(*)
-      FROM
-        wm_issue_generics AS sd
-      WHERE
-        sd.issue_id = ss.issue_id
-    ) AS total
-  FROM
-    wm_issue_summary AS ss
-  LEFT JOIN wm_transaction_issues AS ts ON ts.transaction_id = ss.transaction_issue_id
-  WHERE
-    ss.warehouse_id = ?
-  ORDER BY
-    ss.issue_id DESC
-    `;
+  getListWarehouseTotal(knex: Knex, warehouseId: any, status: any = '') {
+    let query = knex('wm_issue_summary')
+      .select(knex.raw('count(*) as total'))
+      .where('warehouse_id', warehouseId);
+    
+    if (status) {
+      query.where('approved', status);
+    } 
 
-    return knex.raw(sql, [warehouseId]);
+    return query;
+  }
+
+  getListWarehouse(knex: Knex, warehouseId: any, limit: number = 15, offset: number = 0, status: any = null) {
+    let subQuery = knex('wm_issue_generics as sd')
+      .select(knex.raw('count(*)'))
+      .whereRaw('sd.issue_id=ss.issue_id')
+      .as('total');
+    
+    let query = knex('wm_issue_summary as ss')
+      .select('ss.*', 'ts.transaction_name', subQuery)
+      .leftJoin('wm_transaction_issues as ts', 'ts.transaction_id', 'ss.transaction_issue_id')
+      .where('ss.warehouse_id', warehouseId)
+      .limit(limit).offset(offset);
+    
+    if (status) {
+      query.where('ss.approved', status);
+    }
+
+    query.orderBy('ss.issue_id', 'DESC')    
+
+    return query;
+
+  //   let sql = `
+  //   SELECT
+  //   ss.*, ts.transaction_name,
+  //   (
+  //     SELECT
+  //       count(*)
+  //     FROM
+  //       wm_issue_generics AS sd
+  //     WHERE
+  //       sd.issue_id = ss.issue_id
+  //   ) AS total
+  // FROM
+  //   wm_issue_summary AS ss
+  // LEFT JOIN wm_transaction_issues AS ts ON ts.transaction_id = ss.transaction_issue_id
+  // WHERE
+  //   ss.warehouse_id = ?
+  // ORDER BY
+  //   ss.issue_id DESC
+  //   `;
+
+    // return knex.raw(sql, [warehouseId]);
   }
 
   _getIssues(knex: Knex, id: string) {
