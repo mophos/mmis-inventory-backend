@@ -244,19 +244,19 @@ router.get('/get-mappings-generics', wrap(async (req, res, next) => {
   }
 }));
 
-router.get('/get-mappings-products/:generic_id', wrap(async (req, res, next) => {
-  let db = req.db;
-  let hospcode = req.decoded.his_hospcode;
-  let genericId = req.params.generic_id
-  try {
-    let results = await warehouseModel.getMappingsProducts(db, hospcode, genericId);
-    res.send({ ok: true, rows: results[0] });
-  } catch (error) {
-    res.send({ ok: false, error: error.message })
-  } finally {
-    db.destroy();
-  }
-}));
+// router.get('/get-mappings-products/:generic_id', wrap(async (req, res, next) => {
+//   let db = req.db;
+//   let hospcode = req.decoded.his_hospcode;
+//   let genericId = req.params.generic_id
+//   try {
+//     let results = await warehouseModel.getMappingsProducts(db, hospcode, genericId);
+//     res.send({ ok: true, rows: results[0] });
+//   } catch (error) {
+//     res.send({ ok: false, error: error.message })
+//   } finally {
+//     db.destroy();
+//   }
+// }));
 
 router.get('/get-staff-mappings', wrap(async (req, res, next) => {
   let db = req.db;
@@ -264,7 +264,7 @@ router.get('/get-staff-mappings', wrap(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
 
   try {
-    let results = await warehouseModel.getStaffMappings(db, hospcode, warehouseId);
+    let results = await warehouseModel.getStaffMappingsGenerics(db, hospcode, warehouseId);
     res.send({ ok: true, rows: results[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message })
@@ -292,7 +292,8 @@ router.post('/mapping/save', wrap(async (req, res, next) => {
       mmis: mmis,
       hospcode: hospcode,
       people_user_id: peopleUserId,
-      conversion: conversion
+      conversion: conversion,
+      created_at: moment().format('YYYY-MM-DD HH:mm:ss')
     })
   });
 
