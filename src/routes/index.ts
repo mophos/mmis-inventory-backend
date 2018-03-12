@@ -9,6 +9,7 @@ import { SerialModel } from '../models/serial';
 import { StockCard } from '../models/stockcard';
 import { IssueModel } from '../models/issue'
 import { TIMEOUT } from 'dns';
+import { assertJSXClosingElement } from 'babel-types';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const serialModel = new SerialModel();
@@ -256,53 +257,62 @@ router.get('/report/maxcost/group/issue/:date', wrap(async (req, res, next) => {
 }));//ทำFrontEndแล้ว //ตรวจสอบแล้ว 14-9-60
 
 
-router.get('/report/generic/stock/:genericId', wrap(async (req, res, next) => {
+router.get('/report/generic/stock/', wrap(async (req, res, next) => {
   let db = req.db;
-  let genericId = req.params.genericId;
+  let genericId = req.query.genericId;
   let startDate = req.query.startDate;
   let endDate = req.query.endDate;
   let warehouseId = req.query.warehouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  // if (genericId == 0) { genericId = '%%'; }
-  // else { genericId = '%' + genericId + '%'; }
+
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
   let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
-  console.log(_endDate);
 
   startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
   endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
-  // if (generic_stock[0] === undefined) { check = "error"; }
-  // if (check == "error") { res.render('error404'); }
-  let generic_stock = await inventoryReportModel.generic_stock(db, genericId, _startDate, _endDate,warehouseId)
-  generic_stock = generic_stock[0];
-  let generic_name = generic_stock[0].generic_name
-  let small_unit = generic_stock[0].unit_name
-  let dosage_name = generic_stock[0].dosage_name
 
-  generic_stock.forEach(v => {
-    v.stock_date = moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543);
-    v.in_cost = inventoryReportModel.comma(+v.in_qty * +v.balance_unit_cost);
-    v.out_cost = inventoryReportModel.comma(+v.out_qty * +v.balance_unit_cost);
-    v.balance_unit_cost = inventoryReportModel.comma(+v.balance_qty * +v.balance_unit_cost);
-    v.in_qty = inventoryReportModel.commaQty(v.in_qty);
-    v.out_qty = inventoryReportModel.commaQty(v.out_qty);
-    v.balance_qty = inventoryReportModel.commaQty(v.balance_qty);
-  });
+  let _generic_stock:any = [];
+  let _generic_name = [];
+  let _small_unit = [];
+  let _dosage_name = [];
+  let generic_stock: any = [];
+
+  for (let id in genericId) {
+    generic_stock = await inventoryReportModel.generic_stock(db, genericId[id], _startDate, _endDate, warehouseId);
+    if (generic_stock[0].length > 0) {
+      _generic_stock.push(generic_stock[0])
+      _generic_name.push(generic_stock[0][0].generic_name)
+      _small_unit.push(generic_stock[0][0].unit_name)
+      _dosage_name.push(generic_stock[0][0].dosage_name)
+      _generic_stock[id].forEach(v => {
+        v.stock_date = moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543);
+        v.in_cost = inventoryReportModel.comma(+v.in_qty * +v.balance_unit_cost);
+        v.out_cost = inventoryReportModel.comma(+v.out_qty * +v.balance_unit_cost);
+        v.balance_unit_cost = inventoryReportModel.comma(+v.balance_qty * +v.balance_unit_cost);
+        v.in_qty = inventoryReportModel.commaQty(v.in_qty);
+        v.out_qty = inventoryReportModel.commaQty(v.out_qty);
+        v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
+      });
+      console.log(_generic_stock,'+++++++++++');
+    }
+  }
   res.render('generic_stock', {
     generic_stock: generic_stock,
+    _generic_stock: _generic_stock,
     hospitalName: hospitalName,
     today: today,
     genericId: genericId,
-    generic_name: generic_name,
-    small_unit: small_unit,
-    dosage_name: dosage_name,
+    generic_name: _generic_name,
+    small_unit: _small_unit,
+    dosage_name: _dosage_name,
     startDate: startDate,
     endDate: endDate
   });
   // //console.log();
+  // res.send(_generic_stock)
 
 
 

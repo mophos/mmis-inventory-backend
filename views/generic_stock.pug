@@ -6,71 +6,74 @@ html
     title report
   body
     button.btn.btn-sm.btn-success(onclick='window.print()') Print
-    table.table
-      thead
-        tr 
-          td.center.bold(colspan='11') #{hospitalName} 
-        tr 
-          td.center.bold(colspan='11') ใบคุมคลังเวชภัณฑ์
-        tr 
-          td.center(colspan='11') ตั้งแต่วันที่ #{startDate} ถึง #{endDate}
-        tr 
-          td.left(colspan='5') รหัสเวชภัณฑ์ #{genericId}
-          td.right(colspan='6') หน่วย #{small_unit}
-        tr 
-          td.left(colspan='5') ชื่อสามัญ #{generic_name}
-          td.right(colspan='6') รูปแบบ #{dosage_name}
-        tr 
-          td.left(colspan='11') ณ วันที่ #{today}
-        tr
-          th.left(style="border-bottom: 0px") #
-          th.left(style="border-bottom: 0px") วันที่
-          th.left(style="border-bottom: 0px") รับ/จ่าย
-          th.left(style="border-bottom: 0px") เลขที่รับ/จ่าย
-          th.left(style="border-bottom: 0px") หน่วยงาน
-          th.center(colspan='2',style="border-bottom: 0px") จำนวน
-          th.center(colspan='2',style="border-bottom: 0px") มูลค่า
-          th.center(colspan='2',style="border-bottom: 0px") จำนวนคงคลัง
-        tr
-          th
-          th
-          th
-          th
-          th
-          th.center รับ
-          th.center จ่าย
-          th.center รับ
-          th.center จ่าย
-          th.center จำนวน
-          th.center มูลค่า
-      tbody
-      - y=0
-      for a in generic_stock
-        - y++
-        tr 
-          td.left(style="width: 20px;text-align:center;") #{y}
-          td.left(style="width: 100px;") #{a.stock_date}
-          td.left #{a.comment}
-          td.left #{a.document_ref_id}
-          td.left 
-            if(a.warehouse_name)
-              | #{a.warehouse_name}
-            else
-              | -
-          td.right #{a.in_qty} 
-          td.right #{a.out_qty}
-          td.right
-            if(a.in_qty !== 0)
-              | #{a.in_cost}
-            else
-              | 0
-          td.right
-            if(a.out_qty !== 0)
-              | #{a.out_cost}
-            else
-              | 0
-          td.right #{a.balance_qty}
-          td.right #{a.balance_unit_cost}
-      tfoot 
-        tr.tbfooter
-          td(colspan='11')
+    - for(var i in genericId)
+      span.page
+      table.table
+        thead
+          tr 
+            td.center.bold(colspan='11') #{hospitalName}
+          tr 
+            td.center.bold(colspan='11') ใบคุมคลังเวชภัณฑ์
+          tr 
+            td.center(colspan='11') ตั้งแต่วันที่ #{startDate} ถึง #{endDate}
+          tr 
+            td.left(colspan='5') รหัสเวชภัณฑ์ #{genericId[i]}
+            td.right(colspan='6') หน่วย #{small_unit[i]}
+          tr 
+            td.left(colspan='5') ชื่อสามัญ #{generic_name[i]}
+            td.right(colspan='6') รูปแบบ #{dosage_name[i]}
+          tr 
+            td.left(colspan='11') ณ วันที่ #{today}
+          tr
+            th.left(style="border-bottom: 0px") #
+            th.left(style="border-bottom: 0px") วันที่
+            th.left(style="border-bottom: 0px") รับ/จ่าย
+            th.left(style="border-bottom: 0px") เลขที่รับ/จ่าย
+            th.left(style="border-bottom: 0px") หน่วยงาน
+            th.center(colspan='2',style="border-bottom: 0px") จำนวน
+            th.center(colspan='2',style="border-bottom: 0px") มูลค่า
+            th.center(colspan='2',style="border-bottom: 0px") จำนวนคงคลัง
+          tr
+            th
+            th
+            th
+            th
+            th
+            th.center รับ
+            th.center จ่าย
+            th.center รับ
+            th.center จ่าย
+            th.center จำนวน
+            th.center มูลค่า
+        tbody
+        - y=0
+        for a in _generic_stock[i]
+          - y++
+          tr 
+            td.left(style="width: 10px;") #{y}
+            td.left(style="width: 70px;") #{a.stock_date}
+            td.left #{a.comment}
+            td.left #{a.document_ref_id}
+            td.left 
+              if(a.warehouse_name)
+                | #{a.warehouse_name}
+              else
+                | -
+            td.right #{a.in_qty} 
+            td.right #{a.out_qty}
+            td.right
+              if(a.in_qty !== 0)
+                | #{a.in_cost}
+              else
+                | 0
+            td.right
+              if(a.out_qty !== 0)
+                | #{a.out_cost}
+              else
+                | 0
+            td.right #{a.balance_qty}
+            td.right #{a.balance_unit_cost}
+        tfoot 
+          tr.tbfooter
+            td(colspan='11')
+      .pagebreak
