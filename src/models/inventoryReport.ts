@@ -87,7 +87,7 @@ export class InventoryReportModel {
         mg.generic_name,
         rci.confirm_qty AS qty,
         r.updated_at,
-        round( ( mup.cost * (rci.confirm_qty/mup.qty), 2 ) AS total_cost 
+        round(mup.cost * (rci.confirm_qty/mup.qty), 2 ) AS total_cost 
     FROM
         wm_requisition_orders r
         JOIN wm_requisition_order_items ro ON r.requisition_order_id = ro.requisition_order_id 
