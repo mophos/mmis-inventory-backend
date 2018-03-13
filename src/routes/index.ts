@@ -125,7 +125,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
     }
     list_requis.forEach(opject => {
       opject.forEach(value => {
-        value.expired_date = moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543);
+        value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543) : '-';
         value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.unit_qty);
         value.total = inventoryReportModel.commaQty(value.total / value.unit_qty);
         value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.unit_qty);

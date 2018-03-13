@@ -88,8 +88,8 @@ export class InventoryReportModel {
         mg.generic_name,
         rci.confirm_qty AS qty,
         r.updated_at,
-        round( ( wp.cost * rci.confirm_qty ), 2 ) AS total_cost ,
-        mgd.dosage_name
+        mgd.dosage_name,
+        round(mup.cost * (rci.confirm_qty/mup.qty), 2 ) AS total_cost 
     FROM
         wm_requisition_orders r
         JOIN wm_requisition_order_items ro ON r.requisition_order_id = ro.requisition_order_id 
@@ -222,7 +222,7 @@ export class InventoryReportModel {
         mg.generic_name,
         ws.stock_date,
         ws.transaction_type,
-        ws. COMMENT,
+        ws.comment,
         ws.document_ref_id,
         mu.unit_name,
         mgd.dosage_name,
@@ -578,7 +578,7 @@ export class InventoryReportModel {
     LEFT JOIN mm_unit_generics AS mup ON wp.unit_generic_id = mup.unit_generic_id
     LEFT JOIN mm_units AS mul ON mup.from_unit_id = mul.unit_id
     LEFT JOIN mm_units AS mus ON mup.to_unit_id = mus.unit_id
-    LEFT JOIN wm_warehouses wh ON wh.warehouse_id = r.wm_withdraw
+    LEFT JOIN wm_warehouses wh ON wh.warehouse_id = r.wm_requisition
     LEFT JOIN view_remain_product_in_warehouse AS vr ON wp.product_id = vr.product_id and vr.warehouse_id = r.wm_withdraw
     WHERE
     r.requisition_order_id = '${requisId}' and rci.confirm_qty != 0
