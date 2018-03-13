@@ -99,7 +99,7 @@ router.get('/report/list/requis/:requisId', wrap(async (req, res, next) => {
       today += ' แก้ไขครั้งล่าสุดวันที่ ' + moment(list_requis[0].updated_at).format('D MMMM ') + (moment(list_requis[0].updated_at).get('year') + 543) + moment(list_requis[0].updated_at).format(', HH:mm') + ' น.';
     }
     list_requis.forEach(value => {
-      value.expired_date = moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543);
+      value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543) : '-';
       value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.unit_qty);
       value.total = inventoryReportModel.commaQty(value.total / value.unit_qty);
       value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.unit_qty);
@@ -111,6 +111,8 @@ router.get('/report/list/requis/:requisId', wrap(async (req, res, next) => {
     let check_date = moment(list_requis[0].requisition_date).format('D MMMM ') + (moment(list_requis[0].requisition_date).get('year') + 543);
     let requisition_date = moment(list_requis[0].requisition_date).format('D MMMM ') + (moment(list_requis[0].requisition_date).get('year') + 543);
     let requisition_id = list_requis[0].requisition_code;
+    console.log(list_requis);
+    
     res.render('list_requis', {
       boox_prefix: boox_prefix,
       hospitalName: hospitalName,
