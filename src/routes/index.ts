@@ -81,17 +81,18 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
       sum.push(inventoryReportModel.comma(_sum));
     })
     let list_count:any = []
-    // for (let i in approve_requis){
-    //   console.log(approve_requis[i]);
-    //   list_count.push(approve_requis[i].length)
-    //   approve_requis[i]=_.chunk(approve_requis[i], page_re)
-    // }
+    for (let i in approve_requis){
+      console.log(approve_requis[i]);
+      list_count.push(approve_requis[i].length)
+      approve_requis[i]=_.chunk(approve_requis[i], page_re)
+    }
     // res.send({approve_requis:approve_requis,list_count:list_count,page_re:page_re})
     res.render('approve_requis', {
       hospitalName: hospitalName,
       today: todays,
       approve_requis: approve_requis,
-      sum: sum
+      sum: sum,
+      list_count:list_count
     });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -106,7 +107,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
   let list_requis: any = []
   let todays: any = []
   let sum: any = []
-  let page_re: any = req.decoded.WM_REQUISITION_REPORT_APPROVE;
+  
   try {
     let requisId = req.query.requisId;
     
@@ -134,7 +135,6 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
       })
     })
-    
     let boox_prefix = await inventoryReportModel.boox_prefix(db);
     boox_prefix = boox_prefix[0].value
     res.render('list_requis', {
