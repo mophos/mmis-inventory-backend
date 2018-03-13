@@ -6,7 +6,7 @@ html
     title report
   body
     button.btn.btn-sm.btn-success(onclick='window.print()') Print
-    - for(var i in genericId)
+    - for(var i in _genericId)
       span.page
       table.table
         thead
@@ -46,7 +46,7 @@ html
             th.center จำนวน
             th.center มูลค่า
         tbody
-        - y=0
+        - var y=0
         for a in _generic_stock[i]
           - y++
           tr 

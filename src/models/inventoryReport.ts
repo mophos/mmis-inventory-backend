@@ -220,7 +220,7 @@ export class InventoryReportModel {
         mg.generic_name,
         ws.stock_date,
         ws.transaction_type,
-        ws.comment,
+        ws. COMMENT,
         ws.document_ref_id,
         mu.unit_name,
         mgd.dosage_name,
@@ -247,7 +247,7 @@ export class InventoryReportModel {
     ) AS warehouse_name,
     
     IF (
-        ws.transaction_type = "TRN_IN" || ws.transaction_type = "REV" || ws.transaction_type = "REV_OTHER" || ws.transaction_type = "ADJUST" || ws.transaction_type = "REQ_IN" || ws.transaction_type = "ADD_IN",
+        ws.transaction_type = "TRN_IN" || ws.transaction_type = "REV" || ws.transaction_type = "REV_OTHER" || ws.transaction_type = "ADJUST" || ws.transaction_type = "REQ_IN" || ws.transaction_type = "ADD_IN" || ws.transaction_type = "SUMMIT",
         ws.in_qty,
         '0'
     ) AS in_qty,
@@ -259,7 +259,7 @@ export class InventoryReportModel {
     ) AS out_qty,
     
     IF (
-        ws.transaction_type = "TRN_IN" || ws.transaction_type = "REV" || ws.transaction_type = "REV_OTHER",
+        ws.transaction_type = "TRN_IN" || ws.transaction_type = "REV" || ws.transaction_type = "REV_OTHER" || ws.transaction_type = "SUMMIT",
         ws.in_qty * ws.balance_unit_cost,
         ws.out_qty * ws.balance_unit_cost
     ) AS cost,
@@ -296,72 +296,79 @@ export class InventoryReportModel {
     LEFT JOIN mm_units AS mu ON mg.primary_unit_id = mu.unit_id
     LEFT JOIN mm_generic_dosages AS mgd ON mg.dosage_id = mgd.dosage_id
     WHERE
-    (
-    IF (
-        ws.transaction_type = "REV",
-        ws.ref_dst = '${warehouseId}',
-        ''
-    )
-    OR
-    IF (
-        ws.transaction_type = "TRN_IN",
-        ws.ref_dst = '${warehouseId}',
-        ''
-    )
-    OR
-    IF (
-        ws.transaction_type = "TRN_OUT",
-        ws.ref_src = '${warehouseId}',
-        ''
-    )
-    OR
-    IF (
-        ws.transaction_type = "ADJUST",
-        ws.ref_src = '${warehouseId}',
-        ''
-    )
-    OR
-    IF (
-        ws.transaction_type = "IST",
-        ws.ref_dst = '${warehouseId}',
-        ''
-    )
-    OR
-    IF (
-        ws.transaction_type = "REV_OTHER",
-        ws.ref_dst = '${warehouseId}',
-        ''
-    )
-    OR
-    IF (
-        ws.transaction_type = "REQ_OUT",
-        ws.ref_src = '${warehouseId}',
-        ''
-    )
-    OR
-    IF (
-        ws.transaction_type = "REQ_IN",
-        ws.ref_src = '${warehouseId}',
-        ''
-    )
-    OR
-    IF (
-        ws.transaction_type = "ADD_IN",
-        ws.ref_dst = '${warehouseId}',
-        ''
-    )
-    OR
-    IF (
-        ws.transaction_type = "ADD_OUT",
-        ws.ref_src = '${warehouseId}',
-        ''
-    )
-    )
+        (
+    
+            IF (
+                ws.transaction_type = "REV",
+                ws.ref_dst = '${warehouseId}',
+                ''
+            )
+            OR
+            IF (
+                ws.transaction_type = "TRN_IN",
+                ws.ref_dst = '${warehouseId}',
+                ''
+            )
+            OR
+            IF (
+                ws.transaction_type = "TRN_OUT",
+                ws.ref_src = '${warehouseId}',
+                ''
+            )
+            OR
+            IF (
+                ws.transaction_type = "ADJUST",
+                ws.ref_src = '${warehouseId}',
+                ''
+            )
+            OR
+            IF (
+                ws.transaction_type = "IST",
+                ws.ref_dst = '${warehouseId}',
+                ''
+            )
+            OR
+            IF (
+                ws.transaction_type = "REV_OTHER",
+                ws.ref_dst = '${warehouseId}',
+                ''
+            )
+            OR
+            IF (
+                ws.transaction_type = "REQ_OUT",
+                ws.ref_src = '${warehouseId}',
+                ''
+            )
+            OR
+            IF (
+                ws.transaction_type = "REQ_IN",
+                ws.ref_src = '${warehouseId}',
+                ''
+            )
+            OR
+            IF (
+                ws.transaction_type = "ADD_IN",
+                ws.ref_dst = '${warehouseId}',
+                ''
+            )
+            OR
+            IF (
+                ws.transaction_type = "ADD_OUT",
+                ws.ref_src = '${warehouseId}',
+                ''
+            )
+            OR
+            IF (
+                ws.transaction_type = "SUMMIT",
+                ws.ref_src = '${warehouseId}',
+                ''
+            )
+        )
     AND ws.generic_id = '${genericId}'
     AND ws.stock_date BETWEEN '${startDate}'
     AND '${endDate}'
     ORDER BY
-        ws.stock_date
+	    ws.stock_date
     `
         return knex.raw(sql)
     }
