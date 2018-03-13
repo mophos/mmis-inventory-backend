@@ -219,7 +219,7 @@ export class InventoryReportModel {
         mg.generic_name,
         ws.stock_date,
         ws.transaction_type,
-        ws. COMMENT,
+        ws.comment,
         ws.document_ref_id,
         mu.unit_name,
         mgd.dosage_name,
