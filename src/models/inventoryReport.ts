@@ -81,13 +81,15 @@ export class InventoryReportModel {
         rci.confirm_qty,
         mul.unit_name AS large_unit,
         mus.unit_name AS small_unit,
+        mup.qty as small_qty,
         wh.warehouse_name,
         rc.confirm_date,
         mg.generic_id,
         mg.generic_name,
         rci.confirm_qty AS qty,
         r.updated_at,
-        round( ( wp.cost * rci.confirm_qty ), 2 ) AS total_cost 
+        round( ( wp.cost * rci.confirm_qty ), 2 ) AS total_cost ,
+        mgd.dosage_name
     FROM
         wm_requisition_orders r
         JOIN wm_requisition_order_items ro ON r.requisition_order_id = ro.requisition_order_id 
@@ -95,6 +97,7 @@ export class InventoryReportModel {
         JOIN wm_requisition_confirm_items rci ON rci.confirm_id = rc.confirm_id
         AND ro.generic_id = rci.generic_id
         JOIN mm_generics AS mg ON mg.generic_id = ro.generic_id
+        left JOIN mm_generic_dosages AS mgd ON mg.dosage_id = mg.dosage_id
         JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
         JOIN mm_products AS mp ON wp.product_id = mp.product_id
         JOIN mm_unit_generics AS mup ON ro.unit_generic_id = mup.unit_generic_id
@@ -535,6 +538,7 @@ export class InventoryReportModel {
         r.requisition_code,
         r.requisition_order_id,
         r.requisition_date,
+        rc.confirm_date,
         wh.warehouse_name,
         mp.product_id,
         mp.product_name,
