@@ -100,9 +100,10 @@ router.get('/report/list/requis/:requisId', wrap(async (req, res, next) => {
     }
     list_requis.forEach(value => {
       value.expired_date = moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543);
-      value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty);
-      value.total = inventoryReportModel.commaQty(value.total);
-      value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty);
+      value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.unit_qty);
+      value.total = inventoryReportModel.commaQty(value.total / value.unit_qty);
+      value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.unit_qty);
+      value.unit_qty = inventoryReportModel.commaQty(value.unit_qty);
     })
 
     let boox_prefix = await inventoryReportModel.boox_prefix(db);
@@ -275,7 +276,7 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
   startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
   endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
 
-  let _generic_stock:any = [];
+  let _generic_stock: any = [];
   let _generic_name = [];
   let _small_unit = [];
   let _dosage_name = [];
@@ -297,7 +298,7 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
         v.out_qty = inventoryReportModel.commaQty(v.out_qty);
         v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
       });
-      console.log(_generic_stock,'+++++++++++');
+      console.log(_generic_stock, '+++++++++++');
     }
   }
   res.render('generic_stock', {
@@ -942,7 +943,7 @@ router.get('/report/tranfers2', wrap(async (req, res, next) => {
   let _tranferId: any = [];
   let _tranfers: any = [];
   let _tranferCounts: any = [];
- let index:any = 0
+  let index: any = 0
   for (let id in tranferId) {
     tranfer = await inventoryReportModel.tranfer2(db, tranferId[id]);
     if (tranfer[0][0] !== undefined) {
