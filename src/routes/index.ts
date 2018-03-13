@@ -44,36 +44,55 @@ router.get('/test-stockcard', wrap(async (req, res, next) => {
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
 
-router.get('/report/approve/requis/:requisId', wrap(async (req, res, next) => {
+router.get('/report/approve/requis', wrap(async (req, res, next) => {
   let db = req.db;
+  let approve_requis: any = []
+  let todays: any = []
+  let sum: any = []
+  let page_re: any = req.decoded.WM_REQUISITION_REPORT_APPROVE;
   try {
-    let requisId = req.params.requisId;
+    let requisId = req.query.requisId;
+    requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
     moment.locale('th');
     let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(', HH:mm') + ' น.';
-    let approve_requis = await inventoryReportModel.approve_requis(db, requisId);
-    approve_requis = approve_requis[0];
-    let no = approve_requis[0].requisition_code;
-    let warehouse = approve_requis[0].warehouse_name;
-    // let checkdate = approve_requis[0].check_date;
-    let comfirm_date = moment(approve_requis[0].confirm_date).format('D MMMM ') + (moment(approve_requis[0].confirm_date).get('year') + 543);
-    if (approve_requis[0].updated_at != null) {
-      today += ' แก้ไขครั้งล่าสุดวันที่ ' + moment(approve_requis[0].updated_at).format('D MMMM ') + (moment(approve_requis[0].updated_at).get('year') + 543) + moment(approve_requis[0].updated_at).format(', HH:mm') + ' น.';
-
+    let _today = ''
+    for (let i in requisId) {
+      let _approve_requis = await inventoryReportModel.approve_requis(db, requisId[i]);
+      _today = (_approve_requis[0][0].updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(_approve_requis[0][0].updated_at).format('D MMMM ') + (moment(_approve_requis[0][0].updated_at).get('year') + 543) + moment(_approve_requis[0][0].updated_at).format(', HH:mm') + ' น.' : ''
+      todays.push(today + _today)
+      approve_requis.push(_approve_requis[0])
     }
-    let sum: any = 0;
-    approve_requis.forEach(value => {
-      sum += value.total_cost;
-      value.cost = inventoryReportModel.comma(value.cost);
-      value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty);
-      value.total_cost = inventoryReportModel.comma(value.total_cost);
-      if (value.expired_date === null) {
-        value.expired_date = "-";
-      } else value.expired_date = moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year') + 543);
+
+    approve_requis.forEach(opject => {
+      let _sum: any = 0;
+      opject.forEach(value => {
+        value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
+        _sum += value.total_cost;
+        value.cost = inventoryReportModel.comma(value.cost);
+        value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty);
+        value.total_cost = inventoryReportModel.comma(value.total_cost);
+        value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
+        if (value.expired_date === null) {
+          value.expired_date = "-";
+        } else value.expired_date = moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year') + 543);
+      })
+      sum.push(inventoryReportModel.comma(_sum));
     })
-    sum = inventoryReportModel.comma(sum);
-    res.render('approve_requis', { hospitalName: hospitalName, today: today, approve_requis: approve_requis, no: no, warehouse: warehouse, comfirm_date: comfirm_date, sum: sum });
+    let list_count:any = []
+    // for (let i in approve_requis){
+    //   console.log(approve_requis[i]);
+    //   list_count.push(approve_requis[i].length)
+    //   approve_requis[i]=_.chunk(approve_requis[i], page_re)
+    // }
+    // res.send({approve_requis:approve_requis,list_count:list_count,page_re:page_re})
+    res.render('approve_requis', {
+      hospitalName: hospitalName,
+      today: todays,
+      approve_requis: approve_requis,
+      sum: sum
+    });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -82,45 +101,47 @@ router.get('/report/approve/requis/:requisId', wrap(async (req, res, next) => {
 
 }));//ตรวจสอบแล้ว 08/10/60
 
-router.get('/report/list/requis/:requisId', wrap(async (req, res, next) => {
+router.get('/report/list/requis', wrap(async (req, res, next) => {
   let db = req.db;
+  let list_requis: any = []
+  let todays: any = []
+  let sum: any = []
+  let page_re: any = req.decoded.WM_REQUISITION_REPORT_APPROVE;
   try {
-    let requisId = req.params.requisId;
+    let requisId = req.query.requisId;
+    
+    requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
     moment.locale('th');
     let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(', HH:mm') + ' น.';
-
-
-    let list_requis = await inventoryReportModel.list_requis(db, requisId);
-    list_requis = list_requis[0];
-    if (list_requis[0] === undefined) { res.render('error404'); }
-    if (list_requis[0].updated_at != null) {
-      today += ' แก้ไขครั้งล่าสุดวันที่ ' + moment(list_requis[0].updated_at).format('D MMMM ') + (moment(list_requis[0].updated_at).get('year') + 543) + moment(list_requis[0].updated_at).format(', HH:mm') + ' น.';
+    let _today = ''
+    for (let i in requisId) {
+      let _list_requis = await inventoryReportModel.list_requis(db, requisId[i]);
+      if (_list_requis[0][0] === undefined) { res.render('error404'); }
+      _today = (_list_requis[0][0].updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(_list_requis[0][0].updated_at).format('D MMMM ') + (moment(_list_requis[0][0].updated_at).get('year') + 543) + moment(_list_requis[0][0].updated_at).format(', HH:mm') + ' น.' : ''
+      todays.push(today + _today)
+      list_requis.push(_list_requis[0]);
     }
-    list_requis.forEach(value => {
-      value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543) : '-';
-      value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.unit_qty);
-      value.total = inventoryReportModel.commaQty(value.total / value.unit_qty);
-      value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.unit_qty);
-      value.unit_qty = inventoryReportModel.commaQty(value.unit_qty);
+    list_requis.forEach(opject => {
+      opject.forEach(value => {
+        value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543) : '-';
+        value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.unit_qty);
+        value.total = inventoryReportModel.commaQty(value.total / value.unit_qty);
+        value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.unit_qty);
+        value.unit_qty = inventoryReportModel.commaQty(value.unit_qty);
+        value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
+        value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
+      })
     })
-
+    
     let boox_prefix = await inventoryReportModel.boox_prefix(db);
     boox_prefix = boox_prefix[0].value
-    let check_date = moment(list_requis[0].requisition_date).format('D MMMM ') + (moment(list_requis[0].requisition_date).get('year') + 543);
-    let requisition_date = moment(list_requis[0].requisition_date).format('D MMMM ') + (moment(list_requis[0].requisition_date).get('year') + 543);
-    let requisition_id = list_requis[0].requisition_code;
-    console.log(list_requis);
-    
     res.render('list_requis', {
       boox_prefix: boox_prefix,
       hospitalName: hospitalName,
-      today: today,
-      list_requis: list_requis,
-      check_date: check_date,
-      requisition_id: requisition_id,
-      requisition_date: requisition_date
+      today: todays,
+      list_requis: list_requis
     });
   } catch (error) {
     res.send({ ok: false, error: error.message })
@@ -910,7 +931,7 @@ router.get('/report/tranfers', wrap(async (req, res, next) => {
   let _tmpSum: any = [];
   let _tmpTranfer: any = []
   let page: any = req.decoded.WM_TRANSFER_REPORT_APPROVE;
-  // let page: any = req.decoded.WM_TRANSFER_REPORT_APPROVE;
+  
   // console.log(page);
 
   for (let id in tranferId) {

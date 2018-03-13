@@ -5,71 +5,74 @@ html
     title report
   body
     button.btn.btn-sm.btn-success(onclick='window.print()') Print
-    table.table
-      thead
-        tr 
-          td.center.bold(colspan='11') #{hospitalName} 
-        tr 
-          td.center.bold(colspan='11') ใบอนุมัติเบิก
-        tr 
-          td.left(colspan='6') เลขที่ใบเบิก #{no}
-          td.right(colspan='5') วันที่อนุมัติ #{comfirm_date}
-        tr 
-          td.left(colspan='11') หน่วยงานที่เบิก #{warehouse}
-        tr 
-          td.left(colspan='11') ณ วันที่ #{today}
-        tr 
-          td.left(colspan='11') อนุมัติให้เบิกเวชภัณฑ์ตามรายการนี้
-        tr 
-          th.left #
-          th.left รหัสยา
-          th.left ชื่อเวชภัณฑ์
-          th.left รูปแบบ
-          th.left หน่วย
-          th.left lot
-          th.right จำนวนขอเบิก
-          th.right จำนวนอนุมัติ
-          th.right มูลค่า/หน่วย
-          th.right วันหมดอายุ
-          th.right รวมมูลค่า
-      tbody
-      - var y=0
-      for a in approve_requis
-        - y++
-        tr 
-          td #{y}
-          td #{a.generic_id}
-          td #{a.generic_name}
-          td #{a.dosage_name}
-          td #{a.small_unit}
-          td #{a.lot_no}
-          td.right #{a.requisition_qty} 
-          td.right #{a.requisition_qty} 
-          td.right #{a.cost}
-          td.right #{a.expired_date}
-          td.right #{a.total_cost}
-      tfoot 
-        tr.dash-top 
-          td.right(colspan='11') รวมทั้งหมด #{y} รายการ | คิดเป็นมูลค่า #{sum} บาท
-        tr 
-          td(colspan='11') &nbsp; 
-        tr 
-          td(colspan='11') &nbsp; 
-        tr 
-          td.center(colspan='6') ลงชื่อ..................................................(ผู้เบิก)
-            br
-            | (..................................................)
-          td.center(colspan='5') ลงชื่อ..................................................(ผู้จ่าย)
-            br
-            | (..................................................)
-        tr 
-          td(colspan='11') &nbsp; 
-        tr
-          td(colspan='11') &nbsp; 
-        tr 
-          td.center(colspan='6') ลงชื่อ..................................................(ผู้อนุมัติ)
-            br
-            | (..................................................)
-          td.center(colspan='5') ลงชื่อ..................................................(ผู้รับ)
-            br
-            | (..................................................)
+    - var ss=0
+      for i in approve_requis
+        .page
+        table.table
+          thead
+            tr 
+              td.center.bold(colspan='11') #{hospitalName} 
+            tr 
+              td.center.bold(colspan='11') ใบอนุมัติเบิก
+            tr 
+              td.left(colspan='6') เลขที่ใบเบิก #{i[0].requisition_code}
+              td.right(colspan='5') วันที่อนุมัติ #{ i[0].confirm_date}
+            tr 
+              td.left(colspan='11') หน่วยงานที่เบิก #{i[0].warehouse_name}
+            tr 
+              td.left(colspan='11') ณ วันที่ #{today[ss]}
+            tr 
+              td.left(colspan='11') อนุมัติให้เบิกเวชภัณฑ์ตามรายการนี้
+            tr 
+              th.left #
+              th.left รหัสยา
+              th.left ชื่อเวชภัณฑ์
+              th.left รูปแบบ
+              th.left lot
+              th.right จำนวนขอเบิก
+              th.right จำนวนอนุมัติ
+              th.right มูลค่า/หน่วย
+              th.right วันหมดอายุ
+              th.right รวมมูลค่า
+          tbody
+          - var y=0
+          for a in i
+            - y++
+            tr 
+              td #{y}
+              td #{a.generic_id}
+              td #{a.generic_name}
+              td #{a.dosage_name}
+              td #{a.lot_no}
+              td.right #{a.requisition_qty} #{a.large_unit} (#{a.small_qty} #{a.small_unit})
+              td.right #{a.requisition_qty} #{a.large_unit} (#{a.small_qty} #{a.small_unit})
+              td.right #{a.cost}
+              td.right #{a.expired_date}
+              td.right #{a.total_cost}
+          tfoot 
+            tr.dash-top 
+              td.right(colspan='11') รวมทั้งหมด #{y} รายการ | คิดเป็นมูลค่า #{sum[ss]} บาท
+            tr 
+              td(colspan='11') &nbsp; 
+            tr 
+              td(colspan='11') &nbsp; 
+            tr 
+              td.center(colspan='6') ลงชื่อ..................................................(ผู้เบิก)
+                br
+                | (..................................................)
+              td.center(colspan='5') ลงชื่อ..................................................(ผู้จ่าย)
+                br
+                | (..................................................)
+            tr 
+              td(colspan='11') &nbsp; 
+            tr
+              td(colspan='11') &nbsp; 
+            tr 
+              td.center(colspan='6') ลงชื่อ..................................................(ผู้อนุมัติ)
+                br
+                | (..................................................)
+              td.center(colspan='5') ลงชื่อ..................................................(ผู้รับ)
+                br
+                | (..................................................)
+        - ss++
+        .pagebreak
