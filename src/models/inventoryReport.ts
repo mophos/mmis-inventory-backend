@@ -367,6 +367,8 @@ export class InventoryReportModel {
     AND ws.generic_id = '${genericId}'
     AND ws.stock_date BETWEEN '${startDate}'
     AND '${endDate}'
+    ORDER BY
+	    ws.stock_date
     `
         return knex.raw(sql)
     }
