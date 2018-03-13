@@ -275,19 +275,26 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
   startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
   endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
 
-  let _generic_stock:any = [];
+  let _generic_stock: any = [];
   let _generic_name = [];
   let _small_unit = [];
   let _dosage_name = [];
   let generic_stock: any = [];
+  let _genericId: any = []
+  genericId = Array.isArray(genericId) ? genericId : [genericId]
+  Array.isArray(genericId)
+  // console.log(genericId, '**************');
 
   for (let id in genericId) {
     generic_stock = await inventoryReportModel.generic_stock(db, genericId[id], _startDate, _endDate, warehouseId);
     if (generic_stock[0].length > 0) {
+      console.log(genericId[id], '+++++++++++');
       _generic_stock.push(generic_stock[0])
+      _genericId.push(generic_stock[0][0].generic_id)
       _generic_name.push(generic_stock[0][0].generic_name)
       _small_unit.push(generic_stock[0][0].unit_name)
       _dosage_name.push(generic_stock[0][0].dosage_name)
+      // console.log(_generic_stock[id],'+++++++++++');
       _generic_stock[id].forEach(v => {
         v.stock_date = moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543);
         v.in_cost = inventoryReportModel.comma(+v.in_qty * +v.balance_unit_cost);
@@ -297,7 +304,7 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
         v.out_qty = inventoryReportModel.commaQty(v.out_qty);
         v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
       });
-      console.log(_generic_stock,'+++++++++++');
+      // console.log(_generic_stock,'+++++++++++');
     }
   }
   res.render('generic_stock', {
@@ -309,11 +316,12 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
     generic_name: _generic_name,
     small_unit: _small_unit,
     dosage_name: _dosage_name,
+    _genericId: _genericId,
     startDate: startDate,
     endDate: endDate
   });
   // //console.log();
-  // res.send(_generic_stock)
+  // res.send(_generic_stock[0])
 
 
 
@@ -942,7 +950,7 @@ router.get('/report/tranfers2', wrap(async (req, res, next) => {
   let _tranferId: any = [];
   let _tranfers: any = [];
   let _tranferCounts: any = [];
- let index:any = 0
+  let index: any = 0
   for (let id in tranferId) {
     tranfer = await inventoryReportModel.tranfer2(db, tranferId[id]);
     if (tranfer[0][0] !== undefined) {
