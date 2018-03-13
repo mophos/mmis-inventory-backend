@@ -26,7 +26,7 @@ export class ReceiveModel {
 
     return knex('wm_receives as r')
       .select('r.receive_id', 'r.is_cancel', 'r.receive_code', 'r.receive_tmp_code', 'r.purchase_order_id', 'r.receive_date', 'r.delivery_date',
-      'r.delivery_code', 'l.labeler_name', 'pp.purchase_order_number', 'pp.purchase_order_id', 'ra.approve_date', 'ra.approve_id')
+      'r.delivery_code', 'l.labeler_name', 'pp.purchase_order_number','pp.purchase_order_book_number', 'pp.purchase_order_id', 'ra.approve_date', 'ra.approve_id')
       .leftJoin('mm_labelers as l', 'l.labeler_id', 'r.vendor_labeler_id')
       .leftJoin('pc_purchasing_order as pp', 'pp.purchase_order_id', 'r.purchase_order_id')
       .leftJoin('wm_receive_approve as ra', 'ra.receive_id', 'r.receive_id')
@@ -50,13 +50,14 @@ export class ReceiveModel {
     let _query = `%${query}%`;
     return knex('wm_receives as r')
       .select('r.receive_id', 'r.is_cancel', 'r.receive_code', 'r.receive_tmp_code', 'r.purchase_order_id', 'r.receive_date', 'r.delivery_date',
-      'r.delivery_code', 'l.labeler_name', 'pp.purchase_order_number', 'pp.purchase_order_id', 'ra.approve_date', 'ra.approve_id')
+      'r.delivery_code', 'l.labeler_name', 'pp.purchase_order_number','pp.purchase_order_book_number', 'pp.purchase_order_id', 'ra.approve_date', 'ra.approve_id')
       .leftJoin('mm_labelers as l', 'l.labeler_id', 'r.vendor_labeler_id')
       .leftJoin('pc_purchasing_order as pp', 'pp.purchase_order_id', 'r.purchase_order_id')
       .leftJoin('wm_receive_approve as ra', 'ra.receive_id', 'r.receive_id')
       .orderBy('r.receive_code', 'DESC')
       .where('r.receive_code', 'like', _query)
       .orWhere('pp.purchase_order_number', 'like', _query)
+      .orWhere('pp.purchase_order_book_number', 'like', _query)
       .limit(limit)
       .offset(offset);
   }
@@ -85,6 +86,7 @@ export class ReceiveModel {
       .leftJoin('pc_purchasing_order as pp', 'pp.purchase_order_id', 'r.purchase_order_id')
       .where('r.receive_code', 'like', _query)
       .orWhere('pp.purchase_order_number', 'like', _query)
+      .orWhere('pp.purchase_order_book_number', 'like', _query)
       .count('* as total');
   }
 
