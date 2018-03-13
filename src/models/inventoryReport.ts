@@ -90,20 +90,19 @@ export class InventoryReportModel {
         round( ( wp.cost * rci.confirm_qty ), 2 ) AS total_cost 
     FROM
         wm_requisition_orders r
-         JOIN wm_requisition_order_items ro ON r.requisition_order_id = ro.requisition_order_id
-         JOIN wm_requisition_confirms rc ON rc.requisition_order_id = r.requisition_order_id
-         JOIN wm_requisition_confirm_items rci on rci.confirm_id = rc.confirm_id and ro.generic_id = rci.generic_id
-				 JOIN mm_generics AS mg ON mg.generic_id = ro.generic_id
-				 
-         JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
-				 JOIN mm_products AS mp ON wp.product_id = mp.product_id
-         JOIN mm_unit_generics AS mup ON ro.unit_generic_id = mup.unit_generic_id
-         JOIN mm_units AS mul ON mup.from_unit_id = mul.unit_id
-         JOIN mm_units AS mus ON mup.to_unit_id = mus.unit_id
-         JOIN wm_warehouses wh ON wh.warehouse_id = r.wm_requisition 
+        JOIN wm_requisition_order_items ro ON r.requisition_order_id = ro.requisition_order_id 
+        JOIN wm_requisition_confirms rc ON rc.requisition_order_id = r.requisition_order_id
+        JOIN wm_requisition_confirm_items rci ON rci.confirm_id = rc.confirm_id
+        AND ro.generic_id = rci.generic_id
+        JOIN mm_generics AS mg ON mg.generic_id = ro.generic_id
+        JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
+        JOIN mm_products AS mp ON wp.product_id = mp.product_id
+        JOIN mm_unit_generics AS mup ON ro.unit_generic_id = mup.unit_generic_id
+        JOIN mm_units AS mul ON mup.from_unit_id = mul.unit_id
+        JOIN mm_units AS mus ON mup.to_unit_id = mus.unit_id
+        JOIN wm_warehouses wh ON wh.warehouse_id = r.wm_requisition
     WHERE
-        rc.is_approve = 'Y' 
-    AND r.requisition_order_id = ?
+        r.requisition_order_id = ?
     GROUP BY
         mg.generic_id`
         return knex.raw(sql, requisId)
