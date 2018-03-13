@@ -732,6 +732,7 @@ router.post('/waiting', co(async (req, res, next) => {
         approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
         approve_id: v.approve_id,
         purchase_order_number: v.purchase_order_number,
+        purchase_order_book_number: v.purchase_order_book_number,
         receive_code: v.receive_code,
         receive_tmp_code: v.receive_tmp_code,
         is_cancel: v.is_cancel
@@ -771,6 +772,7 @@ router.post('/waiting/search', co(async (req, res, next) => {
         approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
         approve_id: v.approve_id,
         purchase_order_number: v.purchase_order_number,
+        purchase_order_book_number: v.purchase_order_book_number,
         receive_code: v.receive_code,
         receive_tmp_code: v.receive_tmp_code
       }
@@ -1017,7 +1019,7 @@ router.post('/other/approve', co(async (req, res, next) => {
     let warehouseId = req.decoded.warehouseId;
     let balances = await receiveModel.getProductRemainByReceiveOtherIds(db, receiveIds, warehouseId);
     balances = balances[0];
-    
+
     console.log('******************************');
     console.log(balances);
     console.log('******************************');
