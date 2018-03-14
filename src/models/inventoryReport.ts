@@ -603,6 +603,7 @@ export class InventoryReportModel {
         r.requisition_date,
         rc.confirm_date,
         wh.warehouse_name,
+        whs.warehouse_name as withdraw_warehouse_name,
         mp.product_id,
         mp.product_name,
         (
@@ -642,6 +643,7 @@ export class InventoryReportModel {
     LEFT JOIN mm_units AS mul ON mup.from_unit_id = mul.unit_id
     LEFT JOIN mm_units AS mus ON mup.to_unit_id = mus.unit_id
     LEFT JOIN wm_warehouses wh ON wh.warehouse_id = r.wm_requisition
+    LEFT JOIN wm_warehouses whs ON whs.warehouse_id = r.wm_withdraw
     LEFT JOIN view_remain_product_in_warehouse AS vr ON wp.product_id = vr.product_id and vr.warehouse_id = r.wm_withdraw
     WHERE
     r.requisition_order_id = '${requisId}' and rci.confirm_qty != 0
