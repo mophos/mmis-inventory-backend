@@ -363,15 +363,14 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
 
   for (let id in genericId) {
     generic_stock = await inventoryReportModel.generic_stock(db, genericId[id], _startDate, _endDate, warehouseId);
+
     if (generic_stock[0].length > 0) {
-      console.log(genericId[id], '+++++++++++');
-      _generic_stock.push(generic_stock[0])
       _genericId.push(generic_stock[0][0].generic_id)
       _generic_name.push(generic_stock[0][0].generic_name)
       _small_unit.push(generic_stock[0][0].unit_name)
       _dosage_name.push(generic_stock[0][0].dosage_name)
-      // console.log(_generic_stock[id],'+++++++++++');
-      _generic_stock[id].forEach(v => {
+
+      generic_stock[0].forEach(v => {
         v.stock_date = moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543);
         v.in_cost = inventoryReportModel.comma(+v.in_qty * +v.balance_unit_cost);
         v.out_cost = inventoryReportModel.comma(+v.out_qty * +v.balance_unit_cost);
@@ -380,8 +379,11 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
         v.out_qty = inventoryReportModel.commaQty(v.out_qty);
         v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
       });
-      // console.log(_generic_stock,'+++++++++++');
+      _generic_stock.push(generic_stock[0])
     }
+  }
+  if(_generic_stock.length <= 0){
+    res.render('error404');
   }
   res.render('generic_stock', {
     generic_stock: generic_stock,
