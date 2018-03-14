@@ -132,6 +132,7 @@ export class RequisitionOrderModel {
       inner join wm_warehouses as wh on wh.warehouse_id=ro.wm_withdraw
       where ro.wm_requisition=? and rc.is_approve<>'Y'
       group by rc.requisition_order_id
+      having confirm_qty>0
       order by ro.requisition_code desc
     `;
 
@@ -146,6 +147,7 @@ export class RequisitionOrderModel {
       inner join wm_warehouses as wh on wh.warehouse_id=ro.wm_requisition
       where ro.wm_withdraw=? and rc.is_approve<>'Y'
       group by rc.requisition_order_id
+      having confirm_qty>0
       order by ro.requisition_code desc
     `;
 
