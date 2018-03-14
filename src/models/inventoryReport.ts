@@ -500,6 +500,50 @@ export class InventoryReportModel {
         wp.expired_date ASC`
         return (knex.raw(sql, [startDate, endDate, wareHouse, genericId]))
     }
+    
+    getUnPaidOrders(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null) {
+
+        let sql = `
+        select rou.requisition_order_unpaid_id, rou.unpaid_date, rou.requisition_order_id, whr.warehouse_name as requisition_warehouse, 
+        whw.warehouse_name as withdraw_warehouse, ro.requisition_code, ro.requisition_date, rt.requisition_type
+        from wm_requisition_order_unpaids as rou
+        inner join wm_requisition_orders as ro on ro.requisition_order_id=rou.requisition_order_id
+        inner join wm_warehouses as whr on whr.warehouse_id=ro.wm_requisition
+        inner join wm_warehouses as whw on whw.warehouse_id=ro.wm_withdraw
+        left join wm_requisition_type as rt on rt.requisition_type_id=ro.requisition_type_id
+        where rou.is_paid='N'
+        order by rou.unpaid_date
+        `;
+    
+        let sqlWarehouse = `
+        select rou.requisition_order_unpaid_id, rou.unpaid_date, rou.requisition_order_id, whr.warehouse_name as requisition_warehouse, 
+        whw.warehouse_name as withdraw_warehouse, ro.requisition_code, ro.requisition_date, rt.requisition_type
+        from wm_requisition_order_unpaids as rou
+        inner join wm_requisition_orders as ro on ro.requisition_order_id=rou.requisition_order_id
+        inner join wm_warehouses as whr on whr.warehouse_id=ro.wm_requisition
+        inner join wm_warehouses as whw on whw.warehouse_id=ro.wm_withdraw
+        left join wm_requisition_type as rt on rt.requisition_type_id=ro.requisition_type_id
+        where rou.is_paid='N'
+        and ro.wm_requisition=?
+        order by rou.unpaid_date
+        `;
+    
+        let sqlWarehouseWithdraw = `
+        select rou.requisition_order_unpaid_id, rou.unpaid_date, rou.requisition_order_id, whr.warehouse_name as requisition_warehouse, 
+        whw.warehouse_name as withdraw_warehouse, ro.requisition_code, ro.requisition_date, rt.requisition_type
+        from wm_requisition_order_unpaids as rou
+        inner join wm_requisition_orders as ro on ro.requisition_order_id=rou.requisition_order_id
+        inner join wm_warehouses as whr on whr.warehouse_id=ro.wm_requisition
+        inner join wm_warehouses as whw on whw.warehouse_id=ro.wm_withdraw
+        left join wm_requisition_type as rt on rt.requisition_type_id=ro.requisition_type_id
+        where rou.is_paid='N'
+        and ro.wm_withdraw=?
+        order by rou.unpaid_date
+        `;
+    
+        return srcWarehouseId ? db.raw(sqlWarehouse, [srcWarehouseId]) : dstWarehouseId ? db.raw(sqlWarehouseWithdraw, [dstWarehouseId]) : db.raw(sql, []);
+      }
+
     list_requis(knex: Knex, requisId) {
         // let sql=`SELECT
         //     wrc.check_date,

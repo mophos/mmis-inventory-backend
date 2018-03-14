@@ -80,11 +80,11 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
       })
       sum.push(inventoryReportModel.comma(_sum));
     })
-    let list_count:any = []
-    for (let i in approve_requis){
+    let list_count: any = []
+    for (let i in approve_requis) {
       console.log(approve_requis[i]);
       list_count.push(approve_requis[i].length)
-      approve_requis[i]=_.chunk(approve_requis[i], page_re)
+      approve_requis[i] = _.chunk(approve_requis[i], page_re)
     }
     // res.send({approve_requis:approve_requis,list_count:list_count,page_re:page_re})
     res.render('approve_requis', {
@@ -92,7 +92,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
       today: todays,
       approve_requis: approve_requis,
       sum: sum,
-      list_count:list_count
+      list_count: list_count
     });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -102,15 +102,67 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
 
 }));//ตรวจสอบแล้ว 08/10/60
 
+// router.get('/report/UnPaid/requis', wrap(async (req, res, next) => {
+//   let db = req.db;
+//   let list_UnPaid: any = []
+//   let todays: any = []
+//   let sum: any = []
+//   let warehouseId = req.decoded.warehouseId;
+//   try {
+//     let requisId = req.query.requisId;
+//     requisId = Array.isArray(requisId) ? requisId : [requisId]
+//     let rs: any = await inventoryReportModel.getUnPaidOrders(db, warehouseId);
+//     res.send({ requisId: requisId, re: rs[0] })
+//     let hosdetail = await inventoryReportModel.hospital(db);
+//     let hospitalName = hosdetail[0].hospname;
+//     moment.locale('th');
+//     let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(', HH:mm') + ' น.';
+//     let _today = ''
+//     _.forEach(rs[0], opject => {
+//       list_UnPaidrs[0]
+//     })
+//     // for (let i in requisId) {
+//     //   let _list_requis = await inventoryReportModel.list_requis(db, requisId[i]);
+//     //   if (_list_requis[0][0] === undefined) { res.render('error404'); }
+//     //   _today = (_list_requis[0][0].updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(_list_requis[0][0].updated_at).format('D MMMM ') + (moment(_list_requis[0][0].updated_at).get('year') + 543) + moment(_list_requis[0][0].updated_at).format(', HH:mm') + ' น.' : ''
+//     //   todays.push(today + _today)
+//     //   list_requis.push(_list_requis[0]);
+//     // }
+//     // list_requis.forEach(opject => {
+//     //   opject.forEach(value => {
+//     //     value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543) : '-';
+//     //     value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.unit_qty);
+//     //     value.total = inventoryReportModel.commaQty(value.total / value.unit_qty);
+//     //     value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.unit_qty);
+//     //     value.unit_qty = inventoryReportModel.commaQty(value.unit_qty);
+//     //     value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
+//     //     value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
+//     //   })
+//     // })
+//     // let boox_prefix = await inventoryReportModel.boox_prefix(db);
+//     // boox_prefix = boox_prefix[0].value
+//     // res.render('list_requis', {
+//     //   boox_prefix: boox_prefix,
+//     //   hospitalName: hospitalName,
+//     //   today: todays,
+//     //   list_requis: list_requis
+//     // });
+//   } catch (error) {
+//     res.send({ ok: false, error: error.message })
+//   } finally {
+//     db.destroy();
+//   }
+// }));
+
 router.get('/report/list/requis', wrap(async (req, res, next) => {
   let db = req.db;
   let list_requis: any = []
   let todays: any = []
   let sum: any = []
-  
+
   try {
     let requisId = req.query.requisId;
-    
+
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
@@ -931,7 +983,7 @@ router.get('/report/tranfers', wrap(async (req, res, next) => {
   let _tmpSum: any = [];
   let _tmpTranfer: any = []
   let page: any = req.decoded.WM_TRANSFER_REPORT_APPROVE;
-  
+
   // console.log(page);
 
   for (let id in tranferId) {
