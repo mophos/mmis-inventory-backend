@@ -500,7 +500,25 @@ export class InventoryReportModel {
         wp.expired_date ASC`
         return (knex.raw(sql, [startDate, endDate, wareHouse, genericId]))
     }
-    
+
+    getOrderUnpaidItems(db: Knex, unpaidId: any) {
+        let sql = `
+          select oui.generic_id, floor(oui.unpaid_qty/ug.qty) as unpaid_qty, g.generic_name, floor(roi.requisition_qty/ug.qty) as requisition_qty, u1.unit_name as from_unit_name, 
+          u2.unit_name as to_unit_name, ug.qty as conversion_qty, g.working_code
+          from wm_requisition_order_unpaid_items as oui
+          inner join mm_generics as g on g.generic_id=oui.generic_id
+          inner join wm_requisition_order_items as roi on roi.generic_id=oui.generic_id
+          inner join mm_unit_generics as ug on ug.unit_generic_id=roi.unit_generic_id
+          left join mm_units as u1 on u1.unit_id=ug.from_unit_id
+          left join mm_units as u2 on u2.unit_id=ug.to_unit_id
+          where oui.requisition_order_unpaid_id=?
+          
+          group by oui.generic_id
+          having unpaid_qty>0
+        `;
+        return db.raw(sql, [unpaidId]);
+      }
+
     getUnPaidOrders(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null) {
 
         let sql = `
