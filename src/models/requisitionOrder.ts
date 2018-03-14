@@ -320,7 +320,7 @@ export class RequisitionOrderModel {
     inner join wm_warehouses as whr on whr.warehouse_id=ro.wm_requisition
     inner join wm_warehouses as whw on whw.warehouse_id=ro.wm_withdraw
     left join wm_requisition_type as rt on rt.requisition_type_id=ro.requisition_type_id
-    where rou.is_paid='N'
+    where rou.is_paid='N' and rou.is_cancel='N'
     order by rou.unpaid_date
     `;
 
@@ -332,7 +332,7 @@ export class RequisitionOrderModel {
     inner join wm_warehouses as whr on whr.warehouse_id=ro.wm_requisition
     inner join wm_warehouses as whw on whw.warehouse_id=ro.wm_withdraw
     left join wm_requisition_type as rt on rt.requisition_type_id=ro.requisition_type_id
-    where rou.is_paid='N'
+    where rou.is_paid='N' and rou.is_cancel='N'
     and ro.wm_requisition=?
     order by rou.unpaid_date
     `;
@@ -345,7 +345,7 @@ export class RequisitionOrderModel {
     inner join wm_warehouses as whr on whr.warehouse_id=ro.wm_requisition
     inner join wm_warehouses as whw on whw.warehouse_id=ro.wm_withdraw
     left join wm_requisition_type as rt on rt.requisition_type_id=ro.requisition_type_id
-    where rou.is_paid='N'
+    where rou.is_paid='N' and rou.is_cancel='N'
     and ro.wm_withdraw=?
     order by rou.unpaid_date
     `;
@@ -482,11 +482,20 @@ export class RequisitionOrderModel {
       .insert(products);
   }
 
-  changeToPaids(db: Knex, requisitionOrderId: any[]) {
+  changeToPaids(db: Knex, requisitionOrderId: any) {
     return db('wm_requisition_order_unpaids')
       .where('requisition_order_id', requisitionOrderId)
       .update({
         is_paid: 'Y'
+      });
+  }
+
+  changeToUnpaidCancel(db: Knex, requisitionOrderIds: any[]) {
+    return db('wm_requisition_order_unpaids')
+      .whereIn('requisition_order_id', requisitionOrderIds)
+      .update({
+        is_paid: 'N',
+        is_cancel: 'Y'
       });
   }
 
