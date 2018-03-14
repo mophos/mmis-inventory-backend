@@ -1,0 +1,49 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    - var ss=0
+      for i in unPaid
+        .page
+        table.table
+          thead
+            tr 
+              td.center.bold(colspan='9') #{hospitalName} 
+            tr 
+              td.center.bold(colspan='9') ใบรายการค้างจ่าย
+            tr 
+              td.center(colspan='9') ณ วันที่ #{today}
+            tr 
+              td.left(colspan='9') ใบเบิกเลขที่ #{i.requisition_code}
+            tr 
+              td.left(colspan='9') หน่วยเบิก #{i.requisition_warehouse}
+            tr 
+              td.left(colspan='9') เบิกจาก #{i.withdraw_warehouse}
+            tr 
+              td.left(colspan='9') วันที่เบิก #{i.requisition_date}
+          tbody
+            tr.dash-top
+              td(style='border:none;' colspan='4')
+              td(style='border:none;' colspan='4') รหัสยา 
+              td(style='border:none;' colspan='4') ชื่อสามัญ
+              td(style='border:none;' colspan='4') จำนวนค้างจ่าย
+            - var v = 0
+              for a in list_UnPaid[ss]
+                - ++v
+                tr.dash-top
+                  td(colspan='4') #{v}
+                  td(colspan='4') #{a.generic_id}
+                  td(colspan='4') #{a.generic_name}
+                  td(colspan='4') #{a.unpaid_qty} #{a.from_unit_name} (#{a.conversion_qty} #{a.to_unit_name})
+                tr.dash-bottom
+                  td(colspan='4') 
+                  td(colspan='4') 
+                  td(colspan='4') 
+                  td(colspan='4') 
+        .pagebreak
+        - ++ss
+        

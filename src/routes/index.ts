@@ -80,18 +80,19 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
       })
       sum.push(inventoryReportModel.comma(_sum));
     })
-    let list_count:any = []
-    // for (let i in approve_requis){
-    //   console.log(approve_requis[i]);
-    //   list_count.push(approve_requis[i].length)
-    //   approve_requis[i]=_.chunk(approve_requis[i], page_re)
-    // }
+    let list_count: any = []
+    for (let i in approve_requis) {
+      console.log(approve_requis[i]);
+      list_count.push(approve_requis[i].length)
+      approve_requis[i] = _.chunk(approve_requis[i], page_re)
+    }
     // res.send({approve_requis:approve_requis,list_count:list_count,page_re:page_re})
     res.render('approve_requis', {
       hospitalName: hospitalName,
       today: todays,
       approve_requis: approve_requis,
-      sum: sum
+      sum: sum,
+      list_count: list_count
     });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -101,15 +102,53 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
 
 }));//ตรวจสอบแล้ว 08/10/60
 
+router.get('/report/UnPaid/requis', wrap(async (req, res, next) => {
+  let db = req.db;
+  let list_UnPaid: any = []
+  let unPaid: any = []
+  try {
+    let warehouseId = req.decoded.warehouseId;
+    let requisId = req.query.requisId;
+    requisId = Array.isArray(requisId) ? requisId : [requisId]
+    let rs: any = await inventoryReportModel.getUnPaidOrders(db, warehouseId);
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    moment.locale('th');
+    let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+    _.forEach(requisId, opject => {
+      let tmp = _.find(rs[0], ['requisition_order_id', +opject])
+      tmp.unpaid_date = moment(tmp.unpaid_date).format('D MMMM ') + (moment(tmp.unpaid_date).get('year') + 543);
+      tmp.requisition_date = moment(tmp.requisition_date).format('D MMMM ') + (moment(tmp.requisition_date).get('year') + 543);
+      unPaid.push(tmp)
+    })
+    for(let i in unPaid){
+      const rs: any = await inventoryReportModel.getOrderUnpaidItems(db, unPaid[i].requisition_order_unpaid_id);
+
+      list_UnPaid.push(rs[0])
+    }
+    // res.send({ requisId: requisId,unPaid:unPaid,list_UnPaid:list_UnPaid})
+    res.render('list_requisition', {
+      hospitalName: hospitalName,
+      today: today,
+      unPaid:unPaid,
+      list_UnPaid: list_UnPaid
+    });
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  } finally {
+    db.destroy();
+  }
+}));
+
 router.get('/report/list/requis', wrap(async (req, res, next) => {
   let db = req.db;
   let list_requis: any = []
   let todays: any = []
   let sum: any = []
-  let page_re: any = req.decoded.WM_REQUISITION_REPORT_APPROVE;
+
   try {
     let requisId = req.query.requisId;
-    
+
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
@@ -134,7 +173,6 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
       })
     })
-    
     let boox_prefix = await inventoryReportModel.boox_prefix(db);
     boox_prefix = boox_prefix[0].value
     res.render('list_requis', {
@@ -933,7 +971,7 @@ router.get('/report/tranfers', wrap(async (req, res, next) => {
   let _tmpSum: any = [];
   let _tmpTranfer: any = []
   let page: any = req.decoded.WM_TRANSFER_REPORT_APPROVE;
-  
+
   // console.log(page);
 
   for (let id in tranferId) {
