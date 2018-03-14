@@ -1035,6 +1035,21 @@ router.post('/unpaid/change-unpaid', async (req, res, next) => {
   }
 });
 
+router.post('/unpaid/cancel-unpaid', async (req, res, next) => {
+  let db = req.db;
+  let requisitionOrderIds = req.body.requisitionOrderIds;
+
+  try {
+    await orderModel.changeToUnpaidCancel(db, requisitionOrderIds);
+    res.send({ ok: true });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
 router.get('/templates/:srcWarehouseId/:dstWarehouseId', async (req, res, next) => {
   let db = req.db;
   let srcWarehouseId = req.params.srcWarehouseId;
