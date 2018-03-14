@@ -102,7 +102,7 @@ export class BasicModel {
 
   getWarehouses(knex: Knex) {
     return knex('wm_warehouses')
-      .orderBy('warehouse_id');
+      .orderBy('short_code');
   }
 
   getTransactionIssue(knex: Knex) {
