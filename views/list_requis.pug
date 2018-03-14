@@ -22,6 +22,8 @@ html
             tr 
               td.left(colspan='9') วันที่อนุมัติเบิก #{i[0].confirm_date}
             tr 
+              td.left(colspan='9') หน่วยงานที่เบิก #{i[0].warehouse_name}
+            tr 
               td.left(colspan='9') ณ วันที่ #{today[ss]}
           tbody
           for a in i
@@ -54,7 +56,7 @@ html
               td(colspan='4').left #{a.product_name}
               td #{a.confirm_qty} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
               td #{a.expired_date}
-              td #{a.warehouse_name}
+              td #{a.withdraw_warehouse_name}
               td 
               td #{a.total} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
         - ++ss
