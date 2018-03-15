@@ -461,7 +461,8 @@ export class ReceiveModel {
       .whereRaw('wp.product_id=rd.product_id and wp.lot_no=rd.lot_no and wp.expired_date=rd.expired_date');
 
     return knex('wm_receive_other_detail as rd')
-      .select('rd.*', 'ug.qty as conversion_qty', 'mp.generic_id', 'rt.receive_code', 'rt.donator_id', subBalance)
+      .select('rd.*', knex.raw('sum(rd.receive_qty) as receive_qty'),  
+      'ug.qty as conversion_qty', 'mp.generic_id', 'rt.receive_code', 'rt.donator_id', subBalance)
       .whereIn('rd.receive_other_id', receiveIds)
       .innerJoin('wm_receive_other as rt', 'rt.receive_other_id', 'rd.receive_other_id')
       .innerJoin('mm_products as mp', 'mp.product_id', 'rd.product_id')
