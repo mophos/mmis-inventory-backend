@@ -14,7 +14,7 @@ export class ReceiveModel {
   getAllProducts(knex: Knex) {
     return knex('mm_products as p')
       .select('p.product_id', 'p.product_name', 'gp.generic_id',
-      'v.generic_name', 'v.generic_type', ' l.labeler_name')
+        'v.generic_name', 'v.generic_type', ' l.labeler_name')
       .innerJoin('mm_generic_product as gp', 'gp.product_id', 'p.product_id')
       .innerJoin('wm_all_products_view as v', 'v.generic_id', 'gp.generic_id')
       .innerJoin('mm_product_labeler as pl', 'pl.product_id', 'p.product_id')
@@ -26,7 +26,7 @@ export class ReceiveModel {
 
     return knex('wm_receives as r')
       .select('r.receive_id', 'r.is_cancel', 'r.receive_code', 'r.receive_tmp_code', 'r.purchase_order_id', 'r.receive_date', 'r.delivery_date',
-      'r.delivery_code', 'l.labeler_name', 'pp.purchase_order_number','pp.purchase_order_book_number', 'pp.purchase_order_id', 'ra.approve_date', 'ra.approve_id')
+        'r.delivery_code', 'l.labeler_name', 'pp.purchase_order_number', 'pp.purchase_order_book_number', 'pp.purchase_order_id', 'ra.approve_date', 'ra.approve_id')
       .leftJoin('mm_labelers as l', 'l.labeler_id', 'r.vendor_labeler_id')
       .leftJoin('pc_purchasing_order as pp', 'pp.purchase_order_id', 'r.purchase_order_id')
       .leftJoin('wm_receive_approve as ra', 'ra.receive_id', 'r.receive_id')
@@ -47,10 +47,12 @@ export class ReceiveModel {
   }
 
   getReceiveWaitingSearch(knex: Knex, limit: number, offset: number, query: string) {
+    let date = (+moment(query).format('YYYY') - 543) + moment(query).format('-MM-DD');
+    date = `%${date}%`;
     let _query = `%${query}%`;
     return knex('wm_receives as r')
       .select('r.receive_id', 'r.is_cancel', 'r.receive_code', 'r.receive_tmp_code', 'r.purchase_order_id', 'r.receive_date', 'r.delivery_date',
-      'r.delivery_code', 'l.labeler_name', 'pp.purchase_order_number','pp.purchase_order_book_number', 'pp.purchase_order_id', 'ra.approve_date', 'ra.approve_id')
+        'r.delivery_code', 'l.labeler_name', 'pp.purchase_order_number', 'pp.purchase_order_book_number', 'pp.purchase_order_id', 'ra.approve_date', 'ra.approve_id')
       .leftJoin('mm_labelers as l', 'l.labeler_id', 'r.vendor_labeler_id')
       .leftJoin('pc_purchasing_order as pp', 'pp.purchase_order_id', 'r.purchase_order_id')
       .leftJoin('wm_receive_approve as ra', 'ra.receive_id', 'r.receive_id')
@@ -58,6 +60,7 @@ export class ReceiveModel {
       .where('r.receive_code', 'like', _query)
       .orWhere('pp.purchase_order_number', 'like', _query)
       .orWhere('pp.purchase_order_book_number', 'like', _query)
+      .orWhere('r.receive_date', 'like', date)
       .limit(limit)
       .offset(offset);
   }
@@ -116,7 +119,7 @@ export class ReceiveModel {
   }
 
   getOtherExpired(knex: Knex) {
-  let sql = `
+    let sql = `
     select rt.*, (select count(*) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as total,
     (select sum(rtd.cost * rtd.receive_qty) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as cost,
     rtt.receive_type_name, d.donator_name, a.approve_id
@@ -129,8 +132,8 @@ export class ReceiveModel {
     `;
     return knex.raw(sql);
   }
-  getOtherExpiredSearch(knex: Knex,q) {
-  let sql = `
+  getOtherExpiredSearch(knex: Knex, q) {
+    let sql = `
     select rt.*, (select count(*) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as total,
     (select sum(rtd.cost * rtd.receive_qty) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as cost,
     rtt.receive_type_name, d.donator_name, a.approve_id
@@ -141,10 +144,10 @@ export class ReceiveModel {
     where rt.is_expired = 'Y' and (rt.receive_code like ? or d.donator_name like ?)
     order by rt.receive_other_id desc
     `;
-    return knex.raw(sql,[q,q]);
+    return knex.raw(sql, [q, q]);
   }
-    getExpired(knex: Knex) {
-      let sql = `
+  getExpired(knex: Knex) {
+    let sql = `
       SELECT
       r.receive_id,
       r.receive_date,
@@ -181,8 +184,8 @@ export class ReceiveModel {
     return knex.raw(sql);
 
   }
-  getExpiredSearch(knex: Knex,q) {
-      let sql = `
+  getExpiredSearch(knex: Knex, q) {
+    let sql = `
       SELECT
       r.receive_id,
       r.receive_date,
@@ -216,7 +219,7 @@ export class ReceiveModel {
       ORDER BY
       r.receive_date DESC
       `;
-    return knex.raw(sql,[q,q]);
+    return knex.raw(sql, [q, q]);
 
   }
 
@@ -265,7 +268,7 @@ export class ReceiveModel {
   }
 
   getReceiveOtherEditProductList(knex: Knex, receiveOtherId: any) {
-      let sql = `
+    let sql = `
       SELECT
       rd.cost,
       rd.product_id,
@@ -372,10 +375,10 @@ export class ReceiveModel {
   getReceiveInfo(knex: Knex, receiveId: any) {
     return knex('wm_receives as r')
       .select('r.receive_id', 'r.receive_code', 'r.receive_tmp_code', 'r.receive_date', 'r.delivery_code', 'r.delivery_date',
-      'r.receive_type_id', 'r.receive_status_id', 'r.vendor_labeler_id',
-      'lm.labeler_name', 'rt.receive_type_name', 'rs.receive_status_name', 'r.committee_id',
-      'pc.purchase_order_number', 'pc.purchase_order_id', 'pc.order_date',
-      'ra.approve_date', 'ra.approve_id', 'r.is_success', 'r.is_completed')
+        'r.receive_type_id', 'r.receive_status_id', 'r.vendor_labeler_id',
+        'lm.labeler_name', 'rt.receive_type_name', 'rs.receive_status_name', 'r.committee_id',
+        'pc.purchase_order_number', 'pc.purchase_order_id', 'pc.order_date',
+        'ra.approve_date', 'ra.approve_id', 'r.is_success', 'r.is_completed')
       .leftJoin('mm_labelers as lm', 'lm.labeler_id', 'r.vendor_labeler_id')
       .leftJoin('wm_receive_types as rt', 'rt.receive_type_id', 'r.receive_type_id')
       .leftJoin('wm_receive_status as rs', 'rs.receive_status_id', 'r.receive_status_id')
@@ -393,12 +396,12 @@ export class ReceiveModel {
 
     return knex('wm_receive_detail as rd')
       .select('rd.product_id', 'p.product_name', 'rd.unit_generic_id', 'rd.lot_no', 'rd.discount',
-      'p.m_labeler_id', 'p.is_lot_control', 'p.v_labeler_id', 'g.generic_name', 'g.generic_id', 'rd.is_free',
-      'rd.warehouse_id', 'rd.location_id', 'ww.warehouse_name', 'll.location_name',
-      'rd.receive_qty', 'rd.cost', 'mu.from_unit_id', 'mu.to_unit_id as base_unit_id',
-      'mu.qty as conversion_qty', 'u1.unit_name as base_unit_name',
-      'u2.unit_name as from_unit_name', 'rd.expired_date',
-      'lv.labeler_name as v_labeler_name', 'lm.labeler_name as m_labeler_name'
+        'p.m_labeler_id', 'p.is_lot_control', 'p.v_labeler_id', 'g.generic_name', 'g.generic_id', 'rd.is_free',
+        'rd.warehouse_id', 'rd.location_id', 'ww.warehouse_name', 'll.location_name',
+        'rd.receive_qty', 'rd.cost', 'mu.from_unit_id', 'mu.to_unit_id as base_unit_id',
+        'mu.qty as conversion_qty', 'u1.unit_name as base_unit_name',
+        'u2.unit_name as from_unit_name', 'rd.expired_date',
+        'lv.labeler_name as v_labeler_name', 'lm.labeler_name as m_labeler_name'
       )
       .innerJoin('mm_products as p', 'p.product_id', 'rd.product_id')
       .leftJoin('mm_generics as g', 'g.generic_id', 'p.generic_id')
@@ -428,8 +431,8 @@ export class ReceiveModel {
 
     return knex('wm_receive_detail as rd')
       .select('rd.*', 'ug.qty as conversion_qty', 'mp.generic_id', 'r.receive_code',
-      knex.raw('sum(rd.receive_qty) as receive_qty'),
-      knex.raw('sum(reqd.requisition_qty) as requisition_qty'), subBalance)
+        knex.raw('sum(rd.receive_qty) as receive_qty'),
+        knex.raw('sum(reqd.requisition_qty) as requisition_qty'), subBalance)
       .whereIn('rd.receive_id', receiveIds)
       .innerJoin('wm_receives as r', 'r.receive_id', 'rd.receive_id')
       .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'rd.unit_generic_id')
@@ -506,7 +509,7 @@ export class ReceiveModel {
   adjustCost(knex: Knex, data: any[]) {
     let sqls = [];
     data.forEach(v => {
-        let sql =`
+      let sql = `
           UPDATE mm_unit_generics set cost = ${v.cost} where unit_generic_id = ${v.unit_generic_id}`;
       sqls.push(sql);
     });
@@ -727,8 +730,8 @@ export class ReceiveModel {
 
     return knex('wm_requisition_check_detail as rcd')
       .select('r.wm_withdraw as warehouse_id', 'r.wm_requisition as requisition_warehouse_id', 'rcd.product_id', 'mp.generic_id',
-      'rcd.requisition_qty', 'rcd.cost', 'rcd.expired_date', 'rcd.lot_no', 'r.requisition_id', 'rcd.unit_generic_id',
-      'rcd.conversion_qty', knex.raw('ifnull(wp.qty, 0) as balance_receive'), knex.raw('ifnull(wp2.qty, 0) as balance_withdraw'))
+        'rcd.requisition_qty', 'rcd.cost', 'rcd.expired_date', 'rcd.lot_no', 'r.requisition_id', 'rcd.unit_generic_id',
+        'rcd.conversion_qty', knex.raw('ifnull(wp.qty, 0) as balance_receive'), knex.raw('ifnull(wp2.qty, 0) as balance_withdraw'))
       .innerJoin('wm_requisition_check as rc', 'rcd.check_id', 'rc.check_id')
       .innerJoin('wm_requisition as r', 'rc.requisition_id', 'r.requisition_id')
       .innerJoin('mm_products as mp', 'mp.product_id', 'rcd.product_id')
@@ -762,7 +765,7 @@ export class ReceiveModel {
   getPurchaseCheckExpire(knex: Knex, genericId) {
     return knex('wm_generic_expired_alert').where('generic_id', genericId);
   }
-  updateCost(knex: Knex, productsData){
+  updateCost(knex: Knex, productsData) {
     let sql = [];
     productsData.forEach(v => {
       let _sql = `
@@ -776,7 +779,7 @@ export class ReceiveModel {
   }
 
   getProductRemainByReceiveOtherIds(knex: Knex, receiveIds: any, warehouseId: any) {
-    let sql=`SELECT
+    let sql = `SELECT
     rd.product_id,
     rd.warehouse_id,
     IFNULL(
@@ -845,7 +848,7 @@ export class ReceiveModel {
     // where rd.receive_id in (${receiveIds})
     // and rd.warehouse_id='${warehouseId}'
     // GROUP BY wp.product_id,wp.warehouse_id`;
-    let sql=`SELECT
+    let sql = `SELECT
       rd.product_id,
       rd.warehouse_id,
       IFNULL(
