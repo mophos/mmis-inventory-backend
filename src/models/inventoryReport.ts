@@ -562,42 +562,79 @@ export class InventoryReportModel {
 
         return srcWarehouseId ? db.raw(sqlWarehouse, [srcWarehouseId]) : dstWarehouseId ? db.raw(sqlWarehouseWithdraw, [dstWarehouseId]) : db.raw(sql, []);
     }
+    getOrderItemsByRequisition(db: Knex, requisId: any,generic_id: any) {
+        let sql = `SELECT
+        r.requisition_code,
+        wl.location_name,
+        mp.product_name,
+        wp.qty AS total,
+        wp.lot_no,
+        rci.confirm_qty confirm_pd_qty,
+        wp.expired_date
+    FROM
+        wm_requisition_orders r
+        JOIN wm_requisition_confirms rc ON rc.requisition_order_id = r.requisition_order_id
+        JOIN wm_requisition_confirm_items rci ON rci.confirm_id = rc.confirm_id
+        JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
+        JOIN mm_products AS mp ON mp.product_id = wp.product_id
+        LEFT JOIN wm_locations as wl ON wl.location_id = wp.location_id
+        JOIN view_remain_product_in_warehouse AS vr ON wp.product_id = vr.product_id 
+        AND vr.warehouse_id = r.wm_withdraw 
+    WHERE
+        r.requisition_order_id = '${requisId}'  
+        AND mp.generic_id = '${generic_id}'
+    ORDER BY
+        rci.confirm_qty DESC,
+        wp.expired_date ASC
+        `;
+        return db.raw(sql);
+    }
+
+    list_requiAll(knex: Knex, requisId) {
+        let sql = `
+        SELECT
+	r.requisition_date,
+	r.requisition_code,
+	rc.confirm_date,
+	wh.warehouse_name,
+	whs.warehouse_name AS withdraw_warehouse_name,
+	mg.working_code,
+	mg.generic_name,
+	mg.generic_id,
+	( SELECT roi.requisition_qty FROM wm_requisition_order_items roi WHERE roi.requisition_order_id = r.requisition_order_id AND mg.generic_id = roi.generic_id ) AS requisition_qty,
+	mul.unit_name AS large_unit,
+	mup.qty AS unit_qty,
+	mus.unit_name AS small_unit,
+	sum( rci.confirm_qty ) AS confirm_qty,
+	r.updated_at
+FROM
+	wm_requisition_orders r
+	LEFT JOIN wm_requisition_confirms rc ON rc.requisition_order_id = r.requisition_order_id
+	LEFT JOIN wm_requisition_confirm_items rci ON rci.confirm_id = rc.confirm_id
+	LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
+	LEFT JOIN mm_generics AS mg ON mg.generic_id = rci.generic_id
+	LEFT JOIN mm_unit_generics AS mup ON wp.unit_generic_id = mup.unit_generic_id
+	LEFT JOIN mm_units AS mul ON mup.from_unit_id = mul.unit_id
+	LEFT JOIN mm_units AS mus ON mup.to_unit_id = mus.unit_id
+	LEFT JOIN wm_warehouses wh ON wh.warehouse_id = r.wm_requisition
+	LEFT JOIN wm_warehouses whs ON whs.warehouse_id = r.wm_withdraw 
+WHERE
+	r.requisition_order_id = '${requisId}' 
+	AND rci.confirm_qty != 0 
+GROUP BY
+	mg.generic_id 
+ORDER BY
+    r.requisition_order_id`
+        return (knex.raw(sql))
+    }
+
 
     list_requis(knex: Knex, requisId) {
-        // let sql=`SELECT
-        //     wrc.check_date,
-        //     wr.requisition_id,
-        //     wr.requisition_date,
-        //     ww.warehouse_name,
-        //     vap.product_id,
-        //     vap.product_name,
-        //     wrd.requisition_qty,
-        //     wrcd.requisition_qty AS requisition_qty_check,
-        //     vap.small_unit,
-        //     vap.small_qty,
-        //     vap.dosage_name,
-        //     vap.generic_id,
-        //     vap.generic_name,
-        //     wrcd.expired_date,
-        //     wl.location_name,
-        //     wp.qty
-        // FROM
-        //     wm_requisition wr
-        // JOIN wm_requisition_detail wrd ON wr.requisition_id = wrd.requisition_id
-        // JOIN wm_requisition_check wrc ON wrc.requisition_id = wr.requisition_id
-        // JOIN wm_requisition_check_detail wrcd ON wrcd.check_id = wrc.check_id
-        // JOIN wm_warehouses ww ON ww.warehouse_id = wrd.requisition_warehouse_id
-        // JOIN mm_products mp ON mp.product_id = wrcd.product_id
-        // JOIN wm_products wp ON wrd.lot_no = wp.lot_no
-        // AND wp.product_id = wrd.product_id
-        // JOIN view_all_product vap ON vap.product_id = wp.product_id
-        // AND wp.unit_product_id = vap.unit_product_id
-        // LEFT JOIN wm_locations wl ON wl.location_id = wr.location_id
-        // where wr.requisition_id=?`
         let sql = `
         SELECT
         mg.generic_name,
         mg.generic_id,
+        mg.working_code,
         r.requisition_code,
         r.requisition_order_id,
         r.requisition_date,

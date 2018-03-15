@@ -1,4 +1,11 @@
 include css.pug
+doctype html
+style.
+  @page{
+   margin-top: 1.0cm;
+   margin-left: 1.0cm;
+   margin-right: 1.0cm;
+ }
 html
   head
     meta(charset="utf-8")
@@ -9,26 +16,26 @@ html
       for i in approve_requis
         - var sss=0
           for c in i
-            .page
+            span.page
             table.table
               thead
                 tr 
-                  td.center.bold(colspan='11') #{hospitalName} 
+                  td.center.bold(colspan='10') #{hospitalName} 
                 tr 
-                  td.center.bold(colspan='11') ใบอนุมัติเบิก
+                  td.center.bold(colspan='10') ใบอนุมัติเบิก
                 tr 
-                  td.left(colspan='6') เลขที่ใบเบิก #{c[0].requisition_code}
+                  td.left(colspan='5') เลขที่ใบเบิก #{c[0].requisition_code}
                   td.right(colspan='5') วันที่อนุมัติ #{c[0].confirm_date}
                 tr 
-                  td.left(colspan='11') หน่วยงานที่เบิก #{c[0].warehouse_name}
+                  td.left(colspan='10') หน่วยงานที่เบิก #{c[0].warehouse_name}
                 tr 
-                  td.left(colspan='11') ณ วันที่ #{today[ss]}
+                  td.left(colspan='10') ณ วันที่ #{today[ss]}
                 tr 
-                  td.left(colspan='11') อนุมัติให้เบิกเวชภัณฑ์ตามรายการนี้
+                  td.left(colspan='10') อนุมัติให้เบิกเวชภัณฑ์ตามรายการนี้
                 tr 
                   th.left #
-                  th.left รหัสยา
                   th.left ชื่อเวชภัณฑ์
+                  th
                   th.left รูปแบบ
                   th.left lot
                   th.right จำนวนขอเบิก
@@ -42,8 +49,8 @@ html
                 - y++
                 tr 
                   td #{y}
-                  td #{a.generic_id}
                   td #{a.generic_name}
+                  td
                   td #{a.dosage_name}
                   td #{a.lot_no}
                   td.right #{a.requisition_qty} #{a.large_unit} (#{a.small_qty} #{a.small_unit})
@@ -52,31 +59,41 @@ html
                   td.right #{a.expired_date}
                   td.right #{a.total_cost}
                 .pagebreak
-              tfoot 
-                tr.dash-top 
-                  td.right(colspan='11') รวมทั้งหมด #{y} รายการ | คิดเป็นมูลค่า #{sum[ss]} บาท
-                tr 
-                  td(colspan='11') &nbsp; 
-                tr 
-                  td(colspan='11') &nbsp; 
-                tr 
-                  td.center(colspan='6') ลงชื่อ..................................................(ผู้เบิก)
-                    br
-                    | (..................................................)
-                  td.center(colspan='5') ลงชื่อ..................................................(ผู้จ่าย)
-                    br
-                    | (..................................................)
-                tr 
-                  td(colspan='11') &nbsp; 
+              tfoot
+                tr.dash-top
+                  td(colspan='10' height='10px;')
                 tr
-                  td(colspan='11') &nbsp; 
+                  td.right(colspan='10') รวมทั้งหมด #{y} รายการ | คิดเป็นมูลค่า #{sum[ss]} บาท
                 tr 
-                  td.center(colspan='6') ลงชื่อ..................................................(ผู้อนุมัติ)
+                  td(colspan='10') &nbsp; 
+                tr 
+                  td(colspan='10') &nbsp; 
+                tr 
+                  td(colspan='10') &nbsp; 
+                tr 
+                  td.center(colspan='5') ลงชื่อ.....................................................................(ผู้เบิก)
                     br
-                    | (..................................................)
-                  td.center(colspan='5') ลงชื่อ..................................................(ผู้รับ)
                     br
-                    | (..................................................)
+                    | (.....................................................................)
+                  td.center(colspan='5') ลงชื่อ.....................................................................(ผู้จ่าย)
+                    br
+                    br
+                    | (.....................................................................)
+                tr 
+                  td(colspan='10') &nbsp; 
+                tr 
+                  td(colspan='10') &nbsp; 
+                tr 
+                  td(colspan='10') &nbsp; 
+                tr 
+                  td.center(colspan='5') ลงชื่อ.....................................................................(ผู้อนุมัติ)
+                    br
+                    br
+                    | (.....................................................................)
+                  td.center(colspan='5') ลงชื่อ.....................................................................(ผู้รับ)
+                    br
+                    br
+                    | (.....................................................................)
             - sss++          
         - ss++
         .pagebreak
