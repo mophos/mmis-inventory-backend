@@ -76,7 +76,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
         value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
         if (value.expired_date === null) {
           value.expired_date = "-";
-        } else value.expired_date = moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year') + 543);
+        } else value.expired_date = moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year'));
       })
       sum.push(inventoryReportModel.comma(_sum));
     })
@@ -164,7 +164,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
     }
     list_requis.forEach(opject => {
       opject.forEach(value => {
-        value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543) : '-';
+        value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year')) : '-';
         value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.unit_qty);
         value.total = inventoryReportModel.commaQty(value.total / value.unit_qty);
         value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.unit_qty);
@@ -175,6 +175,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
     })
     let boox_prefix = await inventoryReportModel.boox_prefix(db);
     boox_prefix = boox_prefix[0].value
+    // res.send(list_requis)
     res.render('list_requis', {
       boox_prefix: boox_prefix,
       hospitalName: hospitalName,
@@ -1020,7 +1021,7 @@ router.get('/report/tranfers2', wrap(async (req, res, next) => {
     if (tranfer[0][0] !== undefined) {
       _tranfers.push(tranfer[0])
       _tranfers[index].forEach(value => {
-        value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD MMMM ') + (moment(value.expired_date).get('year') + 543) : '-';
+        value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD MMMM ') + (moment(value.expired_date).get('year')) : '-';
         value.transfer_date = moment(value.transfer_date).isValid() ? moment(value.transfer_date).format('D MMMM ') + (moment(value.transfer_date).get('year') + 543) : '-';
         value.approve_date = moment(value.approve_date).isValid() ? moment(value.approve_date).format('DD MMMM ') + (moment(value.approve_date).get('year') + 543) : '-';
         value.product_qty = inventoryReportModel.commaQty(value.product_qty);
