@@ -428,7 +428,7 @@ export class ReceiveModel {
 
     return knex('wm_receive_detail as rd')
       .select(
-      'rd.receive_detail_id', 'rd.receive_id', 'product_id',
+      'rd.receive_detail_id', 'rd.receive_id', 'rd.product_id',
       'rd.lot_no', 'rd.expired_date', knex.raw('sum(rd.receive_qty) as receive_qty'),
       'rd.manufacturer_labeler_id', 'rd.cost', 'rd.unit_generic_id',
       'rd.warehouse_id', 'rd.location_id', 'rd.is_free', 'rd.discount',
@@ -467,7 +467,7 @@ export class ReceiveModel {
 
     return knex('wm_receive_other_detail as rd')
       .select(
-      'rd.receive_detail_id', 'rd.receive_other_id', 'product_id',
+      'rd.receive_detail_id', 'rd.receive_other_id', 'rd.product_id',
       'rd.lot_no', 'rd.expired_date', knex.raw('sum(rd.receive_qty) as receive_qty'),
       'rd.manufacturer_labeler_id', 'rd.cost', 'rd.unit_generic_id',
       'rd.warehouse_id', 'rd.location_id',
