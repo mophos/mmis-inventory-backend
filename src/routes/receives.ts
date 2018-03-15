@@ -1032,8 +1032,8 @@ router.post('/other/approve', co(async (req, res, next) => {
       obj.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
       obj.product_id = v.product_id;
       obj.generic_id = v.generic_id;
-      obj.unit_generic_id = v.unit_generic_id,
-        obj.transaction_type = TransactionType.RECEIVE_OTHER;
+      obj.unit_generic_id = v.unit_generic_id;
+      obj.transaction_type = TransactionType.RECEIVE_OTHER;
       obj.document_ref_id = v.receive_code;
       obj.in_qty = v.qty;
       obj.in_unit_cost = v.cost;
@@ -1332,11 +1332,13 @@ router.put('/update/cost', co(async (req, res, nex) => {
   let products = req.body.products;
   let productsData = [];
   products.forEach((v: any) => {
-    let pdata: any = {
+    if(v.cost != 0){
+      let pdata: any = {
       unit_generic_id: v.unit_generic_id,
       cost: v.cost
     }
     productsData.push(pdata);
+    }
   });
   try {
     const rows = await receiveModel.updateCost(db, productsData);
