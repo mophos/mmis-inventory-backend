@@ -684,8 +684,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
         if (isClose) {
           res.send({ ok: false, error: 'บัญชีถูกปิดแล้ว' });
         } else {
-          // await orderModel.saveApproveConfirmOrder(db, confirmId, approveData);
-
+          await orderModel.saveApproveConfirmOrder(db, confirmId, approveData);
           // save product to wm_products
           let preReq = await orderModel.getPreRequisitionDetail(db, confirmId);
           let requisitionProducts = await orderModel.getRequisitionConfirmItems(db, confirmId);
@@ -744,16 +743,10 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
               products.push(obj);
             }
           });
-          console.log('/*/*/*/*/*/*/*');
-          
           // create stockcard detail
           let sc: any = await orderModel.getRequisitionOrderItem(db, confirmId);
           let balances = [];
           for (let s of sc[0]) {
-            console.log('*****************************');
-            console.log(s);
-            console.log('*****************************');
-
             let srcObjBalance: any = {};
             let dstObjBalance: any = {};
             let srcBalance = await orderModel.getBalance(db, s.product_id, s.src_warehouse);
@@ -851,74 +844,6 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
         }
       } else {
         res.send({ ok: false, error: 'วันที่เบิกไม่ถูกต้อง' });
-        // await orderModel.saveApproveConfirmOrder(db, confirmId, approveData);
-
-        // // save product to wm_products
-        // let preReq = await orderModel.getPreRequisitionDetail(db, confirmId);
-        // let requisitionProducts = await orderModel.getRequisitionConfirmItems(db, confirmId);
-
-        // let wmProductIds = []; // สำหรับดึงข้อมูลรายการในคลัง
-        // let wmProducts = []; // รายการสินค้าใหม่
-        // let dstProducts = []; // รายการสินค้าสำหรับปรับลดยอด
-        // let items = []; // รายการสินค้า
-        // let requisitionWarehouseId = preReq[0].wm_requisition;
-        // let withdrawWarehouseId = preReq[0].wm_withdraw;
-
-        // requisitionProducts.forEach(v => {
-
-        //   wmProductIds.push(v.wm_product_id);
-
-        //   dstProducts.push({
-        //     qty: v.confirm_qty,
-        //     wm_product_id: v.wm_product_id,
-        //     warehouse_id: withdrawWarehouseId
-        //   });
-
-        //   items.push({
-        //     qty: v.confirm_qty,
-        //     wm_product_id: v.wm_product_id
-        //   });
-
-        // });
-
-        // let rsWmProducts = await orderModel.getWmProducs(db, wmProductIds);
-
-        // // product items
-        // let products: any = [];
-
-        // rsWmProducts.forEach((v: any) => {
-        //   let id = uuid();
-        //   let qty = 0;
-        //   let idx = _.findIndex(items, { wm_product_id: v.wm_product_id });
-        //   if (idx > -1) {
-        //     qty = items[idx].qty;
-        //     let obj: any = {
-        //       wm_product_id: id,
-        //       warehouse_id: requisitionWarehouseId,
-        //       // vendor_labeler_id: v.vendor_labeler_id,
-        //       product_id: v.product_id,
-        //       // generic_id: v.generic_id,
-        //       qty: qty,
-        //       price: v.cost,
-        //       cost: v.cost,
-        //       lot_no: v.lot_no,
-        //       expired_date: moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null,
-        //       unit_generic_id: v.unit_generic_id,
-        //       // location_id: +v.location_id,
-        //       people_user_id: req.decoded.people_user_id,
-        //       created_at: moment().format('YYYY-MM-DD HH:mm:ss')
-        //     };
-        //     products.push(obj);
-        //   }
-        // });
-
-        // // create stockcard detail
-
-        // // save true data
-        // await productModel.saveProducts(db, products);
-        // await orderModel.decreaseQty(db, dstProducts);
-
-        // res.send({ ok: true });
       }
     } else {
       res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการอนุมัติ' });
@@ -970,8 +895,6 @@ router.post('/unpaid/confirm', async (req, res, next) => {
 
     let rsUnpaid: any = await orderModel.getUnpaidItemsForImport(db, orderUnpaidId);
     let products = rsUnpaid[0];
-    // console.log('=====================')
-    // console.log(products);
 
     let dstProducts = [];
     let wmProducts = [];
@@ -1012,12 +935,6 @@ router.post('/unpaid/confirm', async (req, res, next) => {
   } finally {
     db.destroy();
   }
-  /*
-  confirm_qty: 5000
-  generic_id: "1020010"
-  wm_product_id: "2424492345851"
-  */
-
 });
 
 router.post('/unpaid/change-unpaid', async (req, res, next) => {
