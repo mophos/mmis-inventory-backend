@@ -1332,11 +1332,13 @@ router.put('/update/cost', co(async (req, res, nex) => {
   let products = req.body.products;
   let productsData = [];
   products.forEach((v: any) => {
-    let pdata: any = {
+    if(v.cost != 0){
+      let pdata: any = {
       unit_generic_id: v.unit_generic_id,
       cost: v.cost
     }
     productsData.push(pdata);
+    }
   });
   try {
     const rows = await receiveModel.updateCost(db, productsData);
