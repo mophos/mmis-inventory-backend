@@ -562,7 +562,7 @@ export class InventoryReportModel {
 
         return srcWarehouseId ? db.raw(sqlWarehouse, [srcWarehouseId]) : dstWarehouseId ? db.raw(sqlWarehouseWithdraw, [dstWarehouseId]) : db.raw(sql, []);
     }
-    getOrderItemsByRequisition(db: Knex, requisId: any,generic_id: any) {
+    getOrderItemsByRequisition(db: Knex, requisId: any,product_id: any) {
         let sql = `SELECT
         r.requisition_code,
         wl.location_name,
@@ -578,14 +578,12 @@ export class InventoryReportModel {
         JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
         JOIN mm_products AS mp ON mp.product_id = wp.product_id
         LEFT JOIN wm_locations as wl ON wl.location_id = wp.location_id
-        JOIN view_remain_product_in_warehouse AS vr ON wp.product_id = vr.product_id 
-        AND vr.warehouse_id = r.wm_withdraw 
     WHERE
         r.requisition_order_id = '${requisId}'  
-        AND mp.generic_id = '${generic_id}'
+        AND wp.product_id = '${product_id}'
     ORDER BY
-        rci.confirm_qty DESC,
-        wp.expired_date ASC
+        rci.confirm_qty desc,
+        wp.expired_date
         `;
         return db.raw(sql);
     }
@@ -600,7 +598,8 @@ export class InventoryReportModel {
 	whs.warehouse_name AS withdraw_warehouse_name,
 	mg.working_code,
 	mg.generic_name,
-	mg.generic_id,
+    mg.generic_id,
+    wp.product_id,
 	( SELECT roi.requisition_qty FROM wm_requisition_order_items roi WHERE roi.requisition_order_id = r.requisition_order_id AND mg.generic_id = roi.generic_id ) AS requisition_qty,
 	mul.unit_name AS large_unit,
 	mup.qty AS unit_qty,
@@ -621,10 +620,10 @@ FROM
 WHERE
 	r.requisition_order_id = '${requisId}' 
 	AND rci.confirm_qty != 0 
-GROUP BY
-	mg.generic_id 
-ORDER BY
-    r.requisition_order_id`
+    GROUP BY
+        wp.product_id
+    ORDER BY
+        r.requisition_order_id`
         return (knex.raw(sql))
     }
 
