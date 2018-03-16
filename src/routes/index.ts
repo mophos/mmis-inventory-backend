@@ -121,7 +121,7 @@ router.get('/report/UnPaid/requis', wrap(async (req, res, next) => {
       tmp.requisition_date = moment(tmp.requisition_date).format('D MMMM ') + (moment(tmp.requisition_date).get('year') + 543);
       unPaid.push(tmp)
     })
-    for(let i in unPaid){
+    for (let i in unPaid) {
       const rs: any = await inventoryReportModel.getOrderUnpaidItems(db, unPaid[i].requisition_order_unpaid_id);
 
       list_UnPaid.push(rs[0])
@@ -130,7 +130,7 @@ router.get('/report/UnPaid/requis', wrap(async (req, res, next) => {
     res.render('list_requisition', {
       hospitalName: hospitalName,
       today: today,
-      unPaid:unPaid,
+      unPaid: unPaid,
       list_UnPaid: list_UnPaid
     });
   } catch (error) {
@@ -143,30 +143,44 @@ router.get('/report/UnPaid/requis', wrap(async (req, res, next) => {
 router.get('/report/list/requis', wrap(async (req, res, next) => {
   let db = req.db;
   let list_requis: any = []
+  let list_item: any = []
   let todays: any = []
   let sum: any = []
-
   try {
     let requisId = req.query.requisId;
-
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
     moment.locale('th');
     let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(', HH:mm') + ' น.';
     let _today = ''
+
     for (let i in requisId) {
-      let _list_requis = await inventoryReportModel.list_requis(db, requisId[i]);
+      let _list_requis = await inventoryReportModel.list_requiAll(db, requisId[i]);
       if (_list_requis[0][0] === undefined) { res.render('error404'); }
+      let _list_item_tpm = []
+      for (let j in _list_requis[0]) {
+        let _list_item = await inventoryReportModel.getOrderItemsByRequisition(db, requisId[i], _list_requis[0][j].generic_id);
+        _list_item_tpm.push(_list_item[0])
+      }
       _today = (_list_requis[0][0].updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(_list_requis[0][0].updated_at).format('D MMMM ') + (moment(_list_requis[0][0].updated_at).get('year') + 543) + moment(_list_requis[0][0].updated_at).format(', HH:mm') + ' น.' : ''
       todays.push(today + _today)
+      list_item.push(_list_item_tpm);
       list_requis.push(_list_requis[0]);
     }
+    list_item.forEach((page, indexss) => {
+      page.forEach((opject, indexs) => {
+        opject.forEach((value, index) => {
+          value.location_name = value.location_name !== null ? value.location_name : '-';
+          value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year')) : '-';
+          value.confirm_pd_qty = inventoryReportModel.commaQty(value.confirm_pd_qty / list_requis[indexss][indexs].unit_qty);
+          value.total = inventoryReportModel.commaQty((value.total / list_requis[indexss][indexs].unit_qty)-value.confirm_pd_qty);
+        })
+      })
+    })
     list_requis.forEach(opject => {
       opject.forEach(value => {
-        value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year')) : '-';
         value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.unit_qty);
-        value.total = inventoryReportModel.commaQty(value.total / value.unit_qty);
         value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.unit_qty);
         value.unit_qty = inventoryReportModel.commaQty(value.unit_qty);
         value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
@@ -175,12 +189,13 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
     })
     let boox_prefix = await inventoryReportModel.boox_prefix(db);
     boox_prefix = boox_prefix[0].value
-    // res.send(list_requis)
+    // res.send([{ list_requis: list_requis, list_item: list_item }])
     res.render('list_requis', {
       boox_prefix: boox_prefix,
       hospitalName: hospitalName,
       today: todays,
-      list_requis: list_requis
+      list_requis: list_requis,
+      list_item:list_item
     });
   } catch (error) {
     res.send({ ok: false, error: error.message })
@@ -369,7 +384,7 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
       _generic_stock.push(generic_stock[0])
     }
   }
-  if(_generic_stock.length <= 0){
+  if (_generic_stock.length <= 0) {
     res.render('error404');
   }
   res.render('generic_stock', {

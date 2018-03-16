@@ -1,4 +1,10 @@
 include css.pug
+style(media='print').
+  @page { 
+    margin-top: 1.5cm;
+    margin-left: 1cm;
+    margin-right: 1cm;
+  }
 doctype html
 html
   head
@@ -12,52 +18,66 @@ html
         table.table
           thead
             tr 
-              td.center.bold(colspan='9') #{hospitalName} 
+              td.center.bold(colspan='10') #{hospitalName} 
             tr 
-              td.center.bold(colspan='9') ใบจัดเวชภัณฑ์ตามใบเบิก
+              td.center.bold(colspan='10') ใบจัดเวชภัณฑ์ตามใบเบิก
             tr 
-              td.center(colspan='9') วันที่เบิก #{i[0].requisition_date}
+              td.center(colspan='10') วันที่เบิก #{i[0].requisition_date}
             tr 
-              td.left(colspan='9') ใบเบิกเลขที่ #{i[0].requisition_code}
+              td.left(colspan='10') ใบเบิกเลขที่ #{i[0].requisition_code}
             tr 
-              td.left(colspan='9') วันที่อนุมัติเบิก #{i[0].confirm_date}
+              td.left(colspan='10') วันที่อนุมัติเบิก #{i[0].confirm_date}
             tr 
-              td.left(colspan='9') หน่วยงานที่เบิก #{i[0].warehouse_name}
+              td.left(colspan='10') หน่วยงานที่เบิก #{i[0].warehouse_name}
             tr 
-              td.left(colspan='9') ณ วันที่ #{today[ss]}
+              td.left(colspan='10') หน่วยงานที่จ่าย #{i[0].withdraw_warehouse_name}
+            tr 
+              td.left(colspan='10') ณ วันที่ #{today[ss]}
           tbody
-          for a in i
-            tr.dash-top
-              td(style='border:none;') รหัสยา 
-              td(colspan='8') : #{a.product_id}
-            tr
-              td ชื่อสามัญ
-              td(colspan='6') : #{a.generic_name}
-              td จำนวนขอเบิก
-              td #{a.requisition_qty} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
-            tr
-              td หน่วยบรรจุ
-              td : #{a.large_unit}
-              td
-              td
-              td(align="right") รูปแบบ
-              td(colspan='2')  : #{a.small_unit}
-              td จำนวนเบิก
-              td #{a.confirm_qty} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
-            tr
-              td
-              td.left(colspan='3') ชื่อทางการค้า 
-              td จำนวนเบิก
-              td วันหมดอายุ
-              td ที่เก็บ
-              td เลขทะเบียน
-              td คงเหลือ
-            tr.dash-bottom
-              td(colspan='4').left #{a.product_name}
-              td #{a.confirm_qty} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
-              td #{a.expired_date}
-              td #{a.withdraw_warehouse_name}
-              td 
-              td #{a.total} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
+          - var s=0
+            for a in i
+              tr.dash-top
+                td(style='border:none;') รหัสยา 
+                td(colspan='9') : #{a.working_code}
+              tr
+                td ชื่อสามัญ
+                td(colspan='7') : #{a.generic_name}
+                td จำนวนขอเบิก
+                td #{a.requisition_qty} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
+              tr
+                td หน่วยบรรจุ
+                td : #{a.large_unit}
+                td
+                td
+                td
+                td รูปแบบ
+                td(colspan='2')  : #{a.small_unit}
+                td จำนวนเบิก
+                td #{a.confirm_qty} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
+              tr
+                td.center(colspan='4') ชื่อทางการค้า 
+                td จำนวนเบิก
+                td วันหมดอายุ
+                td ที่เก็บ
+                td lot no.
+                td เลขทะเบียน
+                td คงเหลือ
+              for l in list_item[ss][s]
+                tr
+                  
+                  if ( l.confirm_pd_qty == 0 )
+                    td(colspan='4').left  คงคลัง
+                    td -
+                  else 
+                    td(colspan='4').left #{l.product_name}
+                    td #{l.confirm_pd_qty} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
+                  td #{l.expired_date}
+                  td #{l.location_name}
+                  td #{l.lot_no}
+                  td 
+                  td #{l.total} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
+              tr.dash-bottom
+                td(colspan='10')
+              - ++s
         - ++ss
         .pagebreak
