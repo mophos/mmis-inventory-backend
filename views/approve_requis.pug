@@ -3,8 +3,8 @@ doctype html
 style.
   @page{
    margin-top: 1.0cm;
-   margin-left: 1.0cm;
-   margin-right: 1.0cm;
+   margin-left: 0.5cm;
+   margin-right: 0.5cm;
  }
 html
   head
@@ -17,7 +17,7 @@ html
         - var sss=0
           for c in i
             span.page
-            table.table
+            table.table(style="font-size: 13pt;")
               thead
                 tr 
                   td.center.bold(colspan='10') #{hospitalName} 
@@ -48,14 +48,14 @@ html
               for a in c
                 - y++
                 tr 
-                  td #{y}
-                  td #{a.generic_name}
+                  td #{y}.
+                  td &nbsp;#{a.generic_name}
                   td
                   td #{a.dosage_name}
                   td #{a.lot_no}
                   td.right #{a.requisition_qty} #{a.large_unit} (#{a.small_qty} #{a.small_unit})
                   td.right #{a.requisition_qty} #{a.large_unit} (#{a.small_qty} #{a.small_unit})
-                  td.right #{a.cost}
+                  td.right #{a.cost}&nbsp;&nbsp;&nbsp;
                   td.right #{a.expired_date}
                   td.right #{a.total_cost}
                 .pagebreak
