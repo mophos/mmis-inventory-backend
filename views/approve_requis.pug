@@ -20,18 +20,18 @@ html
             table.table(style="font-size: 13pt;")
               thead
                 tr 
-                  td.center.bold(colspan='10') #{hospitalName} 
+                  td.center.bold(colspan='10')(style="font-size: 15pt;") #{hospitalName} 
                 tr 
-                  td.center.bold(colspan='10') ใบอนุมัติเบิก
+                  td.center.bold(colspan='10')(style="font-size: 15pt;") ใบอนุมัติเบิก
                 tr 
-                  td.left(colspan='5') เลขที่ใบเบิก #{c[0].requisition_code}
-                  td.right(colspan='5') วันที่อนุมัติ #{c[0].confirm_date}
+                  td.left(colspan='5')(style="font-size: 15pt;") เลขที่ใบเบิก #{c[0].requisition_code}
+                  td.right(colspan='5')(style="font-size: 15pt;") วันที่อนุมัติ #{c[0].confirm_date}
                 tr 
-                  td.left(colspan='10') หน่วยงานที่เบิก #{c[0].warehouse_name}
+                  td.left(colspan='10')(style="font-size: 15pt;") หน่วยงานที่เบิก #{c[0].warehouse_name}
                 tr 
-                  td.left(colspan='10') ณ วันที่ #{today[ss]}
+                  td.left(colspan='10')(style="font-size: 15pt;") ณ วันที่ #{today[ss]}
                 tr 
-                  td.left(colspan='10') อนุมัติให้เบิกเวชภัณฑ์ตามรายการนี้
+                  td.left(colspan='10')(style="font-size: 15pt; padding-bottom: 10px;") อนุมัติให้เบิกเวชภัณฑ์ตามรายการนี้
                 tr 
                   th.left #
                   th.left ชื่อเวชภัณฑ์
@@ -49,15 +49,15 @@ html
                 - y++
                 tr 
                   td #{y}.
-                  td &nbsp;#{a.generic_name}
+                  td(style="font-size: 12pt;") &nbsp;#{a.generic_name}
                   td
                   td #{a.dosage_name}
-                  td #{a.lot_no}
-                  td.right #{a.requisition_qty} #{a.large_unit} (#{a.small_qty} #{a.small_unit})
-                  td.right #{a.requisition_qty} #{a.large_unit} (#{a.small_qty} #{a.small_unit})
+                  td(style="font-size: 12pt;") #{a.lot_no}
+                  td.right(style="font-size: 12pt;") #{a.requisition_qty} #{a.large_unit} (#{a.small_qty} #{a.small_unit})
+                  td.right(style="font-size: 12pt;") #{a.requisition_qty} #{a.large_unit} (#{a.small_qty} #{a.small_unit})
                   td.right #{a.cost}&nbsp;&nbsp;&nbsp;
-                  td.right #{a.expired_date}
-                  td.right #{a.total_cost}
+                  td.right(style="font-size: 12pt;") #{a.expired_date}
+                  td.right(style="font-size: 12pt;") #{a.total_cost}
                 .pagebreak
               tfoot
                 tr.dash-top
@@ -71,11 +71,11 @@ html
                 tr 
                   td(colspan='10') &nbsp; 
                 tr 
-                  td.center(colspan='5' style="padding-right: 50px;") ลงชื่อ.....................................................................(ผู้เบิก)
+                  td.center(colspan='5' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้เบิก)
                     br
                     br
                     | (.....................................................................)
-                  td.center(colspan='5' style="padding-right: 50px;") ลงชื่อ.....................................................................(ผู้จ่าย)
+                  td.center(colspan='5' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้จ่าย)
                     br
                     br
                     | (.....................................................................)
@@ -86,11 +86,11 @@ html
                 tr 
                   td(colspan='10') &nbsp; 
                 tr 
-                  td.center(colspan='5' style="padding-right: 50px;") ลงชื่อ.....................................................................(ผู้อนุมัติ)
+                  td.center(colspan='5' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้อนุมัติ)
                     br
                     br
                     | (.....................................................................)
-                  td.center(colspan='5' style="padding-right: 50px;") ลงชื่อ.....................................................................(ผู้รับ)
+                  td.center(colspan='5' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้รับ)
                     br
                     br
                     | (.....................................................................)
