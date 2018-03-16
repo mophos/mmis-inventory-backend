@@ -90,7 +90,9 @@ import transferDashboardRoute from './routes/transferDashboard';
 
 import staffRoute from './routes/staff';
 import settingRoute from './routes/setting';
-import versionRoute from './routes/version'
+import versionRoute from './routes/version';
+import borrowNoteRoute from './routes/borrowNote';
+
 const app: express.Express = express();
 
 //view engine setup
@@ -178,7 +180,7 @@ let adminAuth = (req, res, next) => {
 
 let dbConnection: MySqlConnectionConfig = {
   host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
+  port: +process.env.DB_PORT,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
@@ -254,15 +256,9 @@ app.use('/reports/requisition', reportRequisitionRoute);
 app.use('/reports/inventory', reportInventoryRoute);
 app.use('/reports/internalissue', reportInternalissueRoute);
 
+app.use('/borrow-note', checkAuth, adminAuth, borrowNoteRoute);
 // staff
 app.use('/staff', checkAuth, staffAuth, staffRoute);
-// app.use('/staffunitissue', checkAuth, staffAuth, StaffUnitissue);
-// app.use('/internalissue', checkAuth, staffAuth, internalissueRoute);
-// app.use('/staffproductlots', checkAuth, staffAuth, staffproductLots);
-// app.use('/staffrequisition', checkAuth, staffAuth, staffRequisition);
-// app.use('/staffreceive', checkAuth, staffAuth, staffReceives);
-// app.use('/staffrequisitiontype', checkAuth, staffAuth, requisitionType);
-// app.use('/staffhis-transection', checkAuth, staffAuth, staffHisTransaction)
 
 app.use('/users', checkAuth, userRoute);
 

@@ -121,6 +121,7 @@ export class UnitModel {
       .where('ug.generic_id', genericId)
       .where('ug.is_deleted', 'N')
       .where('ug.is_active', 'Y')
+      .orderBy('ug.qty', 'asc')
       .groupByRaw('ug.generic_id, unit_generic_id');
   }
   getConversionListStaff(knex: Knex, genericId: any) {

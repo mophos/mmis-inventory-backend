@@ -3,7 +3,7 @@
   "version": "0.1.1",
   "private": true,
   "scripts": {
-    "start": "nodemon app/bin/www.js",
+    "start": "npx nodemon app/bin/www.js",
     "build:watch": "npx tsc -w",
     "build": "npx tsc"
   },
@@ -50,6 +50,7 @@
     "@types/node": "^7.0.15",
     "@types/random-js": "^1.0.28",
     "@types/serve-favicon": "^2.2.27",
+    "nodemon": "^1.17.2",
     "typescript": "^2.7.2"
   }
 }
