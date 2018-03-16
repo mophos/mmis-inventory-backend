@@ -154,13 +154,13 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
     moment.locale('th');
     let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(', HH:mm') + ' น.';
     let _today = ''
-
+    requisId = await _.orderBy(requisId)
     for (let i in requisId) {
       let _list_requis = await inventoryReportModel.list_requiAll(db, requisId[i]);
       if (_list_requis[0][0] === undefined) { res.render('error404'); }
       let _list_item_tpm = []
       for (let j in _list_requis[0]) {
-        let _list_item = await inventoryReportModel.getOrderItemsByRequisition(db, requisId[i], _list_requis[0][j].generic_id);
+        let _list_item = await inventoryReportModel.getOrderItemsByRequisition(db, requisId[i], _list_requis[0][j].product_id);
         _list_item_tpm.push(_list_item[0])
       }
       _today = (_list_requis[0][0].updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(_list_requis[0][0].updated_at).format('D MMMM ') + (moment(_list_requis[0][0].updated_at).get('year') + 543) + moment(_list_requis[0][0].updated_at).format(', HH:mm') + ' น.' : ''
