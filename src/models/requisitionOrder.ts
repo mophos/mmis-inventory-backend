@@ -554,6 +554,7 @@ export class RequisitionOrderModel {
     let sql=`
       SELECT
       wrc.requisition_order_id,
+      wr.requisition_code,
       wrc.confirm_id,
       wrci.confirm_item_id,
       wp.product_id,

@@ -775,7 +775,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             objStockcardOut.generic_id = v.generic_id;
             objStockcardOut.unit_generic_id = v.unit_generic_id;
             objStockcardOut.transaction_type = 'REQ_OUT';
-            objStockcardOut.document_ref_id = v.requisition_order_id;
+            objStockcardOut.document_ref_id = v.requisition_code;
             objStockcardOut.in_qty = 0;
             objStockcardOut.in_unit_cost = 0;
             objStockcardOut.out_qty = v.confirm_qty;
@@ -808,7 +808,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             objStockcardIn.generic_id = v.generic_id;
             objStockcardIn.unit_generic_id = v.unit_generic_id;
             objStockcardIn.transaction_type = 'REQ_IN';
-            objStockcardIn.document_ref_id = v.requisition_order_id;
+            objStockcardIn.document_ref_id = v.requisition_code;
             objStockcardIn.in_qty = v.confirm_qty;
             objStockcardIn.in_unit_cost = v.cost;
             objStockcardIn.out_qty = 0
@@ -923,6 +923,101 @@ router.post('/unpaid/confirm', async (req, res, next) => {
 
       wmProducts.push(obj);
     });
+
+
+    let balances = [];
+    let stockCard= [];
+    for (let s of products) {
+      let srcObjBalance: any = {};
+      let dstObjBalance: any = {};
+      let srcBalance = await orderModel.getBalance(db, s.product_id, s.wm_withdraw);
+      srcBalance[0].forEach(v => {
+        srcObjBalance.product_id = v.product_id;
+        srcObjBalance.warehouse_id = v.warehouse_id;
+        srcObjBalance.balance_qty = v.balance;
+        srcObjBalance.balance_generic_qty = v.balance_generic;
+      });
+      balances.push(srcObjBalance);
+      let dstBalance = await orderModel.getBalance(db, s.product_id, s.wm_requisition)
+      dstBalance[0].forEach(v => {
+        dstObjBalance.product_id = v.product_id;
+        dstObjBalance.warehouse_id = v.warehouse_id;
+        dstObjBalance.balance_qty = v.balance;
+        dstObjBalance.balance_generic_qty = v.balance_generic;
+      });
+      balances.push(dstObjBalance);
+    }
+    
+          products.forEach(v => {
+            let objStockcardOut: any = {}
+            let objStockcardIn: any = {}
+            objStockcardOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+            objStockcardOut.product_id = v.product_id;
+            objStockcardOut.generic_id = v.generic_id;
+            objStockcardOut.unit_generic_id = v.unit_generic_id;
+            objStockcardOut.transaction_type = 'REQ_OUT';
+            objStockcardOut.document_ref_id = v.requisition_code;
+            objStockcardOut.in_qty = 0;
+            objStockcardOut.in_unit_cost = 0;
+            objStockcardOut.out_qty = v.confirm_qty;
+            objStockcardOut.out_unit_cost = v.cost;
+
+            let srcBalance = 0;
+            let srcBalanceGeneric = 0;
+            let srcIdx = _.findIndex(balances, {
+              product_id: v.product_id,
+              warehouse_id: v.wm_withdraw,
+            });
+            if (srcIdx > -1) {
+              srcBalance = balances[srcIdx].balance_qty;
+              balances[srcIdx].balance_qty -= v.qty;
+              srcBalanceGeneric = balances[srcIdx].balance_generic_qty;
+              balances[srcIdx].balance_generic_qty -= v.qty;
+            }
+            objStockcardOut.balance_qty = +srcBalance - +v.confirm_qty;
+            objStockcardOut.balance_generic_qty = +srcBalanceGeneric - +v.confirm_qty;
+
+
+            objStockcardOut.balance_unit_cost = v.cost;
+            objStockcardOut.ref_src = v.wm_withdraw;
+            objStockcardOut.ref_dst = v.wm_requisition;
+            objStockcardOut.comment = 'ให้เบิก';
+            stockCard.push(objStockcardOut);
+
+            objStockcardIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+            objStockcardIn.product_id = v.product_id;
+            objStockcardIn.generic_id = v.generic_id;
+            objStockcardIn.unit_generic_id = v.unit_generic_id;
+            objStockcardIn.transaction_type = 'REQ_IN';
+            objStockcardIn.document_ref_id = v.requisition_code;
+            objStockcardIn.in_qty = v.confirm_qty;
+            objStockcardIn.in_unit_cost = v.cost;
+            objStockcardIn.out_qty = 0
+            objStockcardIn.out_unit_cost = 0
+
+            let dstBalance = 0;
+            let dstBalanceGeneric = 0;
+            let dstIdx = _.findIndex(balances, {
+              product_id: v.product_id,
+              warehouse_id: v.wm_requisition,
+            });
+            if (dstIdx > -1) {
+              dstBalance = balances[dstIdx].balance_qty;
+              balances[dstIdx].balance_qty += v.qty;
+              dstBalanceGeneric = balances[dstIdx].balance_generic_qty;
+              balances[dstIdx].balance_generic_qty += v.qty;
+            }
+            objStockcardIn.balance_qty = +dstBalance + +v.confirm_qty;
+            objStockcardIn.balance_generic_qty = +dstBalanceGeneric + +v.confirm_qty;
+            objStockcardIn.balance_unit_cost = v.cost;
+            objStockcardIn.ref_src = v.wm_withdraw;
+            objStockcardIn.ref_dst = v.wm_requisition;
+            objStockcardIn.comment = 'เบิก';
+            stockCard.push(objStockcardIn);
+          })
+          // save stock card
+          await orderModel.saveStockCard(db, stockCard);
+
 
     // save true data
     await productModel.saveProducts(db, wmProducts);
