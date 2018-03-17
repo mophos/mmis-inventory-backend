@@ -149,7 +149,7 @@ router.post('/upload/issue', upload.single('file'), co(async (req, res, next) =>
     
     rimraf.sync(filePath);
     // get data
-    let rs: any = await hisTransactionModel.getIssueTransactionMappingData(db, id, hospcode);
+    let rs: any = await hisTransactionModel.getIssueTransactionMappingData(db, id, hospcode, warehouseId);
     // remove temp file 
     res.send({ ok: true, rows: rs });
 
