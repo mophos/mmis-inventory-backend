@@ -256,7 +256,7 @@ app.use('/reports/requisition', reportRequisitionRoute);
 app.use('/reports/inventory', reportInventoryRoute);
 app.use('/reports/internalissue', reportInternalissueRoute);
 
-app.use('/borrow-note', checkAuth, adminAuth, borrowNoteRoute);
+app.use('/borrow-notes', checkAuth, adminAuth, borrowNoteRoute);
 // staff
 app.use('/staff', checkAuth, staffAuth, staffRoute);
 
