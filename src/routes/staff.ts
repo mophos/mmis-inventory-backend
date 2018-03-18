@@ -1888,9 +1888,9 @@ router.post('/his-transaction/upload', upload.single('file'), co(async (req, res
   if (header[0].toUpperCase() === 'DATE_SERV' &&
     header[1].toUpperCase() === 'SEQ' &&
     header[2].toUpperCase() === 'HN' &&
-    header[3].toUpperCase() === 'ICODE' &&
+    header[3].toUpperCase() === 'DRUG_CODE' &&
     header[4].toUpperCase() === 'QTY' &&
-    header[5].toUpperCase() === 'DEPARTMENT') {
+    header[5].toUpperCase() === 'WAREHOUSE_CODE') {
 
     let _data: any = [];
     // x = 0 = header      
@@ -2319,7 +2319,7 @@ router.post('/upload/issue', upload.single('file'), co(async (req, res, next) =>
     
     rimraf.sync(filePath);
     // get data
-    let rs: any = await hisTransactionModel.getIssueTransactionMappingData(db, id, hospcode);
+    let rs: any = await hisTransactionModel.getIssueTransactionMappingData(db, id, hospcode, warehouseId);
     // remove temp file 
     res.send({ ok: true, rows: rs });
 
