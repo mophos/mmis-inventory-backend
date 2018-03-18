@@ -1,0 +1,90 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    - for(var i in _genericId)
+      span.page
+      table.table
+        thead
+          tr 
+            td.center.bold(colspan='11') #{hospitalName}
+          tr 
+            td.center.bold(colspan='11') บัญชีคุมคลังเวชภัณฑ์
+          //- tr 
+          //-   td.center(colspan='11') ตั้งแต่วันที่ #{startDate} ถึง #{endDate}
+          //- tr 
+          //-   td.left(colspan='5') รหัสเวชภัณฑ์ #{genericId[i]}
+          //-   td.right(colspan='6') หน่วย #{small_unit[i]}
+          //- tr 
+          //-   td.left(colspan='5') ชื่อสามัญ #{generic_name[i]}
+          //-   td.right(colspan='6') รูปแบบ #{dosage_name[i]}
+          //- tr 
+          //-   td.left(colspan='11') ณ วันที่ #{today}
+          //- tr
+          //-   th.left(style="border-bottom: 0px") #
+          //-   th.left(style="border-bottom: 0px") วันที่
+          //-   th.left(style="border-bottom: 0px") รับ/จ่าย
+          //-   th.left(style="border-bottom: 0px") เลขที่รับ/จ่าย
+          //-   th.left(style="border-bottom: 0px") หน่วยงาน
+          //-   th.center(colspan='2',style="border-bottom: 0px") จำนวน
+          //-   th.center(colspan='2',style="border-bottom: 0px") มูลค่า
+          //-   th.center(colspan='2',style="border-bottom: 0px") จำนวนคงคลัง
+          //- tr
+          //-   th
+          //-   th
+          //-   th
+          //-   th
+          //-   th
+          //-   th.center รับ
+          //-   th.center จ่าย
+          //-   th.center รับ
+          //-   th.center จ่าย
+          //-   th.center จำนวน
+          //-   th.center มูลค่า
+          tr
+            th(rowspan='2',style="border-style: solid;border-width: 2px 1px 2px 1px;") วัน/เดือน/ปี
+            th(rowspan='2',style="border-style: solid;border-width: 2px 1px 2px 1px;") เลขที่เอกสาร รับ/จ่าย
+            th(rowspan='2',style="border-style: solid;border-width: 2px 1px 2px 1px;") รับ/จ่าย
+            th(colspan='3',style="border-style: solid;border-width: 2px 1px 2px 1px;") จำนวนยา
+            th(rowspan='2',style="border-style: solid;border-width: 2px 1px 2px 1px;") ราคาต่อหน่วย
+            th(rowspan='2',style="border-style: solid;border-width: 2px 1px 2px 1px;") หมายเหตุ
+          tr
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px; solid;width:80px;") รับ
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px; solid;width:80px;") จ่าย
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;x solid;width:80px;") คงคลัง
+        tbody
+        - var y=0
+        for a in _generic_stock[i]
+          - y++
+          tr 
+            td #{a.stock_date}
+            td #{a.document_ref_id}
+            td #{a.comment}
+            //- td.left 
+            //-   if(a.warehouse_name)
+            //-     | #{a.warehouse_name}
+            //-   else
+            //-     | -
+            td #{a.in_qty} 
+            td #{a.out_qty}
+            //- td.right
+            //-   if(a.in_qty !== 0)
+            //-     | #{a.in_cost}
+            //-   else
+            //-     | 0
+            //- td.right
+            //-   if(a.out_qty !== 0)
+            //-     | #{a.out_cost}
+            //-   else
+            //-     | 0
+            td #{a.balance_generic_qty}
+            //- td.right #{a.balance_unit_cost}
+            td
+        tfoot 
+          tr.tbfooter
+            td(colspan='11')
+      .pagebreak
