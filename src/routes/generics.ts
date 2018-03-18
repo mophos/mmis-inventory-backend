@@ -205,4 +205,118 @@ router.post('/allocate', async (req, res, next) => {
     db.destroy();
   }
 });
+
+router.post('/allocate/baseunit', async (req, res, next) => {
+
+  let db = req.db;
+  let _data: any = req.body.data;
+  let warehouseId = req.body.srcWarehouseId || req.decoded.warehouseId;
+  let unitGenericId;
+  try {
+    let genericIds = [];
+    _data.forEach(v => {
+      genericIds.push(v.genericId);
+    });
+
+    let items = [];
+    let rsProducts: any = await genericModel.getProductInWarehousesByGenerics(db, genericIds, warehouseId);
+    _data.forEach(v => {
+      let obj: any = {};
+      obj.generic_id = v.genericId;
+      obj.generic_qty = v.genericQty;
+      obj.products = [];
+      rsProducts.forEach(x => {
+        if (+x.generic_id === +v.genericId) {
+          obj.products.push(x);
+        }
+      });
+      items.push(obj);
+    });
+
+    let results = [];
+    items.forEach((v) => {
+      let genericQty = v.generic_qty;
+      let products = v.products;
+      products.forEach((x, i) => {
+        let obj: any = {};
+        obj.wm_product_id = x.wm_product_id;
+        obj.unit_generic_id = x.unit_generic_id;
+        obj.conversion_qty = x.conversion_qty;
+        obj.generic_id = v.generic_id;
+        obj.pack_remain_qty = x.pack_remain_qty;
+        obj.small_remain_qty = x.remain_qty;
+        obj.product_name = x.product_name;
+        obj.from_unit_name = x.from_unit_name;
+        obj.to_unit_name = x.to_unit_name;
+        obj.expired_date = x.expired_date;
+        obj.lot_no = x.lot_no;
+        obj.product_id = x.product_id;
+
+        if (x.remain_qty >= genericQty && i !== (products.length - 1)) {
+          if ((genericQty % x.conversion_qty) === 0) {
+            obj.product_qty = genericQty
+            x.remain_qty = x.remain_qty - obj.product_qty;
+            genericQty = 0;
+          }
+        } else {
+          if (i === (products.length - 1)) {
+            if (x.remain_qty >= genericQty) {
+              if ((genericQty % x.conversion_qty) === 0) {
+                obj.product_qty = genericQty;
+                x.remain_qty = x.remain_qty - obj.product_qty;
+                genericQty = genericQty - obj.product_qty;
+              } else {
+                obj.product_qty = genericQty;
+                x.remain_qty = x.remain_qty - obj.product_qty;
+                genericQty = genericQty - obj.product_qty;
+              }
+            } else {
+              if ((x.remain_qty % x.conversion_qty) === 0) {
+                obj.product_qty = x.remain_qty;
+                x.remain_qty = x.remain_qty - obj.product_qty;
+                genericQty = genericQty - obj.product_qty;
+              } else {
+                obj.product_qty = x.remain_qty;
+                x.remain_qty = x.remain_qty - obj.product_qty;
+                genericQty = genericQty - obj.product_qty;
+              }
+            }
+          } else {
+            if (x.remain_qty >= genericQty) {
+              if ((genericQty % x.conversion_qty) === 0) {
+                obj.product_qty = x.genericQty;
+                x.remain_qty = x.remain_qty - obj.product_qty;
+                genericQty = 0;
+              } else {
+                obj.product_qty = genericQty;
+                x.remain_qty = x.remain_qty - obj.product_qty;
+                genericQty = genericQty - obj.product_qty;
+              }
+            } else {
+              if ((x.remain_qty % x.conversion_qty) === 0) {
+                obj.product_qty = x.remain_qty;
+                x.remain_qty = x.remain_qty - obj.product_qty;
+                genericQty = genericQty - obj.product_qty;
+              } else {
+                obj.product_qty = x.remain_qty;
+                x.remain_qty = x.remain_qty - obj.product_qty;
+                genericQty = genericQty - obj.product_qty;
+              }
+            }
+          }
+        }
+        if(obj.product_qty == undefined) {
+          obj.product_qty = 0;
+        }
+        results.push(obj);
+      });
+    });
+
+    res.send({ ok: true, rows: results });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
 export default router;

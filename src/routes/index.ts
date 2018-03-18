@@ -155,13 +155,13 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
     moment.locale('th');
     let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(', HH:mm') + ' น.';
     let _today = ''
-    requisId = await _.orderBy(requisId)
+
     for (let i in requisId) {
       let _list_requis = await inventoryReportModel.list_requiAll(db, requisId[i]);
       if (_list_requis[0][0] === undefined) { res.render('error404'); }
       let _list_item_tpm = []
       for (let j in _list_requis[0]) {
-        let _list_item = await inventoryReportModel.getOrderItemsByRequisition(db, requisId[i], _list_requis[0][j].product_id);
+        let _list_item = await inventoryReportModel.getOrderItemsByRequisition(db, requisId[i], _list_requis[0][j].generic_id);
         _list_item_tpm.push(_list_item[0])
       }
       _today = (_list_requis[0][0].updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(_list_requis[0][0].updated_at).format('D MMMM ') + (moment(_list_requis[0][0].updated_at).get('year') + 543) + moment(_list_requis[0][0].updated_at).format(', HH:mm') + ' น.' : ''
@@ -403,10 +403,75 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
   });
   // //console.log();
   // res.send(_generic_stock[0])
-
-
-
 }));//ทำFrontEndแล้ว  //ตรวจสอบแล้ว 14-9-60
+
+router.get('/report/generic/stock2/', wrap(async (req, res, next) => {
+  let db = req.db;
+  let genericId = req.query.genericId;
+  let startDate = req.query.startDate;
+  let endDate = req.query.endDate;
+  let warehouseId = req.query.warehouseId;
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+
+  moment.locale('th');
+  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
+  let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
+
+  startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
+  endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+
+  let _generic_stock: any = [];
+  let _generic_name = [];
+  let _small_unit = [];
+  let _dosage_name = [];
+  let generic_stock: any = [];
+  let _genericId: any = []
+  genericId = Array.isArray(genericId) ? genericId : [genericId]
+  Array.isArray(genericId)
+  // console.log(genericId, '**************');
+
+  for (let id in genericId) {
+    generic_stock = await inventoryReportModel.generic_stock(db, genericId[id], _startDate, _endDate, warehouseId);
+
+    if (generic_stock[0].length > 0) {
+      _genericId.push(generic_stock[0][0].generic_id)
+      _generic_name.push(generic_stock[0][0].generic_name)
+      _small_unit.push(generic_stock[0][0].unit_name)
+      _dosage_name.push(generic_stock[0][0].dosage_name)
+
+      generic_stock[0].forEach(v => {
+        v.stock_date = moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543);
+        v.in_cost = inventoryReportModel.comma(+v.in_qty * +v.balance_unit_cost);
+        v.out_cost = inventoryReportModel.comma(+v.out_qty * +v.balance_unit_cost);
+        v.balance_unit_cost = inventoryReportModel.comma(+v.balance_generic_qty * +v.balance_unit_cost);
+        v.in_qty = inventoryReportModel.commaQty(v.in_qty);
+        v.out_qty = inventoryReportModel.commaQty(v.out_qty);
+        v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
+      });
+      _generic_stock.push(generic_stock[0])
+    }
+  }
+  if (_generic_stock.length <= 0) {
+    res.render('error404');
+  }
+  res.render('generic_stock2', {
+    generic_stock: generic_stock,
+    _generic_stock: _generic_stock,
+    hospitalName: hospitalName,
+    today: today,
+    genericId: genericId,
+    generic_name: _generic_name,
+    small_unit: _small_unit,
+    dosage_name: _dosage_name,
+    _genericId: _genericId,
+    startDate: startDate,
+    endDate: endDate
+  });
+}));
+
+
 router.get('/report/count/requis/:date', wrap(async (req, res, next) => {
   let db = req.db;
   let date = req.params.date;
