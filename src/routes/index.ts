@@ -71,7 +71,8 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
         value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
         _sum += value.total_cost;
         value.cost = inventoryReportModel.comma(value.cost);
-        value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty);
+        value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty/value.small_qty);
+        value.qty = inventoryReportModel.commaQty(value.qty/value.small_qty);
         value.total_cost = inventoryReportModel.comma(value.total_cost);
         value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
         if (value.expired_date === null) {
@@ -174,7 +175,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
           value.location_name = value.location_name !== null ? value.location_name : '-';
           value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year')) : '-';
           value.confirm_pd_qty = inventoryReportModel.commaQty(value.confirm_pd_qty / list_requis[indexss][indexs].unit_qty);
-          value.total = inventoryReportModel.commaQty((value.total / list_requis[indexss][indexs].unit_qty)-value.confirm_pd_qty);
+          value.total = inventoryReportModel.commaQty((value.total / list_requis[indexss][indexs].unit_qty) - value.confirm_pd_qty);
         })
       })
     })
@@ -195,7 +196,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
       hospitalName: hospitalName,
       today: todays,
       list_requis: list_requis,
-      list_item:list_item
+      list_item: list_item
     });
   } catch (error) {
     res.send({ ok: false, error: error.message })
@@ -1023,6 +1024,8 @@ router.get('/report/tranfers2', wrap(async (req, res, next) => {
   console.log(tranferId);
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
+  let warehouse = req.decoded.warehouseName
+  // res.send(warehouse)
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let tranfer: any;
@@ -1030,24 +1033,46 @@ router.get('/report/tranfers2', wrap(async (req, res, next) => {
   let _tranferId: any = [];
   let _tranfers: any = [];
   let _tranferCounts: any = [];
+
+  let _list_tranfer: any = [];
+  let list_tranfer: any = [];
   let index: any = 0
   for (let id in tranferId) {
-    tranfer = await inventoryReportModel.tranfer2(db, tranferId[id]);
+    tranfer = await inventoryReportModel.tranferList(db, tranferId[id]);
     if (tranfer[0][0] !== undefined) {
+      for (let idList in tranfer[0]) {
+        let _list_tranferTmp = await inventoryReportModel.tranferListProduct(db, tranfer[0][idList].transfer_id, tranfer[0][idList].product_id);
+        _list_tranfer.push(_list_tranferTmp[0])
+      }
       _tranfers.push(tranfer[0])
-      _tranfers[index].forEach(value => {
-        value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD MMMM ') + (moment(value.expired_date).get('year')) : '-';
-        value.transfer_date = moment(value.transfer_date).isValid() ? moment(value.transfer_date).format('D MMMM ') + (moment(value.transfer_date).get('year') + 543) : '-';
-        value.approve_date = moment(value.approve_date).isValid() ? moment(value.approve_date).format('DD MMMM ') + (moment(value.approve_date).get('year') + 543) : '-';
-        value.product_qty = inventoryReportModel.commaQty(value.product_qty);
-        value.remain_qty = inventoryReportModel.commaQty(value.remain_qty);
+      _tranfers.forEach((valuess, indexx) => {
+        valuess.forEach((value, indexs) => {
+          value.transfer_date = moment(value.transfer_date).isValid() ? moment(value.transfer_date).format('D MMMM ') + (moment(value.transfer_date).get('year') + 543) : '-';
+          value.approve_date = moment(value.approve_date).isValid() ? moment(value.approve_date).format('DD MMMM ') + (moment(value.approve_date).get('year') + 543) : '-';
+        });
       });
+
+      list_tranfer.push(_list_tranfer)
+      _list_tranfer = []
       _tranferId.push(tranferId[id])
       ++index
     }
   }
+  list_tranfer.forEach((valuex: any, indexx) => {
+    valuex.forEach((value: any, indexs) => {
+      value.forEach((values: any, index) => {
+        values.location_name = values.location_name !== null ? values.location_name : '-';
+        values.expired_date = moment(values.expired_date).isValid() ? moment(values.expired_date).format('DD MMMM ') + (moment(values.expired_date).get('year')) : '-';
+        values.remain_qty = inventoryReportModel.commaQty(values.remain_qty / _tranfers[indexx][indexs].qty);
+        values.transfer_qty = inventoryReportModel.commaQty(values.transfer_qty / _tranfers[indexx][indexs].qty);
+        // values.remain_qty = values.remain_qty+' '+ _tranfers[indexx][indexs].qty;
+        // values.transfer_qty = values.transfer_qty +' '+ _tranfers[indexx][indexs].qty;
+      })
+    })
+  })
+  // res.send([{ list_tranfer: list_tranfer, _tranfers: _tranfers }])
   if (_tranfers[0] === undefined) res.render('error404');
-  res.render('list_tranfers', { hospitalName: hospitalName, today: today, _tranfers: _tranfers, _tranferCounts: _tranferCounts, tranferId: _tranferId });
+  res.render('list_tranfers', { hospitalName: hospitalName, today: today, _tranfers: _tranfers, _tranferCounts: _tranferCounts, tranferId: _tranferId, list_tranfer: list_tranfer });
 }));
 
 router.get('/report/stockcard2/:productId/:startDate/:endDate', wrap(async (req, res, next) => {

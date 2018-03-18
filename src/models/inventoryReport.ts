@@ -75,7 +75,7 @@ export class InventoryReportModel {
         wp.product_id,
         mp.product_name,
         ro.requisition_qty,
-        mup.cost,
+        wp.cost,
         wp.lot_no,
         wp.expired_date,
         rci.confirm_qty,
@@ -86,10 +86,10 @@ export class InventoryReportModel {
         rc.confirm_date,
         mg.generic_id,
         mg.generic_name,
-        rci.confirm_qty AS qty,
+        sum(rci.confirm_qty) AS qty,
         r.updated_at,
         mgd.dosage_name,
-        round(mup.cost * (rci.confirm_qty/mup.qty), 2 ) AS total_cost 
+        round(wp.cost * sum(rci.confirm_qty), 2 ) AS total_cost 
     FROM
         wm_requisition_orders r
         JOIN wm_requisition_order_items ro ON r.requisition_order_id = ro.requisition_order_id 
@@ -1376,6 +1376,68 @@ WHERE
         return knex.raw(sql, tranferId)
     }
 
+    tranferListProduct(knex: Knex, tranferId,product_id) {
+        let sql = `SELECT
+        wp.product_id,
+        mp.product_name,
+        wg.transfer_qty,
+        wp.lot_no,
+        lo.location_name,
+        wp.expired_date,
+        wp.qty as remain_qty
+    FROM
+        wm_transfer t
+    JOIN wm_transfer_generic wg ON t.transfer_id = wg.transfer_id
+    JOIN wm_transfer_product wtp ON wg.transfer_generic_id = wtp.transfer_generic_id
+    JOIN wm_products wp ON wp.wm_product_id = wtp.wm_product_id
+    JOIN mm_products mp ON mp.product_id = wp.product_id
+    JOIN wm_warehouses ww2 ON ww2.warehouse_id = t.src_warehouse_id
+    JOIN mm_unit_generics mug ON wp.unit_generic_id = mug.unit_generic_id
+    left JOIN wm_locations lo on lo.location_id = wp.location_id
+    WHERE
+        t.transfer_id = ${tranferId}
+        and wp.product_id = ${product_id}
+        ORDER BY
+        wg.transfer_qty desc,
+        wp.expired_date
+        `;
+        return knex.raw(sql)
+    }
+
+    tranferList(knex: Knex, tranferId) {
+        let sql = `SELECT
+        t.transfer_id,
+        mp.product_id,
+        t.transfer_code,
+        t.transfer_date,
+        ww.warehouse_name AS dst_warehouse_name,
+        ww2.warehouse_name AS src_warehouse_name,
+        mp.working_code,
+        mg.generic_name,
+        mu.unit_name AS large_unit,
+        mu2.unit_name AS small_unit,
+        round( sum( wtp.product_qty / mug.qty ), 0 ) AS large_qty ,
+        mug.qty
+    FROM
+        wm_transfer t
+        JOIN wm_transfer_generic wg ON t.transfer_id = wg.transfer_id
+        JOIN wm_transfer_product wtp ON wg.transfer_generic_id = wtp.transfer_generic_id
+        JOIN wm_products wp ON wp.wm_product_id = wtp.wm_product_id
+        JOIN mm_products mp ON mp.product_id = wp.product_id
+        JOIN mm_generics mg ON mp.generic_id = mg.generic_id
+        JOIN wm_warehouses ww ON ww.warehouse_id = t.dst_warehouse_id
+        JOIN wm_warehouses ww2 ON ww2.warehouse_id = t.src_warehouse_id
+        JOIN mm_unit_generics mug ON wp.unit_generic_id = mug.unit_generic_id
+        JOIN mm_units mu ON mug.from_unit_id = mu.unit_id
+        JOIN mm_units mu2 ON mug.to_unit_id = mu2.unit_id 
+    WHERE
+        t.transfer_id = ${tranferId}
+    GROUP BY
+        wp.product_id
+        `;
+        return knex.raw(sql)
+    }
+
     tranfer2(knex: Knex, tranferId) {
         let sql = `SELECT
         t.*,
@@ -1386,7 +1448,7 @@ WHERE
         ww.warehouse_id,
         ww.warehouse_name AS dst_warehouse_name,
         ww2.warehouse_name AS src_warehouse_name,
-        wp.lot_no,
+        wp.lot_no, 
         mu.unit_name AS large_unit,
         wp.expired_date,
         mug.qty,
