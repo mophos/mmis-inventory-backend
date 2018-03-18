@@ -183,11 +183,13 @@ export class HisTransactionModel {
       .insert(data);
   }
 
-  getIssueTransactionMappingData(db: Knex, uuid: any, hospcode: any) {
+  getIssueTransactionMappingData(db: Knex, uuid: any, hospcode: any, warehouseId: any) {
     return db('tmp_import_issue as t')
-      .select('h.mmis', db.raw('sum(t.qty) as issue_qty'), 'g.generic_id', 'g.generic_name')
+      .select('h.mmis', db.raw('sum(t.qty) as issue_qty'), 'g.generic_id', 'g.generic_name','u.unit_name')
+      .select(db.raw(`(SELECT sum(wp.qty) FROM wm_products wp WHERE wp.product_id IN ( SELECT mp.product_id FROM mm_products mp WHERE mp.generic_id = g.generic_id  GROUP BY mp.product_id ) and wp.warehouse_id=${warehouseId} GROUP BY  wp.warehouse_id) as remain_qty`))
       .innerJoin('wm_his_mappings as h', 'h.his', 't.icode')
       .innerJoin('mm_generics as g', 'g.generic_id', 'h.mmis')
+      .leftJoin('mm_units as u','g.primary_unit_id','u.unit_id')
       .where('h.hospcode', hospcode)
       .where('uuid', uuid)
       .groupBy('h.mmis');

@@ -110,6 +110,23 @@ export class GenericModel {
       .whereRaw('wp.qty > 0')
       .orderBy('wp.expired_date', 'asc')
       .groupBy('wp.wm_product_id');
+  
+    }
+  getProductInWarehousesByGenericsBase(knex: Knex, generics: any[], warehouseId: any) {
+    return knex('wm_products as wp')
+      .select('wp.*', 'pr.remain_qty', 'mp.generic_id', 'ug.unit_generic_id', 'ug.qty as conversion_qty'
+      , 'mp.product_name', 'fu.unit_name as from_unit_name', 'tu.unit_name as to_unit_name'
+      , knex.raw('FLOOR(pr.remain_qty/ug.qty) as pack_remain_qty'))
+      .join('view_product_reserve as pr', 'pr.wm_product_id', 'wp.wm_product_id') //คงคลังหลังจากหักยอดจองแล้ว
+      .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
+      .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'wp.unit_generic_id')
+      .innerJoin('mm_units as fu', 'fu.unit_id', 'ug.from_unit_id')
+      .innerJoin('mm_units as tu', 'tu.unit_id', 'ug.to_unit_id')
+      .whereIn('mp.generic_id', generics)
+      .andWhere('wp.warehouse_id', warehouseId)
+      .whereRaw('wp.qty > 0')
+      .orderBy('wp.expired_date', 'asc')
+      .groupBy('wp.wm_product_id');
   }
 
 }
