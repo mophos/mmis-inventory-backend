@@ -174,7 +174,7 @@ export class RequisitionOrderModel {
   getOrderItemsByRequisition(db: Knex, requisitionId: any) {
     let sql = `
       select roi.requisition_order_item_id, roi.requisition_order_id, roi.generic_id, 
-    roi.requisition_qty/ug.qty as requisition_qty, mg.generic_name, mg.working_code,
+    roi.requisition_qty/ug.qty as requisition_qty, roi.unit_generic_id, mg.generic_name, mg.working_code,
     ug.qty as conversion_qty, u1.unit_name as from_unit_name, u2.unit_name as to_unit_name,
     (
       select sum(rci.confirm_qty) as confirmed_qty
@@ -218,7 +218,7 @@ export class RequisitionOrderModel {
 
   getOrderUnpaidItems(db: Knex, unpaidId: any) {
     let sql = `
-      select oui.generic_id, floor(oui.unpaid_qty/ug.qty) as unpaid_qty, g.generic_name, floor(roi.requisition_qty/ug.qty) as requisition_qty, u1.unit_name as from_unit_name, 
+      select oui.generic_id, ceil(oui.unpaid_qty/ug.qty) as unpaid_qty, g.generic_name, floor(roi.requisition_qty/ug.qty) as requisition_qty, u1.unit_name as from_unit_name, 
       u2.unit_name as to_unit_name, ug.qty as conversion_qty, g.working_code
       from wm_requisition_order_unpaid_items as oui
       inner join mm_generics as g on g.generic_id=oui.generic_id
@@ -354,7 +354,7 @@ export class RequisitionOrderModel {
     inner join wm_warehouses as whw on whw.warehouse_id=ro.wm_withdraw
     left join wm_requisition_type as rt on rt.requisition_type_id=ro.requisition_type_id
     where rou.is_paid='N' and rou.is_cancel='N'
-    order by rou.unpaid_date
+    order by ro.requisition_code DESC
     `;
 
     let sqlWarehouse = `
@@ -367,7 +367,7 @@ export class RequisitionOrderModel {
     left join wm_requisition_type as rt on rt.requisition_type_id=ro.requisition_type_id
     where rou.is_paid='N' and rou.is_cancel='N'
     and ro.wm_requisition=?
-    order by rou.unpaid_date
+    order by ro.requisition_code DESC
     `;
 
     let sqlWarehouseWithdraw = `
@@ -380,7 +380,7 @@ export class RequisitionOrderModel {
     left join wm_requisition_type as rt on rt.requisition_type_id=ro.requisition_type_id
     where rou.is_paid='N' and rou.is_cancel='N'
     and ro.wm_withdraw=?
-    order by rou.unpaid_date
+    order by ro.requisition_code DESC
     `;
 
     return srcWarehouseId ? db.raw(sqlWarehouse, [srcWarehouseId]) : dstWarehouseId ? db.raw(sqlWarehouseWithdraw, [dstWarehouseId]) : db.raw(sql, []);
@@ -664,4 +664,17 @@ export class RequisitionOrderModel {
       wp.warehouse_id`;
       return knex.raw(sql);
   }
+
+  updateRequisitionQtyForBorrowNote(db: Knex, data: any[]) {
+    return db('wm_requisition_order_items')
+      .insert(data);
+  }
+
+  removeRequisitionQtyForBorrowNote(db: Knex, requisitionId: any, genericIds: any[]) {
+    return db('wm_requisition_order_items')
+      .where('requisition_order_id', requisitionId)
+      .whereIn('generic_id', genericIds)
+      .del();
+  }
+
 }
