@@ -22,6 +22,31 @@ export class BorrowNoteModel {
       .del();
   }
 
+  cancelNote(db: Knex, borrowNoteId: any, cancelData: any) {
+    return db('wm_borrow_notes')
+      .where('borrow_note_id', borrowNoteId)
+      .update(cancelData);
+  }
+
+  getNotesDetail(db: Knex, borrowNoteId: any) {
+    return db('wm_borrow_notes as n')
+      .select('n.*', db.raw('concat(t.title_name, p.fname, " ", p.lname) as fullname'))
+      .innerJoin('um_people as p', 'p.people_id', 'n.people_id')
+      .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
+      .where('n.borrow_note_id', borrowNoteId)
+  }
+
+  getNotesItemsList(db: Knex, borrowNoteId: any) {
+    return db('wm_borrow_note_detail as d')
+      .select('d.generic_id', 'd.qty', 'd.unit_generic_id', 'g.generic_name',
+      'ug.qty as conversion_qty', 'u.unit_name as to_unit_name')
+      .innerJoin('mm_generics as g', 'g.generic_id', 'd.generic_id')
+      .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'd.unit_generic_id')
+      .innerJoin('mm_units as u', 'u.unit_id', 'ug.to_unit_id')
+      .where('d.borrow_note_id', borrowNoteId)
+      .orderBy('g.generic_name')
+  }
+
   getDetailList(db: Knex, borrowNoteId: any) {
     return db('wm_borrow_note_detail as bd')
       .select('bd.*', 'mg.generic_name', 'ug.qty as conversion_qty',

@@ -89,6 +89,42 @@ router.get('/:borrowNoteId/detail-list', async (req, res, next) => {
 
 });
 
+router.delete('/:borrowNoteId', async (req, res, next) => {
+  let db = req.db;
+  let borrowNoteId = req.params.borrowNoteId;
+
+  let cancelData: any = {};
+  cancelData.cancel_date = moment().format('YYYY-MM-DD HH:mm:ss');
+  cancelData.is_cancel = 'Y';
+  cancelData.people_user_id = req.decoded.people_user_id;
+
+  try {
+    await borrowModel.cancelNote(db, borrowNoteId, cancelData);
+    res.send({ ok: true });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+});
+
+router.get('/:borrowNoteId/detail-edit', async (req, res, next) => {
+  let db = req.db;
+  let borrowNoteId = req.params.borrowNoteId;
+
+  try {
+    let rsDetail: any = await borrowModel.getNotesDetail(db, borrowNoteId);
+    let rsItems: any = await borrowModel.getNotesItemsList(db, borrowNoteId);
+    res.send({ ok: true, detail: rsDetail[0], items: rsItems });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+});
+
 router.get('/', async (req, res, next) => {
   let db = req.db;
   let query = req.query.query;
