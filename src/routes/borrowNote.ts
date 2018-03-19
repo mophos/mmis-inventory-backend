@@ -96,7 +96,7 @@ router.delete('/:borrowNoteId', async (req, res, next) => {
   let cancelData: any = {};
   cancelData.cancel_date = moment().format('YYYY-MM-DD HH:mm:ss');
   cancelData.is_cancel = 'Y';
-  cancelData.people_user_id = req.decoded.people_user_id;
+  cancelData.cancel_people_user_id = req.decoded.people_user_id;
 
   try {
     await borrowModel.cancelNote(db, borrowNoteId, cancelData);
