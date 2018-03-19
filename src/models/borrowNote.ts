@@ -61,9 +61,10 @@ export class BorrowNoteModel {
 
   getList(db: Knex, query: any, limit: number = 20, offset: number = 0) {
     let sql = db('wm_borrow_notes as bn')
-      .select('bn.*', 't.title_name', 'p.fname', 'p.lname')
+      .select('bn.*', 't.title_name', 'p.fname', 'p.lname', 'w.warehouse_name')
       .innerJoin('um_people as p', 'p.people_id', 'bn.people_id')
-      .leftJoin('um_titles as t', 't.title_id', 'p.title_id');
+      .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
+      .innerJoin('wm_warehouses as w', 'w.warehouse_id', 'bn.warehouse_id');
     
     if (query) {
       let _query = `%${query}%`;
@@ -81,8 +82,8 @@ export class BorrowNoteModel {
     let sql = db('wm_borrow_notes as bn')
       .select(db.raw('count(*) as total'))
       .innerJoin('um_people as p', 'p.people_id', 'bn.people_id')
-      .leftJoin('um_titles as t', 't.title_id', 'p.title_id');
-    
+      .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
+      .innerJoin('wm_warehouses as w', 'w.warehouse_id', 'bn.warehouse_id');
     if (query) {
       let _query = `%${query}%`;
       sql.where(w => {
