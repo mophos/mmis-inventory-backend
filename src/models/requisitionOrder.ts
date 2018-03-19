@@ -124,7 +124,7 @@ export class RequisitionOrderModel {
     let sqlSrc = `
       select
       rc.confirm_id, rc.confirm_date, rc.requisition_order_id, rc.is_cancel, 
-      ro.requisition_code, rt.requisition_type, wh.warehouse_name as withdraw_warehouse_name,
+      ro.requisition_code, ro.requisition_date, rt.requisition_type, wh.warehouse_name as withdraw_warehouse_name,
       (select ifnull(sum(rci.confirm_qty), 0) from wm_requisition_confirm_items as rci where rci.confirm_id=rc.confirm_id) as confirm_qty
       from wm_requisition_confirms as rc
       inner join wm_requisition_orders as ro on ro.requisition_order_id=rc.requisition_order_id
