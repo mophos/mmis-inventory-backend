@@ -291,37 +291,6 @@ router.get('/generics-requisition/:requisitionId', async (req, res, next) => {
         }
         obj.pay_qty = Math.ceil(obj.pay_qty / x.conversion_qty); // pack
 
-        // if (x.remain_qty >= reqQty && idx !== (products.length - 1)) { // คงเหลือมากกว่าจำนวนขอเบิก และ ไม่ใช่รายการสุดท้าย
-        //   // obj.pay_qty มีค่าเป็น pack unit
-        //   // x.conversion คือ ค่าของ conversion qty ใน wm_products
-        //   obj.pay_qty = Math.floor(reqQty / x.conversion_qty);
-        //   // x.remain_qty -= reqQty;
-        //   // if ((reqQty % x.conversion_qty) === 0) {
-        //   //   obj.pay_qty = Math.floor(reqQty / x.conversion_qty);
-        //   //   if (x.remain_qty >= reqQty) reqQty = 0;
-        //   // } else {
-        //   //   obj.pay_qty = 0;
-        //   // }
-        // } else { // ครั้งแรกไม่พอจ่าย
-        //   if (idx === (products.length - 1)) { // รายการสุดท้าย
-        //     if (x.remain_qty > 0) {
-              
-        //     }
-        //     // if ((reqQty % x.conversion_qty) === 0 && x.remain_qty > 0) { 
-        //     //   obj.pay_qty = Math.floor(reqQty / x.conversion_qty);
-        //     // } else { // ไม่ใช่
-        //     //   obj.pay_qty = 0;
-        //     // }
-        //   } else { // ไม่ใช่รายการสุดท้าย
-        //     if ((reqQty % x.conversion_qty) === 0 && x.remain_qty > 0) {
-        //       obj.pay_qty = Math.floor(x.remain_qty / x.conversion_qty);
-        //       reqQty -= x.remain_qty;
-        //     } else {
-        //       obj.pay_qty = 0;
-        //     }
-        //   }
-        // }
-
         pays.push(obj);
       });
     });

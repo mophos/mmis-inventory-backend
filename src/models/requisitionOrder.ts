@@ -173,7 +173,7 @@ export class RequisitionOrderModel {
 
   getOrderItemsByRequisition(db: Knex, requisitionId: any) {
     let sql = `
-    select roi.requisition_order_item_id, roi.requisition_order_id, roi.generic_id, 
+      select roi.requisition_order_item_id, roi.requisition_order_id, roi.generic_id, 
     roi.requisition_qty/ug.qty as requisition_qty, mg.generic_name, mg.working_code,
     ug.qty as conversion_qty, u1.unit_name as from_unit_name, u2.unit_name as to_unit_name,
     (
@@ -181,17 +181,39 @@ export class RequisitionOrderModel {
       from wm_requisition_confirm_items as rci
       inner join wm_requisition_confirms as rc on rc.confirm_id=rci.confirm_id
       where rc.is_approve='Y' and rci.generic_id=roi.generic_id
-      and rc.requisition_order_id=?
+      and rc.requisition_order_id=roi.requisition_order_id
       group by rci.generic_id
-    ) as confirm_qty
+    ) as confirm_qty,
+    
+    (
+	  select sum(roix.confirm_qty)
+      from wm_requisition_confirms rcx
+	  inner join wm_requisition_confirm_items roix ON rcx.confirm_id = roix.confirm_id
+      inner join mm_products mp ON mp.generic_id = roix.generic_id
+      inner join wm_products wp on roix.wm_product_id = wp.wm_product_id
+      inner join mm_unit_generics mug on wp.unit_generic_id = mug.unit_generic_id
+      
+      where rcx.is_approve='N' and roix.generic_id=roi.generic_id and wp.warehouse_id=ro.wm_withdraw
+
+      
+    ) as book_qty,
+    
+(
+	select sum(wp.qty)
+	from wm_products as wp
+	inner join mm_products as mp on mp.product_id=wp.product_id
+	where mp.generic_id=roi.generic_id and wp.warehouse_id=ro.wm_withdraw
+    ) as remain_qty
+    
     from wm_requisition_order_items as roi
     inner join mm_generics as mg on mg.generic_id=roi.generic_id
+    inner join wm_requisition_orders as ro on ro.requisition_order_id=roi.requisition_order_id
     left join mm_unit_generics as ug on ug.unit_generic_id=roi.unit_generic_id
     left join mm_units as u1 on u1.unit_id=ug.from_unit_id
     left join mm_units as u2 on u2.unit_id=ug.to_unit_id
     where roi.requisition_order_id=?
     `;
-    return db.raw(sql, [requisitionId, requisitionId]);
+    return db.raw(sql, [requisitionId]);
   }
 
   getOrderUnpaidItems(db: Knex, unpaidId: any) {
@@ -281,10 +303,8 @@ export class RequisitionOrderModel {
       JOIN mm_products m ON roi.generic_id = m.generic_id
       join wm_products wp on roi.wm_product_id = wp.wm_product_id
       join mm_unit_generics mug on wp.unit_generic_id = mug.unit_generic_id
-      WHERE
-      m.product_id = mp.product_id and wp.warehouse_id='${warehouseId}'
-      GROUP BY
-        m.product_id) as book_qty
+      WHERE ro.is_approved='N' and m.product_id = mp.product_id and wp.warehouse_id='${warehouseId}'
+      GROUP BY m.product_id) as book_qty
       from wm_products as wp
       inner join mm_products as mp on mp.product_id=wp.product_id
       left join mm_unit_generics as ug on ug.unit_generic_id=wp.unit_generic_id
