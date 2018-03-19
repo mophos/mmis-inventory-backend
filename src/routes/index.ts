@@ -71,8 +71,8 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
         value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
         _sum += value.total_cost;
         value.cost = inventoryReportModel.comma(value.cost);
-        value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty/value.small_qty);
-        value.qty = inventoryReportModel.commaQty(value.qty/value.small_qty);
+        value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.small_qty);
+        value.qty = inventoryReportModel.commaQty(value.qty / value.small_qty);
         value.total_cost = inventoryReportModel.comma(value.total_cost);
         value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
         if (value.expired_date === null) {
@@ -143,10 +143,6 @@ router.get('/report/UnPaid/requis', wrap(async (req, res, next) => {
 
 router.get('/report/list/requis', wrap(async (req, res, next) => {
   let db = req.db;
-  let list_requis: any = []
-  let list_item: any = []
-  let todays: any = []
-  let sum: any = []
   try {
     let requisId = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
@@ -154,56 +150,92 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
     let hospitalName = hosdetail[0].hospname;
     moment.locale('th');
     let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(', HH:mm') + ' น.';
-    let _today = ''
-
+    let _list_requis = [];
     for (let i in requisId) {
-      let _list_requis = await inventoryReportModel.list_requiAll(db, requisId[i]);
-      if (_list_requis[0][0] === undefined) { res.render('error404'); }
-      let _list_item_tpm = []
-      for (let j in _list_requis[0]) {
-        let _list_item = await inventoryReportModel.getOrderItemsByRequisition(db, requisId[i], _list_requis[0][j].generic_id);
-        _list_item_tpm.push(_list_item[0])
+      let _list: any = [];
+      let requisition: any = [];
+      let header = await inventoryReportModel.getHeadRequis(db, requisId[i]);
+      header = header[0];
+      if (header[0] === undefined) { res.render('error404'); }
+      let objHead: any = {};
+      objHead.requisition_date = header[0].requisition_date;
+      objHead.requisition_code = header[0].requisition_code;
+      objHead.confirm_date = header[0].confirm_date;
+      objHead.warehouse_name = header[0].warehouse_name;
+      objHead.withdraw_warehouse_name = header[0].withdraw_warehouse_name;
+      let title = await inventoryReportModel.list_requiAll(db, header[0].requisition_order_id);
+      title = title[0];
+      for (let tv of title) {
+        let objTitle: any = {};
+        objHead.title = {};
+        objTitle.generic_code = tv.working_code;
+        objTitle.generic_name = tv.generic_name;
+        objTitle.generic_id = tv.generic_id;
+        objTitle.product_id = tv.product_id;
+        objTitle.requisition_qty = tv.requisition_qty;
+        objTitle.large_unit = tv.large_unit;
+        objTitle.unit_qty = tv.unit_qty;
+        objTitle.small_unit = tv.small_unit;
+        objTitle.confirm_qty = tv.confirm_qty;
+        objTitle.remain = tv.remain;
+        let rs = await inventoryReportModel.getDetailListRequis(db, tv.requisition_order_id, tv.withdraw_warehouse_id, tv.product_id);
+        rs = rs[0];
+        let items = [];
+        rs.forEach(async (v: any) => {
+          let objItems: any = {};
+          objItems.generic_name = v.generic_name;
+          objItems.large_unit = v.large_unit;
+          objItems.small_unit = v.small_unit;
+          objItems.confirm_qty = v.confirm_qty;
+          objItems.remain = v.remain;
+          objItems.lot_no = v.lot_no;
+          objItems.expired_date = v.expired_date;
+          objItems.conversion_qty = v.conversion_qty;
+          objItems.is_approve = v.is_approve;
+          items.push(objItems)
+        });
+        objTitle.items = items;
+        objHead.title = objTitle;
+        let _objHead = _.clone(objHead);
+        requisition.push(_objHead);
       }
-      _today = (_list_requis[0][0].updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(_list_requis[0][0].updated_at).format('D MMMM ') + (moment(_list_requis[0][0].updated_at).get('year') + 543) + moment(_list_requis[0][0].updated_at).format(', HH:mm') + ' น.' : ''
-      todays.push(today + _today)
-      list_item.push(_list_item_tpm);
-      list_requis.push(_list_requis[0]);
+      _list_requis.push(requisition);
     }
-    list_item.forEach((page, indexss) => {
-      page.forEach((opject, indexs) => {
-        opject.forEach((value, index) => {
-          value.location_name = value.location_name !== null ? value.location_name : '-';
-          value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year')) : '-';
-          value.confirm_pd_qty = inventoryReportModel.commaQty(value.confirm_pd_qty / list_requis[indexss][indexs].unit_qty);
-          value.total = inventoryReportModel.commaQty((value.total / list_requis[indexss][indexs].unit_qty) - value.confirm_pd_qty);
-        })
-      })
-    })
-    list_requis.forEach(opject => {
-      opject.forEach(value => {
-        value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.unit_qty);
-        value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.unit_qty);
-        value.unit_qty = inventoryReportModel.commaQty(value.unit_qty);
-        value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
-        value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
-      })
-    })
-    let boox_prefix = await inventoryReportModel.boox_prefix(db);
-    boox_prefix = boox_prefix[0].value
-    // res.send([{ list_requis: list_requis, list_item: list_item }])
+      for (let page in _list_requis) {
+        for (let head in _list_requis[page]) {
+          _list_requis[page][head].confirm_date = moment(_list_requis[page][head].confirm_date).isValid() ? moment(_list_requis[page][head].confirm_date).format('DD MMMM ') + (moment(_list_requis[page][head].confirm_date).get('year')) : '-';
+          _list_requis[page][head].requisition_date = moment(_list_requis[page][head].requisition_date).isValid() ? moment(_list_requis[page][head].requisition_date).format('DD MMMM ') + (moment(_list_requis[page][head].requisition_date).get('year')) : '-';
+          _list_requis[page][head].title.requisition_qty = inventoryReportModel.commaQty(_list_requis[page][head].title.requisition_qty / _list_requis[page][head].title.unit_qty);
+          _list_requis[page][head].title.confirm_qty = inventoryReportModel.commaQty(_list_requis[page][head].title.confirm_qty / _list_requis[page][head].title.unit_qty);
+          for (let detail in _list_requis[page][head].title.items) {
+            if (_list_requis[page][head].title.items[detail].confirm_qty != 0) {
+              let old_confirm_qty  = inventoryReportModel.commaQty(_list_requis[page][head].title.items[detail].confirm_qty);
+              let confirm_qty = inventoryReportModel.commaQty(_list_requis[page][head].title.items[detail].confirm_qty / _list_requis[page][head].title.items[detail].conversion_qty);
+              _list_requis[page][head].title.items[detail].confirm_qty = confirm_qty + ' ' + _list_requis[page][head].title.items[detail].large_unit + ' (' + _list_requis[page][head].title.items[detail].conversion_qty + ' ' + _list_requis[page][head].title.items[detail].small_unit + ' )'
+              if(_list_requis[page][head].title.items[detail].is_approve == "N"){
+                _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round((+_list_requis[page][head].title.items[detail].remain - +old_confirm_qty) / +_list_requis[page][head].title.items[detail].conversion_qty));
+              }else{
+                _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round(+_list_requis[page][head].title.items[detail].remain / +_list_requis[page][head].title.items[detail].conversion_qty));
+              }
+            } else {
+              _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round(+_list_requis[page][head].title.items[detail].remain / +_list_requis[page][head].title.items[detail].conversion_qty));
+            }
+            _list_requis[page][head].title.items[detail].location_name = _list_requis[page][head].title.items[detail].location_name !== null ? _list_requis[page][head].title.items[detail].location_name : '-';
+            _list_requis[page][head].title.items[detail].expired_date = moment(_list_requis[page][head].title.items[detail].expired_date).isValid() ? moment(_list_requis[page][head].title.items[detail].expired_date).format('D/MM/') + (moment(_list_requis[page][head].title.items[detail].expired_date).get('year')) : '-';
+          }
+        }
+      }
     res.render('list_requis', {
-      boox_prefix: boox_prefix,
       hospitalName: hospitalName,
-      today: todays,
-      list_requis: list_requis,
-      list_item: list_item
+      today: today,
+      list_requis: _list_requis
     });
   } catch (error) {
     res.send({ ok: false, error: error.message })
   } finally {
     db.destroy();
   }
-})); //รอ  ใช้ wm_stock
+}));
 
 router.get('/report/list/refill/:requisId', wrap(async (req, res, next) => {
   let db = req.db;

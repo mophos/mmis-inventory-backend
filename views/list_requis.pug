@@ -12,72 +12,64 @@ html
     title report
   body
     button.btn.btn-sm.btn-success(onclick='window.print()') Print
-    - var ss=0
-      for i in list_requis
-        .page
-        table.table
-          thead
-            tr 
-              td.center.bold(colspan='10') #{hospitalName} 
-            tr 
-              td.center.bold(colspan='10') ใบจัดเวชภัณฑ์ตามใบเบิก
-            tr 
-              td.center(colspan='10') วันที่เบิก #{i[0].requisition_date}
-            tr 
-              td.left(colspan='10') ใบเบิกเลขที่ #{i[0].requisition_code}
-            tr 
-              td.left(colspan='10') วันที่อนุมัติเบิก #{i[0].confirm_date}
-            tr 
-              td.left(colspan='10') หน่วยงานที่เบิก #{i[0].warehouse_name}
-            tr 
-              td.left(colspan='10') หน่วยงานที่จ่าย #{i[0].withdraw_warehouse_name}
-            tr 
-              td.left(colspan='10') ณ วันที่ #{today[ss]}
+    - for(var page in list_requis)
+      .page
+      table.table
+        thead
+          tr 
+            td.center.bold(colspan='10') #{hospitalName} 
+          tr 
+            td.center.bold(colspan='10') ใบจัดเวชภัณฑ์ตามใบเบิก
+          tr 
+            td.center(colspan='10') วันที่เบิก #{list_requis[page][0].requisition_date}
+          tr 
+            td.left(colspan='10') ใบเบิกเลขที่ #{list_requis[page][0].requisition_code}
+          tr 
+            td.left(colspan='10') วันที่อนุมัติเบิก #{list_requis[page][0].confirm_date}
+          tr 
+            td.left(colspan='10') หน่วยงานที่เบิก #{list_requis[page][0].warehouse_name}
+          tr 
+            td.left(colspan='10') หน่วยงานที่จ่าย #{list_requis[page][0].withdraw_warehouse_name}
+          tr 
+            td.left(colspan='10') ณ วันที่ #{today}
+        - for(var head in list_requis[page])
           tbody
-          - var s=0
-            for a in i
-              tr.dash-top
-                td(style='border:none;') รหัสยา 
-                td(colspan='9') : #{a.working_code}
-              tr
-                td ชื่อสามัญ
-                td(colspan='7') : #{a.generic_name}
-                td จำนวนขอเบิก
-                td #{a.requisition_qty} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
-              tr
-                td หน่วยบรรจุ
-                td : #{a.large_unit}
-                td
-                td
-                td
-                td รูปแบบ
-                td(colspan='2')  : #{a.small_unit}
-                td จำนวนเบิก
-                td #{a.confirm_qty} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
-              tr
-                td.center(colspan='4') ชื่อทางการค้า 
-                td จำนวนเบิก
-                td วันหมดอายุ
-                td ที่เก็บ
-                td lot no.
-                td เลขทะเบียน
-                td คงเหลือ
-              for l in list_item[ss][s]
+            tr.dash-top
+              td(style='border:none;') รหัสยา 
+              td(colspan='9') : #{list_requis[page][head].title.generic_code}
+            tr
+              td ชื่อสามัญ
+              td(colspan='7') : #{list_requis[page][head].title.generic_name}
+              td จำนวนขอเบิก
+              td #{list_requis[page][head].title.requisition_qty} #{list_requis[page][head].title.large_unit} (#{list_requis[page][head].title.unit_qty} #{list_requis[page][head].title.small_unit})
+            tr
+              td หน่วยบรรจุ
+              td : #{list_requis[page][head].title.large_unit}
+              td
+              td
+              td
+              td รูปแบบ
+              td(colspan='2')  : #{list_requis[page][head].title.dosage_sane}
+              td จำนวนเบิก
+              td #{list_requis[page][head].title.confirm_qty} #{list_requis[page][head].title.large_unit} (#{list_requis[page][head].title.unit_qty} #{list_requis[page][head].title.small_unit})
+            tr
+              td.center(colspan='4') ชื่อทางการค้า 
+              td จำนวนเบิก
+              td วันหมดอายุ
+              td ที่เก็บ
+              td lot no.
+              td เลขทะเบียน
+              td คงเหลือ
+              - for(var detail in list_requis[page][head].title.items)
                 tr
-                  
-                  if ( l.confirm_pd_qty == 0 )
-                    td(colspan='4').left  คงคลัง
-                    td -
-                  else 
-                    td(colspan='4').left #{l.product_name}
-                    td #{l.confirm_pd_qty} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
-                  td #{l.expired_date}
-                  td #{l.location_name}
-                  td #{l.lot_no}
-                  td 
-                  td #{l.total} #{a.large_unit} (#{a.unit_qty} #{a.small_unit})
-              tr.dash-bottom
-                td(colspan='10')
-              - ++s
-        - ++ss
-        .pagebreak
+                  td(colspan="4") #{list_requis[page][head].title.items[detail].generic_name}
+                  td #{list_requis[page][head].title.items[detail].confirm_qty}
+                  td #{list_requis[page][head].title.items[detail].expired_date}
+                  td #{list_requis[page][head].title.items[detail].location_name}
+                  td #{list_requis[page][head].title.items[detail].lot_no}
+                  td
+                  td #{list_requis[page][head].title.items[detail].remain} #{list_requis[page][head].title.items[detail].large_unit} (#{list_requis[page][head].title.items[detail].conversion_qty} #{list_requis[page][head].title.items[detail].small_unit})
+                  td
+            tr.dash-bottom
+              td(colspan='10')
+      .pagebreak
