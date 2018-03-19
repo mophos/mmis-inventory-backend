@@ -235,13 +235,13 @@ router.get('/generics-requisition/:requisitionId', async (req, res, next) => {
     rsReqItems.forEach(v => {
       let obj: any = {};
       obj.generic_id = v.generic_id;
-      obj.requisition_qty = v.requisition_qty;
+      obj.requisition_qty = v.requisition_qty; // base unit
       obj.products = [];
       rsProducts.forEach(x => {
         if (x.generic_id === v.generic_id) {
           let _obj: any = {};
           _obj.wm_product_id = x.wm_product_id;
-          _obj.remain_qty = x.qty;
+          _obj.remain_qty = x.qty; // base unit
           _obj.reseve_qty = 0; // ยอดจอง จากรายการตัดจ่าย, โอน, เบิก, เติม ที่รออนุมัติ
           _obj.expired_date = x.expired_date;
           _obj.conversion_qty = x.conversion_qty;
@@ -255,40 +255,72 @@ router.get('/generics-requisition/:requisitionId', async (req, res, next) => {
     let pays = [];
 
     items.forEach((v, i) => {
-      let reqQty = v.requisition_qty;
+      let reqQty = v.requisition_qty; // base unit
       let products = v.products;
 
-      products.forEach((x, z) => {
+      products.forEach((x, idx) => {
         let obj: any = {};
         obj.wm_product_id = x.wm_product_id;
         obj.unit_generic_id = x.unit_generic_id;
         obj.conversion_qty = x.conversion_qty;
         obj.generic_id = v.generic_id;
-        obj.remain_qty = x.remain_qty;
+        obj.remain_qty = x.remain_qty; // base unit
 
-        if (x.remain_qty >= reqQty && z !== (products.length - 1)) {
-          if ((reqQty % x.conversion_qty) === 0) {
-            obj.pay_qty = Math.floor(reqQty / x.conversion_qty);
-            if (x.remain_qty >= reqQty) reqQty = 0;
+        if (x.remain_qty >= reqQty && idx !== (products.length - 1)) {
+          obj.pay_qty = reqQty;
+          if (x.remain_qty >= reqQty) {
+            obj.remain_qty = x.remain_qty - reqQty; // base
+            reqQty = 0;
           } else {
-            obj.pay_qty = 0;
+            obj.remain_qty = 0;
           }
         } else {
-          if (z === (products.length - 1)) {
-            if ((reqQty % x.conversion_qty) === 0 && x.remain_qty > 0) {
-              obj.pay_qty = Math.floor(reqQty / x.conversion_qty);
+          if (idx === (products.length - 1)) {
+            if (x.remain_qty - reqQty < 0) {
+              obj.pay_qty = obj.remain_qty;
+              obj.remain_qty = 0
             } else {
-              obj.pay_qty = 0;
+              obj.pay_qty = reqQty;
+              obj.remain_qty = x.remain_qty - reqQty; // base
             }
           } else {
-            if ((reqQty % x.conversion_qty) === 0 && x.remain_qty > 0) {
-              obj.pay_qty = Math.floor(x.remain_qty / x.conversion_qty);
-              reqQty -= x.remain_qty;
-            } else {
-              obj.pay_qty = 0;
-            }
+            obj.pay_qty = x.remain_qty;
+            obj.remain_qty = 0;
+            reqQty -= x.remain_qty;
           }
         }
+        obj.pay_qty = Math.ceil(obj.pay_qty / x.conversion_qty); // pack
+
+        // if (x.remain_qty >= reqQty && idx !== (products.length - 1)) { // คงเหลือมากกว่าจำนวนขอเบิก และ ไม่ใช่รายการสุดท้าย
+        //   // obj.pay_qty มีค่าเป็น pack unit
+        //   // x.conversion คือ ค่าของ conversion qty ใน wm_products
+        //   obj.pay_qty = Math.floor(reqQty / x.conversion_qty);
+        //   // x.remain_qty -= reqQty;
+        //   // if ((reqQty % x.conversion_qty) === 0) {
+        //   //   obj.pay_qty = Math.floor(reqQty / x.conversion_qty);
+        //   //   if (x.remain_qty >= reqQty) reqQty = 0;
+        //   // } else {
+        //   //   obj.pay_qty = 0;
+        //   // }
+        // } else { // ครั้งแรกไม่พอจ่าย
+        //   if (idx === (products.length - 1)) { // รายการสุดท้าย
+        //     if (x.remain_qty > 0) {
+              
+        //     }
+        //     // if ((reqQty % x.conversion_qty) === 0 && x.remain_qty > 0) { 
+        //     //   obj.pay_qty = Math.floor(reqQty / x.conversion_qty);
+        //     // } else { // ไม่ใช่
+        //     //   obj.pay_qty = 0;
+        //     // }
+        //   } else { // ไม่ใช่รายการสุดท้าย
+        //     if ((reqQty % x.conversion_qty) === 0 && x.remain_qty > 0) {
+        //       obj.pay_qty = Math.floor(x.remain_qty / x.conversion_qty);
+        //       reqQty -= x.remain_qty;
+        //     } else {
+        //       obj.pay_qty = 0;
+        //     }
+        //   }
+        // }
 
         pays.push(obj);
       });
