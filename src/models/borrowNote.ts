@@ -95,4 +95,17 @@ export class BorrowNoteModel {
 
     return sql;
   }
+
+  getItemsWithGenerics(db: Knex, warehouseId: any, genericIds: any[]) {
+    return db('wm_borrow_note_detail as d')
+      .select('d.generic_id', 'd.qty', 'd.unit_generic_id', 'g.generic_name',
+        'ug.qty as conversion_qty', 'u.unit_name as to_unit_name', 'uf.unit_name as from_unit_name')
+      .innerJoin('wm_borrow_notes as n', 'n.borrow_note_id', 'd.borrow_note_id')
+      .innerJoin('mm_generics as g', 'g.generic_id', 'd.generic_id')
+      .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'd.unit_generic_id')
+      .innerJoin('mm_units as u', 'u.unit_id', 'ug.to_unit_id')
+      .innerJoin('mm_units as uf', 'uf.unit_id', 'ug.from_unit_id')
+      .whereIn('d.generic_id', genericIds)
+      .where('n.warehouse_id', warehouseId);
+  }
 }

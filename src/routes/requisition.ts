@@ -34,6 +34,7 @@ import { LotModel } from '../models/lot';
 import { SerialModel } from '../models/serial';
 import { RequisitionOrderModel } from '../models/requisitionOrder';
 import { PeriodModel } from '../models/period';
+import { BorrowNoteModel } from '../models/borrowNote';
 
 const router = express.Router();
 
@@ -45,6 +46,7 @@ const stockCardModel = new StockCard();
 const serialModel = new SerialModel();
 const orderModel = new RequisitionOrderModel();
 const periodModel = new PeriodModel();
+const borrowNoteModel = new BorrowNoteModel();
 /**
  * Requisition order
  * by @siteslave
@@ -1083,6 +1085,21 @@ router.get('/templates-items/:templateId', async (req, res, next) => {
   try {
     let rs: any = await orderModel.getTemplateItems(db, templateId);
     res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
+router.post('/borrow-notes', async (req, res, next) => {
+  let db = req.db;
+  let genericIds = req.body.genericIds;
+  let warehouseId = req.body.warehouseId;
+
+  try {
+    let rs: any = await borrowNoteModel.getItemsWithGenerics(db, warehouseId, genericIds);
+    res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
