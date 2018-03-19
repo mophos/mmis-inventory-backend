@@ -17,47 +17,64 @@ html
       table.table
         thead
           tr 
-            td.center.bold(colspan='9') #{hospitalName} 
+            td.center.bold(colspan='10') #{hospitalName} 
           tr 
-            td.center.bold(colspan='9') ใบจัดเวชภัณฑ์ตามใบเบิก
+            td.center.bold(colspan='10') ใบจัดเวชภัณฑ์ตามใบเบิก
           tr 
-            td.left(colspan='9') ใบเบิกเลขที่ #{_tranfers[i][0].transfer_code}
+            td.left(colspan='10') ใบเบิกเลขที่ #{_tranfers[i][0].transfer_code}
           tr 
-            td.left(colspan='9') วันที่เบิก #{_tranfers[i][0].transfer_date}
+            td.left(colspan='10') วันที่เบิก #{_tranfers[i][0].transfer_date}
           tr 
-            td.left(colspan='9') หน่วยงานที่เบิก #{_tranfers[i][0].dst_warehouse_name}
+            td.left(colspan='10') หน่วยงานที่เบิก #{_tranfers[i][0].dst_warehouse_name}
+          tr 
+            td.left(colspan='10') หน่วยงานที่จ่าย #{_tranfers[i][0].src_warehouse_name}
         tbody
         - y = 0
         for a in _tranfers[i]
           tr.dash-top
             td(style='border:none;') รหัสยา 
-            td(colspan='8') : #{a.product_id}
+            td(colspan='9') : #{a.working_code}
           tr
             td ชื่อสามัญ
-            td(colspan='6') : #{a.generic_name}
+            td(colspan='9') : #{a.generic_name}
           tr
             td หน่วยบรรจุ
             td : #{a.large_unit}
             td
             td
-            td(align="right") รูปแบบ
+            td
+            td(align="left") รูปแบบ
             td(colspan='2')  : #{a.small_unit}
             td จำนวนเบิก
             td #{a.large_qty} #{a.large_unit} (#{a.qty} #{a.small_unit})
           tr
-            td
             td.left(colspan='3') ชื่อทางการค้า 
             td จำนวนเบิก
             td วันหมดอายุ
+            td Lot No.
             td ที่เก็บ
             td เลขทะเบียน
             td คงเหลือ
+          for ai in list_tranfer[i][y]
+            if (ai.transfer_qty !== '0')  
+              tr
+                td(colspan='3').left #{ai.product_name}
+                td #{ai.transfer_qty} #{a.large_unit} (#{a.qty} #{a.small_unit})
+                td #{ai.expired_date}
+                td #{ai.lot_no}
+                td #{ai.location_name}
+                td 
+                td #{ai.remain_qty} #{a.large_unit} (#{a.qty} #{a.small_unit})
+            else
+              tr
+                td(colspan='3').left คงคลัง
+                td -
+                td #{ai.expired_date}
+                td #{ai.lot_no}
+                td #{ai.location_name}
+                td 
+                td #{ai.remain_qty} #{a.large_unit} (#{a.qty} #{a.small_unit})
           tr.dash-bottom
-            td(colspan='4').left #{a.product_name}
-            td #{a.large_qty} #{a.large_unit} (#{a.qty} #{a.small_unit})
-            td #{a.expired_date}
-            td #{a.src_warehouse_name}
-            td 
-            td #{a.remain_qty} #{a.large_unit} (#{a.qty} #{a.small_unit})
+            td(colspan='10')
           - y++
       .pagebreak
