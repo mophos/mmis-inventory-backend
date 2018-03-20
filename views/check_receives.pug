@@ -47,7 +47,7 @@ html
                 - i++
             tr
               td(colspan='6').right รวมเป็นเงินทั้งสิ้น
-              td.right #{totalPrice} &nbsp;
+              td.right #{bahtText[s]} &nbsp;
               td(colspan='2').left บาท
               br
         - else
@@ -56,7 +56,6 @@ html
             | #{check_receive[s][0].purchase_order_book_number}
           else
             | #{check_receive[s][0].purchase_order_number}  
-        | -๑
         | คณะกรรมการตรวจรับพัสดุเห็นว่ามีปริมาณและคุณภาพถูกต้องครบถ้วน และได้ส่งมอบให้เจ้าหน้าที่พัสดุรับไว้เรียบร้อยแล้ว 
         | จึงพร้อมกันลงลายมือชื่อไว้เป็นหลักฐาน
         br
