@@ -326,6 +326,7 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any) => {
       obj.generic_id = v.generic_id;
       obj.unit_generic_id = v.unit_generic_id;
       obj.transfer_code = v.transfer_code;
+      obj.transfer_id = v.transfer_id;
       obj.qty = +v.product_qty;
       obj.price = v.price;
       obj.cost = v.cost;
@@ -376,7 +377,8 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any) => {
       objIn.generic_id = v.generic_id;
       objIn.unit_generic_id = v.unit_generic_id;
       objIn.transaction_type = TransactionType.TRANSFER_IN;
-      objIn.document_ref_id = v.transfer_code;
+      objIn.document_ref_id = v.transfer_id;
+      objIn.document_ref = v.transfer_code;
       objIn.in_qty = v.qty;
       objIn.in_unit_cost = v.cost;
       let dstBalance = 0;
@@ -396,6 +398,8 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any) => {
       objIn.balance_unit_cost = v.cost;
       objIn.ref_src = v.src_warehouse_id;
       objIn.ref_dst = v.dst_warehouse_id;
+      objIn.lot_no = v.lot_no;
+      objIn.expired_date = v.expired_date;
       objIn.comment = 'รับโอน';
       data.push(objIn);
     }
@@ -409,7 +413,8 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any) => {
       objOut.generic_id = v.generic_id;
       objOut.unit_generic_id = v.unit_generic_id;
       objOut.transaction_type = TransactionType.TRANSFER_OUT;
-      objOut.document_ref_id = v.transfer_code;
+      objOut.document_ref = v.transfer_code;
+      objOut.document_ref_id = v.transfer_id;
       objOut.out_qty = v.qty;
       objOut.out_unit_cost = v.cost;
       let srcBalance = 0;
@@ -430,6 +435,8 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any) => {
       objOut.ref_dst = v.dst_warehouse_id;
       objOut.balance_generic_qty = srcBalanceGeneric;
       objOut.comment = 'โอน';
+      objOut.lot_no = v.lot_no;
+      objOut.expired_date = v.expired_date;
       data.push(objOut);
     }
   });

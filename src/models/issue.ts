@@ -238,9 +238,12 @@ export class IssueModel {
     sp.product_id,
     wp.unit_generic_id,
     ss.issue_code,
+    ss.issue_id,
     sp.qty AS out_qty,
     wp.cost AS out_unit_cost,
     sp.wm_product_id,
+    wp.lot_no,
+    wp.expired_date,  
     (
       SELECT
         sum(wp2.qty)
