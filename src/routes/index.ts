@@ -1286,11 +1286,13 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   for (let v in check_receive) {
     check_receive[v].receive_date = moment(check_receive[v].receive_date).format('D MMMM ') + (moment(check_receive[v].receive_date).get('year') + 543);
     check_receive[v].delivery_date = moment(check_receive[v].delivery_date).format('D MMMM ') + (moment(check_receive[v].delivery_date).get('year') + 543);
+    check_receive[v].podate = moment(check_receive[v].podate).format('D MMMM ') + (moment(check_receive[v].podate).get('year') + 543);
     check_receive[v].approve_date = moment(check_receive[v].approve_date).format('D MMMM ') + (moment(check_receive[v].approve_date).get('year') + 543);
     let _bahtText = inventoryReportModel.bahtText(check_receive[v].total_price);
     bahtText.push(_bahtText)
     check_receive[v].total_price = inventoryReportModel.comma(check_receive[v].total_price);
   }
+  console.log(check_receive)
   for (let i in receiveID) {
     let _committee = await inventoryReportModel.invenCommittee(db, receiveID[i]);
     committee.push(_committee[0]);
