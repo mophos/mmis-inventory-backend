@@ -27,7 +27,7 @@ html
         .fontspace
         | ตามกรรมการผู้มีรายนามและตำแหน่งข้างท้าย ได้พร้อมกันตรวจรับ #{generic_name[s]}
         | ซึ่ง #{check_receive[s][0].labeler_name} ผู้ขายได้นำส่งตามใบสั่งซื้อของ#{hospitalName}
-        | เลขที่ #{check_receive[s][0].purchase_order_number} ลงวันที่ #{check_receive[s][0].receive_date} 
+        | เลขที่ #{check_receive[s][0].purchase_order_number} ลงวันที่ #{check_receive[s][0].delivery_date} 
         | เพื่อใช้ในงานการรักษาของ#{hospitalName}
         - if(length[s] <= 4)
           | ดังปรากฏรายละเอียดตรวจรับ คือ
@@ -38,8 +38,8 @@ html
                   td.right #{v.generic_type_name} 
                   td.right &nbsp;&nbsp;#{v.amount_qty}&nbsp;&nbsp;
                   td.left รายการ 
-                  td.right ตามใบส่งของเลขที่ &nbsp;
-                  td.left #{v.delivery_code} 
+                  td.right ตามใบส่งของเลขที่ &nbsp;&nbsp;&nbsp;
+                  td.left #{v.delivery_code} &nbsp;&nbsp;&nbsp;
                   td.right เป็นเงิน 
                   td.right #{v.total_price} &nbsp;
                   td.left บาท 
