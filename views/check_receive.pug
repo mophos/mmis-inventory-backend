@@ -25,7 +25,7 @@ html
           tr
             td.left เลขที่รับ #{check_receive[c].receive_code}
             td.right เขียนที่ #{hospitalName}
-        div(style='margin-left:50%;') วันที่ #{today}
+        div(style='margin-left:50%;') วันที่ #{check_receive[c].approve_date}
         br
         .fontspace
         | ตามบันทึกที่ #{check_receive[c].purchase_order_number} ลงวันที่ #{check_receive[c].receive_date} ได้แต่งตั้งคณะกรรมการตรวจรับพัสดุนั้น บัดนี้คณะกรรมการตรวจรับพัสดุได้ร่วมกันตรวจพัสดุซึ่ง 

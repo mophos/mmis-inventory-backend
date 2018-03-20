@@ -1286,6 +1286,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   for (let v in check_receive) {
     check_receive[v].receive_date = moment(check_receive[v].receive_date).format('D MMMM YYYY');
     check_receive[v].delivery_date = moment(check_receive[v].delivery_date).format('D MMMM ') + (moment(check_receive[v].delivery_date).get('year') + 543);
+    check_receive[v].approve_date = moment(check_receive[v].approve_date).format('D MMMM ') + (moment(check_receive[v].approve_date).get('year') + 543);
     let _bahtText = inventoryReportModel.bahtText(check_receive[v].total_price);
     bahtText.push(_bahtText)
     check_receive[v].total_price = inventoryReportModel.comma(check_receive[v].total_price);
@@ -1358,6 +1359,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     _.forEach(opjects, opject => {
       opject.receive_date = moment(opject.receive_date).format('D MMMM YYYY');
       opject.delivery_date = moment(opject.delivery_date).format('D MMMM ') + (moment(opject.delivery_date).get('year') + 543);
+      opject.approve_date = moment(opject.approve_date).format('D MMMM ') + (moment(opject.approve_date).get('year') + 543);
       _bahtText.push(inventoryReportModel.bahtText(opject.total_price));
       totalPrice += opject.total_price;
       opject.total_price = inventoryReportModel.comma(opject.total_price);
