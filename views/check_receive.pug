@@ -2,7 +2,7 @@ include css.pug
 style(type='text/css').
   body{
   font-family:'THSarabunNewIT';
-  font-size: 16pt;
+  font-size: 15pt;
   }
 style(type='text/css' media='print').
    @page{
@@ -60,12 +60,12 @@ html
         br
         br
         br
-        table(style="width: 90%; margin-left: 5%;")
+        table(style="width: 80%; margin-left: 5%;")
           tr
             td.right(width="5%") (ลงชื่อ)
-            td.center(width="50%") ...........................................................
-            td.right #{staffReceive.type_name}
-            td.left &nbsp;ตำแหน่ง #{staffReceive.position_name}
+            td.center(width="20%") ...........................................................
+            td.right ตำแหน่ง #{staffReceive.position_name}
+            td.left &nbsp;#{staffReceive.type_name}
           tr
             td
             td.center ( #{staffReceive.title_name}#{staffReceive.fname}  #{staffReceive.lname} )
