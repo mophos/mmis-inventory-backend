@@ -888,6 +888,7 @@ router.post('/approve', co(async (req, res, next) => {
         generic_id: v.generic_id,
         balance: v.balance,
         receive_code: v.receive_code,
+        receive_id: v.receive_id,
         qty: (v.receive_qty * v.conversion_qty),
         price: (v.cost * v.receive_qty) / (v.receive_qty * v.conversion_qty),
         cost: (v.cost * v.receive_qty) / (v.receive_qty * v.conversion_qty),
@@ -920,7 +921,8 @@ router.post('/approve', co(async (req, res, next) => {
       obj.generic_id = v.generic_id;
       obj.unit_generic_id = v.unit_generic_id;
       obj.transaction_type = TransactionType.RECEIVE;
-      obj.document_ref_id = v.receive_code;
+      obj.document_ref_id = v.receive_id;
+      obj.document_ref = v.receive_code;
       obj.in_qty = v.qty;
       obj.in_unit_cost = v.cost;
 
@@ -943,6 +945,8 @@ router.post('/approve', co(async (req, res, next) => {
       obj.ref_src = v.vendor_labeler_id;
       obj.ref_dst = v.warehouse_id;
       obj.comment = 'รับเข้าคลังจากใบสั่งซื้อ';
+      obj.lot_no  = v.lot_no;
+      obj.expired_date = v.expired_date;
       data.push(obj);
     });
 
@@ -999,6 +1003,7 @@ router.post('/other/approve', co(async (req, res, next) => {
         product_id: v.product_id,
         generic_id: v.generic_id,
         receive_code: v.receive_code,
+        receive_other_id: v.receive_other_id,
         balance: v.balance,
         qty: (v.receive_qty * v.conversion_qty),
         price: (v.cost * v.receive_qty) / (v.receive_qty * v.conversion_qty),
@@ -1034,7 +1039,8 @@ router.post('/other/approve', co(async (req, res, next) => {
       obj.generic_id = v.generic_id;
       obj.unit_generic_id = v.unit_generic_id;
       obj.transaction_type = TransactionType.RECEIVE_OTHER;
-      obj.document_ref_id = v.receive_code;
+      obj.document_ref_id = v.receive_other_id;
+      obj.document_ref = v.receive_code;
       obj.in_qty = v.qty;
       obj.in_unit_cost = v.cost;
 
@@ -1058,6 +1064,8 @@ router.post('/other/approve', co(async (req, res, next) => {
       obj.ref_src = v.donator_id;
       obj.ref_dst = v.warehouse_id;
       obj.comment = 'รับเข้าคลังแบบอื่นๆ';
+      obj.lot_no  = v.lot_no;
+      obj.expired_date = v.expired_date;
       data.push(obj);
     });
 
