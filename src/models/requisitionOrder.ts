@@ -596,6 +596,7 @@ export class RequisitionOrderModel {
       sum(wrci.confirm_qty) as confirm_qty, 
       sum(wp.cost) as cost,
       wp.lot_no,
+      wp.expired_date,
       (
         SELECT
           sum(qty)

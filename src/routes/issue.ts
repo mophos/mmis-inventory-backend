@@ -90,25 +90,28 @@ router.post('/', co(async (req, res, next) => {
       let rs = await issueModel.getIssueApprove(db, id[0], warehouseId);
       rs = rs[0];
       let data = [];
-      rs.forEach(element => {
+      rs.forEach(e => {
         if (rs.out_qty != 0) {
           let objStockcard: any = {}
           objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-          objStockcard.product_id = rs.product_id;
-          objStockcard.generic_id = rs.generic_id;
-          objStockcard.unit_generic_id = rs.unit_generic_id;
-          objStockcard.transaction_type = 'ADJUST';
-          objStockcard.document_ref_id = id[0];
+          objStockcard.product_id = e.product_id;
+          objStockcard.generic_id = e.generic_id;
+          objStockcard.unit_generic_id = e.unit_generic_id;
+          objStockcard.transaction_type = 'IST';
+          objStockcard.document_ref_id = e.issue_id;
+          objStockcard.document_ref = e.issue_code;
           objStockcard.in_qty = 0;
           objStockcard.in_unit_cost = 0;
-          objStockcard.out_qty = rs.out_qty;
-          objStockcard.out_unit_cost = rs.out_unit_cost;
-          objStockcard.balance_qty = rs.balance_qty;
-          objStockcard.balance_unit_cost = rs.balance_unit_cost;
-          objStockcard.ref_src = rs.ref_src;
-          objStockcard.ref_dst = warehouseId;
-          objStockcard.comment = rs.transaction_name;
-          objStockcard.balance_generic_qty = rs.balance_generic;
+          objStockcard.out_qty = e.out_qty;
+          objStockcard.out_unit_cost = e.out_unit_cost;
+          objStockcard.balance_qty = e.balance_qty;
+          objStockcard.balance_unit_cost = e.balance_unit_cost;
+          objStockcard.ref_src = warehouseId;
+          objStockcard.ref_dst = e.ref_src;
+          objStockcard.comment = e.transaction_name;
+          objStockcard.balance_generic_qty = e.balance_generic;
+          objStockcard.lot_no = e.lot_no;
+          objStockcard.expired_date = e.expired_date;
           data.push(objStockcard)
         }
       });
@@ -119,7 +122,7 @@ router.post('/', co(async (req, res, next) => {
     res.send({ ok: true });
   } catch (error) {
     // throw error;
-     res.send({ ok: false, error: error.message });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -176,7 +179,7 @@ router.put('/:issueId', co(async (req, res, next) => {
 
       }
     }
-    
+
     res.send({ ok: true });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -213,30 +216,32 @@ router.post('/approve', co(async (req, res, next) => {
           objStockcard.generic_id = e.generic_id;
           objStockcard.unit_generic_id = e.unit_generic_id;
           objStockcard.transaction_type = 'IST';
-          objStockcard.document_ref_id = v;
+          objStockcard.document_ref_id = e.issue_id;
+          objStockcard.document_ref = e.issue_code;
           objStockcard.in_qty = 0;
           objStockcard.in_unit_cost = 0;
           objStockcard.out_qty = e.out_qty;
           objStockcard.out_unit_cost = e.out_unit_cost;
           objStockcard.balance_qty = e.balance_qty;
           objStockcard.balance_unit_cost = e.balance_unit_cost;
-          objStockcard.ref_src = e.ref_src;
-          objStockcard.ref_dst = warehouseId;
+          objStockcard.ref_src = warehouseId;
+          objStockcard.ref_dst = e.ref_src;
           objStockcard.comment = e.transaction_name;
           objStockcard.balance_generic_qty = e.balance_generic;
+          objStockcard.lot_no = e.lot_no;
+          objStockcard.expired_date = e.expired_date;
           data.push(objStockcard)
           cutProduct.cutQty = e.out_qty;
           cutProduct.wm_product_id = e.wm_product_id;
           _cutProduct.push(cutProduct);
         }
       });
-
-      let a = await issueModel.updateSummaryApprove(db, v, summary);
-      // update wm_product
-      let b = await issueModel.saveProductStock(db, _cutProduct);
-      let c = await stockCardModel.saveFastStockTransaction(db, data);
-      res.send({ ok: true });
-    }
+        await issueModel.updateSummaryApprove(db, v, summary);
+        // update wm_product
+        await issueModel.saveProductStock(db, _cutProduct);
+        await stockCardModel.saveFastStockTransaction(db, data);
+      }
+    
   } catch (error) {
     console.log(error);
     res.send({ ok: false, error: error.message });
