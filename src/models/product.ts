@@ -254,7 +254,8 @@ export class ProductModel {
       .orderBy('mp.product_name')
       .limit(10);
   }
-  adminSearchAllProducts(knex: Knex, query: any, labelerId: any) {
+
+  adminSearchAllProducts(knex: Knex, query: any) {
     let _query = `%${query}%`;
     return knex('mm_products as mp')
       .select(knex.raw('concat(mp.product_name, " (", l.labeler_name, ")") as product_name'), 'mp.product_id',
