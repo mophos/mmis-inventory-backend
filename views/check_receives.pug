@@ -2,13 +2,13 @@ include css.pug
 style(type='text/css').
   body{
   font-family:'THSarabunNewIT';
-  font-size: 16pt;
+  font-size: 15pt;
   }
 style(type='text/css' media='print').
    @page{
    margin-top: 1.5cm;
-   margin-left: 1.5cm;
-   margin-right: 2cm;
+   margin-left: 1cm;
+   margin-right: 1cm;
    }
 doctype html
 html
@@ -82,10 +82,10 @@ html
         | ได้รับมอบพัสดุรายการข้างต้นจากคณะกรรมการตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
         br
         br
-        table(style="width: 100%;")
+        table(style="width: 80%;")
           tr
             td.right(width="5%") (ลงชื่อ)
-            td.center(width="50%") ...........................................................
+            td.center(width="20%") ...........................................................
             td.left ตำแหน่ง #{staffReceive.position_name}
             td.left &nbsp; #{staffReceive.type_name}
           tr
