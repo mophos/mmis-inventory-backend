@@ -53,6 +53,7 @@ import unitissue from './routes/unitissue';
 import productLots from './routes/productLots';
 import abcVenRoute from './routes/abcVen';
 import periodRoute from "./routes/period";
+import minMaxRoute from "./routes/minMax";
 
 import transferRoute from './routes/transfer';
 // common route
@@ -246,6 +247,7 @@ app.use('/counting', checkAuth, adminAuth, countingRoute)
 app.use('/shipping-networks', checkAuth, adminAuth, shippingNetworkRoute)
 app.use('/issues', checkAuth, adminAuth, issueRoute)
 app.use('/his-transaction', checkAuth, adminAuth, hisTransactionRoute)
+app.use('/min-max', checkAuth, adminAuth, minMaxRoute)
 
 // common route
 app.use('/requisition', checkAuth, adminAuth, requisitionRoute);
