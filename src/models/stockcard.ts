@@ -71,7 +71,10 @@ export class StockCard {
 
   saveStockAdjustIncrease(db: Knex, adjId: any, adjQty: number) {
     let sql = `
-    insert into wm_stock_card(stock_date, product_id, generic_id, unit_generic_id, transaction_type, document_ref_id, in_qty, in_unit_cost, balance_qty, balance_unit_cost, ref_src, ref_dst, comment)
+    insert into wm_stock_card(stock_date, product_id, generic_id, 
+      unit_generic_id, transaction_type, document_ref_id, in_qty, 
+      in_unit_cost, balance_qty, balance_unit_cost, ref_src, ref_dst, 
+      comment, lot_no, expired_date)
     
     select 
     current_timestamp() as stock_date, 
@@ -94,7 +97,8 @@ export class StockCard {
     wp.cost as balance_unit_cost,
     wp.warehouse_id as ref_src, 
     '' as ref_dst, 
-    'ปรับยอด' as comment
+    'ปรับยอด' as comment,
+    wp.lot_no, wp.expired_date
     from wm_product_adjust as adj
     inner join wm_products as wp on wp.wm_product_id=adj.wm_product_id
     inner join mm_products as mp on mp.product_id=wp.product_id
@@ -108,7 +112,10 @@ export class StockCard {
 
   saveStockAdjustDecrease(db: Knex, adjId: any, adjQty: number) {
     let sql = `
-    insert into wm_stock_card(stock_date, product_id, generic_id, unit_generic_id, transaction_type, document_ref_id, out_qty, out_unit_cost, balance_qty, balance_unit_cost, ref_src, ref_dst, comment)
+    insert into wm_stock_card(stock_date, product_id, generic_id, 
+      unit_generic_id, transaction_type, document_ref_id, out_qty, 
+      out_unit_cost, balance_qty, balance_unit_cost, ref_src, ref_dst, 
+      comment, lot_no, expired_date)
     
     select 
     current_timestamp() as stock_date, 
@@ -131,7 +138,8 @@ export class StockCard {
     wp.cost as balance_unit_cost,
     wp.warehouse_id as ref_src, 
     '' as ref_dst, 
-    'ปรับยอด' as comment
+    'ปรับยอด' as comment,
+    wp.lot_no, wp.expired_date
     from wm_product_adjust as adj
     inner join wm_products as wp on wp.wm_product_id=adj.wm_product_id
     inner join mm_products as mp on mp.product_id=wp.product_id
