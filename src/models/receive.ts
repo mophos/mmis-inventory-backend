@@ -443,7 +443,8 @@ export class ReceiveModel {
       //     .on('reqd.receive_id', 'rd.receive_id')
       // })
       .leftJoin('mm_products as mp', 'mp.product_id', 'rd.product_id')
-      .groupBy('rd.product_id', 'rd.lot_no');
+      // .groupBy('rd.product_id', 'rd.lot_no');
+      .groupBy('rd.receive_detail_id');
   }
 
   getRequisition(knex: Knex, receiveIds: any[]) {
