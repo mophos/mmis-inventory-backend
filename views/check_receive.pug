@@ -25,10 +25,10 @@ html
           tr
             td.left เลขที่รับ #{check_receive[c].receive_code}
             td.right เขียนที่ #{hospitalName}
-        div(style='margin-left:50%;') วันที่ #{check_receive[c].approve_date}
+        div(style='margin-left:50%;') วันที่ #{check_receive[c].receive_date}
         br
         .fontspace
-        | ตามบันทึกที่ #{check_receive[c].purchase_order_number} ลงวันที่ #{check_receive[c].delivery_date} ได้แต่งตั้งคณะกรรมการตรวจรับพัสดุนั้น บัดนี้คณะกรรมการตรวจรับพัสดุได้ร่วมกันตรวจพัสดุซึ่ง 
+        | ตามบันทึกที่ #{check_receive[c].purchase_order_number} ลงวันที่ #{check_receive[c].podate} ได้แต่งตั้งคณะกรรมการตรวจรับพัสดุนั้น บัดนี้คณะกรรมการตรวจรับพัสดุได้ร่วมกันตรวจพัสดุซึ่ง 
         | &nbsp;&nbsp;&nbsp;#{check_receive[c].labeler_name}&nbsp;&nbsp;&nbsp; ผู้ขายได้นำส่งมอบเมื่อ วันที่ &nbsp;&nbsp;#{check_receive[c].receive_date} &nbsp;&nbsp;ตามใบส่งของเลขที่ #{check_receive[c].delivery_code} จำนวน #{check_receive[c].amount_qty} รายการ 
         |	รวมเป็นเงินสุทธิ #{check_receive[c].total_price} บาท (#{bahtText[c]}) 
         br
