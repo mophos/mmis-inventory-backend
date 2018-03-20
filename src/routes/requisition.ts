@@ -34,6 +34,7 @@ import { LotModel } from '../models/lot';
 import { SerialModel } from '../models/serial';
 import { RequisitionOrderModel } from '../models/requisitionOrder';
 import { PeriodModel } from '../models/period';
+import { BorrowNoteModel } from '../models/borrowNote';
 
 const router = express.Router();
 
@@ -45,6 +46,7 @@ const stockCardModel = new StockCard();
 const serialModel = new SerialModel();
 const orderModel = new RequisitionOrderModel();
 const periodModel = new PeriodModel();
+const borrowNoteModel = new BorrowNoteModel();
 /**
  * Requisition order
  * by @siteslave
@@ -233,13 +235,13 @@ router.get('/generics-requisition/:requisitionId', async (req, res, next) => {
     rsReqItems.forEach(v => {
       let obj: any = {};
       obj.generic_id = v.generic_id;
-      obj.requisition_qty = v.requisition_qty;
+      obj.requisition_qty = v.requisition_qty; // base unit
       obj.products = [];
       rsProducts.forEach(x => {
         if (x.generic_id === v.generic_id) {
           let _obj: any = {};
           _obj.wm_product_id = x.wm_product_id;
-          _obj.remain_qty = x.qty;
+          _obj.remain_qty = x.qty; // base unit
           _obj.reseve_qty = 0; // ยอดจอง จากรายการตัดจ่าย, โอน, เบิก, เติม ที่รออนุมัติ
           _obj.expired_date = x.expired_date;
           _obj.conversion_qty = x.conversion_qty;
@@ -253,40 +255,41 @@ router.get('/generics-requisition/:requisitionId', async (req, res, next) => {
     let pays = [];
 
     items.forEach((v, i) => {
-      let reqQty = v.requisition_qty;
+      let reqQty = v.requisition_qty; // base unit
       let products = v.products;
 
-      products.forEach((x, z) => {
+      products.forEach((x, idx) => {
         let obj: any = {};
         obj.wm_product_id = x.wm_product_id;
         obj.unit_generic_id = x.unit_generic_id;
         obj.conversion_qty = x.conversion_qty;
         obj.generic_id = v.generic_id;
-        obj.remain_qty = x.remain_qty;
+        obj.remain_qty = x.remain_qty; // base unit
 
-        if (x.remain_qty >= reqQty && z !== (products.length - 1)) {
-          if ((reqQty % x.conversion_qty) === 0) {
-            obj.pay_qty = Math.floor(reqQty / x.conversion_qty);
-            if (x.remain_qty >= reqQty) reqQty = 0;
+        if (x.remain_qty >= reqQty && idx !== (products.length - 1)) {
+          obj.pay_qty = reqQty;
+          if (x.remain_qty >= reqQty) {
+            obj.remain_qty = x.remain_qty - reqQty; // base
+            reqQty = 0;
           } else {
-            obj.pay_qty = 0;
+            obj.remain_qty = 0;
           }
         } else {
-          if (z === (products.length - 1)) {
-            if ((reqQty % x.conversion_qty) === 0 && x.remain_qty > 0) {
-              obj.pay_qty = Math.floor(reqQty / x.conversion_qty);
+          if (idx === (products.length - 1)) {
+            if (x.remain_qty - reqQty < 0) {
+              obj.pay_qty = obj.remain_qty;
+              obj.remain_qty = 0
             } else {
-              obj.pay_qty = 0;
+              obj.pay_qty = reqQty;
+              obj.remain_qty = x.remain_qty - reqQty; // base
             }
           } else {
-            if ((reqQty % x.conversion_qty) === 0 && x.remain_qty > 0) {
-              obj.pay_qty = Math.floor(x.remain_qty / x.conversion_qty);
-              reqQty -= x.remain_qty;
-            } else {
-              obj.pay_qty = 0;
-            }
+            obj.pay_qty = x.remain_qty;
+            obj.remain_qty = 0;
+            reqQty -= x.remain_qty;
           }
         }
+        obj.pay_qty = Math.ceil(obj.pay_qty / x.conversion_qty); // pack
 
         pays.push(obj);
       });
@@ -1083,6 +1086,21 @@ router.get('/templates-items/:templateId', async (req, res, next) => {
   try {
     let rs: any = await orderModel.getTemplateItems(db, templateId);
     res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
+router.post('/borrow-notes', async (req, res, next) => {
+  let db = req.db;
+  let genericIds = req.body.genericIds;
+  let warehouseId = req.body.warehouseId;
+
+  try {
+    let rs: any = await borrowNoteModel.getItemsWithGenerics(db, warehouseId, genericIds);
+    res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {

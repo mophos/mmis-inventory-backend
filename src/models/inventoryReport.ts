@@ -223,10 +223,11 @@ export class InventoryReportModel {
         ws.stock_date,
         ws.transaction_type,
         ws.comment,
-        ws.document_ref_id,
+        ws.document_ref,
         mu.unit_name,
         mgd.dosage_name,
-    
+        ws.lot_no,
+        ws.expired_date,
     IF (
         ww.warehouse_name IS NOT NULL,
         ww.warehouse_name,
@@ -592,9 +593,12 @@ export class InventoryReportModel {
         let sql = `
         SELECT
 	r.requisition_date,
-	r.requisition_code,
+    r.requisition_code,
+    r.requisition_order_id,
 	rc.confirm_date,
-	wh.warehouse_name,
+    wh.warehouse_name,
+    wh.warehouse_id,
+    whs.warehouse_id AS withdraw_warehouse_id,
 	whs.warehouse_name AS withdraw_warehouse_name,
 	mg.working_code,
 	mg.generic_name,
@@ -605,13 +609,15 @@ export class InventoryReportModel {
 	mup.qty AS unit_qty,
 	mus.unit_name AS small_unit,
 	sum( rci.confirm_qty ) AS confirm_qty,
-	r.updated_at
+    r.updated_at,
+    mgd.dosage_name
 FROM
 	wm_requisition_orders r
 	LEFT JOIN wm_requisition_confirms rc ON rc.requisition_order_id = r.requisition_order_id
 	LEFT JOIN wm_requisition_confirm_items rci ON rci.confirm_id = rc.confirm_id
 	LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
-	LEFT JOIN mm_generics AS mg ON mg.generic_id = rci.generic_id
+    LEFT JOIN mm_generics AS mg ON mg.generic_id = rci.generic_id
+    left join mm_generic_dosages mgd on mgd.dosage_id  = mg.dosage_id 
 	LEFT JOIN mm_unit_generics AS mup ON wp.unit_generic_id = mup.unit_generic_id
 	LEFT JOIN mm_units AS mul ON mup.from_unit_id = mul.unit_id
 	LEFT JOIN mm_units AS mus ON mup.to_unit_id = mus.unit_id
@@ -1922,4 +1928,107 @@ OR sc.ref_src like ?
       ORDER BY mg.generic_id`
         return knex.raw(sql);
     }
+    getDetailListRequis(knex:Knex ,requisId,warehouseId,productId){
+        let sql=`select * from (SELECT
+          mg.working_code AS generic_code,
+          mg.generic_name,
+          mg.generic_id,
+          wp.product_id,
+          mul.unit_name AS large_unit,
+          mup.qty AS conversion_qty,
+          mus.unit_name AS small_unit,
+          sum(rci.confirm_qty) AS confirm_qty,
+          (
+            SELECT
+              sum(qty)
+            FROM
+              wm_products w
+            WHERE
+              w.wm_product_id = wp.wm_product_id
+            GROUP BY
+              w.product_id
+          ) AS remain,
+          wp.lot_no,
+          wp.expired_date,
+          r.requisition_code,
+          rc.is_approve
+        FROM
+          wm_requisition_orders r
+        LEFT JOIN wm_requisition_confirms rc ON rc.requisition_order_id = r.requisition_order_id
+        LEFT JOIN wm_requisition_confirm_items rci ON rci.confirm_id = rc.confirm_id
+        LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
+        LEFT JOIN mm_generics AS mg ON mg.generic_id = rci.generic_id
+        LEFT JOIN mm_unit_generics AS mup ON wp.unit_generic_id = mup.unit_generic_id
+        LEFT JOIN mm_units AS mul ON mup.from_unit_id = mul.unit_id
+        LEFT JOIN mm_units AS mus ON mup.to_unit_id = mus.unit_id
+        WHERE
+          r.requisition_order_id = '${requisId}'
+        AND rci.confirm_qty != 0 and wp.product_id='${productId}'
+        GROUP BY
+          wp.product_id,wp.lot_no
+        UNION ALL
+          SELECT
+            '0',
+            'คงคลัง',
+            mp.generic_id,
+            mp.product_id,
+            mul.unit_name,
+            mug.qty,
+            mus.unit_name,
+            '',
+            sum(wp.qty),
+            wp.lot_no,
+            wp.expired_date,
+            '',
+            'Y'
+          FROM
+            wm_products wp
+          JOIN mm_products mp ON wp.product_id = mp.product_id
+          JOIN mm_unit_generics mug ON wp.unit_generic_id = mug.unit_generic_id
+          LEFT JOIN mm_units AS mul ON mug.from_unit_id = mul.unit_id
+          LEFT JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
+          WHERE
+            wp.product_id IN (
+              SELECT
+                wp.product_id
+              FROM
+                wm_requisition_orders r
+              LEFT JOIN wm_requisition_confirms rc ON rc.requisition_order_id = r.requisition_order_id
+              LEFT JOIN wm_requisition_confirm_items rci ON rci.confirm_id = rc.confirm_id
+              LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
+              AND wp.warehouse_id = r.wm_withdraw
+              WHERE
+                r.requisition_order_id = '${requisId}' and wp.product_id='${productId}'
+              GROUP BY
+                wp.product_id
+            )
+          AND wp.warehouse_id = '${warehouseId}'
+          GROUP BY
+            wp.product_id,
+            wp.lot_no
+        ) as a
+        group by a.product_id,a.lot_no
+        ORDER BY a.generic_code desc`
+        return knex.raw(sql);
+      }
+    getHeadRequis(knex:Knex ,requisId){
+        let sql=`SELECT
+        r.requisition_date,
+        r.requisition_code,
+        r.requisition_order_id,
+        rc.confirm_date,
+        wh.warehouse_name,
+        wh.warehouse_id,
+        whs.warehouse_name AS withdraw_warehouse_name
+    FROM
+        wm_requisition_orders r
+    LEFT JOIN wm_requisition_confirms rc ON rc.requisition_order_id = r.requisition_order_id
+    LEFT JOIN wm_warehouses wh ON wh.warehouse_id = r.wm_requisition
+    LEFT JOIN wm_warehouses whs ON whs.warehouse_id = r.wm_withdraw
+    WHERE
+        r.requisition_order_id = '${requisId}'
+    ORDER BY
+        r.requisition_order_id`
+        return knex.raw(sql);
+      }
 }

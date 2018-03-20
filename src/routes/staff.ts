@@ -1,5 +1,4 @@
 import { AlertExpiredModel } from '../models/alertExpired';
-import { BorrowModel } from './../models/borrow';
 import { WarehouseModel } from './../models/warehouse';
 import { StaffModel } from './../models/staff';
 import { AbcVenModel } from '../models/abcVen';
@@ -34,7 +33,6 @@ import { RequisitionTypeModel } from '../models/requisitionType';
 const router = express.Router();
 const staffModel = new StaffModel();
 const warehouseModel = new WarehouseModel();
-const borrowModel = new BorrowModel();
 const alertModel = new AlertExpiredModel();
 const productModel = new ProductModel();
 const transferModel = new TransferModel();

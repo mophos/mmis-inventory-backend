@@ -89,6 +89,19 @@ export class BasicModel {
       .orderBy('ut.title_name');
   }
 
+  searchAutocomplete(knex: Knex, query: any) {
+    let _query = `%${query}%`;
+
+    return knex('um_people as um')
+      .select('um.people_id', 'um.fname', 'um.lname', 't.title_name', 'p.position_name')
+      .leftJoin('um_titles as t', 't.title_id', 'um.title_id')
+      .leftJoin('um_positions as p', 'p.position_id', 'um.position_id')
+      .where('um.fname', 'like', _query)
+      .orWhere('um.lname', 'like', _query)
+      .orWhereRaw(`concat(t.title_name, um.fname, " ", um.lname) like "${_query}"`)
+      .limit(10);
+  }
+
   getNetworkTypes(knex: Knex) {
     return knex('mm_transfer_types')
     .where('transfer_code','TRN')
