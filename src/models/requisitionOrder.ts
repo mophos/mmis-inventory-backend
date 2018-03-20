@@ -218,7 +218,7 @@ export class RequisitionOrderModel {
 
   getOrderUnpaidItems(db: Knex, unpaidId: any) {
     let sql = `
-      select oui.generic_id, ceil(oui.unpaid_qty/ug.qty) as unpaid_qty, g.generic_name, floor(roi.requisition_qty/ug.qty) as requisition_qty, u1.unit_name as from_unit_name, 
+      select oui.generic_id, floor(oui.unpaid_qty/ug.qty) as unpaid_qty, g.generic_name, floor(roi.requisition_qty/ug.qty) as requisition_qty, u1.unit_name as from_unit_name, 
       u2.unit_name as to_unit_name, ug.qty as conversion_qty, g.working_code
       from wm_requisition_order_unpaid_items as oui
       inner join mm_generics as g on g.generic_id=oui.generic_id
@@ -229,7 +229,7 @@ export class RequisitionOrderModel {
       where oui.requisition_order_unpaid_id=?
       
       group by oui.generic_id
-      having unpaid_qty>0
+      -- having unpaid_qty>0
     `;
     return db.raw(sql, [unpaidId]);
   }

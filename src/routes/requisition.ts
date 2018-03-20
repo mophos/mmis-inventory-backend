@@ -289,7 +289,7 @@ router.get('/generics-requisition/:requisitionId', async (req, res, next) => {
             reqQty -= x.remain_qty;
           }
         }
-        obj.pay_qty = Math.ceil(obj.pay_qty / x.conversion_qty); // pack
+        obj.pay_qty = Math.floor(obj.pay_qty / x.conversion_qty); // pack
 
         pays.push(obj);
       });

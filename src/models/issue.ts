@@ -42,6 +42,7 @@ export class IssueModel {
       .where('issue_id', issueId)
       .del();
   }
+  
   removeGenerics(knex: Knex, issueId: any) {
     return knex.raw(`DELETE sp,sg
     FROM wm_issue_generics sg
@@ -49,10 +50,11 @@ export class IssueModel {
     WHERE sg.issue_id = ${issueId}`)
   }
 
-  removeIssueSummary(knex: Knex, issueId: any) {
+  removeIssueSummary(knex: Knex, issueId: any, data: any) {
     return knex('wm_issue_summary')
       .where('issue_id', issueId)
-      .del();
+      .update(data)
+      // .del();
   }
 
   saveDetail(knex: Knex, data) {

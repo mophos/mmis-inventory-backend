@@ -154,7 +154,7 @@ router.post('/allocate', async (req, res, next) => {
                 x.remain_qty = x.remain_qty - (obj.product_qty * x.conversion_qty);
                 genericQty = genericQty - (obj.product_qty * x.conversion_qty);
               } else {
-                obj.product_qty = Math.ceil(genericQty / x.conversion_qty);
+                obj.product_qty = Math.floor(genericQty / x.conversion_qty);
                 x.remain_qty = x.remain_qty - (obj.product_qty * x.conversion_qty);
                 genericQty = genericQty - (obj.product_qty * x.conversion_qty);
               }
@@ -164,7 +164,7 @@ router.post('/allocate', async (req, res, next) => {
                 x.remain_qty = x.remain_qty - (obj.product_qty * x.conversion_qty);
                 genericQty = genericQty - (obj.product_qty * x.conversion_qty);
               } else {
-                obj.product_qty = Math.ceil(x.remain_qty / x.conversion_qty);
+                obj.product_qty = Math.floor(x.remain_qty / x.conversion_qty);
                 x.remain_qty = x.remain_qty - (obj.product_qty * x.conversion_qty);
                 genericQty = genericQty - (obj.product_qty * x.conversion_qty);
               }
