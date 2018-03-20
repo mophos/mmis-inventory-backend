@@ -327,7 +327,7 @@ export class InventoryReportModel {
             OR
             IF (
                 ws.transaction_type = "IST",
-                ws.ref_dst = '${warehouseId}',
+                ws.ref_src = '${warehouseId}',
                 ''
             )
             OR
