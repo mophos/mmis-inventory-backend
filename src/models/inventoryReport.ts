@@ -226,7 +226,8 @@ export class InventoryReportModel {
         ws.document_ref_id,
         mu.unit_name,
         mgd.dosage_name,
-    
+        ws.lot_no,
+        ws.expired_date,
     IF (
         ww.warehouse_name IS NOT NULL,
         ww.warehouse_name,

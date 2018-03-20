@@ -11,26 +11,27 @@ html
       table.table
         thead
           tr 
-            td.center.bold(colspan='11') #{hospitalName}
+            td.center.bold(colspan='12') #{hospitalName}
           tr 
-            td.center.bold(colspan='11') บัญชีคุมคลังเวชภัณฑ์
+            td.center.bold(colspan='12') บัญชีคุมคลังเวชภัณฑ์
           tr 
-            td.center(colspan='11') ตั้งแต่วันที่ #{startDate} ถึง #{endDate}
+            td.center(colspan='12') ตั้งแต่วันที่ #{startDate} ถึง #{endDate}
           tr 
-            td.left(colspan='5') รหัสเวชภัณฑ์ #{genericId[i]}
+            td.left(colspan='6') รหัสเวชภัณฑ์ #{genericId[i]}
             td.right(colspan='6') หน่วย #{small_unit[i]}
           tr 
-            td.left(colspan='5') ชื่อสามัญ #{generic_name[i]}
+            td.left(colspan='6') ชื่อสามัญ #{generic_name[i]}
             td.right(colspan='6') รูปแบบ #{dosage_name[i]}
           tr 
-            td.left(colspan='11') ณ วันที่ #{today}
+            td.left(colspan='12') ณ วันที่ #{today}
           tr
             th(rowspan='2',style="border-style: solid;border-width: 2px 1px 2px 1px;") วัน/เดือน/ปี
             th(rowspan='2',style="border-style: solid;border-width: 2px 1px 2px 1px;") เลขที่เอกสาร รับ/จ่าย
             th(rowspan='2',style="border-style: solid;border-width: 2px 1px 2px 1px;") รับ/จ่าย
             th(colspan='3',style="border-style: solid;border-width: 2px 1px 2px 1px;") จำนวนยา
             th(rowspan='2',style="border-style: solid;border-width: 2px 1px 2px 1px;") ราคาต่อหน่วย
-            th(rowspan='2',style="border-style: solid;border-width: 2px 1px 2px 1px;") Lot./Exp
+            th(rowspan='2',style="border-style: solid;border-width: 2px 1px 2px 1px;") Lot.
+            th(rowspan='2',style="border-style: solid;border-width: 2px 1px 2px 1px;") Exp.
           tr
             th(style="border-style: solid;border-width: 2px 1px 2px 1px; solid;width:80px;") รับ
             th(style="border-style: solid;border-width: 2px 1px 2px 1px; solid;width:80px;") จ่าย
@@ -43,28 +44,13 @@ html
             td(style="border:1px solid; padding:0.2em;") #{a.stock_date}
             td(style="border:1px solid; padding:0.2em;") #{a.document_ref_id}
             td(style="border:1px solid; padding:0.2em;") #{a.comment}
-            //- td.left 
-            //-   if(a.warehouse_name)
-            //-     | #{a.warehouse_name}
-            //-   else
-            //-     | -
             td.right(style="border:1px solid; padding:0.2em;") #{a.in_qty} 
             td.right(style="border:1px solid; padding:0.2em;") #{a.out_qty}
-            //- td.right
-            //-   if(a.in_qty !== 0)
-            //-     | #{a.in_cost}
-            //-   else
-            //-     | 0
-            //- td.right
-            //-   if(a.out_qty !== 0)
-            //-     | #{a.out_cost}
-            //-   else
-            //-     | 0
             td.right(style="border:1px solid; padding:0.2em;") #{a.balance_generic_qty}
             td.right(style="border:1px solid; padding:0.2em;") #{a.balance_unit_cost}
-            //- td.right #{a.balance_unit_cost}
-            td.right(style="border:1px solid; padding:0.2em;") 
+            td.right(style="border:1px solid; padding:0.2em;") #{a.lot_no}
+            td(style="border:1px solid; padding:0.2em;") #{a.expired_date}
         tfoot 
           tr.tbfooter
-            td(colspan='11')
+            td(colspan='12')
       .pagebreak
