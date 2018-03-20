@@ -223,10 +223,11 @@ export class InventoryReportModel {
         ws.stock_date,
         ws.transaction_type,
         ws.comment,
-        ws.document_ref_id,
+        ws.document_ref,
         mu.unit_name,
         mgd.dosage_name,
-    
+        ws.lot_no,
+        ws.expired_date,
     IF (
         ww.warehouse_name IS NOT NULL,
         ww.warehouse_name,
@@ -1608,6 +1609,7 @@ OR sc.ref_src like ?
         let sql = `SELECT wr.receive_id,
         wr.receive_code,
         wr.receive_date,
+        waa.approve_date,
         wr.delivery_code,
         ROUND(sum(wrd.receive_qty*wrd.cost),2) AS total_price,
         wrd.receive_qty,
@@ -1621,6 +1623,7 @@ OR sc.ref_src like ?
         mgt.generic_type_name
         FROM wm_receives wr
         JOIN wm_receive_detail wrd ON wrd.receive_id=wr.receive_id
+        JOIN wm_receive_approve waa ON waa.receive_id = wr.receive_id
         LEFT JOIN wm_warehouses wh ON wh.warehouse_id=wrd.warehouse_id
         LEFT JOIN mm_labelers ml ON ml.labeler_id=wrd.vendor_labeler_id
         LEFT JOIN wm_receive_types wrt ON wrt.receive_type_id=wr.receive_type_id
