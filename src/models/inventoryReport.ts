@@ -371,7 +371,7 @@ export class InventoryReportModel {
     AND ws.stock_date BETWEEN '${startDate}'
     AND '${endDate}'
     ORDER BY
-	    ws.stock_date
+	    ws.stock_date,ws.stock_card_id
     `
         return knex.raw(sql)
     }
