@@ -176,6 +176,22 @@ router.get('/people-list', co(async(req, res, next) => {
 
 }));
 
+router.get('/search-people-autocomplete', co(async(req, res, next) => {
+
+  let db = req.db;
+  let query = req.query.q;
+
+  try {
+    let rs = await basicModel.searchAutocomplete(db, query);
+    res.send(rs);
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
 router.get('/warehouses', co(async(req, res, next) => {
 
   let db = req.db;
