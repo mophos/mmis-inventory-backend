@@ -1284,7 +1284,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let invenChief: any = []
   check_receive = check_receive[0];
   for (let v in check_receive) {
-    check_receive[v].receive_date = moment(check_receive[v].receive_date).format('D MMMM YYYY');
+    check_receive[v].receive_date = moment(check_receive[v].receive_date).format('D MMMM ') + (moment(check_receive[v].receive_date).get('year') + 543);
     check_receive[v].delivery_date = moment(check_receive[v].delivery_date).format('D MMMM ') + (moment(check_receive[v].delivery_date).get('year') + 543);
     let _bahtText = inventoryReportModel.bahtText(check_receive[v].total_price);
     bahtText.push(_bahtText)
