@@ -550,7 +550,7 @@ router.get('/dashboard/generic/:genericId', async (req, res, next) => { //not us
                 totalTransferQty -= v.remain_qty;
               }
             }
-            obj.transfer_qty = Math.ceil(obj.transfer_qty / v.conversion_qty);
+            obj.transfer_qty = Math.floor(obj.transfer_qty / v.conversion_qty);
           }
           productsTransfer.push(obj);
         });
@@ -559,7 +559,7 @@ router.get('/dashboard/generic/:genericId', async (req, res, next) => { //not us
         });
         e.detail = productsTransfer;
       } else {
-        e.total_transfer_qty = Math.ceil(e.src_remain_qty / countWarehouse);
+        e.total_transfer_qty = Math.floor(e.src_remain_qty / countWarehouse);
         let totalTransferQty = e.total_transfer_qty;
         let productsTransfer = [];
         srcProducts.forEach((v: any, i) => {
@@ -600,7 +600,7 @@ router.get('/dashboard/generic/:genericId', async (req, res, next) => { //not us
                 totalTransferQty -= v.remain_qty;
               }
             }
-            obj.transfer_qty = Math.ceil(obj.transfer_qty / v.conversion_qty);
+            obj.transfer_qty = Math.floor(obj.transfer_qty / v.conversion_qty);
           }
 
           productsTransfer.push(obj);
