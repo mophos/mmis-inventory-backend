@@ -1292,7 +1292,6 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     bahtText.push(_bahtText)
     check_receive[v].total_price = inventoryReportModel.comma(check_receive[v].total_price);
   }
-  console.log(check_receive)
   for (let i in receiveID) {
     let _committee = await inventoryReportModel.invenCommittee(db, receiveID[i]);
     committee.push(_committee[0]);
