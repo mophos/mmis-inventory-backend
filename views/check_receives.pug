@@ -23,11 +23,11 @@ html
         br
         table.table
           tr
-            td.right วันที่ #{check_receive[s][0].approve_date}
+            td.right วันที่ #{check_receive[s][0].receive_date}
         .fontspace
         | ตามกรรมการผู้มีรายนามและตำแหน่งข้างท้าย ได้พร้อมกันตรวจรับ #{generic_name[s]}
         | ซึ่ง #{check_receive[s][0].labeler_name} ผู้ขายได้นำส่งตามใบสั่งซื้อของ#{hospitalName}
-        | เลขที่ #{check_receive[s][0].purchase_order_number} ลงวันที่ #{check_receive[s][0].delivery_date} 
+        | เลขที่ #{check_receive[s][0].purchase_order_number} ลงวันที่ #{check_receive[s][0].podate} 
         | เพื่อใช้ในงานการรักษาของ#{hospitalName}
         - if(length[s] <= 4)
           | ดังปรากฏรายละเอียดตรวจรับ คือ
