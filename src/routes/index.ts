@@ -1336,10 +1336,12 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   const receive = await inventoryReportModel.receiveSelect(db, rc_ID)
+  
   for (let i in receive) {
     const receivePo = await inventoryReportModel.receiveByPoId(db, receive[i].purchase_order_id)
     receiveID.push(receivePo)
   }
+  
   for (let i in receiveID) {
     let _check_receive: any = []
     let committee: any = []
@@ -1354,6 +1356,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     length.push(_check_receive.length);
     check_receive.push(_check_receive);
   }
+  
   let totalPrice: any = 0;
   _.forEach(check_receive, opjects => {
     let _generic_name: any = []
@@ -1368,13 +1371,15 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
       _generic_name.push(opject.generic_type_name)
     })
     totalPrice = inventoryReportModel.comma(totalPrice);
-    bahtText.push(_bahtText)
+    bahtText.push(totalPrice)
     _generic_name = _.join(_.uniq(_generic_name), ', ')
     generic_name.push(_generic_name)
   })
+
   if (committees === undefined) { res.render('no_commitee'); }
   let staffReceive = await inventoryReportModel.staffReceive(db);
   let chief = await inventoryReportModel.getChief(db, 'CHIEF')
+  
   res.render('check_receives', {
     totalPrice: totalPrice,
     chief: chief[0],
