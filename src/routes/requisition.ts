@@ -289,7 +289,7 @@ router.get('/generics-requisition/:requisitionId', async (req, res, next) => {
             reqQty -= x.remain_qty;
           }
         }
-        obj.pay_qty = Math.ceil(obj.pay_qty / x.conversion_qty); // pack
+        obj.pay_qty = Math.floor(obj.pay_qty / x.conversion_qty); // pack
 
         pays.push(obj);
       });
@@ -778,7 +778,10 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             objStockcardOut.generic_id = v.generic_id;
             objStockcardOut.unit_generic_id = v.unit_generic_id;
             objStockcardOut.transaction_type = 'REQ_OUT';
-            objStockcardOut.document_ref_id = v.requisition_code;
+            objStockcardOut.document_ref_id = v.requisition_order_id;
+            objStockcardOut.document_ref = v.requisition_code;
+            objStockcardOut.lot_no = v.lot_no;
+            objStockcardOut.expired_date = v.expired_date;
             objStockcardOut.in_qty = 0;
             objStockcardOut.in_unit_cost = 0;
             objStockcardOut.out_qty = v.confirm_qty;
@@ -811,7 +814,10 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             objStockcardIn.generic_id = v.generic_id;
             objStockcardIn.unit_generic_id = v.unit_generic_id;
             objStockcardIn.transaction_type = 'REQ_IN';
-            objStockcardIn.document_ref_id = v.requisition_code;
+            objStockcardIn.document_ref_id = v.requisition_order_id;
+            objStockcardIn.document_ref = v.requisition_code;
+            objStockcardIn.lot_no = v.lot_no;
+            objStockcardIn.expired_date = v.expired_date;
             objStockcardIn.in_qty = v.confirm_qty;
             objStockcardIn.in_unit_cost = v.cost;
             objStockcardIn.out_qty = 0

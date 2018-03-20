@@ -148,6 +148,7 @@ router.get('/', async (req, res, next) => {
 router.put('/update-requisition/:requisitionOrderId', async (req, res, next) => {
   let db = req.db;
   let data: any = req.body.data;
+  let bItems: any = req.body.borrowItems;
   let requisitionOrderId = req.params.requisitionOrderId;
 
   try {
@@ -163,16 +164,17 @@ router.put('/update-requisition/:requisitionOrderId', async (req, res, next) => 
       obj.requisition_qty = v.requisitionQty;
       obj.unit_generic_id = v.unitGenericId;
       items.push(obj);
+      generics.push(v.genericId);
+    });
 
+    bItems.forEach(v => {
       let objBorrow: any = {};
       objBorrow.borrow_note_detail_id = v.borrowNoteDetailId;
       objBorrow.requisition_people_user_id = req.decoded.people_user_id;
       objBorrow.requisition_order_id = requisitionOrderId;
       borrowItems.push(objBorrow);
-
-      generics.push(v.genericId);
     });
-
+    
     // remove requisition items
     await reqModel.removeRequisitionQtyForBorrowNote(db, requisitionOrderId, generics);
     // save new data

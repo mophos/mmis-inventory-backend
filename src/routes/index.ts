@@ -65,9 +65,9 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
       approve_requis.push(_approve_requis[0])
     }
 
-    approve_requis.forEach(opject => {
+    approve_requis.forEach(object => {
       let _sum: any = 0;
-      opject.forEach(value => {
+      object.forEach(value => {
         value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
         _sum += value.total_cost;
         value.cost = inventoryReportModel.comma(value.cost);
@@ -116,8 +116,8 @@ router.get('/report/UnPaid/requis', wrap(async (req, res, next) => {
     let hospitalName = hosdetail[0].hospname;
     moment.locale('th');
     let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
-    _.forEach(requisId, opject => {
-      let tmp = _.find(rs[0], ['requisition_order_id', +opject])
+    _.forEach(requisId, object => {
+      let tmp = _.find(rs[0], ['requisition_order_id', +object])
       tmp.unpaid_date = moment(tmp.unpaid_date).format('D MMMM ') + (moment(tmp.unpaid_date).get('year') + 543);
       tmp.requisition_date = moment(tmp.requisition_date).format('D MMMM ') + (moment(tmp.requisition_date).get('year') + 543);
       unPaid.push(tmp)
@@ -201,30 +201,30 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
       }
       _list_requis.push(requisition);
     }
-      for (let page in _list_requis) {
-        for (let head in _list_requis[page]) {
-          _list_requis[page][head].confirm_date = moment(_list_requis[page][head].confirm_date).isValid() ? moment(_list_requis[page][head].confirm_date).format('DD MMMM ') + (moment(_list_requis[page][head].confirm_date).get('year')) : '-';
-          _list_requis[page][head].requisition_date = moment(_list_requis[page][head].requisition_date).isValid() ? moment(_list_requis[page][head].requisition_date).format('DD MMMM ') + (moment(_list_requis[page][head].requisition_date).get('year')) : '-';
-          _list_requis[page][head].title.requisition_qty = inventoryReportModel.commaQty(_list_requis[page][head].title.requisition_qty / _list_requis[page][head].title.unit_qty);
-          _list_requis[page][head].title.confirm_qty = inventoryReportModel.commaQty(_list_requis[page][head].title.confirm_qty / _list_requis[page][head].title.unit_qty);
-          for (let detail in _list_requis[page][head].title.items) {
-            if (_list_requis[page][head].title.items[detail].confirm_qty != 0) {
-              let old_confirm_qty  = inventoryReportModel.commaQty(_list_requis[page][head].title.items[detail].confirm_qty);
-              let confirm_qty = inventoryReportModel.commaQty(_list_requis[page][head].title.items[detail].confirm_qty / _list_requis[page][head].title.items[detail].conversion_qty);
-              _list_requis[page][head].title.items[detail].confirm_qty = confirm_qty + ' ' + _list_requis[page][head].title.items[detail].large_unit + ' (' + _list_requis[page][head].title.items[detail].conversion_qty + ' ' + _list_requis[page][head].title.items[detail].small_unit + ' )'
-              if(_list_requis[page][head].title.items[detail].is_approve == "N"){
-                _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round((+_list_requis[page][head].title.items[detail].remain - +old_confirm_qty) / +_list_requis[page][head].title.items[detail].conversion_qty));
-              }else{
-                _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round(+_list_requis[page][head].title.items[detail].remain / +_list_requis[page][head].title.items[detail].conversion_qty));
-              }
+    for (let page in _list_requis) {
+      for (let head in _list_requis[page]) {
+        _list_requis[page][head].confirm_date = moment(_list_requis[page][head].confirm_date).isValid() ? moment(_list_requis[page][head].confirm_date).format('DD MMMM ') + (moment(_list_requis[page][head].confirm_date).get('year')) : '-';
+        _list_requis[page][head].requisition_date = moment(_list_requis[page][head].requisition_date).isValid() ? moment(_list_requis[page][head].requisition_date).format('DD MMMM ') + (moment(_list_requis[page][head].requisition_date).get('year')) : '-';
+        _list_requis[page][head].title.requisition_qty = inventoryReportModel.commaQty(+_list_requis[page][head].title.requisition_qty / +_list_requis[page][head].title.unit_qty);
+        _list_requis[page][head].title.confirm_qty = inventoryReportModel.commaQty(+_list_requis[page][head].title.confirm_qty / +_list_requis[page][head].title.unit_qty);
+        for (let detail in _list_requis[page][head].title.items) {
+          if (_list_requis[page][head].title.items[detail].confirm_qty != 0) {
+            let old_confirm_qty = _list_requis[page][head].title.items[detail].confirm_qty;
+            let confirm_qty = inventoryReportModel.commaQty(+_list_requis[page][head].title.items[detail].confirm_qty / +_list_requis[page][head].title.items[detail].conversion_qty);
+            _list_requis[page][head].title.items[detail].confirm_qty = +confirm_qty + ' ' + _list_requis[page][head].title.items[detail].large_unit + ' (' + _list_requis[page][head].title.items[detail].conversion_qty + ' ' + _list_requis[page][head].title.items[detail].small_unit + ' )'
+            if (_list_requis[page][head].title.items[detail].is_approve == "N") {
+              _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round((+_list_requis[page][head].title.items[detail].remain - +old_confirm_qty) / +_list_requis[page][head].title.items[detail].conversion_qty));
             } else {
               _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round(+_list_requis[page][head].title.items[detail].remain / +_list_requis[page][head].title.items[detail].conversion_qty));
             }
-            _list_requis[page][head].title.items[detail].location_name = _list_requis[page][head].title.items[detail].location_name !== null ? _list_requis[page][head].title.items[detail].location_name : '-';
-            _list_requis[page][head].title.items[detail].expired_date = moment(_list_requis[page][head].title.items[detail].expired_date).isValid() ? moment(_list_requis[page][head].title.items[detail].expired_date).format('D/MM/') + (moment(_list_requis[page][head].title.items[detail].expired_date).get('year')) : '-';
+          } else {
+            _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round(+_list_requis[page][head].title.items[detail].remain / +_list_requis[page][head].title.items[detail].conversion_qty));
           }
+          _list_requis[page][head].title.items[detail].location_name = _list_requis[page][head].title.items[detail].location_name !== null ? _list_requis[page][head].title.items[detail].location_name : '-';
+          _list_requis[page][head].title.items[detail].expired_date = moment(_list_requis[page][head].title.items[detail].expired_date).isValid() ? moment(_list_requis[page][head].title.items[detail].expired_date).format('D/MM/') + (moment(_list_requis[page][head].title.items[detail].expired_date).get('year')) : '-';
         }
       }
+    }
     res.render('list_requis', {
       hospitalName: hospitalName,
       today: today,
@@ -475,6 +475,7 @@ router.get('/report/generic/stock2/', wrap(async (req, res, next) => {
 
       generic_stock[0].forEach(v => {
         v.stock_date = moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543);
+        v.expired_date = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('DD/MM/') + (moment(v.expired_date).get('year')) : '-';
         v.in_cost = inventoryReportModel.comma(+v.in_qty * +v.balance_unit_cost);
         v.out_cost = inventoryReportModel.comma(+v.out_qty * +v.balance_unit_cost);
         v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost);
@@ -1265,6 +1266,7 @@ router.get('/report/productDisbursement/:internalissueId', wrap(async (req, res,
     , unit_cost: unit_cost, cost: cost
   });
 }));
+
 router.get('/report/check/receive', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID = req.query.receiveID
@@ -1283,8 +1285,10 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let invenChief: any = []
   check_receive = check_receive[0];
   for (let v in check_receive) {
-    check_receive[v].receive_date = moment(check_receive[v].receive_date).format('D MMMM YYYY');
+    check_receive[v].receive_date = moment(check_receive[v].receive_date).format('D MMMM ') + (moment(check_receive[v].receive_date).get('year') + 543);
     check_receive[v].delivery_date = moment(check_receive[v].delivery_date).format('D MMMM ') + (moment(check_receive[v].delivery_date).get('year') + 543);
+    check_receive[v].podate = moment(check_receive[v].podate).format('D MMMM ') + (moment(check_receive[v].podate).get('year') + 543);
+    check_receive[v].approve_date = moment(check_receive[v].approve_date).format('D MMMM ') + (moment(check_receive[v].approve_date).get('year') + 543);
     let _bahtText = inventoryReportModel.bahtText(check_receive[v].total_price);
     bahtText.push(_bahtText)
     check_receive[v].total_price = inventoryReportModel.comma(check_receive[v].total_price);
@@ -1332,10 +1336,12 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   const receive = await inventoryReportModel.receiveSelect(db, rc_ID)
+
   for (let i in receive) {
     const receivePo = await inventoryReportModel.receiveByPoId(db, receive[i].purchase_order_id)
     receiveID.push(receivePo)
   }
+
   for (let i in receiveID) {
     let _check_receive: any = []
     let committee: any = []
@@ -1350,26 +1356,32 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     length.push(_check_receive.length);
     check_receive.push(_check_receive);
   }
+
   let totalPrice: any = 0;
-  _.forEach(check_receive, opjects => {
+  let allPrice: any = 0;
+  _.forEach(check_receive, objects => {
     let _generic_name: any = []
     let _bahtText: any = []
-    _.forEach(opjects, opject => {
-      opject.receive_date = moment(opject.receive_date).format('D MMMM YYYY');
-      opject.delivery_date = moment(opject.delivery_date).format('D MMMM ') + (moment(opject.delivery_date).get('year') + 543);
-      _bahtText.push(inventoryReportModel.bahtText(opject.total_price));
-      totalPrice += opject.total_price;
-      opject.total_price = inventoryReportModel.comma(opject.total_price);
-      _generic_name.push(opject.generic_type_name)
+    _.forEach(objects, object => {
+      object.receive_date = moment(object.receive_date).format('D MMMM YYYY');
+      object.delivery_date = moment(object.delivery_date).format('D MMMM ') + (moment(object.delivery_date).get('year') + 543);
+      check_receive.podate = moment(check_receive.podate).format('D MMMM ') + (moment(check_receive.podate).get('year') + 543);
+      object.approve_date = moment(object.approve_date).format('D MMMM ') + (moment(object.approve_date).get('year') + 543);
+      _bahtText.push(inventoryReportModel.bahtText(object.total_price));
+      totalPrice += object.total_price;
+      object.total_price = inventoryReportModel.comma(object.total_price);
+      _generic_name.push(object.generic_type_name)
     })
-    totalPrice = inventoryReportModel.comma(totalPrice);
-    bahtText.push(_bahtText)
+    allPrice = inventoryReportModel.comma(totalPrice);
+    bahtText.push(allPrice)
     _generic_name = _.join(_.uniq(_generic_name), ', ')
     generic_name.push(_generic_name)
   })
+
   if (committees === undefined) { res.render('no_commitee'); }
   let staffReceive = await inventoryReportModel.staffReceive(db);
   let chief = await inventoryReportModel.getChief(db, 'CHIEF')
+
   res.render('check_receives', {
     totalPrice: totalPrice,
     chief: chief[0],

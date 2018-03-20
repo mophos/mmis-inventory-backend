@@ -42,6 +42,7 @@ export class IssueModel {
       .where('issue_id', issueId)
       .del();
   }
+  
   removeGenerics(knex: Knex, issueId: any) {
     return knex.raw(`DELETE sp,sg
     FROM wm_issue_generics sg
@@ -49,10 +50,11 @@ export class IssueModel {
     WHERE sg.issue_id = ${issueId}`)
   }
 
-  removeIssueSummary(knex: Knex, issueId: any) {
+  removeIssueSummary(knex: Knex, issueId: any, data: any) {
     return knex('wm_issue_summary')
       .where('issue_id', issueId)
-      .del();
+      .update(data)
+      // .del();
   }
 
   saveDetail(knex: Knex, data) {
@@ -74,26 +76,27 @@ export class IssueModel {
   }
 
   getProductDetail(knex: Knex, issueId: any) {
-    let sql = `SELECT
-    sg.generic_id,
-    sp.product_id,
-    sp.wm_product_id,
-    sp.qty / mug.qty AS product_qty,
-    mp.product_name,
-    mug.qty AS product_conversion,
-    wp.qty AS product_remain_qty,
-    mu.unit_name AS from_unit_name,
-    mu2.unit_name AS to_unit_name
-  FROM
-    wm_issue_generics sg
-  JOIN wm_issue_summary ss ON ss.issue_id = sg.issue_id
-  JOIN wm_issue_products sp ON sg.issue_generic_id = sp.issue_generic_id
-  JOIN wm_products wp ON wp.wm_product_id = sp.wm_product_id
-  JOIN mm_unit_generics mug ON mug.unit_generic_id = wp.unit_generic_id
-  JOIN mm_products mp ON mp.product_id = sp.product_id
-  JOIN mm_units mu ON mug.from_unit_id = mu.unit_id
-  JOIN mm_units mu2 ON mug.to_unit_id = mu2.unit_id
-  WHERE
+    let sql = `
+    SELECT
+      sg.generic_id,
+      sp.product_id,
+      sp.wm_product_id,
+      sp.qty AS product_qty,
+      mp.product_name,
+      mug.qty AS product_conversion,
+      wp.qty AS product_remain_qty,
+      mu.unit_name AS from_unit_name,
+      mu2.unit_name AS to_unit_name
+    FROM
+      wm_issue_generics sg
+    JOIN wm_issue_summary ss ON ss.issue_id = sg.issue_id
+    JOIN wm_issue_products sp ON sg.issue_generic_id = sp.issue_generic_id
+    JOIN wm_products wp ON wp.wm_product_id = sp.wm_product_id
+    JOIN mm_unit_generics mug ON mug.unit_generic_id = wp.unit_generic_id
+    JOIN mm_products mp ON mp.product_id = sp.product_id
+    JOIN mm_units mu ON mug.from_unit_id = mu.unit_id
+    JOIN mm_units mu2 ON mug.to_unit_id = mu2.unit_id
+    WHERE
     sg.issue_id = '${issueId}'`
         return knex.raw(sql)
   }
@@ -238,9 +241,12 @@ export class IssueModel {
     sp.product_id,
     wp.unit_generic_id,
     ss.issue_code,
+    ss.issue_id,
     sp.qty AS out_qty,
     wp.cost AS out_unit_cost,
     sp.wm_product_id,
+    wp.lot_no,
+    wp.expired_date,  
     (
       SELECT
         sum(wp2.qty)

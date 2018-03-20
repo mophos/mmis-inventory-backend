@@ -430,20 +430,21 @@ export class ReceiveModel {
       .select(
       'rd.receive_detail_id', 'rd.receive_id', 'rd.product_id',
       'rd.lot_no', 'rd.expired_date', knex.raw('sum(rd.receive_qty) as receive_qty'),
-      'rd.manufacturer_labeler_id', 'rd.cost', 'rd.unit_generic_id',
+      'rd.manufacturer_labeler_id', 'r.vendor_labeler_id', 'rd.cost', 'rd.unit_generic_id',
       'rd.warehouse_id', 'rd.location_id', 'rd.is_free', 'rd.discount',
-      'ug.qty as conversion_qty', 'mp.generic_id', 'r.receive_code',
+      'ug.qty as conversion_qty', 'mp.generic_id', 'r.receive_code',  subBalance)
       // knex.raw('sum(rd.receive_qty) as receive_qty'),
-      knex.raw('sum(reqd.requisition_qty) as requisition_qty'), subBalance)
+      // knex.raw('sum(reqd.requisition_qty) as requisition_qty'), )
       .whereIn('rd.receive_id', receiveIds)
       .innerJoin('wm_receives as r', 'r.receive_id', 'rd.receive_id')
       .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'rd.unit_generic_id')
-      .leftJoin('wm_requisition_detail as reqd', join => {
-        join.on('reqd.product_id', 'rd.product_id')
-          .on('reqd.receive_id', 'rd.receive_id')
-      })
+      // .leftJoin('wm_requisition_detail as reqd', join => {
+      //   join.on('reqd.product_id', 'rd.product_id')
+      //     .on('reqd.receive_id', 'rd.receive_id')
+      // })
       .leftJoin('mm_products as mp', 'mp.product_id', 'rd.product_id')
-      .groupBy('rd.product_id', 'rd.lot_no');
+      // .groupBy('rd.product_id', 'rd.lot_no');
+      .groupBy('rd.receive_detail_id');
   }
 
   getRequisition(knex: Knex, receiveIds: any[]) {
