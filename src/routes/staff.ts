@@ -878,18 +878,14 @@ router.post('/products/remain', co(async (req, res, next) => {
 
 // Issue Service
 
-
 router.post('/issue-transaction', co(async (req, res, next) => {
 
   let db = req.db;
   let summary = req.body.summary;
   let generics = req.body.products;
   let warehouseId = req.decoded.warehouseId;
-  // console.log(req.decoded);
 
   try {
-
-
     let _summary: any = {};
     _summary.issue_date = summary.issueDate;
     _summary.transaction_issue_id = summary.transactionId;
@@ -918,26 +914,28 @@ router.post('/issue-transaction', co(async (req, res, next) => {
       _genericIds.push(v.generic_id);
       _generics.push(obj);
       let issue_generic_id = await issueModel.saveGenerics(db, _generics);
-      console.log('v.items', v.items);
 
       for (let e of v.items) {
-        let objP: any = {};
-        let cutProduct: any = {};
-        let _products = [];
-        objP.issue_generic_id = issue_generic_id;
-        objP.product_id = e.product_id;
-        objP.qty = e.product_qty * +e.conversion_qty;
-        objP.wm_product_id = e.wm_product_id;
-        cutProduct.cutQty = e.product_qty * +e.conversion_qty;
-        cutProduct.wm_product_id = e.wm_product_id;
-        _products.push(objP);
-        _cutProduct.push(cutProduct);
-        await issueModel.saveProducts(db, _products);
-        console.log(_products);
-
+        if (e.product_qty > 0) {
+          let objP: any = {};
+          let cutProduct: any = {};
+          let _products = [];
+          objP.issue_generic_id = issue_generic_id;
+          objP.product_id = e.product_id;
+          objP.qty = e.product_qty; // base
+          objP.wm_product_id = e.wm_product_id;
+          cutProduct.cutQty = e.product_qty; // base
+          cutProduct.wm_product_id = e.wm_product_id;
+          _products.push(objP);
+          _cutProduct.push(cutProduct);
+          await issueModel.saveProducts(db, _products);
+        }
       }
+
     }
+
     const decoded = req.decoded;
+
     let isApprove = decoded.WM_ISSUE_APPROVE === 'Y' ? true : false;
     if (!isApprove) {
       let summary = {
@@ -974,12 +972,6 @@ router.post('/issue-transaction', co(async (req, res, next) => {
       await stockCardModel.saveFastStockTransaction(db, data);
     }
 
-
-
-
-
-
-
     res.send({ ok: true });
   } catch (error) {
     throw error;
@@ -1002,15 +994,13 @@ router.put('/issue-transaction/:issueId', co(async (req, res, next) => {
     _summary.issue_date = summary.issueDate;
     _summary.transaction_issue_id = summary.transactionId;
     _summary.comment = summary.comment;
-    _summary.people_user_id = req.decoded.people_user_id,
-      _summary.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
+    _summary.people_user_id = req.decoded.people_user_id;
+    _summary.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
     _summary.ref_document = summary.refDocument;
-
-    // let serialCode = await serialModel.getSerial(db, 'ST');
-    // _summary.issue_code = serialCode;
 
     await issueModel.updateSummary(db, issueId, _summary);
     await issueModel.removeGenerics(db, issueId);
+
     let _cutProduct = [];
     let _genericIds = [];
 
@@ -1028,23 +1018,24 @@ router.put('/issue-transaction/:issueId', co(async (req, res, next) => {
         let objP: any = {};
         let cutProduct: any = {};
         let _products = [];
-        objP.issue_generic_id = issue_generic_id;
-        objP.product_id = e.product_id;
-        objP.qty = e.product_qty * +e.conversion_qty;
-        objP.wm_product_id = e.wm_product_id;
-        cutProduct.cutQty = e.product_qty * +e.conversion_qty;
-        cutProduct.wm_product_id = e.wm_product_id;
-        _products.push(objP);
-        _cutProduct.push(cutProduct);
-        await issueModel.saveProducts(db, _products);
+        if (e.product_qty > 0) {
+          objP.issue_generic_id = issue_generic_id;
+          objP.product_id = e.product_id;
+          objP.qty = e.product_qty; // base
+          objP.wm_product_id = e.wm_product_id;
+
+          cutProduct.cutQty = e.product_qty; // base
+          cutProduct.wm_product_id = e.wm_product_id;
+          _products.push(objP);
+          _cutProduct.push(cutProduct);
+
+          await issueModel.saveProducts(db, _products);
+
+        }
 
       }
     }
-    console.log(_cutProduct);
-
     // await issueModel.saveProductStock(db, _cutProduct);
-
-
     res.send({ ok: true });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -1058,10 +1049,10 @@ router.post('/issue-transaction/approve', co(async (req, res, next) => {
 
   let db = req.db;
   let issueIds = req.body.issueIds;
+
   try {
     const decoded = req.decoded;
     const warehouseId = decoded.warehouseId;
-    console.log(warehouseId);
     for (let v of issueIds) {
       let summary = {
         approved: 'Y',
@@ -1074,45 +1065,43 @@ router.post('/issue-transaction/approve', co(async (req, res, next) => {
       let data = [];
       let _cutProduct = [];
       rs[0].forEach(e => {
-        let objStockcard: any = {};
-        let cutProduct: any = {};
-        objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-        objStockcard.product_id = e.product_id;
-        objStockcard.generic_id = e.generic_id;
-        objStockcard.unit_generic_id = e.unit_generic_id;
-        objStockcard.transaction_type = 'ADJUST';
-        objStockcard.document_ref_id = v;
-        objStockcard.in_qty = 0;
-        objStockcard.in_unit_cost = 0;
-        objStockcard.out_qty = e.out_qty;
-        objStockcard.out_unit_cost = e.out_unit_cost;
-        objStockcard.balance_qty = e.balance_qty;
-        objStockcard.balance_unit_cost = e.balance_unit_cost;
-        objStockcard.ref_src = e.ref_src;
-        objStockcard.ref_dst = warehouseId;
-        objStockcard.comment = e.transaction_name;
-        data.push(objStockcard)
-        console.log('out_qty>>>>>', e.out_qty);
-
-        cutProduct.cutQty = e.out_qty;
-        cutProduct.wm_product_id = e.wm_product_id;
-        _cutProduct.push(cutProduct);
+        if (rs.out_qty != 0) {
+          let objStockcard: any = {};
+          let cutProduct: any = {};
+          objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+          objStockcard.product_id = e.product_id;
+          objStockcard.generic_id = e.generic_id;
+          objStockcard.unit_generic_id = e.unit_generic_id;
+          objStockcard.transaction_type = 'IST';
+          objStockcard.document_ref_id = v;
+          objStockcard.document_ref = e.issue_code;
+          objStockcard.in_qty = 0;
+          objStockcard.in_unit_cost = 0;
+          objStockcard.out_qty = e.out_qty;
+          objStockcard.out_unit_cost = e.out_unit_cost;
+          objStockcard.balance_qty = e.balance_qty;
+          objStockcard.balance_unit_cost = e.balance_unit_cost;
+          objStockcard.ref_src = warehouseId;
+          objStockcard.ref_dst = e.ref_src;
+          objStockcard.comment = e.transaction_name;
+          objStockcard.balance_generic_qty = e.balance_generic;
+          data.push(objStockcard)
+          cutProduct.cutQty = e.out_qty;
+          cutProduct.wm_product_id = e.wm_product_id;
+          _cutProduct.push(cutProduct);
+        }
       });
 
       let a = await issueModel.updateSummaryApprove(db, v, summary);
-      console.log('a', a);
-
       // update wm_product
-      console.log('_cutProduct', _cutProduct);
       let b = await issueModel.saveProductStock(db, _cutProduct);
-      console.log('b', b);
-      console.log('data', data);
       let c = await stockCardModel.saveFastStockTransaction(db, data);
-      console.log('c', c);
       res.send({ ok: true });
     }
   } catch (error) {
-    throw error;
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+    // throw error;
   } finally {
     db.destroy();
   }
@@ -1130,7 +1119,6 @@ router.delete('/issue-transaction/:issueId', co(async (req, res, next) => {
     data.is_cancel = 'Y';
     data.cancel_people_user_id = req.decoded.people_user_id;
 
-    await issueModel.removeGenerics(db, issueId);
     await issueModel.removeIssueSummary(db, issueId, data);
 
     res.send({ ok: true });
@@ -1228,7 +1216,7 @@ router.get('/issue-transaction', co(async (req, res, next) => {
 
     res.send({ ok: true, rows: rs, total: rsTotal[0].total });
   } catch (error) {
-    console.log(error); 
+    console.log(error);
     res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
@@ -1248,6 +1236,7 @@ router.get('/issue-transaction/info/products', co(async (req, res, next) => {
     db.destroy();
   }
 }));
+
 router.get('/issue-transaction/info/generics', co(async (req, res, next) => {
   let db = req.db;
   let issueId = req.query.issueId;
@@ -2275,8 +2264,8 @@ router.post('/products/all', co(async (req, res, next) => {
   let db = req.db;
 
   try {
-    const rs:any = await productModel.getProductAllStaff(db,query,genericTypes);
-    res.send({ ok: true ,rows: rs[0]});
+    const rs: any = await productModel.getProductAllStaff(db, query, genericTypes);
+    res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -2320,7 +2309,7 @@ router.post('/upload/issue', upload.single('file'), co(async (req, res, next) =>
 
     await hisTransactionModel.removeIssueTransaction(db, req.decoded.people_user_id);
     await hisTransactionModel.saveIssueTransaction(db, _data);
-    
+
     rimraf.sync(filePath);
     // get data
     let rs: any = await hisTransactionModel.getIssueTransactionMappingData(db, id, hospcode, warehouseId);

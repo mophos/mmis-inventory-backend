@@ -59,20 +59,20 @@ router.post('/', co(async (req, res, next) => {
       let issue_generic_id = await issueModel.saveGenerics(db, _generics);
 
       for (let e of v.items) {
-        let objP: any = {};
-        let cutProduct: any = {};
-        let _products = [];
-        objP.issue_generic_id = issue_generic_id;
-        objP.product_id = e.product_id;
-        // objP.qty = e.product_qty * +e.conversion_qty;
-        objP.qty = e.product_qty;
-        objP.wm_product_id = e.wm_product_id;
-        cutProduct.cutQty = e.product_qty; // base
-        cutProduct.wm_product_id = e.wm_product_id;
-        _products.push(objP);
-        _cutProduct.push(cutProduct);
-        await issueModel.saveProducts(db, _products);
-
+        if (e.product_qty > 0) {
+          let objP: any = {};
+          let cutProduct: any = {};
+          let _products = [];
+          objP.issue_generic_id = issue_generic_id;
+          objP.product_id = e.product_id;
+          objP.qty = e.product_qty;
+          objP.wm_product_id = e.wm_product_id;
+          cutProduct.cutQty = e.product_qty; // base
+          cutProduct.wm_product_id = e.wm_product_id;
+          _products.push(objP);
+          _cutProduct.push(cutProduct);
+          await issueModel.saveProducts(db, _products);
+        }
       }
     }
     const decoded = req.decoded;
@@ -97,16 +97,17 @@ router.post('/', co(async (req, res, next) => {
           objStockcard.product_id = rs.product_id;
           objStockcard.generic_id = rs.generic_id;
           objStockcard.unit_generic_id = rs.unit_generic_id;
-          objStockcard.transaction_type = 'ADJUST';
+          objStockcard.transaction_type = TransactionType.ISSUE;
           objStockcard.document_ref_id = id[0];
+          objStockcard.document_ref = rs.isssue_code;
           objStockcard.in_qty = 0;
           objStockcard.in_unit_cost = 0;
           objStockcard.out_qty = rs.out_qty;
           objStockcard.out_unit_cost = rs.out_unit_cost;
           objStockcard.balance_qty = rs.balance_qty;
           objStockcard.balance_unit_cost = rs.balance_unit_cost;
-          objStockcard.ref_src = rs.ref_src;
-          objStockcard.ref_dst = warehouseId;
+          objStockcard.ref_src = warehouseId;
+          objStockcard.ref_dst = rs.ref_src;
           objStockcard.comment = rs.transaction_name;
           objStockcard.balance_generic_qty = rs.balance_generic;
           data.push(objStockcard)
@@ -161,19 +162,20 @@ router.put('/:issueId', co(async (req, res, next) => {
       _generics.push(obj);
       let issue_generic_id = await issueModel.saveGenerics(db, _generics);
       for (let e of v.items) {
-        let objP: any = {};
-        let cutProduct: any = {};
-        let _products = [];
-        objP.issue_generic_id = issue_generic_id;
-        objP.product_id = e.product_id;
-        objP.qty = e.product_qty; // base
-        objP.wm_product_id = e.wm_product_id;
-        cutProduct.cutQty = e.product_qty; // base
-        cutProduct.wm_product_id = e.wm_product_id;
-        _products.push(objP);
-        _cutProduct.push(cutProduct);
-        await issueModel.saveProducts(db, _products);
-
+        if (e.product_qty > 0) {
+          let objP: any = {};
+          let cutProduct: any = {};
+          let _products = [];
+          objP.issue_generic_id = issue_generic_id;
+          objP.product_id = e.product_id;
+          objP.qty = e.product_qty; // base
+          objP.wm_product_id = e.wm_product_id;
+          cutProduct.cutQty = e.product_qty; // base
+          cutProduct.wm_product_id = e.wm_product_id;
+          _products.push(objP);
+          _cutProduct.push(cutProduct);
+          await issueModel.saveProducts(db, _products);
+        }
       }
     }
     
