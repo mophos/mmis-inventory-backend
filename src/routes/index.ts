@@ -475,6 +475,7 @@ router.get('/report/generic/stock2/', wrap(async (req, res, next) => {
 
       generic_stock[0].forEach(v => {
         v.stock_date = moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543);
+        v.expired_date =  moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('DD/MM/') + (moment(v.expired_date).get('year')) : '-';
         v.in_cost = inventoryReportModel.comma(+v.in_qty * +v.balance_unit_cost);
         v.out_cost = inventoryReportModel.comma(+v.out_qty * +v.balance_unit_cost);
         v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost);

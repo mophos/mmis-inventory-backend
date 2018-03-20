@@ -223,10 +223,11 @@ export class InventoryReportModel {
         ws.stock_date,
         ws.transaction_type,
         ws.comment,
-        ws.document_ref_id,
+        ws.document_ref,
         mu.unit_name,
         mgd.dosage_name,
-    
+        ws.lot_no,
+        ws.expired_date,
     IF (
         ww.warehouse_name IS NOT NULL,
         ww.warehouse_name,
