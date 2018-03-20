@@ -1126,8 +1126,12 @@ router.delete('/issue-transaction/:issueId', co(async (req, res, next) => {
 
   try {
 
+    let data: any = {};
+    data.is_cancel = 'Y';
+    data.cancel_people_user_id = req.decoded.people_user_id;
+
     await issueModel.removeGenerics(db, issueId);
-    await issueModel.removeIssueSummary(db, issueId);
+    await issueModel.removeIssueSummary(db, issueId, data);
 
     res.send({ ok: true });
   } catch (error) {
