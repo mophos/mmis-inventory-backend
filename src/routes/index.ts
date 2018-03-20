@@ -201,30 +201,30 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
       }
       _list_requis.push(requisition);
     }
-      for (let page in _list_requis) {
-        for (let head in _list_requis[page]) {
-          _list_requis[page][head].confirm_date = moment(_list_requis[page][head].confirm_date).isValid() ? moment(_list_requis[page][head].confirm_date).format('DD MMMM ') + (moment(_list_requis[page][head].confirm_date).get('year')) : '-';
-          _list_requis[page][head].requisition_date = moment(_list_requis[page][head].requisition_date).isValid() ? moment(_list_requis[page][head].requisition_date).format('DD MMMM ') + (moment(_list_requis[page][head].requisition_date).get('year')) : '-';
-          _list_requis[page][head].title.requisition_qty = inventoryReportModel.commaQty(_list_requis[page][head].title.requisition_qty / _list_requis[page][head].title.unit_qty);
-          _list_requis[page][head].title.confirm_qty = inventoryReportModel.commaQty(_list_requis[page][head].title.confirm_qty / _list_requis[page][head].title.unit_qty);
-          for (let detail in _list_requis[page][head].title.items) {
-            if (_list_requis[page][head].title.items[detail].confirm_qty != 0) {
-              let old_confirm_qty  = inventoryReportModel.commaQty(_list_requis[page][head].title.items[detail].confirm_qty);
-              let confirm_qty = inventoryReportModel.commaQty(_list_requis[page][head].title.items[detail].confirm_qty / _list_requis[page][head].title.items[detail].conversion_qty);
-              _list_requis[page][head].title.items[detail].confirm_qty = confirm_qty + ' ' + _list_requis[page][head].title.items[detail].large_unit + ' (' + _list_requis[page][head].title.items[detail].conversion_qty + ' ' + _list_requis[page][head].title.items[detail].small_unit + ' )'
-              if(_list_requis[page][head].title.items[detail].is_approve == "N"){
-                _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round((+_list_requis[page][head].title.items[detail].remain - +old_confirm_qty) / +_list_requis[page][head].title.items[detail].conversion_qty));
-              }else{
-                _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round(+_list_requis[page][head].title.items[detail].remain / +_list_requis[page][head].title.items[detail].conversion_qty));
-              }
+    for (let page in _list_requis) {
+      for (let head in _list_requis[page]) {
+        _list_requis[page][head].confirm_date = moment(_list_requis[page][head].confirm_date).isValid() ? moment(_list_requis[page][head].confirm_date).format('DD MMMM ') + (moment(_list_requis[page][head].confirm_date).get('year')) : '-';
+        _list_requis[page][head].requisition_date = moment(_list_requis[page][head].requisition_date).isValid() ? moment(_list_requis[page][head].requisition_date).format('DD MMMM ') + (moment(_list_requis[page][head].requisition_date).get('year')) : '-';
+        _list_requis[page][head].title.requisition_qty = inventoryReportModel.commaQty(+_list_requis[page][head].title.requisition_qty / +_list_requis[page][head].title.unit_qty);
+        _list_requis[page][head].title.confirm_qty = inventoryReportModel.commaQty(+_list_requis[page][head].title.confirm_qty / +_list_requis[page][head].title.unit_qty);
+        for (let detail in _list_requis[page][head].title.items) {
+          if (_list_requis[page][head].title.items[detail].confirm_qty != 0) {
+            let old_confirm_qty = _list_requis[page][head].title.items[detail].confirm_qty;
+            let confirm_qty = inventoryReportModel.commaQty(+_list_requis[page][head].title.items[detail].confirm_qty / +_list_requis[page][head].title.items[detail].conversion_qty);
+            _list_requis[page][head].title.items[detail].confirm_qty = +confirm_qty + ' ' + _list_requis[page][head].title.items[detail].large_unit + ' (' + _list_requis[page][head].title.items[detail].conversion_qty + ' ' + _list_requis[page][head].title.items[detail].small_unit + ' )'
+            if (_list_requis[page][head].title.items[detail].is_approve == "N") {
+              _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round((+_list_requis[page][head].title.items[detail].remain - +old_confirm_qty) / +_list_requis[page][head].title.items[detail].conversion_qty));
             } else {
               _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round(+_list_requis[page][head].title.items[detail].remain / +_list_requis[page][head].title.items[detail].conversion_qty));
             }
-            _list_requis[page][head].title.items[detail].location_name = _list_requis[page][head].title.items[detail].location_name !== null ? _list_requis[page][head].title.items[detail].location_name : '-';
-            _list_requis[page][head].title.items[detail].expired_date = moment(_list_requis[page][head].title.items[detail].expired_date).isValid() ? moment(_list_requis[page][head].title.items[detail].expired_date).format('D/MM/') + (moment(_list_requis[page][head].title.items[detail].expired_date).get('year')) : '-';
+          } else {
+            _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round(+_list_requis[page][head].title.items[detail].remain / +_list_requis[page][head].title.items[detail].conversion_qty));
           }
+          _list_requis[page][head].title.items[detail].location_name = _list_requis[page][head].title.items[detail].location_name !== null ? _list_requis[page][head].title.items[detail].location_name : '-';
+          _list_requis[page][head].title.items[detail].expired_date = moment(_list_requis[page][head].title.items[detail].expired_date).isValid() ? moment(_list_requis[page][head].title.items[detail].expired_date).format('D/MM/') + (moment(_list_requis[page][head].title.items[detail].expired_date).get('year')) : '-';
         }
       }
+    }
     res.render('list_requis', {
       hospitalName: hospitalName,
       today: today,
