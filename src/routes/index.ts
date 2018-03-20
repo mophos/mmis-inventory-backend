@@ -1278,8 +1278,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
-  console.log('kkkkkkkkkkkkkkkkkkkkk', check_receive[0]);
-
+  
   let qty = 0;
   let bahtText: any = []
   let committee: any = []
