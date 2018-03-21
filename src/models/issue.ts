@@ -130,7 +130,7 @@ export class IssueModel {
     return knex.raw(sql)
   }
 
-  getList(knex: Knex, limit: number = 15, offset: number = 0, status: any = '', warehouseId: any) {
+  getList(knex: Knex, limit: number = 15, offset: number = 0, status: any = '', warehouseId) {
 
     let subQuery = knex('wm_issue_generics as sd')
       .select(knex.raw('count(*) as total'))
