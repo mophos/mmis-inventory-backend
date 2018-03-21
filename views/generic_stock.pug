@@ -1,5 +1,11 @@
 include css.pug
 doctype html
+style.
+  @page{
+   margin-top: 1.0cm;
+   margin-left: 1.0cm;
+   margin-right: 1.0cm;
+ }
 html
   head
     meta(charset="utf-8")
@@ -18,7 +24,7 @@ html
             td.center(colspan='11') ตั้งแต่วันที่ #{startDate} ถึง #{endDate}
           tr 
             td.left(colspan='5') รหัสเวชภัณฑ์ #{genericId[i]}
-            td.right(colspan='6') หน่วย #{small_unit[i]}
+            td.right(colspan='6') หน่วย #{unit[i]}
           tr 
             td.left(colspan='5') ชื่อสามัญ #{generic_name[i]}
             td.right(colspan='6') รูปแบบ #{dosage_name[i]}
