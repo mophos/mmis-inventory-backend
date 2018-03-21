@@ -363,7 +363,7 @@ router.get('/', co(async (req, res, next) => {
 
   let warehouseId = req.decoded.warehouseId;
   try {
-    let rs = await issueModel.getList(db, +limit, offset, status, warehouseId);
+    let rs = await issueModel.getListIssues(db, +limit, offset, status, warehouseId);
     let rsTotal = await issueModel.getListTotal(db, status);
 
     res.send({ ok: true, rows: rs, total: +rsTotal[0].total });

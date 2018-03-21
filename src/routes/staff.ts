@@ -2242,11 +2242,10 @@ router.delete('/requisition/temp/remove/:requisitionId', async (req, res, next) 
 
 router.get('/report/issue', async (req, res, next) => {
   let issue_id: any = req.query.issue_id
-  let warehouseId = req.decoded.warehouseId;
   let db = req.db;
   let isArray = true
   let length: any
-  let issue_body = await issueModel.getList(db, 100, 0, 'Y', warehouseId);
+  let issue_body = await issueModel.getList(db);
   let issueBody: any = []
   let issue_date: any = []
   let issueListDetail: any = []
