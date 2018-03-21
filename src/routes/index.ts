@@ -203,8 +203,8 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
     }
     for (let page in _list_requis) {
       for (let head in _list_requis[page]) {
-        _list_requis[page][head].confirm_date = moment(_list_requis[page][head].confirm_date).isValid() ? moment(_list_requis[page][head].confirm_date).format('DD MMMM ') + (moment(_list_requis[page][head].confirm_date).get('year')) : '-';
-        _list_requis[page][head].requisition_date = moment(_list_requis[page][head].requisition_date).isValid() ? moment(_list_requis[page][head].requisition_date).format('DD MMMM ') + (moment(_list_requis[page][head].requisition_date).get('year')) : '-';
+        _list_requis[page][head].confirm_date = moment(_list_requis[page][head].confirm_date).isValid() ? moment(_list_requis[page][head].confirm_date).format('DD MMMM ') + (+moment(_list_requis[page][head].confirm_date).get('year') + 543) : '-';
+        _list_requis[page][head].requisition_date = moment(_list_requis[page][head].requisition_date).isValid() ? moment(_list_requis[page][head].requisition_date).format('DD MMMM ') + (+moment(_list_requis[page][head].requisition_date).get('year') + 543) : '-';
         _list_requis[page][head].title.requisition_qty = inventoryReportModel.commaQty(+_list_requis[page][head].title.requisition_qty / +_list_requis[page][head].title.unit_qty);
         _list_requis[page][head].title.confirm_qty = inventoryReportModel.commaQty(+_list_requis[page][head].title.confirm_qty / +_list_requis[page][head].title.unit_qty);
         for (let detail in _list_requis[page][head].title.items) {
