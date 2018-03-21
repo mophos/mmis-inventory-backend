@@ -17,19 +17,19 @@ html
       table.table
         thead
           tr 
-            td.center.bold(colspan='13') #{hospitalName}
+            td.center.bold(colspan='10') #{hospitalName}
           tr 
-            td.center.bold(colspan='13') บัญชีคุมคลังเวชภัณฑ์
+            td.center.bold(colspan='10') บัญชีคุมคลังเวชภัณฑ์
           tr 
-            td.center(colspan='13') ตั้งแต่วันที่ #{startDate} ถึง #{endDate}
+            td.center(colspan='10') ตั้งแต่วันที่ #{startDate} ถึง #{endDate}
           tr 
-            td.left(colspan='6') รหัสเวชภัณฑ์ #{genericId[i]}
-            td.right(colspan='7') หน่วย #{unit[i]}
+            td.left(colspan='5') รหัสเวชภัณฑ์ #{genericId[i]}
+            td.right(colspan='5') หน่วย #{unit[i]}
           tr 
-            td.left(colspan='6') ชื่อสามัญ #{generic_name[i]}
-            td.right(colspan='7') รูปแบบ #{dosage_name[i]}
+            td.left(colspan='5') ชื่อสามัญ #{generic_name[i]}
+            td.right(colspan='5') รูปแบบ #{dosage_name[i]}
           tr 
-            td.left(colspan='13') ณ วันที่ #{today}
+            td.left(colspan='10') ณ วันที่ #{today}
           tr
             th(rowspan='2',style="border-style: solid;border-width: 2px 1px 2px 1px;") วัน/เดือน/ปี
             th(rowspan='2',style="border-style: solid;border-width: 2px 1px 2px 1px;") เลขที่เอกสาร
@@ -60,5 +60,5 @@ html
             td(style="border:1px solid; padding:0.2em;") #{a.expired_date}
         tfoot 
           tr.tbfooter
-            td(colspan='13')
+            td(colspan='10')
       .pagebreak

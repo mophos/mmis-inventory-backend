@@ -388,7 +388,6 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
 
   let _generic_stock: any = [];
   let _generic_name = [];
-  let _small_unit = [];
   let _unit = [];
   let _conversion_qty = [];
   let _dosage_name = [];
