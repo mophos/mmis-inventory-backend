@@ -93,7 +93,8 @@ router.post('/save', co(async (req, res, next) => {
           min_qty: g.min_qty,
           max_qty: g.max_qty,
           use_per_day: g.use_per_day,
-          safty_stock_day: g.safty_stock_day
+          safty_stock_day: g.safty_stock_day,
+          use_total: g.use_total
         });
       });
       

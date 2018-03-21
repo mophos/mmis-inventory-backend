@@ -18,6 +18,7 @@ export class MinMaxModel {
     let sql = `
       select mp.generic_id, mg.working_code, mg.generic_name, sum(wp.qty) qty, mu.unit_name
       , gp.use_per_day, gp.safty_stock_day, gp.min_qty, gp.max_qty, mg.primary_unit_id
+      , gp.use_total
       from wm_products wp
       join mm_products mp on mp.product_id = wp.product_id
       join mm_generics mg on mg.generic_id = mp.generic_id
@@ -64,11 +65,11 @@ export class MinMaxModel {
       let sql = `
           INSERT INTO mm_generic_planning (
             warehouse_id, generic_id, primary_unit_id, min_qty, max_qty
-            , use_per_day, safty_stock_day, from_stock_date, to_stock_date
+            , use_per_day, safty_stock_day, from_stock_date, to_stock_date, use_total
           )
           VALUES (
             ${warehouseId}, '${g.generic_id}', ${g.primary_unit_id}, ${g.min_qty}, ${g.max_qty}, 
-            ${g.use_per_day}, ${g.safty_stock_day}, '${fromDate}', '${toDate}'
+            ${g.use_per_day}, ${g.safty_stock_day}, '${fromDate}', '${toDate}', ${g.use_total}
           )
           ON DUPLICATE KEY UPDATE
           primary_unit_id = ${g.primary_unit_id}
@@ -78,6 +79,7 @@ export class MinMaxModel {
           , safty_stock_day = ${g.safty_stock_day}
           , from_stock_date = '${fromDate}'
           , to_stock_date = '${toDate}'
+          , use_total = '${g.use_total}'
         `;
       sqls.push(sql);
     });
