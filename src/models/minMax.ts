@@ -21,7 +21,8 @@ export class MinMaxModel {
   calculateMinMax(knex: Knex, warehouseId: any, fromDate: any, toDate: any) {
     let sql = `
       select mp.generic_id, mg.working_code, mg.generic_name, sum(wp.qty) qty, mu.unit_name 
-      , IFNULL(sc.use_total, 0) use_total, IFNULL(sc.use_per_day, 0) use_per_day, gp.safty_stock_day 
+      , IFNULL(sc.use_total, 0) use_total, IFNULL(CEIL(sc.use_per_day), 0) use_per_day
+      , IFNULL(gp.safty_stock_day, 0) safty_stock_day
       from wm_products wp
       join mm_products mp on mp.product_id = wp.product_id
       join mm_generics mg on mg.generic_id = mp.generic_id

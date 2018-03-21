@@ -38,9 +38,13 @@ router.post('/calculate', co(async (req, res, next) => {
       let rs = results[0];
       for (let r of rs) {
         r.min_qty = r.qty + (r.use_per_day * r.safty_stock_day);
-        r.max_qty = r.use_total + (r.use_per_day * r.safty_stock_day);
+        if (r.use_total > r.qty) {
+          r.max_qty = r.use_total + (r.use_per_day * r.safty_stock_day);
+        } else {
+          r.max_qty = r.min_qty + (r.use_per_day * r.safty_stock_day);
+        }
       }
-      res.send({ ok: true, rows: rs});
+      res.send({ ok: true, rows: rs });
     } else {
       res.send({ ok: false, error: 'กรุณาระบุช่วงวันที่สำหรับการคำนวณ' });
     }
