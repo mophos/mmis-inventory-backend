@@ -73,21 +73,27 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
         value.cost = inventoryReportModel.comma(value.cost);
         value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.small_qty);
         value.qty = inventoryReportModel.commaQty(value.qty / value.small_qty);
-        value.total_cost = inventoryReportModel.comma(value.total_cost);
+        // value.total_cost = inventoryReportModel.comma(value.total_cost);
         value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
         if (value.expired_date === null) {
           value.expired_date = "-";
         } else value.expired_date = moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year'));
       })
-      sum.push(inventoryReportModel.comma(_sum));
+      // sum.push(inventoryReportModel.comma(_sum));
     })
     let list_count: any = []
     for (let i in approve_requis) {
-      console.log(approve_requis[i]);
       list_count.push(approve_requis[i].length)
       approve_requis[i] = _.chunk(approve_requis[i], page_re)
+      console.log(approve_requis[i]);
+      _.forEach(approve_requis[i], values => {
+        sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
+        _.forEach(values, value => {
+          value.total_cost = inventoryReportModel.comma(value.total_cost);
+        })
+      })
     }
-    // res.send({approve_requis:approve_requis,list_count:list_count,page_re:page_re})
+    // res.send({approve_requis:approve_requis,list_count:list_count,page_re:page_re,sum:sum})
     res.render('approve_requis', {
       hospitalName: hospitalName,
       today: todays,
