@@ -2,7 +2,7 @@ include css.pug
 style(type='text/css').
   body{
   font-family:'THSarabunNewIT';
-  font-size: 15pt;
+  font-size: 14.5pt;
   }
 style(type='text/css' media='print').
    @page{
@@ -23,7 +23,7 @@ html
         br
         table.table
           tr
-            td.right วันที่ #{check_receive[s][0].receive_date}
+            td.right(style="padding-right: 50px;") วันที่ #{check_receive[s][0].receive_date}
         .fontspace
         | ตามกรรมการผู้มีรายนามและตำแหน่งข้างท้าย ได้พร้อมกันตรวจรับ #{generic_name[s]}
         | ซึ่ง #{check_receive[s][0].labeler_name} ผู้ขายได้นำส่งตามใบสั่งซื้อของ#{hospitalName}
