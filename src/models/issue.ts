@@ -22,13 +22,13 @@ export class IssueModel {
 
   getApproveProducts(knex: Knex, issueIds: any) {
     let sqlBalance = knex('wm_products as wp')
-    .sum('wp.qty')
-    .as('balance')
-    .innerJoin('mm_products as mp', 'wp.product_id', 'mp.product_id')
-    .whereRaw('mp.generic_id=wd.generic_id and wp.warehouse_id=wd.warehouse_id');
-  
+      .sum('wp.qty')
+      .as('balance')
+      .innerJoin('mm_products as mp', 'wp.product_id', 'mp.product_id')
+      .whereRaw('mp.generic_id=wd.generic_id and wp.warehouse_id=wd.warehouse_id');
+
     return knex('wm_issue_detail as wd')
-      .select('wd.*', 'mp.generic_id', 'iss.approved', 'iss.issue_code', 'wp.cost', 'iss.transaction_issue_id', sqlBalance)  
+      .select('wd.*', 'mp.generic_id', 'iss.approved', 'iss.issue_code', 'wp.cost', 'iss.transaction_issue_id', sqlBalance)
       .innerJoin('mm_generics as mg', 'mg.generic_id', 'wd.generic_id')
       .innerJoin('mm_products as mp', 'mp.generic_id', 'mg.generic_id')
       .joinRaw('inner join wm_products as wp on wp.product_id=mp.product_id')
@@ -42,7 +42,7 @@ export class IssueModel {
       .where('issue_id', issueId)
       .del();
   }
-  
+
   removeGenerics(knex: Knex, issueId: any) {
     return knex.raw(`DELETE sp,sg
     FROM wm_issue_generics sg
@@ -54,7 +54,7 @@ export class IssueModel {
     return knex('wm_issue_summary')
       .where('issue_id', issueId)
       .update(data)
-      // .del();
+    // .del();
   }
 
   saveDetail(knex: Knex, data) {
@@ -76,28 +76,29 @@ export class IssueModel {
   }
 
   getProductDetail(knex: Knex, issueId: any) {
-    let sql = `SELECT
-    sg.generic_id,
-    sp.product_id,
-    sp.wm_product_id,
-    sp.qty / mug.qty AS product_qty,
-    mp.product_name,
-    mug.qty AS product_conversion,
-    wp.qty AS product_remain_qty,
-    mu.unit_name AS from_unit_name,
-    mu2.unit_name AS to_unit_name
-  FROM
-    wm_issue_generics sg
-  JOIN wm_issue_summary ss ON ss.issue_id = sg.issue_id
-  JOIN wm_issue_products sp ON sg.issue_generic_id = sp.issue_generic_id
-  JOIN wm_products wp ON wp.wm_product_id = sp.wm_product_id
-  JOIN mm_unit_generics mug ON mug.unit_generic_id = wp.unit_generic_id
-  JOIN mm_products mp ON mp.product_id = sp.product_id
-  JOIN mm_units mu ON mug.from_unit_id = mu.unit_id
-  JOIN mm_units mu2 ON mug.to_unit_id = mu2.unit_id
-  WHERE
+    let sql = `
+    SELECT
+      sg.generic_id,
+      sp.product_id,
+      sp.wm_product_id,
+      sp.qty AS product_qty,
+      mp.product_name,
+      mug.qty AS product_conversion,
+      wp.qty AS product_remain_qty,
+      mu.unit_name AS from_unit_name,
+      mu2.unit_name AS to_unit_name
+    FROM
+      wm_issue_generics sg
+    JOIN wm_issue_summary ss ON ss.issue_id = sg.issue_id
+    JOIN wm_issue_products sp ON sg.issue_generic_id = sp.issue_generic_id
+    JOIN wm_products wp ON wp.wm_product_id = sp.wm_product_id
+    JOIN mm_unit_generics mug ON mug.unit_generic_id = wp.unit_generic_id
+    JOIN mm_products mp ON mp.product_id = sp.product_id
+    JOIN mm_units mu ON mug.from_unit_id = mu.unit_id
+    JOIN mm_units mu2 ON mug.to_unit_id = mu2.unit_id
+    WHERE
     sg.issue_id = '${issueId}'`
-        return knex.raw(sql)
+    return knex.raw(sql)
   }
   getGenericsDetail(knex: Knex, issueId: any) {
     let sql = `SELECT
@@ -126,7 +127,7 @@ export class IssueModel {
     JOIN mm_generics mg ON sg.generic_id = mg.generic_id
     WHERE
     sg.issue_id = '${issueId}'`
-        return knex.raw(sql)
+    return knex.raw(sql)
   }
 
   getList(knex: Knex, limit: number = 15, offset: number = 0, status: any = '') {
@@ -135,16 +136,37 @@ export class IssueModel {
       .select(knex.raw('count(*) as total'))
       .whereRaw('sd.issue_id=ss.issue_id')
       .as('total');
-    
+
     let query = knex('wm_issue_summary as ss')
       .select('ss.*', 'ts.transaction_name', subQuery)
       .leftJoin('wm_transaction_issues as ts', 'ts.transaction_id', 'ss.transaction_issue_id')
       .orderBy('ss.issue_id', 'desc');
-  
+
     if (status) {
       query.where('ss.approved', status)
     }
-      
+
+    return query.limit(limit).offset(offset);
+
+  }
+
+  getListIssues(knex: Knex, limit: number = 15, offset: number = 0, status: any = '', warehouseId: any) {
+
+    let subQuery = knex('wm_issue_generics as sd')
+      .select(knex.raw('count(*) as total'))
+      .whereRaw('sd.issue_id=ss.issue_id')
+      .as('total');
+
+    let query = knex('wm_issue_summary as ss')
+      .select('ss.*', 'ts.transaction_name', subQuery)
+      .leftJoin('wm_transaction_issues as ts', 'ts.transaction_id', 'ss.transaction_issue_id')
+      .where('warehouse_id', warehouseId)
+      .orderBy('ss.issue_id', 'desc');
+
+    if (status) {
+      query.where('ss.approved', status)
+    }
+
     return query.limit(limit).offset(offset);
 
   }
@@ -155,17 +177,17 @@ export class IssueModel {
     if (status) {
       query.where('ss.approved', status);
     }
-    return query;  
+    return query;
   }
 
   getListWarehouseTotal(knex: Knex, warehouseId: any, status: any = '') {
     let query = knex('wm_issue_summary')
       .select(knex.raw('count(*) as total'))
       .where('warehouse_id', warehouseId);
-    
+
     if (status) {
       query.where('approved', status);
-    } 
+    }
 
     return query;
   }
@@ -175,40 +197,40 @@ export class IssueModel {
       .select(knex.raw('count(*)'))
       .whereRaw('sd.issue_id=ss.issue_id')
       .as('total');
-    
+
     let query = knex('wm_issue_summary as ss')
       .select('ss.*', 'ts.transaction_name', subQuery)
       .leftJoin('wm_transaction_issues as ts', 'ts.transaction_id', 'ss.transaction_issue_id')
       .where('ss.warehouse_id', warehouseId)
       .limit(limit).offset(offset);
-    
+
     if (status) {
       query.where('ss.approved', status);
     }
 
-    query.orderBy('ss.issue_id', 'DESC')    
+    query.orderBy('ss.issue_id', 'DESC')
 
     return query;
 
-  //   let sql = `
-  //   SELECT
-  //   ss.*, ts.transaction_name,
-  //   (
-  //     SELECT
-  //       count(*)
-  //     FROM
-  //       wm_issue_generics AS sd
-  //     WHERE
-  //       sd.issue_id = ss.issue_id
-  //   ) AS total
-  // FROM
-  //   wm_issue_summary AS ss
-  // LEFT JOIN wm_transaction_issues AS ts ON ts.transaction_id = ss.transaction_issue_id
-  // WHERE
-  //   ss.warehouse_id = ?
-  // ORDER BY
-  //   ss.issue_id DESC
-  //   `;
+    //   let sql = `
+    //   SELECT
+    //   ss.*, ts.transaction_name,
+    //   (
+    //     SELECT
+    //       count(*)
+    //     FROM
+    //       wm_issue_generics AS sd
+    //     WHERE
+    //       sd.issue_id = ss.issue_id
+    //   ) AS total
+    // FROM
+    //   wm_issue_summary AS ss
+    // LEFT JOIN wm_transaction_issues AS ts ON ts.transaction_id = ss.transaction_issue_id
+    // WHERE
+    //   ss.warehouse_id = ?
+    // ORDER BY
+    //   ss.issue_id DESC
+    //   `;
 
     // return knex.raw(sql, [warehouseId]);
   }
@@ -234,8 +256,8 @@ export class IssueModel {
     WHERE wis.issue_id = ?`;
     return knex.raw(sql, [id]);
   }
-  getIssueApprove(knex:Knex,id:any,warehouseId: any){
-    let sql=`SELECT
+  getIssueApprove(knex: Knex, id: any, warehouseId: any) {
+    let sql = `SELECT
     sg.generic_id,
     sp.product_id,
     wp.unit_generic_id,
@@ -302,7 +324,7 @@ export class IssueModel {
   JOIN wm_products wp ON sp.wm_product_id = wp.wm_product_id
   JOIN wm_transaction_issues ts ON ss.transaction_issue_id = ts.transaction_id
   where ss.issue_id ='${id}' and sp.qty != 0`
-  return knex.raw(sql);
+    return knex.raw(sql);
   }
   getProductIssues(knex: Knex, id: string) {
     let sql = `SELECT
@@ -407,7 +429,7 @@ WHERE
   getProductWarehouseLots(knex: Knex, productId: any, warehouseId: any) {
     return knex('wm_products as wpl')
       .select('wpl.lot_no', 'wpl.expired_date', 'wpl.cost', 'wpl.qty',
-      knex.raw('timestampdiff(day, current_date(), wpl.expired_date) as count_expired'))
+        knex.raw('timestampdiff(day, current_date(), wpl.expired_date) as count_expired'))
       //  .leftJoin('wm_products as wp','wpl.lot_id','wp.lot_id')
       .where('wpl.product_id', productId)
       .where('wpl.warehouse_id', warehouseId)
@@ -416,48 +438,48 @@ WHERE
   }
   getGenericWarehouseLots(knex: Knex, genericId: any, warehouseId: any) {
     return knex('wm_products as wpl')
-      .select('wpl.lot_no', 'wpl.expired_date','wpl.cost','wpl.qty',
-      knex.raw('timestampdiff(day, current_date(), wpl.expired_date) as count_expired'))
-      .join('mm_products as mp','mp.product_id','wpl.product_id')
-      .where('mp.generic_id', genericId)      
+      .select('wpl.lot_no', 'wpl.expired_date', 'wpl.cost', 'wpl.qty',
+        knex.raw('timestampdiff(day, current_date(), wpl.expired_date) as count_expired'))
+      .join('mm_products as mp', 'mp.product_id', 'wpl.product_id')
+      .where('mp.generic_id', genericId)
       .where('wpl.warehouse_id', warehouseId)
       .groupByRaw('wpl.lot_no, wpl.expired_date')
       .orderBy('wpl.expired_date', 'asc');
   }
   getGenericQty(knex: Knex, genericId: any, warehouseId: any) {
     return knex('wm_products as wpl').sum('wpl.qty as qty')
-    .join('mm_products as mp','mp.product_id','wpl.product_id')
-    .where('mp.generic_id', genericId)      
-    .where('wpl.warehouse_id', warehouseId)
-    .groupBy('wpl.product_id')
+      .join('mm_products as mp', 'mp.product_id', 'wpl.product_id')
+      .where('mp.generic_id', genericId)
+      .where('wpl.warehouse_id', warehouseId)
+      .groupBy('wpl.product_id')
   }
   getGenericProductQty(knex: Knex, genericId: any, warehouseId: any) {
     return knex('wm_products as wpl')
-    // .sum('wpl.qty as qty')
-    .join('mm_products as mp','mp.product_id','wpl.product_id')
-    .where('mp.generic_id', genericId)      
-    .where('wpl.warehouse_id', warehouseId)
+      // .sum('wpl.qty as qty')
+      .join('mm_products as mp', 'mp.product_id', 'wpl.product_id')
+      .where('mp.generic_id', genericId)
+      .where('wpl.warehouse_id', warehouseId)
     // .groupBy('wpl.product_id')
   }
-  getProductByGenerics(knex: Knex, genericId: any,warehouseId: any){
+  getProductByGenerics(knex: Knex, genericId: any, warehouseId: any) {
     return knex('wm_products as wm')
-    .select('wm.warehouse_id','wm.product_id','mp.generic_id','wm.qty','wm.wm_product_id','wm.expired_date')
-      .join('mm_products as mp','wm.product_id','mp.product_id')
-      .where('wm.warehouse_id',warehouseId)
-      .where('mp.generic_id',genericId)
-      .orderBy('wm.expired_date','ASC')
-      // .groupBy('wm.product_id')
+      .select('wm.warehouse_id', 'wm.product_id', 'mp.generic_id', 'wm.qty', 'wm.wm_product_id', 'wm.expired_date')
+      .join('mm_products as mp', 'wm.product_id', 'mp.product_id')
+      .where('wm.warehouse_id', warehouseId)
+      .where('mp.generic_id', genericId)
+      .orderBy('wm.expired_date', 'ASC')
+    // .groupBy('wm.product_id')
   }
-  getWmProduct(knex: Knex, productId: any,warehouseId: any) {
+  getWmProduct(knex: Knex, productId: any, warehouseId: any) {
     return knex('wm_products as wm')
-    .select('wm.warehouse_id','wm.product_id','wm.qty')
-      .where('wm.warehouse_id',warehouseId)
-      .where('wm.product_id',productId)
+      .select('wm.warehouse_id', 'wm.product_id', 'wm.qty')
+      .where('wm.warehouse_id', warehouseId)
+      .where('wm.product_id', productId)
   }
-  
+
   checkApprove(knex: Knex, username: any, password: any, action: any) {
     return knex('sys_approve as sa')
-      .leftJoin('um_users as uu','uu.user_id','sa.user_id')
+      .leftJoin('um_users as uu', 'uu.user_id', 'sa.user_id')
       .where('sa.action_name', action)
       .andWhere('uu.username', username)
       .andWhere('sa.password', password)

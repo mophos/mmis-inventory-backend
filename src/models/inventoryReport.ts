@@ -224,7 +224,9 @@ export class InventoryReportModel {
         ws.transaction_type,
         ws.comment,
         ws.document_ref,
-        mu.unit_name,
+        mus.unit_name AS small_unit,
+		mu.unit_name AS large_unit,
+		mug.qty AS conversion_qty,
         mgd.dosage_name,
         ws.lot_no,
         ws.expired_date,
@@ -296,7 +298,10 @@ export class InventoryReportModel {
         wa.warehouse_id = ws.ref_src,
         ''
     )
-    LEFT JOIN mm_units AS mu ON mg.primary_unit_id = mu.unit_id
+    LEFT JOIN mm_products AS mp ON mp.product_id = ws.product_id
+    LEFT JOIN mm_unit_generics AS mug ON mug.unit_generic_id = mp.purchase_unit_id
+    LEFT JOIN mm_units AS mu ON mug.from_unit_id = mu.unit_id
+    LEFT JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
     LEFT JOIN mm_generic_dosages AS mgd ON mg.dosage_id = mgd.dosage_id
     WHERE
         (
@@ -327,7 +332,7 @@ export class InventoryReportModel {
             OR
             IF (
                 ws.transaction_type = "IST",
-                ws.ref_dst = '${warehouseId}',
+                ws.ref_src = '${warehouseId}',
                 ''
             )
             OR
@@ -371,7 +376,7 @@ export class InventoryReportModel {
     AND ws.stock_date BETWEEN '${startDate}'
     AND '${endDate}'
     ORDER BY
-	    ws.stock_date
+	    ws.stock_date,ws.stock_card_id
     `
         return knex.raw(sql)
     }

@@ -950,7 +950,6 @@ router.post('/approve', co(async (req, res, next) => {
       data.push(obj);
     });
 
-
     // stock card receive
     await receiveModel.saveProducts(db, products);
     await stockcard.saveFastStockTransaction(db, data);

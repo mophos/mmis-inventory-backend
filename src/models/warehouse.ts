@@ -138,7 +138,7 @@ export class WarehouseModel {
 
   getProductsWarehouse(knex: Knex, warehouseId: string, productGroups: any[], genericType: any) {
     let query = knex('wm_products as wp')
-      .select('wp.*', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', 'mg.working_code', 'mg.generic_id', 'mg.generic_name',
+      .select('wp.*','mug.cost as packcost', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', 'mg.working_code', 'mg.generic_id', 'mg.generic_name',
         'l.location_name', 'l.location_desc', 'u.unit_name as base_unit_name', 'mug.qty as conversion', 'uu.unit_name as large_unit')
       .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
       .leftJoin('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
