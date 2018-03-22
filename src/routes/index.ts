@@ -1390,6 +1390,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     _.forEach(objects, object => {
       object.receive_date = moment(object.receive_date).format('D MMMM YYYY');
       object.delivery_date = moment(object.delivery_date).format('D MMMM ') + (moment(object.delivery_date).get('year') + 543);
+      object.podate = moment(object.podate).format('D MMMM ') + (moment(object.podate).get('year') + 543);
       check_receive.podate = moment(check_receive.podate).format('D MMMM ') + (moment(check_receive.podate).get('year') + 543);
       object.approve_date = moment(object.approve_date).format('D MMMM ') + (moment(object.approve_date).get('year') + 543);
       _bahtText.push(inventoryReportModel.bahtText(object.total_price));
