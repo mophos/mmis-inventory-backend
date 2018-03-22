@@ -166,7 +166,8 @@ router.post('/list', co(async (req, res, next) => {
 
   try {
     let rs = await hisTransactionModel.getHisTransaction(db, hospcode,genericType);
-    res.send({ ok: true, rows: rs[0] });
+    console.log(rs);
+    res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
