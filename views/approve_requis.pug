@@ -34,22 +34,22 @@ html
                   td.left(colspan='10')(style="font-size: 15pt; padding-bottom: 10px;") อนุมัติให้เบิกเวชภัณฑ์ตามรายการนี้
                 tr 
                   th.left #
-                  th.left ชื่อเวชภัณฑ์
+                  th.left(style="width: 50px;") ชื่อเวชภัณฑ์
                   th
-                  th.left รูปแบบ
-                  th.left lot
-                  th.right จำนวนขอเบิก
-                  th.right จำนวนอนุมัติ
-                  th.right มูลค่า/หน่วย
-                  th.right วันหมดอายุ
-                  th.right รวมมูลค่า
+                  th.left(style="width: 50px;") รูปแบบ
+                  th.left(style="width: 50px;") lot
+                  th.right(style="width: 50px;") จำนวนขอเบิก
+                  th.right(style="width: 50px;") จำนวนอนุมัติ
+                  th.right(style="width: 50px;") มูลค่า/หน่วย
+                  th.right(style="width: 50px;") วันหมดอายุ
+                  th.right(style="width: 50px;") รวมมูลค่า
               tbody
               - var y=0
               for a in c
                 - y++
                 tr 
                   td #{y}.
-                  td(style="font-size: 11pt;") &nbsp;#{a.generic_name}
+                  td(style="font-size: 12pt;") &nbsp;#{a.generic_name}
                   td
                   td #{a.dosage_name}
                   td(style="font-size: 12pt;") #{a.lot_no}

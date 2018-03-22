@@ -1937,11 +1937,12 @@ router.post('/his-transaction/upload', upload.single('file'), co(async (req, res
 
 }));
 
-router.get('/his-transaction/list', co(async (req, res, next) => {
+router.post('/his-transaction/list', co(async (req, res, next) => {
   let db = req.db;
   let hospcode = req.decoded.his_hospcode;
+  let genericType = req.body.genericTypes;
   try {
-    let rs = await hisTransactionModel.getHisTransaction(db, hospcode);
+    let rs = await hisTransactionModel.getHisTransaction(db, hospcode,genericType);
     res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
