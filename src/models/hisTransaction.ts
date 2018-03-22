@@ -98,27 +98,6 @@ export class HisTransactionModel {
 
   // get his transaction for issue
   getHisTransactionForImport(db: Knex, transactionIds: any[]) {
-    /*
-    select tt.transaction_id, tt.date_serv, tt.hn, tt.seq, tt.mmis_warehouse as warehouse_id,
-    mp.product_id, tt.qty*hm.conversion as qty,
-    (
-    	select sum(wp.qty) as total
-    	from wm_products as wp
-    	where wp.product_id=mp.product_id and wp.warehouse_id=tt.mmis_warehouse
-    ) as total
-    from wm_his_transaction as tt
-    inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode
-    inner join wm_warehouses as w on w.warehouse_id=tt.mmis_warehouse
-    inner join mm_generics as mg on mg.generic_id=hm.mmis
-    inner join mm_products as mp on mp.generic_id=mg.generic_id
-
-    where tt.is_cut_stock='N'
-    and tt.hospcode='10692'
-    group by mp.product_id
-    having total > 0
-    order by tt.date_serv ASC
-    */
-
     let subQuery = db('wm_products as wp')
       .select(db.raw('sum(wp.qty)'))
       .whereRaw('wp.product_id=mp.product_id and wp.warehouse_id=tt.mmis_warehouse')
@@ -126,7 +105,7 @@ export class HisTransactionModel {
 
     return db('wm_his_transaction as tt')
       .select('tt.transaction_id', 'tt.date_serv', 'tt.hn', 'tt.seq', 'tt.mmis_warehouse as warehouse_id',
-        'mp.product_id', db.raw('tt.qty * hm.conversion as qty'), subQuery)
+        'mp.product_id','mp.generic_id', db.raw('tt.qty * hm.conversion as qty'), subQuery)
       .joinRaw('inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode')
       .innerJoin('mm_generics as mg', 'mg.generic_id', 'hm.mmis')
       .innerJoin('mm_products as mp', 'mp.generic_id', 'mg.generic_id')
@@ -134,32 +113,12 @@ export class HisTransactionModel {
       .groupBy('mp.product_id')
       .havingRaw('total>0')
       .orderBy('tt.date_serv', 'ASC');
-
-    // let subQuery = db('wm_products as wp')
-    //   // .select(db.raw('sum(wp.qty) as total'))
-    //   .sum('wp.qty')
-    //   .as('total')
-    //   .whereRaw('wp.product_id=hm.mmis')
-    //   .groupBy('wp.product_id');
-
-    // return db('wm_his_transaction as tt')
-    //   .select(
-    //   'tt.transaction_id', 'tt.hn', 'tt.seq', 'tt.mmis_warehouse as warehouse_id',
-    //   db.raw('(tt.qty*hm.conversion) as qty'),
-    //   'hm.mmis as product_id', 'tt.date_serv', subQuery)
-    //   .joinRaw('inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode')
-    //   .innerJoin('mm_products as mp', 'mp.generic_id', 'hh.mmis')
-    //   .whereIn('tt.transaction_id', transactionIds)
-    //   .where('tt.is_cut_stock', '!=', 'Y')
-    //   .groupBy('tt.transaction_id')
-    //   .orderBy('tt.date_serv', 'ASC');
   }
 
   getProductInWarehouseForImport(db: Knex, warehouseIds: any[], productIds: any[]) {
-
     return db('wm_products as wp')
       .select('wp.wm_product_id', 'wp.product_id', 'wp.qty', 'wp.lot_no',
-        'wp.expired_date', 'wp.warehouse_id', 'mp.generic_id', 'wp.cost')
+        'wp.expired_date', 'wp.warehouse_id', 'mp.generic_id', 'wp.cost', 'wp.unit_generic_id')
       .leftJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
       .whereIn('wp.product_id', productIds)
       .whereIn('wp.warehouse_id', warehouseIds)
@@ -213,5 +172,65 @@ export class HisTransactionModel {
       .where('people_user_id', peopleUserId)
       .del();
   }
-
-}
+  getHisForStockCard(db: Knex, transactionIds: any, productId: any) {
+    let sql = `SELECT
+      mp.product_id,
+      (
+        SELECT
+          sum(wp2.qty) AS balance_qty
+        FROM
+          wm_products wp2
+        WHERE
+          wp2.product_id = mp.product_id
+        AND wp2.warehouse_id = tt.mmis_warehouse
+        GROUP BY
+          wp2.product_id
+      ) AS balance_qty,
+      (
+        SELECT
+          avg(wp2.cost) AS balance_unit_cost
+        FROM
+          wm_products wp2
+        WHERE
+          wp2.product_id = mp.product_id
+        AND wp2.warehouse_id = tt.mmis_warehouse
+        GROUP BY
+          wp2.product_id
+      ) AS balance_unit_cost,
+      (
+        SELECT
+          sum(wp2.qty) AS balance_generic
+        FROM
+          wm_products wp2
+        WHERE
+          wp2.product_id IN (
+            SELECT
+              mp3.product_id
+            FROM
+              mm_products mp3
+            WHERE
+              mp3.generic_id IN (
+                SELECT
+                  generic_id
+                FROM
+                  mm_products mp2
+                WHERE
+                  mp2.product_id = mp.product_id
+              )
+          )
+        AND wp2.warehouse_id = tt.mmis_warehouse
+        GROUP BY
+          wp2.warehouse_id
+      ) AS balance_generic_qty
+    FROM
+      wm_his_transaction AS tt
+    INNER JOIN wm_his_mappings AS hm ON hm.his = tt.drug_code
+    AND hm.hospcode = tt.hospcode
+    INNER JOIN mm_products AS mp ON mp.generic_id = hm.mmis
+    WHERE
+      tt.transaction_id = '${transactionIds}' and mp.product_id = '${productId}'
+    GROUP BY
+      mp.product_id`;
+    return db.raw(sql)
+  }
+} 
