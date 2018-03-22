@@ -247,7 +247,6 @@ app.use('/counting', checkAuth, adminAuth, countingRoute)
 app.use('/shipping-networks', checkAuth, adminAuth, shippingNetworkRoute)
 app.use('/issues', checkAuth, adminAuth, issueRoute)
 app.use('/his-transaction', checkAuth, adminAuth, hisTransactionRoute)
-app.use('/min-max', checkAuth, adminAuth, minMaxRoute)
 
 // common route
 app.use('/requisition', checkAuth, adminAuth, requisitionRoute);
@@ -265,6 +264,7 @@ app.use('/staff', checkAuth, staffAuth, staffRoute);
 app.use('/users', checkAuth, userRoute);
 
 app.use('/units', checkAuth, unitsRoute);
+app.use('/min-max', checkAuth, minMaxRoute)
 // setting
 
 app.use('/setting', checkAuth, settingRoute);
