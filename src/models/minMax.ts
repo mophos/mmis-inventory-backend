@@ -14,21 +14,28 @@ export class MinMaxModel {
     return knex.raw(sql, [warehouseId]);
   }
 
-  getMinMax(knex: Knex, warehouseId: any) {
-    let sql = `
-      select mp.generic_id, mg.working_code, mg.generic_name, sum(wp.qty) qty, mu.unit_name
-      , gp.use_per_day, gp.safty_stock_day, gp.min_qty, gp.max_qty, mg.primary_unit_id
-      , gp.use_total
-      from wm_products wp
-      join mm_products mp on mp.product_id = wp.product_id
-      join mm_generics mg on mg.generic_id = mp.generic_id
-      join mm_generic_planning gp on gp.generic_id = mp.generic_id and gp.warehouse_id = wp.warehouse_id
-      join mm_units mu on mu.unit_id = mg.primary_unit_id
-      where wp.warehouse_id = ?
-      group by mp.generic_id
-      order by mg.generic_name
-    `;
-    return knex.raw(sql, [warehouseId]);
+  getMinMax(knex: Knex, warehouseId: string, genericGroups: any[], genericType: any) {
+    let query = knex('mm_generics as g')
+      .select('wp.warehouse_id', 'g.generic_id', 'g.generic_name', 'g.working_code', 'g.primary_unit_id'
+        , knex.raw('ifnull(gp.min_qty, 0) as min_qty')
+        , knex.raw('ifnull(gp.max_qty, 0) as max_qty')
+        , 'u.unit_name', 'gp.use_per_day', 'gp.safty_stock_day', 'gp.use_total', knex.raw('sum(wp.qty) as qty'))
+      .innerJoin('mm_products as mp', 'mp.generic_id', 'g.generic_id')
+      .innerJoin('wm_products as wp', 'wp.product_id', 'mp.product_id')
+      .join('mm_units as u', 'u.unit_id', 'g.primary_unit_id')
+      .joinRaw('left join mm_generic_planning as gp on gp.generic_id=g.generic_id and gp.warehouse_id = wp.warehouse_id')
+      .where('wp.warehouse_id', warehouseId);
+
+    if (genericType) {
+      query.where('g.generic_type_id', genericType);
+    } else {
+      query.whereIn('g.generic_type_id', genericGroups)
+    }
+
+    query.groupBy('g.generic_id')
+      .orderBy('g.generic_name');
+
+    return query;
   }
 
   calculateMinMax(knex: Knex, warehouseId: any, fromDate: any, toDate: any) {
