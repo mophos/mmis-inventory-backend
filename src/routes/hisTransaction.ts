@@ -158,14 +158,15 @@ router.post('/upload/issue', upload.single('file'), co(async (req, res, next) =>
 
 }));
 
-router.get('/list', co(async (req, res, next) => {
+router.post('/list', co(async (req, res, next) => {
   let db = req.db;
-  // let sessionId = req.params.sessionId;
+  let genericType = req.body.genericTypes;
   let hospcode = req.decoded.his_hospcode;
 
   try {
-    let rs = await hisTransactionModel.getHisTransaction(db, hospcode);
-    res.send({ ok: true, rows: rs[0] });
+    let rs = await hisTransactionModel.getHisTransaction(db, hospcode,genericType);
+    console.log(rs);
+    res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
