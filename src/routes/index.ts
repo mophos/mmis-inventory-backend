@@ -86,8 +86,11 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
       list_count.push(approve_requis[i].length)
       approve_requis[i] = _.chunk(approve_requis[i], page_re)
       console.log(approve_requis[i]);
-      _.forEach(approve_requis[i],value=>{
-        sum.push(_.sumBy(value,'total_cost'))
+      _.forEach(approve_requis[i], values => {
+        sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
+        _.forEach(values, value => {
+          value.total_cost = inventoryReportModel.comma(value.total_cost);
+        })
       })
     }
     // res.send({approve_requis:approve_requis,list_count:list_count,page_re:page_re,sum:sum})
