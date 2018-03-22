@@ -388,7 +388,8 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
 
   let _generic_stock: any = [];
   let _generic_name = [];
-  let _small_unit = [];
+  let _unit = [];
+  let _conversion_qty = [];
   let _dosage_name = [];
   let generic_stock: any = [];
   let _genericId: any = []
@@ -402,17 +403,27 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
     if (generic_stock[0].length > 0) {
       _genericId.push(generic_stock[0][0].generic_id)
       _generic_name.push(generic_stock[0][0].generic_name)
-      _small_unit.push(generic_stock[0][0].unit_name)
       _dosage_name.push(generic_stock[0][0].dosage_name)
+      if (generic_stock[0][0].conversion_qty) {
+        _unit.push(generic_stock[0][0].large_unit + ' ' + '(' + generic_stock[0][0].conversion_qty + ' ' + generic_stock[0][0].small_unit + ')')
+      } else {
+        _unit.push(generic_stock[0][0].small_unit)
+      }
 
       generic_stock[0].forEach(v => {
         v.stock_date = moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543);
         v.in_cost = inventoryReportModel.comma(+v.in_qty * +v.balance_unit_cost);
         v.out_cost = inventoryReportModel.comma(+v.out_qty * +v.balance_unit_cost);
-        v.balance_unit_cost = inventoryReportModel.comma(+v.balance_generic_qty * +v.balance_unit_cost);
-        v.in_qty = inventoryReportModel.commaQty(v.in_qty);
-        v.out_qty = inventoryReportModel.commaQty(v.out_qty);
-        v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
+        v.balance_unit_cost = inventoryReportModel.comma(+v.balance_unit_cost * +v.balance_generic_qty);
+        if (v.conversion_qty) {
+          v.in_qty = inventoryReportModel.commaQty(v.in_qty / v.conversion_qty);
+          v.out_qty = inventoryReportModel.commaQty(v.out_qty / v.conversion_qty);
+          v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty / v.conversion_qty);
+        } else {
+          v.in_qty = inventoryReportModel.commaQty(v.in_qty);
+          v.out_qty = inventoryReportModel.commaQty(v.out_qty);
+          v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
+        }
       });
       _generic_stock.push(generic_stock[0])
     }
@@ -427,7 +438,8 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
     today: today,
     genericId: genericId,
     generic_name: _generic_name,
-    small_unit: _small_unit,
+    unit: _unit,
+    conversion_qty: _conversion_qty,
     dosage_name: _dosage_name,
     _genericId: _genericId,
     startDate: startDate,
@@ -456,8 +468,9 @@ router.get('/report/generic/stock2/', wrap(async (req, res, next) => {
 
   let _generic_stock: any = [];
   let _generic_name = [];
-  let _small_unit = [];
+  let _unit = [];
   let _dosage_name = [];
+  let _conversion_qty = [];
   let generic_stock: any = [];
   let _genericId: any = []
   genericId = Array.isArray(genericId) ? genericId : [genericId]
@@ -470,18 +483,29 @@ router.get('/report/generic/stock2/', wrap(async (req, res, next) => {
     if (generic_stock[0].length > 0) {
       _genericId.push(generic_stock[0][0].generic_id)
       _generic_name.push(generic_stock[0][0].generic_name)
-      _small_unit.push(generic_stock[0][0].unit_name)
       _dosage_name.push(generic_stock[0][0].dosage_name)
+      if (generic_stock[0][0].conversion_qty) {
+        _unit.push(generic_stock[0][0].large_unit + ' (' + generic_stock[0][0].conversion_qty + ' ' + generic_stock[0][0].small_unit + ')')
+      } else {
+        _unit.push(generic_stock[0][0].small_unit)
+      }
 
       generic_stock[0].forEach(v => {
         v.stock_date = moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543);
         v.expired_date = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('DD/MM/') + (moment(v.expired_date).get('year')) : '-';
         v.in_cost = inventoryReportModel.comma(+v.in_qty * +v.balance_unit_cost);
         v.out_cost = inventoryReportModel.comma(+v.out_qty * +v.balance_unit_cost);
-        v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost);
-        v.in_qty = inventoryReportModel.commaQty(v.in_qty);
-        v.out_qty = inventoryReportModel.commaQty(v.out_qty);
-        v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
+        if (v.conversion_qty) {
+          v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost * v.conversion_qty);
+          v.in_qty = inventoryReportModel.commaQty(v.in_qty / v.conversion_qty);
+          v.out_qty = inventoryReportModel.commaQty(v.out_qty / v.conversion_qty);
+          v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty / v.conversion_qty);
+        } else {
+          v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost);
+          v.in_qty = inventoryReportModel.commaQty(v.in_qty);
+          v.out_qty = inventoryReportModel.commaQty(v.out_qty);
+          v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
+        }
       });
       _generic_stock.push(generic_stock[0])
     }
@@ -496,7 +520,8 @@ router.get('/report/generic/stock2/', wrap(async (req, res, next) => {
     today: today,
     genericId: genericId,
     generic_name: _generic_name,
-    small_unit: _small_unit,
+    unit: _unit,
+    conversion_qty: _conversion_qty,
     dosage_name: _dosage_name,
     _genericId: _genericId,
     startDate: startDate,
