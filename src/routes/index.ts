@@ -844,7 +844,7 @@ router.get('/report/list/receive', wrap(async (req, res, next) => {
 
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.expired_date = moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543);
+      value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).format('DD-MM-YYYY');
       // value.small_qty=inventoryReportModel.comma(value.small_qty*value.cost);
       // value.cost=inventoryReportModel.comma(value.cost);
@@ -947,7 +947,7 @@ router.get('/report/list/receivePo/:sID/:eID', wrap(async (req, res, next) => {
 
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.expired_date = moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543);
+      value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).format('DD-MM-YYYY');
     })
   })
@@ -1494,7 +1494,7 @@ router.get('/report/product/receive', wrap(async (req, res, next) => {
   // enddate = moment(enddate).format('D MMMM ') + (moment(enddate).get('year') + 543);
   productReceive.forEach(value => {
     value.receive_date = moment(value.receive_date).format('D/MM/YYYY');
-    value.expired_date = moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543);
+    value.expired_date = moment(value.expired_date, 'YYYY-MM-DD').isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : '-';
     if (value.discount_percent == null) value.discount_percent = '0.00%';
     else { value.discount_percent = (value.discount_percent.toFixed(2)) + '%' }
     if (value.discount_cash == null) value.discount_cash = '0.00';
@@ -1521,7 +1521,7 @@ router.get('/report/product/balance/:productId', wrap(async (req, res, next) => 
 
   });
   productBalance.forEach(value => {
-    value.expired_date = moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543);
+    value.expired_date = moment(value.expired_date, 'YYYY-MM-DD').isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : '-';
     value.sum = inventoryReportModel.comma(value.cost * value.qty);
     value.cost = inventoryReportModel.comma(value.cost);
     value.qty = inventoryReportModel.commaQty(value.qty);
