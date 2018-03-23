@@ -12,88 +12,86 @@ html
     title report
   body
     button.btn.btn-sm.btn-success(onclick='window.print()') Print
-    - var ss=0
-      for i in approve_requis
-        - var sss=0
-          for c in i
-            span.page
-            table.table(style="font-size: 13pt;")
-              thead
-                tr 
-                  td.center.bold(colspan='10')(style="font-size: 15pt;") #{hospitalName} 
-                tr 
-                  td.center.bold(colspan='10')(style="font-size: 15pt;") ใบอนุมัติเบิก
-                tr 
-                  td.left(colspan='5')(style="font-size: 15pt;") เลขที่ใบเบิก #{c[0].requisition_code}
-                  td.right(colspan='5')(style="font-size: 15pt;") วันที่อนุมัติ #{c[0].confirm_date}
-                tr 
-                  td.left(colspan='10')(style="font-size: 15pt;") หน่วยงานที่เบิก #{c[0].warehouse_name}
-                tr 
-                  td.left(colspan='10')(style="font-size: 15pt;") ณ วันที่ #{today[ss]}
-                tr 
-                  td.left(colspan='10')(style="font-size: 15pt; padding-bottom: 10px;") อนุมัติให้เบิกเวชภัณฑ์ตามรายการนี้
-                tr 
-                  th.left #
-                  th.left(style="width: 50px;") ชื่อเวชภัณฑ์
-                  th
-                  th.left(style="width: 50px;") รูปแบบ
-                  th.left(style="width: 50px;") lot
-                  th.right(style="width: 50px;") จำนวนขอเบิก
-                  th.right(style="width: 50px;") จำนวนอนุมัติ
-                  th.right(style="width: 50px;") มูลค่า/หน่วย
-                  th.right(style="width: 50px;") วันหมดอายุ
-                  th.right(style="width: 50px;") รวมมูลค่า
-              tbody
-              - var y=0
-              for a in c
-                - y++
-                tr 
-                  td #{y}.
-                  td(style="font-size: 12pt;") &nbsp;#{a.generic_name}
-                  td
-                  td #{a.dosage_name}
-                  td(style="font-size: 12pt;") #{a.lot_no}
-                  td.right(style="font-size: 12pt;") #{a.requisition_qty} #{a.large_unit} (#{a.small_qty} #{a.small_unit})
-                  td.right(style="font-size: 12pt;") #{a.qty} #{a.large_unit} (#{a.small_qty} #{a.small_unit})
-                  td.right #{a.cost}&nbsp;&nbsp;&nbsp;
-                  td.right(style="font-size: 12pt;") #{a.expired_date}
-                  td.right(style="font-size: 12pt;") #{a.total_cost}
-                .pagebreak
-              tfoot
-                tr.dash-top
-                  td(colspan='10' height='10px;')
-                tr
-                  td.right(colspan='10') รวมทั้งหมด #{y} รายการ | คิดเป็นมูลค่า #{sum[ss]} บาท
-                tr 
-                  td(colspan='10') &nbsp; 
-                tr 
-                  td(colspan='10') &nbsp; 
-                tr 
-                  td(colspan='10') &nbsp; 
-                tr 
-                  td.center(colspan='5' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้เบิก)
-                    br
-                    br
-                    | (.....................................................................)
-                  td.center(colspan='5' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้จ่าย)
-                    br
-                    br
-                    | (.....................................................................)
-                tr 
-                  td(colspan='10') &nbsp; 
-                tr 
-                  td(colspan='10') &nbsp; 
-                tr 
-                  td(colspan='10') &nbsp; 
-                tr 
-                  td.center(colspan='5' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้อนุมัติ)
-                    br
-                    br
-                    | (.....................................................................)
-                  td.center(colspan='5' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้รับ)
-                    br
-                    br
-                    | (.....................................................................)
-            - sss++          
-        - ss++
-        .pagebreak
+    for i in approve_requis
+      - var l=0
+        for c in i
+          span.page
+          table.table(style="font-size: 13pt;")
+            thead
+              tr 
+                td.center.bold(colspan='10')(style="font-size: 15pt;") #{hospitalName} 
+              tr 
+                td.center.bold(colspan='10')(style="font-size: 15pt;") ใบอนุมัติเบิก
+              tr 
+                td.left(colspan='5')(style="font-size: 15pt;") เลขที่ใบเบิก #{c[0].requisition_code}
+                td.right(colspan='5')(style="font-size: 15pt;") วันที่อนุมัติ #{c[0].confirm_date}
+              tr 
+                td.left(colspan='10')(style="font-size: 15pt;") หน่วยงานที่เบิก #{c[0].warehouse_name}
+              tr 
+                td.left(colspan='10')(style="font-size: 15pt;") ณ วันที่ #{c[0].today}
+              tr 
+                td.left(colspan='10')(style="font-size: 15pt; padding-bottom: 10px;") อนุมัติให้เบิกเวชภัณฑ์ตามรายการนี้
+              tr 
+                th.left(style="width: 1%;") #
+                th.left(style="width: 36%;") ชื่อเวชภัณฑ์
+                th(style="width: 0%;")
+                th.left(style="width: 5%;") รูปแบบ
+                th.left(style="width: 8%;") lot
+                th.right(style="width: 11%;") จำนวนขอเบิก
+                th.right(style="width: 11%;") จำนวนอนุมัติ
+                th.right(style="width: 10%;") มูลค่า/หน่วย
+                th.right(style="width: 8%;") วันหมดอายุ
+                th.right(style="width: 10%;") รวมมูลค่า
+            tbody
+            - var y=0
+            for a in c
+              - y++
+              tr 
+                td #{y}.
+                td(style="font-size: 12pt;") ขวดหยอดยาพลาสติก 10 ซี.ซี. Sterile  ฝาสีขาว ชมพู ฟ้า เขียว ส้ม (8.00 บ/ขวด)  ผลิตเบิก
+                td
+                td(style="font-size: 12pt;") &nbsp;@@@@@@@
+                td(style="font-size: 12pt; word-break:break-all;") &nbsp;XXXXXXXXXXXXXXXX
+                td.right(style="font-size: 12pt;") &nbsp;999,999.99 #{a.large_unit} (9,999 #{a.small_unit})
+                td.right(style="font-size: 12pt;") &nbsp;999,999.99 #{a.large_unit} (9,999 #{a.small_unit})
+                td.right(style="font-size: 12pt;") &nbsp;999,999,999.99
+                td.right(style="font-size: 12pt;") &nbsp;99/99/9999
+                td.right(style="font-size: 12pt;") &nbsp;999,999,999.99
+              .pagebreak
+            tfoot
+              tr.dash-top
+                td(colspan='10' height='10px;')
+              tr
+                td.right(colspan='10') รวมทั้งหมด #{y} รายการ | คิดเป็นมูลค่า #{sum[l]} บาท
+              tr 
+                td(colspan='10') &nbsp; 
+              tr 
+                td(colspan='10') &nbsp; 
+              tr 
+                td(colspan='10') &nbsp; 
+              tr 
+                td.center(colspan='5' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้เบิก)
+                  br
+                  br
+                  | (.....................................................................)
+                td.center(colspan='5' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้จ่าย)
+                  br
+                  br
+                  | (.....................................................................)
+              tr 
+                td(colspan='10') &nbsp; 
+              tr 
+                td(colspan='10') &nbsp; 
+              tr 
+                td(colspan='10') &nbsp; 
+              tr 
+                td.center(colspan='5' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้อนุมัติ)
+                  br
+                  br
+                  | (.....................................................................)
+                td.center(colspan='5' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้รับ)
+                  br
+                  br
+                  | (.....................................................................)
+          - l++          
+      .pagebreak
