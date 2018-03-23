@@ -11,8 +11,8 @@ button, .btn, .btn-sm, .btn-success, .btnprint{
    margin-right: 2cm;
  } */
 @page{
-   margin-top: 1.5cm;
-   margin-left: 2cm;
+   margin-top: 2cm;
+   margin-left: 1.5cm;
    margin-right: 1.5cm;
  }
 html, body {
