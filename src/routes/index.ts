@@ -638,7 +638,7 @@ router.get('/report/issue', wrap(async (req, res, next) => {
 
   issueListDetail.forEach(v => {
     v.forEach(element => {
-      element.expired_date = moment(element.expired_date).format('DD/MM/') + (moment(element.expired_date).get('year') + 543);
+      element.expired_date = moment(element.expired_date, 'YYYY-MM-DD').isValid() ? moment(element.expired_date).format('DD/MM/') + (moment(element.expired_date).get('year')) : '-';
     });
   });
 
@@ -795,7 +795,7 @@ router.get('/report/list/receiveOther', wrap(async (req, res, next) => {
 
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.expired_date = moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543);
+      value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       // value2.receive_date = moment(value2.receive_date).format('DD-MM-') + (moment(value2.receive_date).get('year') + 543);
       value2.receive_date = moment(value2.receive_date).format('DD-MM-YYYY');
       // value.small_qty=inventoryReportModel.comma(value.small_qty*value.cost);
