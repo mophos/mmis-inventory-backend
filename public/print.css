@@ -5,34 +5,15 @@ button, .btn, .btn-sm, .btn-success, .btnprint{
     counter-reset: page;
     counter-reset: p;
 }
- /* @page{
-   margin-top: 1.5cm;
-   margin-left: 2.5cm;
-   margin-right: 2cm;
- } */
+
 @page{
     margin-top: 2cm;
     margin-left: 0.5cm;
-    margin-right: 0.5cm;
+    margin-right: 1cm;
  }
 html, body {
   padding: 0;
 }
-/*
-.page{
-    counter-increment: page;
-}
-.page::after{
-    display: block;
-    text-align: right;
-    content:"page "counter(page) "/" counter(pages);
-}
-
-@page{
-    @top-right{
-        content: counter(page) " of " counter(pages);
-    }
-} */
 h1 {
   page-break-before: always;
   padding-top: 2em;
