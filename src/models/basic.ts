@@ -126,10 +126,13 @@ export class BasicModel {
   searchDonator(knex: Knex, query: any) {
     let _query = `%${query}%`;
     return knex('wm_donators')
-      .where('donator_name', 'like', _query)
-      .where('mark_deleted', 'N')
-      .orderBy('donator_name')
-      .limit(10);
+    .where(w => {
+      w.where('donator_name', 'like', _query)
+        .orWhere('short_code', 'like', _query)
+    })
+    .where('mark_deleted', 'N')
+    .orderBy('donator_name')
+    .limit(10);
   }
 
   getGenericGroups(knex: Knex) {
