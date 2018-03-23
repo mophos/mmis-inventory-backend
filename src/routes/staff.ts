@@ -171,6 +171,7 @@ router.post('/warehouse/products/search/', co(async (req, res, next) => {
 router.post('/warehouse/generics/min-max/search', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let query = req.body.query;
+  let genericType = req.body.genericType;
   let db = req.db;
 
   let productGroups = req.decoded.generic_type_id;
@@ -182,7 +183,7 @@ router.post('/warehouse/generics/min-max/search', co(async (req, res, next) => {
       _pgs.push(v);
     });
     try {
-      let rows = await warehouseModel.searchGenericWarehouse(db, warehouseId, _pgs, query);
+      let rows = await warehouseModel.searchGenericWarehouse(db, warehouseId, _pgs, query, genericType);
       res.send({ ok: true, rows: rows });
     } catch (error) {
       console.log(error);
@@ -223,11 +224,13 @@ router.get('/warehouse/generics/min-max', co(async (req, res, next) => {
 
 router.post('/warehouse/save-minmax', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
+  let _fromDate = req.body.fromDate;
+  let _toDate = req.body.toDate;
   let db = req.db;
 
   let items = req.body.items;
 
-  if (items.length) {
+  if (items.length ) {
 
     let _items = [];
     items.forEach(v => {
@@ -237,6 +240,11 @@ router.post('/warehouse/save-minmax', co(async (req, res, next) => {
       obj.primary_unit_id = v.primary_unit_id;
       obj.min_qty = +v.min_qty;
       obj.max_qty = +v.max_qty;
+      obj.use_per_day = +v.use_per_day;
+      obj.safty_stock_day = +v.safty_stock_day;
+      obj.use_total = +v.use_total;
+      obj.from_stock_date = moment(_fromDate).format('YYYY-MM-DD');
+      obj.to_stock_date = moment(_toDate).format('YYYY-MM-DD');
       _items.push(obj);
     });
 
@@ -251,7 +259,7 @@ router.post('/warehouse/save-minmax', co(async (req, res, next) => {
       db.destroy();
     }
   } else {
-    res.send({ ok: false, error: 'ไม่ข้อมูลมูลที่ต้องการบันทึก' });
+    res.send({ ok: false, error: 'ไม่พบข้อมูลที่ต้องการบันทึก' });
   }
 
 
