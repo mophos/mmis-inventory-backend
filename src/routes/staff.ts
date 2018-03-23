@@ -643,8 +643,8 @@ router.post('/transfer/save', co(async (req, res, next) => {
           let generics = {
             transfer_id: transferId,
             generic_id: g.generic_id,
-            transfer_qty: g.transfer_qty * g.conversion_qty,
-            unit_generic_id: g.unit_generic_id,
+            transfer_qty: g.transfer_qty,
+            primary_unit_id: g.primary_unit_id,
             location_id: g.location_id,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
@@ -744,9 +744,6 @@ router.get('/transfer/info-detail/:transferId', co(async (req, res, next) => {
       const rsProducts = await transferModel.getProductsInfo(db, transferId, g.transfer_generic_id);
       let _products = rsProducts[0];
       g.products = _products;
-      g.total_transfer_qty = _.sumBy(_products, function (e: any) {
-        return e.product_qty * e.conversion_qty;
-      });
     }
     res.send({ ok: true, rows: _generics });
   } catch (error) {
@@ -778,8 +775,8 @@ router.put('/transfer/save/:transferId', co(async (req, res, next) => {
         let generics = {
           transfer_id: transferId,
           generic_id: g.generic_id,
-          transfer_qty: g.transfer_qty * g.conversion_qty,
-          unit_generic_id: g.unit_generic_id,
+          transfer_qty: g.transfer_qty,
+          primary_unit_id: g.primary_unit_id,
           location_id: g.location_id,
           create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
           create_by: req.decoded.people_user_id
