@@ -42,15 +42,15 @@ html
               - y++
               tr 
                 td #{y}.
-                td(style="font-size: 12pt;") ขวดหยอดยาพลาสติก 10 ซี.ซี. Sterile  ฝาสีขาว ชมพู ฟ้า เขียว ส้ม (8.00 บ/ขวด)  ผลิตเบิก
+                td(style="font-size: 12pt;") &nbsp;#{a.generic_name}
                 td
-                td(style="font-size: 12pt;") &nbsp;@@@@@@@
-                td(style="font-size: 12pt; word-break:break-all;") &nbsp;XXXXXXXXXXXXXXXX
-                td.right(style="font-size: 12pt;") &nbsp;999,999.99 #{a.large_unit} (9,999 #{a.small_unit})
-                td.right(style="font-size: 12pt;") &nbsp;999,999.99 #{a.large_unit} (9,999 #{a.small_unit})
-                td.right(style="font-size: 12pt;") &nbsp;999,999,999.99
-                td.right(style="font-size: 12pt;") &nbsp;99/99/9999
-                td.right(style="font-size: 12pt;") &nbsp;999,999,999.99
+                td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
+                td(style="font-size: 12pt; word-break:break-all;") &nbsp;#{a.lot_no}
+                td.right(style="font-size: 12pt;") &nbsp;#{a.requisition_qty} #{a.large_unit} (9,999 #{a.small_unit})
+                td.right(style="font-size: 12pt;") &nbsp;#{a.qty} #{a.large_unit} (9,999 #{a.small_unit})
+                td.right(style="font-size: 12pt;") &nbsp;#{a.cost}
+                td.right(style="font-size: 12pt;") &nbsp;#{a.expired_date}
+                td.right(style="font-size: 12pt;") &nbsp;#{a.total_cost}
               .pagebreak
             tfoot
               tr.dash-top
