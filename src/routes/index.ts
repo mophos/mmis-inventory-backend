@@ -982,8 +982,9 @@ router.get('/report/list/receiveDate/:sDate/:eDate', wrap(async (req, res, next)
 
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.expired_date = moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543);
-      value2.receive_date = moment(value2.receive_date).format('DD-MM-YYYY');
+      value2.expired_date = value2.expired_date ? moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543) : '-';
+      value2.receive_date = value2.receive_date ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
+      value2.unit_price = inventoryReportModel.comma(value2.unit_price * value2.receive_qty)
     })
   })
   sDate = moment(sDate).format('DD MMMM ') + (+moment(sDate).get('year') + 543);
@@ -1020,8 +1021,9 @@ router.get('/report/list/receiveDateOther/:sDate/:eDate', wrap(async (req, res, 
 
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.expired_date = moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543);
-      value2.receive_date = moment(value2.receive_date).format('DD-MM-YYYY');
+      value2.expired_date = value2.expired_date ? moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543) : '-';
+      value2.receive_date = value2.receive_date ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
+      value2.costs = inventoryReportModel.comma(value2.costs)
     })
   })
   sDate = moment(sDate).format('DD MMMM ') + (+moment(sDate).get('year') + 543);

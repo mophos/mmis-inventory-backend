@@ -896,6 +896,7 @@ WHERE
         wrd.receive_qty,
         vap.small_qty,
         vap.small_unit,
+        vap.large_unit,
         wrd.expired_date,
         wrd.lot_no,
         wl.location_name,
@@ -922,7 +923,7 @@ WHERE
                 mg.generic_name,
                 wp.qty,
                 mug.qty as small_qty,
-                '',
+                '','',
                 wp.expired_date,wp.lot_no,'','','',''
             FROM
                 wm_products wp
