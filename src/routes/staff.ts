@@ -666,6 +666,7 @@ router.post('/transfer/save', co(async (req, res, next) => {
         }
 
         if (approveAuto) {
+          await transferModel.changeConfirmStatusIds(db, transferId, req.decoded.people_user_id);
           await transferApprove(db, transferId);
         }
 
@@ -826,7 +827,22 @@ router.post('/transfer/approve', co(async (req, res, next) => {
 
 }));
 
+router.post('/transfer/confirm', co(async (req, res, next) => {
 
+  let db = req.db;
+  let transferIds = req.body.transferIds;
+  let peopleUserId = req.decoded.people_user_id;
+
+  try {
+    await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
+    res.send({ ok: true });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
 
 //===============================================================================//
 

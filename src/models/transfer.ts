@@ -248,6 +248,15 @@ export class TransferModel {
       });
   }
 
+  changeConfirmStatusIds(knex: Knex, transferIds: any[], peopleUserId: any) {
+    return knex('wm_transfer')
+      .whereIn('transfer_id', transferIds)
+      .update({
+        confirmed: 'Y',
+        confirmed_date: moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        confirmed_people_user_id: peopleUserId
+      });
+  }
 
   changeDeleteStatus(knex: Knex, transferId: any) {
     return knex('wm_transfer')
