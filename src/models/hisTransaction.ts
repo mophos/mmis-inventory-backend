@@ -66,22 +66,34 @@ export class HisTransactionModel {
       .del();
   }
 
-  getHisTransaction(db: Knex, hospcode: any) {
-    let sql = `
-    select tt.*, hm.mmis, hm.conversion, w.warehouse_name, w.warehouse_id, 
-    mg.generic_name, mg.working_code, mu.unit_name
-    from wm_his_transaction as tt
-    inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode
-    inner join wm_warehouses as w on w.warehouse_id=tt.mmis_warehouse
-    inner join mm_generics as mg on mg.generic_id=hm.mmis
-    left join mm_units as mu on mu.unit_id=mg.primary_unit_id
+  getHisTransaction(db: Knex, hospcode: any, genericType: any) {
+    // let sql = `
+    // select tt.*, hm.mmis, hm.conversion, w.warehouse_name, w.warehouse_id, 
+    // mg.generic_name, mg.working_code, mu.unit_name
+    // from wm_his_transaction as tt
+    // inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode
+    // inner join wm_warehouses as w on w.warehouse_id=tt.mmis_warehouse
+    // inner join mm_generics as mg on mg.generic_id=hm.mmis
+    // left join mm_units as mu on mu.unit_id=mg.primary_unit_id
       
-    where tt.is_cut_stock='N'
-    and tt.hospcode=?
-    group by tt.transaction_id
-    `;
+    // where tt.is_cut_stock='N'
+    // and tt.hospcode=?
+    // and mg.generic_type_id in (${genericType})
+    // group by tt.transaction_id
+    // `;
 
-    return db.raw(sql, [hospcode]);
+    // return db.raw(sql, [hospcode]);
+    return db('wm_his_transaction as tt')
+    .select('tt.*', 'hm.mmis', 'hm.conversion','w.warehouse_name', 'w.warehouse_id', 
+    'mg.generic_name', 'mg.working_code', 'mu.unit_name')
+    .joinRaw('inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode')
+    .innerJoin('wm_warehouses as w', 'w.warehouse_id', 'tt.mmis_warehouse')
+    .innerJoin('mm_generics as mg', 'mg.generic_id', 'hm.mmis')
+    .leftJoin('mm_units as mu', 'mu.unit_id', 'mg.primary_unit_id')
+    .where('tt.is_cut_stock', 'N')
+    .andWhere('tt.hospcode', hospcode)
+    .whereIn('mg.generic_type_id', genericType)
+    .groupBy('tt.transaction_id');
   }
 
   // get his transaction for issue
