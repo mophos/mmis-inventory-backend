@@ -138,7 +138,7 @@ export class WarehouseModel {
 
   getProductsWarehouse(knex: Knex, warehouseId: string, productGroups: any[], genericType: any) {
     let query = knex('wm_products as wp')
-      .select('wp.*','mug.cost as packcost', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', 'mg.working_code', 'mg.generic_id', 'mg.generic_name',
+      .select('wp.*', 'mug.cost as packcost', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', 'mg.working_code', 'mg.generic_id', 'mg.generic_name',
         'l.location_name', 'l.location_desc', 'u.unit_name as base_unit_name', 'mug.qty as conversion', 'uu.unit_name as large_unit')
       .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
       .leftJoin('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
@@ -197,13 +197,14 @@ export class WarehouseModel {
     // `;
 
     let query = knex('mm_generics as g')
-      .select('wp.warehouse_id', 'g.generic_id', 'g.generic_name', 'g.working_code',
-        'g.primary_unit_id', knex.raw('ifnull(gp.min_qty, 0) as min_qty'),
-        knex.raw('ifnull(gp.max_qty, 0) as max_qty'), 'u.unit_name')
+      .select('wp.warehouse_id', 'g.generic_id', 'g.generic_name', 'g.working_code', 'g.primary_unit_id'
+        , knex.raw('ifnull(gp.min_qty, 0) as min_qty')
+        , knex.raw('ifnull(gp.max_qty, 0) as max_qty')
+        , 'u.unit_name', 'gp.use_per_day', 'gp.safty_stock_day', 'gp.use_total', knex.raw('sum(wp.qty) as qty'))
       .innerJoin('mm_products as mp', 'mp.generic_id', 'g.generic_id')
       .innerJoin('wm_products as wp', 'wp.product_id', 'mp.product_id')
+      .join('mm_units as u', 'u.unit_id', 'g.primary_unit_id')
       .joinRaw('left join mm_generic_planning as gp on gp.generic_id=g.generic_id and gp.warehouse_id = wp.warehouse_id')
-      .leftJoin('mm_units as u', 'u.unit_id', 'g.primary_unit_id')
       .where('wp.warehouse_id', warehouseId);
 
     if (genericType) {
@@ -212,21 +213,22 @@ export class WarehouseModel {
       query.whereIn('g.generic_type_id', productGroups)
     }
 
-    query.groupBy('g.generic_id');
-    query.orderBy('g.generic_name');
+    query.groupBy('g.generic_id')
+      .orderBy('g.generic_name');
 
     return query;
   }
-  searchGenericWarehouse(knex: Knex, warehouseId: string, productGroups: any[], query: string) {
+  searchGenericWarehouse(knex: Knex, warehouseId: string, productGroups: any[], query: string, genericType: any) {
     let _query = '%' + query + '%';
     let sql = knex('mm_generics as g')
-      .select('wp.warehouse_id', 'g.generic_id', 'g.generic_name', 'g.working_code',
-        'g.primary_unit_id', knex.raw('ifnull(gp.min_qty, 0) as min_qty'),
-        knex.raw('ifnull(gp.max_qty, 0) as max_qty'), 'u.unit_name')
+      .select('wp.warehouse_id', 'g.generic_id', 'g.generic_name', 'g.working_code', 'g.primary_unit_id'
+        , knex.raw('ifnull(gp.min_qty, 0) as min_qty')
+        , knex.raw('ifnull(gp.max_qty, 0) as max_qty')
+        , 'u.unit_name', 'gp.use_per_day', 'gp.safty_stock_day', 'gp.use_total', knex.raw('sum(wp.qty) as qty'))
       .innerJoin('mm_products as mp', 'mp.generic_id', 'g.generic_id')
       .innerJoin('wm_products as wp', 'wp.product_id', 'mp.product_id')
+      .join('mm_units as u', 'u.unit_id', 'g.primary_unit_id')
       .joinRaw('left join mm_generic_planning as gp on gp.generic_id=g.generic_id and gp.warehouse_id = wp.warehouse_id')
-      .leftJoin('mm_units as u', 'u.unit_id', 'g.primary_unit_id')
       .where('wp.warehouse_id', warehouseId)
       .where(w => {
         w.where('mp.product_name', 'like', _query)
@@ -235,8 +237,12 @@ export class WarehouseModel {
           .orWhere('mp.working_code', query)
           .orWhere('mp.keywords', 'like', _query)
       })
-      .whereIn('g.generic_type_id', productGroups)
-      .groupBy('g.generic_id')
+      if (genericType) {
+        sql.where('g.generic_type_id', genericType);
+      } else {
+        sql.whereIn('g.generic_type_id', productGroups)
+      }
+      sql.groupBy('g.generic_id')
       .orderBy('g.generic_name');
 
     return sql;
