@@ -269,7 +269,7 @@ app.use('/min-max', checkAuth, minMaxRoute)
 
 app.use('/setting', checkAuth, settingRoute);
 
-app.use('/', checkAuth, indexRoute);
+app.use('/', indexRoute);
 //temperature
 app.use('/temperature', temperatureRoute);
 
