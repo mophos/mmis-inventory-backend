@@ -353,7 +353,6 @@ router.get('/counting/cycle/get-remark/:countingCycleLogsId', co(async (req, res
     let db = req.db;
     try {
       let rows = await staffModel.getCycleRemark(db, countingCycleLogsId);
-      console.log(rows);
       res.send({ ok: true, rows: rows[0] });
     } catch (error) {
       console.log(error);
@@ -1836,7 +1835,6 @@ router.post('/requisition/unpaid/confirm', async (req, res, next) => {
       _items.push(obj);
     });
 
-    // console.log(_items);
     await orderModel.setPaidStatus(db, unpaidId);
     await orderModel.saveConfirmUnpaidItems(db, _items);
     res.send({ ok: true });
@@ -2005,7 +2003,6 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
 
             if (v.qty > 0) {
               if (v.product_id === h.product_id && +v.warehouse_id === +h.warehouse_id) {
-                // console.log(v);
                 let obj: any = {};
                 obj.wm_product_id = v.wm_product_id;
                 obj.hn = `${hospcode}-${h.hn}`;
@@ -2070,7 +2067,7 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
                   balance_unit_cost: balance_unit_cost,
                   ref_src: h.warehouse_id,
                   ref_dst: h.hn,
-                  comment: 'ตัด HIS',
+                  comment: 'ตัดจ่าย HIS',
                   unit_generic_id: null,
                   lot_no: v.lot_no,
                   expired_date: v.expired_date
