@@ -294,7 +294,7 @@ export class RequisitionOrderModel {
       select wp.wm_product_id, floor(wp.qty/ug.qty) as remain_qty, wp.cost, wp.lot_no,
       wp.expired_date, wp.unit_generic_id, mp.product_name, mp.generic_id, u1.unit_name as from_unit_name,
       u2.unit_name as to_unit_name, ug.qty as conversion_qty,
-      (SELECT
+      IFNULL((SELECT
         sum(roi.confirm_qty/mug.qty) AS boox_qty
       FROM
         wm_requisition_orders ro
@@ -303,8 +303,8 @@ export class RequisitionOrderModel {
       JOIN mm_products m ON roi.generic_id = m.generic_id
       join wm_products wp on roi.wm_product_id = wp.wm_product_id
       join mm_unit_generics mug on wp.unit_generic_id = mug.unit_generic_id
-      WHERE ro.is_approved='N' and m.product_id = mp.product_id and wp.warehouse_id='${warehouseId}'
-      GROUP BY m.product_id) as book_qty
+      WHERE rc.is_approve='N' and m.product_id = mp.product_id and wp.warehouse_id='${warehouseId}'
+      GROUP BY m.product_id),0) as book_qty
       from wm_products as wp
       inner join mm_products as mp on mp.product_id=wp.product_id
       left join mm_unit_generics as ug on ug.unit_generic_id=wp.unit_generic_id
@@ -625,7 +625,7 @@ export class RequisitionOrderModel {
     JOIN wm_requisition_confirm_items wrci ON wrc.confirm_id = wrci.confirm_id
     JOIN wm_products wp ON wrci.wm_product_id = wp.wm_product_id
     where wrc.confirm_id='${confirmId}' and wrci.confirm_qty != 0
-    GROUP BY wp.product_id`;
+    GROUP BY wp.product_id,wp.lot_no`;
     return knex.raw(sql)
   }
   getBalance(knex: Knex,productId, warehouseId){
