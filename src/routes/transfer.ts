@@ -40,6 +40,9 @@ router.get('/list', co(async (req, res, next) => {
       rows = await transferModel.notApproved(db, limit, offset);
       total = await transferModel.totalNotApproved(db);
     } else if (type === 4) {
+      rows = await transferModel.notConfirmed(db, limit, offset);
+      total = await transferModel.totalNotConfirmed(db);
+    } else if (type === 5) {
       rows = await transferModel.markDeleted(db, limit, offset);
       total = await transferModel.totalMarkDelete(db);
     } else {
@@ -131,6 +134,7 @@ router.post('/save', co(async (req, res, next) => {
   let _summary = req.body.summary;
   let _generics = req.body.generics;
   let warehouseId = req.decoded.warehouseId;
+  let peopleUserId = req.decoded.people_user_id;
   const approveAuto = req.decoded.WM_TRANSFER_APPROVE === 'N' ? true : false;
 
   if (_generics.length && _summary) {
@@ -183,7 +187,8 @@ router.post('/save', co(async (req, res, next) => {
         }
 
         if (approveAuto) {
-          await approve(db, transferId, warehouseId);
+          await transferModel.changeConfirmStatusIds(db, transferId, peopleUserId);
+          await approve(db, transferId, warehouseId, peopleUserId);
         }
 
         res.send({ ok: true });
@@ -261,8 +266,11 @@ router.post('/approve-all', co(async (req, res, next) => {
   let db = req.db;
   let transferIds = req.body.transferIds;
   let warehouseId = req.decoded.warehouseId;
+  let peopleUserId = req.decoded.people_user_id;
+
   try {
-    await approve(db, transferIds, warehouseId);
+    await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
+    await approve(db, transferIds, warehouseId, peopleUserId);
     res.send({ ok: true });
   } catch (error) {
     throw error;
@@ -306,7 +314,7 @@ router.get('/product-warehouse-lots/:productId/:warehouseId', co(async (req, res
 
 }));
 
-const approve = (async (db: Knex, transferIds: any[], warehouseId: any) => {
+const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUserId: any) => {
   let results = await transferModel.getProductListIds(db, transferIds);
   let dstProducts = [];
   let srcProducts = [];
@@ -443,8 +451,25 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any) => {
 
   await transferModel.saveDstProducts(db, dstProducts);
   await transferModel.decreaseQty(db, dstProducts);
-  await transferModel.changeApproveStatusIds(db, transferIds);
+  await transferModel.changeApproveStatusIds(db, transferIds, peopleUserId);
   await stockCard.saveFastStockTransaction(db, data);
 });
+
+router.post('/confirm', co(async (req, res, next) => {
+
+  let db = req.db;
+  let transferIds = req.body.transferIds;
+  let peopleUserId = req.decoded.people_user_id;
+
+  try {
+    await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
+    res.send({ ok: true });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
 
 export default router;
