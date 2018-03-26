@@ -298,7 +298,7 @@ export class StaffModel {
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
       .where('wmt.dst_warehouse_id', warehouseId)
-      // .where('wmt.is_accepted', 'N')
+      .andWhere('wmt.confirmed', 'Y')
       .orderBy('wmt.transfer_date', 'desc');
   }
 
