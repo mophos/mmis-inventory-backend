@@ -184,6 +184,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         objTitle.small_unit = tv.small_unit;
         objTitle.confirm_qty = tv.confirm_qty;
         objTitle.remain = tv.remain;
+        objTitle.dosage_name = tv.dosage_name;
         let rs = await inventoryReportModel.getDetailListRequis(db, tv.requisition_order_id, tv.withdraw_warehouse_id, tv.product_id);
         rs = rs[0];
         let items = [];
