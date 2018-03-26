@@ -708,7 +708,7 @@ router.get('/report/check/receive/issue/:year', wrap(async (req, res, next) => {
 
   res.render('check_receive_issue', { hospitalName: hospitalName, today: today, check_receive_issue: check_receive_issue, startDate: startDate, endDate: endDate, year: year });
 }));//ตรวจสอบแล้ว 14-9-60
-router.get('/report/list/cost/', wrap(async (req, res, next) => {
+router.get('/report/list/cost', wrap(async (req, res, next) => {
   let db = req.db;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
