@@ -25,7 +25,7 @@ html
             tr
               td(colspan='2') รหัสผู้จำหน่าย : #{a.vendor_labeler_id}
               td(colspan='3') ผู้จำหน่าย : #{a.labeler_name}
-              td(colspan='3') ราคา #{a.unit_price}/#{a.small_qty} #{a.small_unit}
+              td(colspan='3') ราคา #{a.unit_price} บาท
             tr
               td รหัสเวชภัณฑ์
               td รายการเวชภัณฑ์
@@ -39,7 +39,7 @@ html
             td #{a.generic_id}
             td #{a.generic_name}
             td #{a.location_name}
-            td #{a.receive_qty}x#{a.small_qty}
+            td #{a.receive_qty}  #{a.large_unit} (#{a.small_qty} #{a.small_unit})
             td #{a.expired_date}
             td #{a.lot_no}
             td #{a.labeler_name_m}
@@ -50,7 +50,7 @@ html
               td คงคลัง
               td #{a.generic_name}
               td #{a.location_name}
-              td #{a.receive_qty}x#{a.small_qty}
+              td #{a.receive_qty}  #{a.large_unit} (#{a.small_qty} #{a.small_unit})
               td #{a.expired_date}
               td #{a.lot_no}
               td #{a.labeler_name_m}
