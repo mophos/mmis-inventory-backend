@@ -904,4 +904,24 @@ export class ReceiveModel {
     AND rd.warehouse_id = '${warehouseId}'`
     return knex.raw(sql);
   }
+
+  getCountApprove(knex: Knex){
+    return knex('wm_receives as r')
+      .count('* as count_approve')
+      .whereNotExists(knex.select('*')
+        .from('wm_receive_approve as ra')
+        .whereRaw('r.receive_id = ra.receive_id')
+      )
+    .where('r.is_cancel','N')
+  }
+
+  getCountApproveOther(knex: Knex){
+    return knex('wm_receive_other as r')
+      .count('* as count_approve')
+      .whereNotExists(knex.select('*')
+        .from('wm_receive_approve as ra')
+        .whereRaw('r.receive_other_id = ra.receive_other_id')
+      )
+    .where('r.is_cancel','N')
+  }
 }
