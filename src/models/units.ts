@@ -113,7 +113,7 @@ export class UnitModel {
       .whereNot('unit_generic_id', unitGenericId);
   }
 
-  getConversionList(knex: Knex, genericId: any) {
+  getConversionList(knex: Knex, genericId: any, orderBy: string = 'ASC') {
     return knex('mm_unit_generics as ug')
       .select('ug.*', 'uf.unit_name as from_unit_name', 'ut.unit_name as to_unit_name')
       .innerJoin('mm_units as uf', 'uf.unit_id', 'ug.from_unit_id')
@@ -121,7 +121,7 @@ export class UnitModel {
       .where('ug.generic_id', genericId)
       .where('ug.is_deleted', 'N')
       .where('ug.is_active', 'Y')
-      .orderBy('ug.qty', 'asc')
+      .orderBy('ug.qty', orderBy)
       .groupByRaw('ug.generic_id, unit_generic_id');
   }
   getConversionListStaff(knex: Knex, genericId: any) {

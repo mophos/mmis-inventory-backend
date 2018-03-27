@@ -47,7 +47,6 @@ router.get('/test-stockcard', wrap(async (req, res, next) => {
 router.get('/report/approve/requis', wrap(async (req, res, next) => {
   let db = req.db;
   let approve_requis: any = []
-  let todays: any = []
   let sum: any = []
   let page_re: any = req.decoded.WM_REQUISITION_REPORT_APPROVE;
   try {
@@ -57,49 +56,30 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
     let hospitalName = hosdetail[0].hospname;
     moment.locale('th');
     let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(', HH:mm') + ' น.';
-    let _today = ''
     for (let i in requisId) {
-      let _approve_requis = await inventoryReportModel.approve_requis(db, requisId[i]);
-      _today = (_approve_requis[0][0].updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(_approve_requis[0][0].updated_at).format('D MMMM ') + (moment(_approve_requis[0][0].updated_at).get('year') + 543) + moment(_approve_requis[0][0].updated_at).format(', HH:mm') + ' น.' : ''
-      todays.push(today + _today)
+      const _approve_requis = await inventoryReportModel.approve_requis(db, requisId[i]);
       approve_requis.push(_approve_requis[0])
-    }
-
-    approve_requis.forEach(object => {
-      let _sum: any = 0;
-      object.forEach(value => {
-        value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
-        _sum += value.total_cost;
-        value.cost = inventoryReportModel.comma(value.cost * value.small_qty);
-        value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.small_qty);
-        value.qty = inventoryReportModel.commaQty(value.qty / value.small_qty);
-        // value.total_cost = inventoryReportModel.comma(value.total_cost);
-        value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
-        if (value.expired_date === null) {
-          value.expired_date = "-";
-        } else value.expired_date = moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year'));
-      })
-      // sum.push(inventoryReportModel.comma(_sum));
-    })
-    let list_count: any = []
-    for (let i in approve_requis) {
-      list_count.push(approve_requis[i].length)
       approve_requis[i] = _.chunk(approve_requis[i], page_re)
-      console.log(approve_requis[i]);
       _.forEach(approve_requis[i], values => {
         sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
         _.forEach(values, value => {
           value.total_cost = inventoryReportModel.comma(value.total_cost);
+          value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
+          value.cost = inventoryReportModel.comma(value.cost);
+          value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.small_qty);
+          value.qty = inventoryReportModel.commaQty(value.qty / value.small_qty);
+          value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
+          value.expired_date = value.expired_date ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
+          value.today = today
+          value.today += (value.updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) + moment(value.updated_at).format(', HH:mm') + ' น.' : ''
         })
       })
     }
-    // res.send({approve_requis:approve_requis,list_count:list_count,page_re:page_re,sum:sum})
+    // res.send({approve_requis:approve_requis,page_re:page_re,sum:sum})
     res.render('approve_requis', {
       hospitalName: hospitalName,
-      today: todays,
       approve_requis: approve_requis,
-      sum: sum,
-      list_count: list_count
+      sum: sum
     });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -176,6 +156,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         objHead.title = {};
         objTitle.generic_code = tv.working_code;
         objTitle.generic_name = tv.generic_name;
+        objTitle.product_name = tv.product_name;
         objTitle.generic_id = tv.generic_id;
         objTitle.product_id = tv.product_id;
         objTitle.requisition_qty = tv.requisition_qty;
@@ -191,6 +172,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         rs.forEach(async (v: any) => {
           let objItems: any = {};
           objItems.generic_name = v.generic_name;
+          objItems.product_name = v.product_name;
           objItems.large_unit = v.large_unit;
           objItems.small_unit = v.small_unit;
           objItems.confirm_qty = v.confirm_qty;
@@ -729,7 +711,7 @@ router.get('/report/check/receive/issue/:year', wrap(async (req, res, next) => {
 
   res.render('check_receive_issue', { hospitalName: hospitalName, today: today, check_receive_issue: check_receive_issue, startDate: startDate, endDate: endDate, year: year });
 }));//ตรวจสอบแล้ว 14-9-60
-router.get('/report/list/cost/', wrap(async (req, res, next) => {
+router.get('/report/list/cost', wrap(async (req, res, next) => {
   let db = req.db;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
@@ -983,8 +965,9 @@ router.get('/report/list/receiveDate/:sDate/:eDate', wrap(async (req, res, next)
 
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.expired_date = moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543);
-      value2.receive_date = moment(value2.receive_date).format('DD-MM-YYYY');
+      value2.expired_date = value2.expired_date ? moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543) : '-';
+      value2.receive_date = value2.receive_date ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
+      value2.unit_price = inventoryReportModel.comma(value2.unit_price * value2.receive_qty)
     })
   })
   sDate = moment(sDate).format('DD MMMM ') + (+moment(sDate).get('year') + 543);
@@ -1021,8 +1004,9 @@ router.get('/report/list/receiveDateOther/:sDate/:eDate', wrap(async (req, res, 
 
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.expired_date = moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543);
-      value2.receive_date = moment(value2.receive_date).format('DD-MM-YYYY');
+      value2.expired_date = value2.expired_date ? moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543) : '-';
+      value2.receive_date = value2.receive_date ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
+      value2.costs = inventoryReportModel.comma(value2.costs)
     })
   })
   sDate = moment(sDate).format('DD MMMM ') + (+moment(sDate).get('year') + 543);
