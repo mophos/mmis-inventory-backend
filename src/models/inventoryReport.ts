@@ -109,7 +109,9 @@ export class InventoryReportModel {
         and 
         rci.confirm_qty > 0
         GROUP BY
-        mg.generic_id,wp.lot_no`
+        wp.product_id,wp.lot_no
+        order by
+        mp.product_name`
         return knex.raw(sql, requisId)
     }
     totalcost_warehouse(knex: Knex) {
