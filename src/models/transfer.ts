@@ -47,99 +47,130 @@ export class TransferModel {
       .insert(data);
   }
 
-  all(knex: Knex, limit: number, offset: number) {
+  all(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_transfer as wmt')
       .select('wmt.transfer_id', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.transfer_code', 'wmt.transfer_date',
         'src.warehouse_name as src_warehouse_name', 'src.short_code as src_warehouse_code', 'wmt.mark_deleted',
         'dst.warehouse_name as dst_warehouse_name', 'dst.short_code as dst_warehouse_code', 'wmt.approved', 'wmt.confirmed')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
+      .where((query) => {
+        query.where('wmt.src_warehouse_id', warehouseId).orWhere('wmt.dst_warehouse_id', warehouseId)
+      })
       .orderBy('wmt.transfer_id', 'DESC')
       .limit(limit)
       .offset(offset);
   }
 
-  totalAll(knex: Knex) {
+  totalAll(knex: Knex, warehouseId: any) {
     return knex('wm_transfer as wmt')
-      .count('* as total')
+      .where((query) => {
+        query.where('wmt.src_warehouse_id', warehouseId).orWhere('wmt.dst_warehouse_id', warehouseId)
+      })
+      .count('* as total');
   }
 
-  approved(knex: Knex, limit: number, offset: number) {
+  approved(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_transfer as wmt')
       .select('wmt.transfer_id', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.transfer_code', 'wmt.transfer_date',
-      'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code',
+        'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code',
         'dst.warehouse_name as dst_warehouse_name', 'wmt.approved')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
-      .where('wmt.approved', 'Y')
+      .where((query) => {
+        query.where('wmt.src_warehouse_id', warehouseId).orWhere('wmt.dst_warehouse_id', warehouseId)
+      })
+      .andWhere('wmt.approved', 'Y')
       .limit(limit)
       .offset(offset)
       .orderBy('wmt.transfer_id', 'DESC')
   }
 
-  totalApproved(knex: Knex) {
-    return knex('wm_transfer')
-      .where('approved', 'Y')
+  totalApproved(knex: Knex, warehouseId: any) {
+    return knex('wm_transfer as wmt')
+      .where((query) => {
+        query.where('wmt.src_warehouse_id', warehouseId).orWhere('wmt.dst_warehouse_id', warehouseId)
+      })
+      .andWhere('wmt.approved', 'Y')
       .count('* as total');
   }
 
-  notApproved(knex: Knex, limit: number, offset: number) {
+  notApproved(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_transfer as wmt')
       .select('wmt.transfer_id', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.transfer_code', 'wmt.transfer_date',
         'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'wmt.confirmed',
-      'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code')
+        'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
-      .whereNot('wmt.approved', 'Y')
+      .where((query) => {
+        query.where('wmt.src_warehouse_id', warehouseId).orWhere('wmt.dst_warehouse_id', warehouseId)
+      })
+      .andWhereNot('wmt.approved', 'Y')
       .andWhere('wmt.confirmed', 'Y')
       .limit(limit)
       .offset(offset)
       .orderBy('wmt.transfer_id', 'DESC')
   }
 
-  totalNotApproved(knex: Knex) {
-    return knex('wm_transfer')
-      .whereNot('approved', 'Y')
-      .andWhere('confirmed', 'Y')
+  totalNotApproved(knex: Knex, warehouseId: any) {
+    return knex('wm_transfer as wmt')
+      .where((query) => {
+        query.where('wmt.src_warehouse_id', warehouseId).orWhere('wmt.dst_warehouse_id', warehouseId)
+      })
+      .andWhereNot('wmt.approved', 'Y')
+      .andWhere('wmt.confirmed', 'Y')
       .count('* as total');
   }
 
-  notConfirmed(knex: Knex, limit: number, offset: number) {
+  notConfirmed(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_transfer as wmt')
       .select('wmt.transfer_id', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.transfer_code', 'wmt.transfer_date',
         'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'wmt.confirmed',
-      'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code')
+        'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
-      .whereNot('wmt.confirmed', 'Y')
+      .where((query) => {
+        query.where('wmt.src_warehouse_id', warehouseId).orWhere('wmt.dst_warehouse_id', warehouseId)
+      })
+      .andWhereNot('wmt.confirmed', 'Y')
       .andWhereNot('wmt.mark_deleted', 'Y')
       .limit(limit)
       .offset(offset)
       .orderBy('wmt.transfer_id', 'DESC')
   }
 
-  totalNotConfirmed(knex: Knex) {
-    return knex('wm_transfer')
-      .whereNot('confirmed', 'Y')
+  totalNotConfirmed(knex: Knex, warehouseId: any) {
+    return knex('wm_transfer as wmt')
+      .where((query) => {
+        query.where('wmt.src_warehouse_id', warehouseId).orWhere('wmt.dst_warehouse_id', warehouseId)
+      })
+      .andWhereNot('confirmed', 'Y')
+      .andWhereNot('wmt.mark_deleted', 'Y')
       .count('* as total');
   }
 
-  markDeleted(knex: Knex, limit: number, offset: number) {
+  markDeleted(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_transfer as wmt')
       .select('wmt.transfer_id', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.transfer_code', 'wmt.transfer_date',
         'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'wmt.confirmed',
-      'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code')
+        'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
-      .where('wmt.mark_deleted', 'Y')
+      .where((query) => {
+        query.where('wmt.src_warehouse_id', warehouseId).orWhere('wmt.dst_warehouse_id', warehouseId)
+      })
+      .andWhere('wmt.mark_deleted', 'Y')
       .limit(limit)
       .offset(offset)
       .orderBy('wmt.transfer_id', 'DESC')
   }
 
-  totalMarkDelete(knex: Knex) {
-    return knex('wm_transfer')
-      .where('mark_deleted', 'Y')
+  totalMarkDelete(knex: Knex, warehouseId: any) {
+    return knex('wm_transfer as wmt')
+      .where((query) => {
+        query.where('wmt.src_warehouse_id', warehouseId).orWhere('wmt.dst_warehouse_id', warehouseId)
+      })
+      .andWhere('wmt.mark_deleted', 'Y')
       .count('* as total');
   }
 

@@ -26,28 +26,29 @@ router.get('/list', co(async (req, res, next) => {
   let type = +req.query.t || 1;
   let limit = +req.query.limit || 15;
   let offset = +req.query.offset || 0;
+  let warehouseId = req.decoded.warehouseId;
 
   try {
     let rows;
     let total;
     if (type === 1) { // all
-      rows = await transferModel.all(db, limit, offset);
-      total = await transferModel.totalAll(db);
+      rows = await transferModel.all(db, warehouseId, limit, offset);
+      total = await transferModel.totalAll(db, warehouseId);
     } else if (type === 2) {
-      rows = await transferModel.approved(db, limit, offset);
-      total = await transferModel.totalApproved(db);
+      rows = await transferModel.approved(db, warehouseId, limit, offset);
+      total = await transferModel.totalApproved(db, warehouseId);
     } else if (type === 3) {
-      rows = await transferModel.notApproved(db, limit, offset);
-      total = await transferModel.totalNotApproved(db);
+      rows = await transferModel.notApproved(db, warehouseId, limit, offset);
+      total = await transferModel.totalNotApproved(db, warehouseId);
     } else if (type === 4) {
-      rows = await transferModel.notConfirmed(db, limit, offset);
-      total = await transferModel.totalNotConfirmed(db);
+      rows = await transferModel.notConfirmed(db, warehouseId, limit, offset);
+      total = await transferModel.totalNotConfirmed(db, warehouseId);
     } else if (type === 5) {
-      rows = await transferModel.markDeleted(db, limit, offset);
-      total = await transferModel.totalMarkDelete(db);
+      rows = await transferModel.markDeleted(db, warehouseId, limit, offset);
+      total = await transferModel.totalMarkDelete(db, warehouseId);
     } else {
-      rows = await transferModel.all(db, limit, offset);
-      total = await transferModel.totalAll(db);
+      rows = await transferModel.all(db, warehouseId, limit, offset);
+      total = await transferModel.totalAll(db, warehouseId);
     }
 
     res.send({ ok: true, rows: rows, total: total[0].total });
