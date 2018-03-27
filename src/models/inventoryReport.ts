@@ -1159,7 +1159,13 @@ WHERE
     }
     commaQty(num) {
         if (num === null) { return 0; }
+        let minus = false;
+        if (num < 0) {
+            minus = true;
+            num = Math.abs(num);
+        }
         num = '' + num;
+        num = num.toFixed(0);
         var l = num.toString().length
         var num2 = '';
         var c = 0;
@@ -1168,7 +1174,11 @@ WHERE
             if (c == 3 && num[i - 1] != null) { c = 0; num2 = ',' + num[i] + num2 }
             else num2 = num[i] + num2
         }
-        return num2;
+        if (minus) {
+            return '-' + num2;
+        } else {
+            return num2;
+        }
 
     }
     bahtText(num) {
