@@ -473,4 +473,18 @@ router.post('/confirm', co(async (req, res, next) => {
 
 }));
 
+router.get('/request', co(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.decoded.warehouseId;
+  try {
+    let rows = await transferModel.transferRequest(db, warehouseId);
+    res.send({ ok: true, rows: rows });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
 export default router;
