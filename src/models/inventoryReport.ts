@@ -86,7 +86,7 @@ export class InventoryReportModel {
         rc.confirm_date,
         mg.generic_id,
         mg.generic_name,
-        sum(rci.confirm_qty) AS qty,
+        rci.confirm_qty AS qty,
         r.updated_at,
         mgd.dosage_name,
         round(sum(wp.cost * rci.confirm_qty), 2 ) AS total_cost 
