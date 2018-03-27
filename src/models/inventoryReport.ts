@@ -89,7 +89,7 @@ export class InventoryReportModel {
         sum(rci.confirm_qty) AS qty,
         r.updated_at,
         mgd.dosage_name,
-        round(wp.cost * sum(rci.confirm_qty), 2 ) AS total_cost 
+        round(sum(wp.cost * rci.confirm_qty), 2 ) AS total_cost 
     FROM
         wm_requisition_orders r
         JOIN wm_requisition_order_items ro ON r.requisition_order_id = ro.requisition_order_id 
@@ -106,8 +106,10 @@ export class InventoryReportModel {
         JOIN wm_warehouses wh ON wh.warehouse_id = r.wm_requisition
     WHERE
         r.requisition_order_id = ?
-    GROUP BY
-        mg.generic_id`
+        and 
+        rci.confirm_qty > 0
+        GROUP BY
+        mg.generic_id,wp.lot_no`
         return knex.raw(sql, requisId)
     }
     totalcost_warehouse(knex: Knex) {
@@ -796,19 +798,19 @@ WHERE
     list_cost(knex: Knex) {
         let sql = `
         SELECT
-            mgt.generic_type_name,
-            mgda.drug_account_name,
-            round(IFNULL(sum(wp.cost), 0), 2) as cost
-        FROM
-            wm_products wp
-        JOIN mm_products mp ON wp.product_id = mp.product_id
-        JOIN mm_generics mg ON mp.generic_id = mg.generic_id
-        RIGHT JOIN mm_generic_drugs_accounts mgda ON mg.generic_drug_account_id = mgda.drug_account_id
-        JOIN mm_generic_types mgt ON mg.generic_type_id = mgt.generic_type_id
-        WHERE
-            mgt.generic_type_id = 1
-        GROUP BY
-            generic_drug_account_id
+ 	mgt.generic_type_name,
+	mgda.account_name,
+	round( IFNULL( sum( wp.cost ), 0 ), 2 ) AS cost 
+    FROM
+	wm_products wp
+	JOIN mm_products mp ON wp.product_id = mp.product_id
+	JOIN mm_generics mg ON mp.generic_id = mg.generic_id
+	RIGHT JOIN mm_generic_accounts mgda ON mg.account_id = mgda.account_id
+	JOIN mm_generic_types mgt ON mg.generic_type_id = mg.generic_type_id 
+    WHERE
+	mgt.generic_type_id = 1 
+    GROUP BY
+	mgda.account_id
         UNION
             SELECT
                 mgt.generic_type_name,
@@ -896,6 +898,7 @@ WHERE
         wrd.receive_qty,
         vap.small_qty,
         vap.small_unit,
+        vap.large_unit,
         wrd.expired_date,
         wrd.lot_no,
         wl.location_name,
@@ -922,7 +925,7 @@ WHERE
                 mg.generic_name,
                 wp.qty,
                 mug.qty as small_qty,
-                '',
+                '','',
                 wp.expired_date,wp.lot_no,'','','',''
             FROM
                 wm_products wp
