@@ -287,7 +287,7 @@ export class StaffModel {
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
       .where('wmt.src_warehouse_id', warehouseId)
       // .where('wmt.is_accepted', 'Y')
-      .orderBy('wmt.transfer_date', 'desc');
+      .orderBy('wmt.transfer_code', 'desc');
   }
 
   transferRequest(knex: Knex, warehouseId: any) {
@@ -299,7 +299,7 @@ export class StaffModel {
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
       .where('wmt.dst_warehouse_id', warehouseId)
       .andWhere('wmt.confirmed', 'Y')
-      .orderBy('wmt.transfer_date', 'desc');
+      .orderBy('wmt.transfer_code', 'desc');
   }
 
   transferDetail(knex: Knex, transferId: string) {

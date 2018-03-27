@@ -400,7 +400,7 @@ router.post('/counting/cycle/save-remark', co(async (req, res, next) => {
 }));
 
 // transfer
-const transferApprove = (async (db: Knex, transferIds: any[]) => {
+const transferApprove = (async (db: Knex, transferIds: any[], peopleUserId: any) => {
   let results = await transferModel.getProductListIds(db, transferIds);
   let dstProducts = [];
   let srcProducts = [];
@@ -534,7 +534,7 @@ const transferApprove = (async (db: Knex, transferIds: any[]) => {
 
   await transferModel.saveDstProducts(db, dstProducts);
   await transferModel.decreaseQty(db, dstProducts);
-  await transferModel.changeApproveStatusIds(db, transferIds);
+  await transferModel.changeApproveStatusIds(db, transferIds, peopleUserId);
   await stockCardModel.saveFastStockTransaction(db, data);
 });
 
@@ -616,6 +616,7 @@ router.post('/transfer/save', co(async (req, res, next) => {
   let db = req.db;
   let _summary = req.body.summary;
   let _generics = req.body.generics;
+  let peopleUserId = req.decoded.people_user_id;
   const approveAuto = req.decoded.WM_TRANSFER_APPROVE === 'N' ? true : false;
 
   if (_generics.length && _summary) {
@@ -666,8 +667,8 @@ router.post('/transfer/save', co(async (req, res, next) => {
         }
 
         if (approveAuto) {
-          await transferModel.changeConfirmStatusIds(db, transferId, req.decoded.people_user_id);
-          await transferApprove(db, transferId);
+          await transferModel.changeConfirmStatusIds(db, transferId, peopleUserId);
+          await transferApprove(db, transferId, peopleUserId);
         }
 
         res.send({ ok: true });
@@ -815,9 +816,11 @@ router.post('/transfer/approve', co(async (req, res, next) => {
 
   let db = req.db;
   let transferIds = req.body.transferIds;
+  let peopleUserId = req.decoded.people_user_id;
 
   try {
-    await transferApprove(db, transferIds);
+    await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
+    await transferApprove(db, transferIds, peopleUserId);
     res.send({ ok: true });
   } catch (error) {
     res.send({ ok: false, error: error.message });
