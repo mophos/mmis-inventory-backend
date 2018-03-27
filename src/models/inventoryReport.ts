@@ -74,6 +74,7 @@ export class InventoryReportModel {
         r.requisition_order_id,
         wp.product_id,
         mp.product_name,
+        mp.working_code as trade_code,
         ro.requisition_qty,
         wp.cost,
         wp.lot_no,
@@ -85,6 +86,7 @@ export class InventoryReportModel {
         wh.warehouse_name,
         rc.confirm_date,
         mg.generic_id,
+        mg.working_code as generic_code,
         mg.generic_name,
         rci.confirm_qty AS qty,
         r.updated_at,
@@ -1164,8 +1166,8 @@ WHERE
             minus = true;
             num = Math.abs(num);
         }
-        num = '' + num;
         num = num.toFixed(0);
+        num = '' + num;
         var l = num.toString().length
         var num2 = '';
         var c = 0;
