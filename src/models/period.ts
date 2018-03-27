@@ -35,23 +35,24 @@ export class PeriodModel {
     return knex('wm_receives as r').whereBetween('receive_date', [startdate, enddate]).whereNotExists(knex.select('*').from('wm_receive_approve as ra')
       .whereRaw('r.receive_id = ra.receive_id')
     )
+    .where('r.is_cancel','N')
   }
   getRequisition(knex: Knex, startdate, enddate) {
     return knex('wm_requisition_orders').whereBetween('requisition_date', [startdate, enddate])
-    .where('is_approved', 'N');
+    .where('is_approved', 'N').where('is_cancel','N');
   }
   getReceiveOther(knex: Knex, startdate, enddate) {
     return knex('wm_receive_other as r').whereBetween('receive_date', [startdate, enddate])
       .whereNotExists(knex.select('*').from('wm_receive_approve as ra')
-        .whereRaw('r.receive_other_id = ra.receive_other_id'));
+        .whereRaw('r.receive_other_id = ra.receive_other_id')).where('r.is_cancel','N');
   }
   getIssue(knex: Knex, startdate, enddate) {
     return knex('wm_issue_summary').whereBetween('issue_date', [startdate, enddate])
-      .where('approved', 'N');
+      .where('approved', 'N').where('is_cancel','N');
   }
   getTransfer(knex: Knex, startdate, enddate) {
     return knex('wm_transfer').whereBetween('transfer_date', [startdate, enddate])
-      .where('approved', 'N');
+      .where('approved', 'N').where('mark_deleted','N');
   }
   updateCloseDate(knex: Knex, id, date, user_id, people_id) {
     return knex('wm_period').where('period_id', id)

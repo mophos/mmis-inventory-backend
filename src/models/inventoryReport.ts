@@ -608,7 +608,9 @@ export class InventoryReportModel {
     whs.warehouse_id AS withdraw_warehouse_id,
 	whs.warehouse_name AS withdraw_warehouse_name,
 	mg.working_code,
-	mg.generic_name,
+    mg.generic_name,
+    mp.product_name,
+    mp.working_code as trade_code,
     mg.generic_id,
     wp.product_id,
 	( SELECT roi.requisition_qty FROM wm_requisition_order_items roi WHERE roi.requisition_order_id = r.requisition_order_id AND mg.generic_id = roi.generic_id ) AS requisition_qty,
@@ -624,6 +626,7 @@ FROM
 	LEFT JOIN wm_requisition_confirm_items rci ON rci.confirm_id = rc.confirm_id
 	LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
     LEFT JOIN mm_generics AS mg ON mg.generic_id = rci.generic_id
+    join mm_products as mp on mp.product_id = wp.product_id
     left join mm_generic_dosages mgd on mgd.dosage_id  = mg.dosage_id 
 	LEFT JOIN mm_unit_generics AS mup ON wp.unit_generic_id = mup.unit_generic_id
 	LEFT JOIN mm_units AS mul ON mup.from_unit_id = mul.unit_id
@@ -1963,13 +1966,15 @@ OR sc.ref_src like ?
           wp.lot_no,
           wp.expired_date,
           r.requisition_code,
-          rc.is_approve
+          rc.is_approve,
+          mp.product_name
         FROM
           wm_requisition_orders r
         LEFT JOIN wm_requisition_confirms rc ON rc.requisition_order_id = r.requisition_order_id
         LEFT JOIN wm_requisition_confirm_items rci ON rci.confirm_id = rc.confirm_id
         LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
         LEFT JOIN mm_generics AS mg ON mg.generic_id = rci.generic_id
+        JOIN mm_products mp ON wp.product_id = mp.product_id
         LEFT JOIN mm_unit_generics AS mup ON wp.unit_generic_id = mup.unit_generic_id
         LEFT JOIN mm_units AS mul ON mup.from_unit_id = mul.unit_id
         LEFT JOIN mm_units AS mus ON mup.to_unit_id = mus.unit_id
@@ -1992,7 +1997,8 @@ OR sc.ref_src like ?
             wp.lot_no,
             wp.expired_date,
             '',
-            'Y'
+            'Y',
+            'คงคลัง'
           FROM
             wm_products wp
           JOIN mm_products mp ON wp.product_id = mp.product_id
