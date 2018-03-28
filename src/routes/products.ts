@@ -332,19 +332,11 @@ router.post('/stock/products/all', co(async (req, res, next) => {
   let limit = req.body.limit || 10;
   let offset = req.body.offset || 0;
   let genericType = req.body.genericType;
-
-  let productGroups = req.decoded.generic_type_id;
-  let _pgs = [];
-
-  if (productGroups) {
-    let pgs = productGroups.split(',');
-    pgs.forEach(v => {
-      _pgs.push(v);
-    });
-
+  
+  if(genericType){
     try {
-      let rsTotal = await productModel.adminGetAllProductTotal(db, _pgs, genericType);
-      let rs = await productModel.adminGetAllProducts(db, _pgs, genericType, limit, offset);
+      let rsTotal = await productModel.adminGetAllProductTotal(db, genericType);
+      let rs = await productModel.adminGetAllProducts(db, genericType, limit, offset);
       res.send({ ok: true, rows: rs, total: rsTotal[0].total });
     } catch (error) {
       res.send({ ok: false, error: error.message });

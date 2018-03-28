@@ -180,7 +180,7 @@ export class ProductModel {
 
   // admin/products
 
-  adminGetAllProducts(knex: Knex, productGroups: any = [], genericType: any, limit: number, offset: number) {
+  adminGetAllProducts(knex: Knex, genericType: any, limit: number, offset: number) {
     let query = knex('wm_products as p')
       .select('p.wm_product_id', 'p.product_id', 'mp.working_code', knex.raw('sum(p.qty) as qty'), knex.raw('sum(p.qty * p.cost) as total_cost'),
       'mp.product_name', 'g.generic_name', 'g.working_code as generic_working_code', 'mp.primary_unit_id', 'u.unit_name as primary_unit_name',
@@ -189,25 +189,20 @@ export class ProductModel {
       .leftJoin('mm_generics as g', 'g.generic_id', 'mp.generic_id')
       .leftJoin('mm_units as u', 'u.unit_id', 'mp.primary_unit_id')
       .where('mp.mark_deleted', 'N')
-      .whereIn('g.generic_type_id', productGroups)
-    if (genericType) {
-      query.andWhere('g.generic_type_id', genericType);
-    }
+      .whereIn('g.generic_type_id', genericType);
+    
     return query.groupBy('p.product_id')
       .orderBy('mp.product_name')
       .limit(limit)
       .offset(offset);
   }
 
-  adminGetAllProductTotal(knex: Knex, productGroups: any[], genericType: any) {
+  adminGetAllProductTotal(knex: Knex, genericType: any) {
     let query = knex('wm_products as p')
       .select(knex.raw('count(distinct p.product_id) as total'))
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
-      .innerJoin('mm_generics as mg', 'mp.generic_id', 'mp.generic_id')
-      .whereIn('mg.generic_type_id', productGroups);
-    if (genericType) {
-      query.andWhere('mg.generic_type_id', genericType);
-    }
+      .innerJoin('mm_generics as mg', 'mp.generic_id', 'mg.generic_id')
+      .whereIn('mg.generic_type_id', genericType);
     return query;
   }
 
@@ -484,7 +479,7 @@ group by mpp.product_id
       g.working_code=? or 
       mp.working_code=? or 
       mp.keywords like ?)
-    and g.generic_type_id = ?
+    and g.generic_type_id in (?)
     group by p.product_id
     order by mp.product_name
     limit ? offset ?
@@ -522,7 +517,7 @@ group by mpp.product_id
     left join mm_units as u on u.unit_id=mp.primary_unit_id
     where mp.mark_deleted='N'
     and (mp.product_name like ? or g.generic_name like ? or mp.working_code=? or mp.keywords=?)
-    and g.generic_type_id = ?
+    and g.generic_type_id in (?)
     group by p.product_id
     order by mp.product_name
     `;
