@@ -75,7 +75,7 @@ export class InventoryReportModel {
         wp.product_id,
         mp.product_name,
         ro.requisition_qty,
-        wp.cost,
+        mup.cost,
         wp.lot_no,
         wp.expired_date,
         rci.confirm_qty,
