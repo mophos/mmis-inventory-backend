@@ -120,8 +120,14 @@ router.delete('/:transferId', co(async (req, res, next) => {
   let transferId = req.params.transferId;
 
   try {
-    let rows = await transferModel.removeTransfer(db, transferId);
-    res.send({ ok: true });
+    const rs = await transferModel.checkStatus(db, transferId);
+    const status = rs[0];
+    if (status.confirmed === 'Y' || status.approved === 'Y') {
+      res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
+    } else {
+      let rows = await transferModel.removeTransfer(db, transferId);
+      res.send({ ok: true });
+    }
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -213,49 +219,55 @@ router.put('/save/:transferId', co(async (req, res, next) => {
   let transferId = req.params.transferId;
 
   if (_generics.length && _summary) {
-    try {
-      let transfer = {
-        transfer_date: _summary.transferDate,
-        people_user_id: req.decoded.people_user_id
-      }
+    const rs = await transferModel.checkStatus(db, transferId);
+    const status = rs[0];
+    if (status.confirmed === 'Y' || status.approved === 'Y' || status.mark_deleted === 'Y') {
+      res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
+    } else {
+      try {
+        let transfer = {
+          transfer_date: _summary.transferDate,
+          people_user_id: req.decoded.people_user_id
+        }
 
-      await transferModel.deleteTransferGeneric(db, transferId);
-      await transferModel.deleteTransferProduct(db, transferId);
-      await transferModel.updateTransferSummary(db, transferId, transfer);
+        await transferModel.deleteTransferGeneric(db, transferId);
+        await transferModel.deleteTransferProduct(db, transferId);
+        await transferModel.updateTransferSummary(db, transferId, transfer);
 
-      for (const g of _generics) {
-        let generics = {
-          transfer_id: transferId,
-          generic_id: g.generic_id,
-          transfer_qty: g.transfer_qty,
-          // unit_generic_id: g.unit_generic_id,
-          primary_unit_id: g.primary_unit_id,
-          location_id: g.location_id,
-          create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-          create_by: req.decoded.people_user_id
-        };
-        let rsTransferGeneric = await transferModel.saveTransferGeneric(db, generics);
-
-        let products = [];
-        g.products.forEach(p => {
-          products.push({
+        for (const g of _generics) {
+          let generics = {
             transfer_id: transferId,
-            transfer_generic_id: rsTransferGeneric[0],
-            wm_product_id: p.wm_product_id,
-            product_qty: p.product_qty * p.conversion_qty,
+            generic_id: g.generic_id,
+            transfer_qty: g.transfer_qty,
+            // unit_generic_id: g.unit_generic_id,
+            primary_unit_id: g.primary_unit_id,
+            location_id: g.location_id,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
+          };
+          let rsTransferGeneric = await transferModel.saveTransferGeneric(db, generics);
+
+          let products = [];
+          g.products.forEach(p => {
+            products.push({
+              transfer_id: transferId,
+              transfer_generic_id: rsTransferGeneric[0],
+              wm_product_id: p.wm_product_id,
+              product_qty: p.product_qty * p.conversion_qty,
+              create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+              create_by: req.decoded.people_user_id
+            });
           });
-        });
-        await transferModel.saveTransferProduct(db, products);
+          await transferModel.saveTransferProduct(db, products);
+        }
+
+        res.send({ ok: true });
+
+      } catch (error) {
+        res.send({ ok: false, error: error.message });
+      } finally {
+        db.destroy();
       }
-
-      res.send({ ok: true });
-
-    } catch (error) {
-      res.send({ ok: false, error: error.message });
-    } finally {
-      db.destroy();
     }
 
   } else {
@@ -270,9 +282,20 @@ router.post('/approve-all', co(async (req, res, next) => {
   let peopleUserId = req.decoded.people_user_id;
 
   try {
-    await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
-    await approve(db, transferIds, warehouseId, peopleUserId);
-    res.send({ ok: true });
+    let isValid = true;
+    const rs = await transferModel.checkStatus(db, transferIds);
+    for (const i of rs) {
+      if (i.mark_deleted === 'Y') {
+        isValid = false;
+      }
+    }
+    if (isValid) {
+      await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
+      await approve(db, transferIds, warehouseId, peopleUserId);
+      res.send({ ok: true });
+    } else {
+      res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะบางรายการมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
+    }
   } catch (error) {
     throw error;
   } finally {
@@ -463,10 +486,21 @@ router.post('/confirm', co(async (req, res, next) => {
   let peopleUserId = req.decoded.people_user_id;
 
   try {
-    await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
-    res.send({ ok: true });
+    let isValid = true;
+    const rs = await transferModel.checkStatus(db, transferIds);
+    for (const i of rs) {
+      if (i.mark_deleted === 'Y') {
+        isValid = false;
+      }
+    }
+    if (isValid) {
+      await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
+      res.send({ ok: true });
+    } else {
+      res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะบางรายการมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
+    }
   } catch (error) {
-    res.send({ ok: false, error: error.message });
+    throw error;
   } finally {
     db.destroy();
   }

@@ -414,4 +414,10 @@ export class TransferModel {
       .andWhere('wmt.confirmed', 'Y')
       .orderBy('wmt.transfer_code', 'desc');
   }
+
+  checkStatus(knex: Knex, transferId: any[]) {
+    return knex('wm_transfer as wmt')
+      .select('wmt.mark_deleted', 'wmt.approved', 'wmt.confirmed')
+      .whereIn('wmt.transfer_id', transferId);
+  }
 }
