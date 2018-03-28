@@ -76,7 +76,7 @@ export class InventoryReportModel {
         mp.product_name,
         mp.working_code as trade_code,
         ro.requisition_qty,
-        wp.cost,
+        mup.cost,
         wp.lot_no,
         wp.expired_date,
         rci.confirm_qty,
