@@ -750,6 +750,152 @@ router.post('/waiting', co(async (req, res, next) => {
   }
 }));
 
+router.post('/Napprove', co(async (req, res, next) => {
+  let db = req.db;
+  let limit = +req.body.limit;
+  let offset = +req.body.offset;
+
+  try {
+    let rsTotal = await receiveModel.getReceiveNapproveTotal(db);
+    let total = +rsTotal[0].total;
+    const results = await receiveModel.getReceiveNapprove(db, limit, offset);
+    let data: any = [];
+    results.forEach((v: any) => {
+      let obj: any = {
+        receive_id: v.receive_id,
+        purchase_order_id: v.purchase_order_id,
+        receive_date: v.receive_date,
+        delivery_date: v.delivery_date,
+        delivery_code: v.delivery_code,
+        labeler_name: v.labeler_name,
+        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
+        approve_id: v.approve_id,
+        purchase_order_number: v.purchase_order_number,
+        purchase_order_book_number: v.purchase_order_book_number,
+        receive_code: v.receive_code,
+        receive_tmp_code: v.receive_tmp_code,
+        is_cancel: v.is_cancel
+      }
+      data.push(obj);
+    });
+    console.log(data);
+
+    res.send({ ok: true, rows: data, total: total });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.post('/approve', co(async (req, res, next) => {
+  let db = req.db;
+  let limit = +req.body.limit;
+  let offset = +req.body.offset;
+
+  try {
+    let rsTotal = await receiveModel.getReceiveApproveTotal(db);
+    let total = +rsTotal[0].total;
+    const results = await receiveModel.getReceiveApprove(db, limit, offset);
+    let data: any = [];
+    results.forEach((v: any) => {
+      let obj: any = {
+        receive_id: v.receive_id,
+        purchase_order_id: v.purchase_order_id,
+        receive_date: v.receive_date,
+        delivery_date: v.delivery_date,
+        delivery_code: v.delivery_code,
+        labeler_name: v.labeler_name,
+        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
+        approve_id: v.approve_id,
+        purchase_order_number: v.purchase_order_number,
+        purchase_order_book_number: v.purchase_order_book_number,
+        receive_code: v.receive_code,
+        receive_tmp_code: v.receive_tmp_code,
+        is_cancel: v.is_cancel
+      }
+      data.push(obj);
+    });
+    console.log(data);
+
+    res.send({ ok: true, rows: data, total: total });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.post('/other/Napprove', co(async (req, res, next) => {
+  let db = req.db;
+  let limit = +req.body.limit;
+  let offset = +req.body.offset;
+
+  try {
+    let rsTotal = await receiveModel.getReceiveOtherNapproveTotal(db);
+    let total = +rsTotal[0].total;
+    const results = await receiveModel.getReceiveOtherNapprove(db, limit, offset);
+    let data: any = [];
+    results.forEach((v: any) => {
+      let obj: any = {
+        receive_id: v.receive_id,
+        receive_date: v.receive_date,
+        delivery_code: v.delivery_code,
+        donator_name: v.donator_name,
+        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
+        approve_id: v.approve_id,
+        receive_code: v.receive_code,
+        is_cancel: v.is_cancel
+      }
+      data.push(obj);
+    });
+    console.log(data);
+
+    res.send({ ok: true, rows: data, total: total });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.post('/other/approve/list', co(async (req, res, next) => {
+  let db = req.db;
+  let limit = +req.body.limit;
+  let offset = +req.body.offset;
+
+  try {
+    let rsTotal = await receiveModel.getReceiveOtherApproveTotal(db);
+    let total = +rsTotal[0].total;
+    const results = await receiveModel.getReceiveOtherApprove(db, limit, offset);
+    let data: any = [];
+    results.forEach((v: any) => {
+      let obj: any = {
+        receive_id: v.receive_id,
+        receive_date: v.receive_date,
+        delivery_code: v.delivery_code,
+        donator_name: v.donator_name,
+        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
+        approve_id: v.approve_id,
+        receive_code: v.receive_code,
+        is_cancel: v.is_cancel
+      }
+      data.push(obj);
+    });
+    console.log(data);
+
+    res.send({ ok: true, rows: data, total: total });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
 router.post('/waiting/search', co(async (req, res, next) => {
   let db = req.db;
   let limit = +req.body.limit;
@@ -775,6 +921,146 @@ router.post('/waiting/search', co(async (req, res, next) => {
         purchase_order_book_number: v.purchase_order_book_number,
         receive_code: v.receive_code,
         receive_tmp_code: v.receive_tmp_code
+      }
+      data.push(obj);
+    });
+    res.send({ ok: true, rows: data, total: total });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.post('/approve/search', co(async (req, res, next) => {
+  let db = req.db;
+  let limit = +req.body.limit;
+  let offset = +req.body.offset;
+  let query = req.body.query;
+
+  try {
+    let rsTotal = await receiveModel.getReceiveApproveTotalSearch(db, query);
+    let total = +rsTotal[0].total;
+    const results = await receiveModel.getReceiveApproveSearch(db, limit, offset, query);
+    let data: any = [];
+    results.forEach((v: any) => {
+      let obj: any = {
+        receive_id: v.receive_id,
+        purchase_id: v.purchase_id,
+        receive_date: v.receive_date,
+        delivery_date: v.delivery_date,
+        delivery_code: v.delivery_code,
+        labeler_name: v.labeler_name,
+        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
+        approve_id: v.approve_id,
+        purchase_order_number: v.purchase_order_number,
+        purchase_order_book_number: v.purchase_order_book_number,
+        receive_code: v.receive_code,
+        receive_tmp_code: v.receive_tmp_code
+      }
+      data.push(obj);
+    });
+    res.send({ ok: true, rows: data, total: total });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.post('/napprove/search', co(async (req, res, next) => {
+  let db = req.db;
+  let limit = +req.body.limit;
+  let offset = +req.body.offset;
+  let query = req.body.query;
+
+  try {
+    let rsTotal = await receiveModel.getReceiveNapproveTotalSearch(db, query);
+    let total = +rsTotal[0].total;
+    const results = await receiveModel.getReceiveNapproveSearch(db, limit, offset, query);
+    let data: any = [];
+    results.forEach((v: any) => {
+      let obj: any = {
+        receive_id: v.receive_id,
+        purchase_id: v.purchase_id,
+        receive_date: v.receive_date,
+        delivery_date: v.delivery_date,
+        delivery_code: v.delivery_code,
+        labeler_name: v.labeler_name,
+        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
+        approve_id: v.approve_id,
+        purchase_order_number: v.purchase_order_number,
+        purchase_order_book_number: v.purchase_order_book_number,
+        receive_code: v.receive_code,
+        receive_tmp_code: v.receive_tmp_code
+      }
+      data.push(obj);
+    });
+    res.send({ ok: true, rows: data, total: total });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.post('/other/approve/search', co(async (req, res, next) => {
+  let db = req.db;
+  let limit = +req.body.limit;
+  let offset = +req.body.offset;
+  let query = req.body.query;
+
+  try {
+    let rsTotal = await receiveModel.getReceiveOtherApproveTotalSearch(db, query);
+    let total = +rsTotal[0].total;
+    const results = await receiveModel.getReceiveOtherApproveSearch(db, limit, offset, query);
+    let data: any = [];
+    results.forEach((v: any) => {
+      let obj: any = {
+        receive_id: v.receive_id,
+        receive_date: v.receive_date,
+        delivery_code: v.delivery_code,
+        donator_name: v.donator_name,
+        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
+        approve_id: v.approve_id,
+        receive_code: v.receive_code,
+        is_cancel: v.is_cancel
+      }
+      data.push(obj);
+    });
+    res.send({ ok: true, rows: data, total: total });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.post('/other/napprove/search', co(async (req, res, next) => {
+  let db = req.db;
+  let limit = +req.body.limit;
+  let offset = +req.body.offset;
+  let query = req.body.query;
+
+  try {
+    let rsTotal = await receiveModel.getReceiveOtherNapproveTotalSearch(db, query);
+    let total = +rsTotal[0].total;
+    const results = await receiveModel.getReceiveOtherNapproveSearch(db, limit, offset, query);
+    let data: any = [];
+    results.forEach((v: any) => {
+      let obj: any = {
+        receive_id: v.receive_id,
+        receive_date: v.receive_date,
+        delivery_code: v.delivery_code,
+        donator_name: v.donator_name,
+        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
+        approve_id: v.approve_id,
+        receive_code: v.receive_code,
+        is_cancel: v.is_cancel
       }
       data.push(obj);
     });
@@ -945,7 +1231,7 @@ router.post('/approve', co(async (req, res, next) => {
       obj.ref_src = v.vendor_labeler_id;
       obj.ref_dst = v.warehouse_id;
       obj.comment = 'รับเข้าคลังจากใบสั่งซื้อ';
-      obj.lot_no  = v.lot_no;
+      obj.lot_no = v.lot_no;
       obj.expired_date = v.expired_date;
       data.push(obj);
     });
@@ -1063,7 +1349,7 @@ router.post('/other/approve', co(async (req, res, next) => {
       obj.ref_src = v.donator_id;
       obj.ref_dst = v.warehouse_id;
       obj.comment = 'รับเข้าคลังแบบอื่นๆ';
-      obj.lot_no  = v.lot_no;
+      obj.lot_no = v.lot_no;
       obj.expired_date = v.expired_date;
       data.push(obj);
     });
@@ -1339,12 +1625,12 @@ router.put('/update/cost', co(async (req, res, nex) => {
   let products = req.body.products;
   let productsData = [];
   products.forEach((v: any) => {
-    if(v.cost != 0){
+    if (v.cost != 0) {
       let pdata: any = {
-      unit_generic_id: v.unit_generic_id,
-      cost: v.cost
-    }
-    productsData.push(pdata);
+        unit_generic_id: v.unit_generic_id,
+        cost: v.cost
+      }
+      productsData.push(pdata);
     }
   });
   try {

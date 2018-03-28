@@ -381,19 +381,10 @@ router.post('/stock/products/search', co(async (req, res, next) => {
 router.post('/stock/products/total', co(async (req, res, next) => {
   let db = req.db;
   let genericType = req.body.genericType;
-  
+
   try {
-
-    let productGroups = req.decoded.generic_type_id;
-    let _pgs = [];
-
-    if (productGroups) {
-      let pgs = productGroups.split(',');
-      pgs.forEach(v => {
-        _pgs.push(v);
-      });
-
-      let rs = await productModel.adminGetAllProductTotal(db, _pgs, genericType);
+    if (genericType) {
+      let rs = await productModel.adminGetAllProductTotal(db, genericType);
       res.send({ ok: true, total: rs[0].total });
     } else {
       res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
