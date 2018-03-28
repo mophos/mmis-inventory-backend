@@ -794,14 +794,13 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
               warehouse_id: v.src_warehouse,
             });
             if (srcIdx > -1) {
-              srcBalance = balances[srcIdx].balance_qty;
-              balances[srcIdx].balance_qty -= v.qty;
+              balances[srcIdx].balance_qty -= +v.confirm_qty;
+              srcBalance = balances[srcIdx].balance_qty
+              balances[srcIdx].balance_generic_qty -= v.confirm_qty;
               srcBalanceGeneric = balances[srcIdx].balance_generic_qty;
-              balances[srcIdx].balance_generic_qty -= v.qty;
             }
-            objStockcardOut.balance_qty = +srcBalance - +v.confirm_qty;
-            objStockcardOut.balance_generic_qty = +srcBalanceGeneric - +v.confirm_qty;
-
+            objStockcardOut.balance_qty = srcBalance;
+            objStockcardOut.balance_generic_qty = srcBalanceGeneric;
 
             objStockcardOut.balance_unit_cost = v.cost;
             objStockcardOut.ref_src = v.src_warehouse;
@@ -829,14 +828,14 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
               product_id: v.product_id,
               warehouse_id: v.dst_warehouse,
             });
-            if (dstIdx > -1) {
+            if (dstIdx > -1) {  
+              balances[dstIdx].balance_qty += +v.confirm_qty;
               dstBalance = balances[dstIdx].balance_qty;
-              balances[dstIdx].balance_qty += v.qty;
+              balances[dstIdx].balance_generic_qty += v.confirm_qty;
               dstBalanceGeneric = balances[dstIdx].balance_generic_qty;
-              balances[dstIdx].balance_generic_qty += v.qty;
             }
-            objStockcardIn.balance_qty = +dstBalance + +v.confirm_qty;
-            objStockcardIn.balance_generic_qty = +dstBalanceGeneric + +v.confirm_qty;
+            objStockcardIn.balance_qty = dstBalance
+            objStockcardIn.balance_generic_qty = dstBalanceGeneric;
             objStockcardIn.balance_unit_cost = v.cost;
             objStockcardIn.ref_src = v.dst_warehouse;
             objStockcardIn.ref_dst = v.src_warehouse;

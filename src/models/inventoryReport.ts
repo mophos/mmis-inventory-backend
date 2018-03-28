@@ -74,6 +74,7 @@ export class InventoryReportModel {
         r.requisition_order_id,
         wp.product_id,
         mp.product_name,
+        mp.working_code as trade_code,
         ro.requisition_qty,
         mup.cost,
         wp.lot_no,
@@ -85,11 +86,12 @@ export class InventoryReportModel {
         wh.warehouse_name,
         rc.confirm_date,
         mg.generic_id,
+        mg.working_code as generic_code,
         mg.generic_name,
-        sum(rci.confirm_qty) AS qty,
+        rci.confirm_qty AS qty,
         r.updated_at,
         mgd.dosage_name,
-        round(wp.cost * sum(rci.confirm_qty), 2 ) AS total_cost 
+        round(sum(wp.cost * rci.confirm_qty), 2 ) AS total_cost 
     FROM
         wm_requisition_orders r
         JOIN wm_requisition_order_items ro ON r.requisition_order_id = ro.requisition_order_id 
@@ -106,8 +108,12 @@ export class InventoryReportModel {
         JOIN wm_warehouses wh ON wh.warehouse_id = r.wm_requisition
     WHERE
         r.requisition_order_id = ?
-    GROUP BY
-        mg.generic_id`
+        and 
+        rci.confirm_qty > 0
+        GROUP BY
+        wp.product_id,wp.lot_no
+        order by
+        mp.product_name`
         return knex.raw(sql, requisId)
     }
     totalcost_warehouse(knex: Knex) {
@@ -217,167 +223,49 @@ export class InventoryReportModel {
     }
     generic_stock(knex: Knex, genericId, startDate, endDate, warehouseId) {
         let sql = `SELECT
-        ws.product_id,
-        ws.generic_id,
-        mg.generic_name,
-        ws.stock_date,
-        ws.transaction_type,
-        ws.comment,
-        ws.document_ref,
-        mus.unit_name AS small_unit,
-		mu.unit_name AS large_unit,
-		mug.qty AS conversion_qty,
-        mgd.dosage_name,
-        ws.lot_no,
-        ws.expired_date,
-    IF (
-        ww.warehouse_name IS NOT NULL,
-        ww.warehouse_name,
-    
-    IF (
-        ml.labeler_name IS NOT NULL,
-        ml.labeler_name,
-    
-    IF (
-        wa.warehouse_name IS NOT NULL,
-        wa.warehouse_name,
-    
-    IF (
-        dt.donator_name IS NOT NULL,
-        dt.donator_name,
-        NULL
-    )
-    )
-    )
-    ) AS warehouse_name,
-    
-    IF (
-        ws.transaction_type = "TRN_IN" || ws.transaction_type = "REV" || ws.transaction_type = "REV_OTHER" || ws.transaction_type = "ADJUST" || ws.transaction_type = "REQ_IN" || ws.transaction_type = "ADD_IN" || ws.transaction_type = "SUMMIT",
-        ws.in_qty,
-        '0'
-    ) AS in_qty,
-    
-    IF (
-        ws.transaction_type = "TRN_OUT" || ws.transaction_type = "ADJUST" || ws.transaction_type = "IST" || ws.transaction_type = "REQ_OUT" || ws.transaction_type = "ADD_OUT",
-        ws.out_qty,
-        '0'
-    ) AS out_qty,
-    
-    IF (
-        ws.transaction_type = "TRN_IN" || ws.transaction_type = "REV" || ws.transaction_type = "REV_OTHER" || ws.transaction_type = "SUMMIT",
-        ws.in_qty * ws.balance_unit_cost,
-        ws.out_qty * ws.balance_unit_cost
-    ) AS cost,
-     ws.balance_generic_qty,
-     ws.balance_unit_cost,
-     ws.balance_generic_qty * ws.balance_unit_cost AS balance_amount
-    FROM
-        wm_stock_card AS ws
-    JOIN mm_generics AS mg ON mg.generic_id = ws.generic_id
-    LEFT JOIN mm_labelers AS ml ON
-    IF (
-        ws.transaction_type = "REV",
-        CONVERT (ml.labeler_id, INTEGER) = ws.ref_src,
-        ''
-    )
-    LEFT JOIN wm_donators AS dt ON
-    IF (
-        ws.transaction_type = "REV_OTHER",
-        CONVERT (dt.donator_id, INTEGER) = ws.ref_src,
-        ''
-    )
-    LEFT JOIN wm_warehouses AS ww ON
-    IF (
-        ws.transaction_type = "TRN_OUT" || ws.transaction_type = "REQ_OUT" || ws.transaction_type = "ADD_OUT" || ws.transaction_type = "REQ_IN",
-        ww.warehouse_id = ws.ref_dst,
-        ''
-    )
-    LEFT JOIN wm_warehouses AS wa ON
-    IF (
-        ws.transaction_type = "TRN_IN" || ws.transaction_type = "ADD_IN",
-        wa.warehouse_id = ws.ref_src,
-        ''
-    )
-    LEFT JOIN mm_products AS mp ON mp.product_id = ws.product_id
-    LEFT JOIN mm_unit_generics AS mug ON mug.unit_generic_id = mp.purchase_unit_id
-    LEFT JOIN mm_units AS mu ON mug.from_unit_id = mu.unit_id
-    LEFT JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
-    LEFT JOIN mm_generic_dosages AS mgd ON mg.dosage_id = mgd.dosage_id
-    WHERE
-        (
-    
-            IF (
-                ws.transaction_type = "REV",
-                ws.ref_dst = '${warehouseId}',
-                ''
-            )
-            OR
-            IF (
-                ws.transaction_type = "TRN_IN",
-                ws.ref_dst = '${warehouseId}',
-                ''
-            )
-            OR
-            IF (
-                ws.transaction_type = "TRN_OUT",
-                ws.ref_src = '${warehouseId}',
-                ''
-            )
-            OR
-            IF (
-                ws.transaction_type = "ADJUST",
-                ws.ref_src = '${warehouseId}',
-                ''
-            )
-            OR
-            IF (
-                ws.transaction_type = "IST",
-                ws.ref_src = '${warehouseId}',
-                ''
-            )
-            OR
-            IF (
-                ws.transaction_type = "REV_OTHER",
-                ws.ref_dst = '${warehouseId}',
-                ''
-            )
-            OR
-            IF (
-                ws.transaction_type = "REQ_OUT",
-                ws.ref_src = '${warehouseId}',
-                ''
-            )
-            OR
-            IF (
-                ws.transaction_type = "REQ_IN",
-                ws.ref_src = '${warehouseId}',
-                ''
-            )
-            OR
-            IF (
-                ws.transaction_type = "ADD_IN",
-                ws.ref_dst = '${warehouseId}',
-                ''
-            )
-            OR
-            IF (
-                ws.transaction_type = "ADD_OUT",
-                ws.ref_src = '${warehouseId}',
-                ''
-            )
-            OR
-            IF (
-                ws.transaction_type = "SUMMIT",
-                ws.ref_src = '${warehouseId}',
-                ''
-            )
-        )
-    AND ws.generic_id = '${genericId}'
-    AND ws.stock_date BETWEEN '${startDate}'
-    AND '${endDate}'
+        vscw.stock_card_id,
+        vscw.product_id,
+        vscw.generic_id,
+        vscw.generic_name,
+        vscw.stock_date,
+        vscw.transaction_type,
+        vscw.comment as comment,
+        vscw.document_ref,
+        vscw.document_ref_id,
+        vscw.small_unit,
+        vscw.large_unit,
+        vscw.conversion_qty,
+        vscw.dosage_name,
+        vscw.lot_no,
+        vscw.expired_date,
+        vscw.ref_src,
+        vscw.ref_dst,
+        vscw.warehouse_name,
+        vscw.in_qty,
+        vscw.out_qty,
+        vscw.cost,
+        vscw.balance_generic_qty,
+        vscw.balance_qty,
+        vscw.balance_unit_cost,
+        vscw.balance_amount,
+        vscw.warehouse_id,
+        wr.delivery_code,
+        wro.delivery_code AS delivery_code_other
+   FROM
+       view_stock_card_warehouse AS vscw
+   LEFT JOIN wm_receives AS wr ON wr.receive_id = vscw.document_ref_id
+   AND vscw.transaction_type = 'REV'
+   LEFT JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
+   AND vscw.transaction_type = 'REV_OTHER'
+   WHERE 
+   vscw.warehouse_id = '${warehouseId}'
+   AND
+   vscw.generic_id = '${genericId}'
+   AND vscw.stock_date BETWEEN '${startDate}'
+   AND '${endDate}'
     ORDER BY
-	    ws.stock_date,ws.stock_card_id
-    `
+        vscw.stock_date,
+        vscw.stock_card_id`
         return knex.raw(sql)
     }
 
@@ -606,7 +494,9 @@ export class InventoryReportModel {
     whs.warehouse_id AS withdraw_warehouse_id,
 	whs.warehouse_name AS withdraw_warehouse_name,
 	mg.working_code,
-	mg.generic_name,
+    mg.generic_name,
+    mp.product_name,
+    mp.working_code as trade_code,
     mg.generic_id,
     wp.product_id,
 	( SELECT roi.requisition_qty FROM wm_requisition_order_items roi WHERE roi.requisition_order_id = r.requisition_order_id AND mg.generic_id = roi.generic_id ) AS requisition_qty,
@@ -622,6 +512,7 @@ FROM
 	LEFT JOIN wm_requisition_confirm_items rci ON rci.confirm_id = rc.confirm_id
 	LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
     LEFT JOIN mm_generics AS mg ON mg.generic_id = rci.generic_id
+    join mm_products as mp on mp.product_id = wp.product_id
     left join mm_generic_dosages mgd on mgd.dosage_id  = mg.dosage_id 
 	LEFT JOIN mm_unit_generics AS mup ON wp.unit_generic_id = mup.unit_generic_id
 	LEFT JOIN mm_units AS mul ON mup.from_unit_id = mul.unit_id
@@ -796,19 +687,19 @@ WHERE
     list_cost(knex: Knex) {
         let sql = `
         SELECT
-            mgt.generic_type_name,
-            mgda.drug_account_name,
-            round(IFNULL(sum(wp.cost), 0), 2) as cost
-        FROM
-            wm_products wp
-        JOIN mm_products mp ON wp.product_id = mp.product_id
-        JOIN mm_generics mg ON mp.generic_id = mg.generic_id
-        RIGHT JOIN mm_generic_drugs_accounts mgda ON mg.generic_drug_account_id = mgda.drug_account_id
-        JOIN mm_generic_types mgt ON mg.generic_type_id = mgt.generic_type_id
-        WHERE
-            mgt.generic_type_id = 1
-        GROUP BY
-            generic_drug_account_id
+ 	mgt.generic_type_name,
+	mgda.account_name,
+	round( IFNULL( sum( wp.cost ), 0 ), 2 ) AS cost 
+    FROM
+	wm_products wp
+	JOIN mm_products mp ON wp.product_id = mp.product_id
+	JOIN mm_generics mg ON mp.generic_id = mg.generic_id
+	RIGHT JOIN mm_generic_accounts mgda ON mg.account_id = mgda.account_id
+	JOIN mm_generic_types mgt ON mg.generic_type_id = mg.generic_type_id 
+    WHERE
+	mgt.generic_type_id = 1 
+    GROUP BY
+	mgda.account_id
         UNION
             SELECT
                 mgt.generic_type_name,
@@ -896,6 +787,7 @@ WHERE
         wrd.receive_qty,
         vap.small_qty,
         vap.small_unit,
+        vap.large_unit,
         wrd.expired_date,
         wrd.lot_no,
         wl.location_name,
@@ -922,7 +814,7 @@ WHERE
                 mg.generic_name,
                 wp.qty,
                 mug.qty as small_qty,
-                '',
+                '','',
                 wp.expired_date,wp.lot_no,'','','',''
             FROM
                 wm_products wp
@@ -1151,6 +1043,12 @@ WHERE
     }
     commaQty(num) {
         if (num === null) { return 0; }
+        let minus = false;
+        if (num < 0) {
+            minus = true;
+            num = Math.abs(num);
+        }
+        num = num.toFixed(0);
         num = '' + num;
         var l = num.toString().length
         var num2 = '';
@@ -1160,7 +1058,11 @@ WHERE
             if (c == 3 && num[i - 1] != null) { c = 0; num2 = ',' + num[i] + num2 }
             else num2 = num[i] + num2
         }
-        return num2;
+        if (minus) {
+            return '-' + num2;
+        } else {
+            return num2;
+        }
 
     }
     bahtText(num) {
@@ -1960,13 +1862,15 @@ OR sc.ref_src like ?
           wp.lot_no,
           wp.expired_date,
           r.requisition_code,
-          rc.is_approve
+          rc.is_approve,
+          mp.product_name
         FROM
           wm_requisition_orders r
         LEFT JOIN wm_requisition_confirms rc ON rc.requisition_order_id = r.requisition_order_id
         LEFT JOIN wm_requisition_confirm_items rci ON rci.confirm_id = rc.confirm_id
         LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
         LEFT JOIN mm_generics AS mg ON mg.generic_id = rci.generic_id
+        JOIN mm_products mp ON wp.product_id = mp.product_id
         LEFT JOIN mm_unit_generics AS mup ON wp.unit_generic_id = mup.unit_generic_id
         LEFT JOIN mm_units AS mul ON mup.from_unit_id = mul.unit_id
         LEFT JOIN mm_units AS mus ON mup.to_unit_id = mus.unit_id
@@ -1989,7 +1893,8 @@ OR sc.ref_src like ?
             wp.lot_no,
             wp.expired_date,
             '',
-            'Y'
+            'Y',
+            'คงคลัง'
           FROM
             wm_products wp
           JOIN mm_products mp ON wp.product_id = mp.product_id

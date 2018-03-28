@@ -24,7 +24,7 @@ html
       tbody
       - y=1
       for a in list_cost
-        if(a.generic_type_name=='เวชภัณฑ์ยา')
+        if(a.generic_type_name=='ยา')
           tr
             td.center #{y}
             if(y==1)
@@ -33,7 +33,7 @@ html
             else
               - y++
               td 
-            td #{a.drug_account_name}
+            td #{a.account_name}
             td.right #{a.cost}
             if(y==3)
               td.right #{drug}
@@ -45,7 +45,7 @@ html
           tr
             td.center #{y}
             td #{a.generic_type_name}
-            td #{a.drug_account_name}
+            td #{a.account_name}
             td.right #{a.cost}
             td.right #{a.cost}
             - y++
@@ -59,7 +59,7 @@ html
             else
               - y++
               td 
-            td #{a.drug_account_name}
+            td #{a.account_name}
             td.right #{a.cost}
             if(y==7)
               td.right #{supot}
@@ -70,7 +70,7 @@ html
           tr
             td.center #{y}
             td #{a.generic_type_name}
-            td #{a.drug_account_name}
+            td #{a.account_name}
             td.right #{a.cost}
             td.right #{ot}
       tfooter 

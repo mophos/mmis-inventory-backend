@@ -165,7 +165,6 @@ router.post('/list', co(async (req, res, next) => {
 
   try {
     let rs = await hisTransactionModel.getHisTransaction(db, hospcode,genericType);
-    console.log(rs);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -191,11 +190,11 @@ router.post('/import', co(async (req, res, next) => {
   let db = req.db;
   let transactionIds = req.body.transactionIds;
   let hospcode = req.decoded.his_hospcode;
+
   if (transactionIds.length) {
     try {
 
       let hisProducts = await hisTransactionModel.getHisTransactionForImport(db, transactionIds);
-      let StockCards = _.clone(hisProducts);
       let productIds: any = [];
       let warehouseIds: any = [];
       hisProducts.forEach(v => {
@@ -203,7 +202,6 @@ router.post('/import', co(async (req, res, next) => {
         warehouseIds.push(v.warehouse_id);
       });
 
-      // console.log(hisProducts);
       let wmProducts = await hisTransactionModel.getProductInWarehouseForImport(db, warehouseIds, productIds);
       let unCutStockIds = [];
       let cutStockIds = [];
@@ -217,16 +215,18 @@ router.post('/import', co(async (req, res, next) => {
         } else {
           cutStockIds.push(h.transaction_id);
           await Promise.all(wmProducts.map(async (v, i) => {
+
             if (v.qty > 0) {
               if (v.product_id === h.product_id && +v.warehouse_id === +h.warehouse_id) {
                 let obj: any = {};
                 obj.wm_product_id = v.wm_product_id;
                 obj.hn = `${hospcode}-${h.hn}`;
                 obj.lot_no = v.lot_no;
-                obj.expired_date = v.expired_date;
+                obj.transaction_id = h.transaction_id;
                 obj.warehouse_id = h.warehouse_id;
                 obj.product_id = h.product_id;
                 obj.date_serv = moment(h.date_serv).format('YYYY-MM-DD');
+                obj.balance = h.total;
 
                 if (v.qty >= h.qty && i !== (wmProducts.length - 1)) {
                   obj.cutQty = h.qty;
@@ -246,9 +246,48 @@ router.post('/import', co(async (req, res, next) => {
                     h.qty -= v.qty;
                   }
                 }
+
                 wmProducts[i].qty = obj.remainQty;
                 hisProducts[z].qty = h.qty;
+
                 await hisTransactionModel.decreaseProductQty(db, obj.wm_product_id, obj.cutQty);
+
+                //get balance 
+                let balance = await hisTransactionModel.getHisForStockCard(db, h.transaction_id, h.product_id);
+                balance = balance[0];
+                const idx = _.findIndex(balance, { product_id: h.product_id })
+                let out_unit_cost;
+                let balance_qty;
+                let balance_generic_qty;
+                let balance_unit_cost;
+                if (idx > -1) {
+                  out_unit_cost = balance[idx].balance_unit_cost;
+                  balance_qty = balance[idx].balance_qty;
+                  balance_generic_qty = balance[idx].balance_generic_qty;
+                  balance_unit_cost = balance[idx].balance_unit_cost;
+                }
+                let data = {
+                  stock_date: moment(h.date_serv).format('YYYY-MM-DD HH:mm:ss'),
+                  product_id: h.product_id,
+                  generic_id: h.generic_id,
+                  transaction_type: 'HIS',
+                  document_ref_id: h.transaction_id,
+                  document_ref: null,
+                  in_qty: 0,
+                  in_unit_cost: 0,
+                  out_qty: h.qty,
+                  out_unit_cost: balance_unit_cost,
+                  balance_qty: balance_qty,
+                  balance_generic_qty: balance_generic_qty,
+                  balance_unit_cost: balance_unit_cost,
+                  ref_src: h.warehouse_id,
+                  ref_dst: h.hn,
+                  comment: 'ตัดจ่าย HIS',
+                  unit_generic_id: null,
+                  lot_no: v.lot_no,
+                  expired_date: v.expired_date
+                };
+                stockCards.push(data);
               }
             }
           }));
@@ -256,53 +295,14 @@ router.post('/import', co(async (req, res, next) => {
         }
       }));
 
-      // getstockcard
-      console.log("***********************");
-      console.log(StockCards);
-      console.log("***********************");
-      
-      let balances = [];
-
-      let data = [];
-
-      // stockCards.forEach(v => {
-      //   let obj: any = {};
-      //   obj.stock_date = v.stock_date;
-      //   obj.product_id = v.product_id;
-      //   obj.generic_id = v.generic_id;
-      //   obj.transaction_type = v.transaction_type;
-      //   obj.document_ref_id = v.document_ref_id;
-      //   obj.document_ref = v.document_ref;
-      //   obj.out_qty = v.out_qty;
-      //   obj.out_unit_cost = v.out_unit_cost;
-      //   let balance = 0;
-      //   let idx = _.findIndex(balances, { product_id: v.product_id });
-      //   if (idx > -1) {
-      //     balance = balances[idx].balance - v.out_qty;
-      //     balances[idx].balance -= v.out_qty;
-      //   }
-      //   obj.balance_qty = balance;
-      //   obj.balance_unit_cost = v.balance_unit_cost;
-      //   obj.ref_src = v.ref_src;
-      //   obj.ref_dst = v.ref_dst;
-      //   obj.comment = v.comment;
-      //   obj.balance_qty = v.balance_qty;
-      //   obj.balance_unit_cost = v.balance_unit_cost;
-      //   obj.balance_generic_qty = v.balance_generic_qty;
-      //   obj.expired_date = v.expired_date;
-      //   obj.lot_no = v.lot_no;
-      //   obj.unit_generic_id = v.unit_generic_id;
-      //   if (obj.out_qty > 0) {
-      //     data.push(obj);
-      //   }
-      // });
-
+ 
       // save transaction status
       let peopleUserId = req.decoded.people_user_id;
       let cutStockDate = moment().format('YYYY-MM-DD HH:mm:ss');
 
       await hisTransactionModel.changeStatusToCut(db, cutStockDate, peopleUserId, cutStockIds);
-      // await stockCardModel.saveStockHisTransaction(db, data);
+      // save stockcard 
+      await stockCardModel.saveStockHisTransaction(db, stockCards);
 
       res.send({ ok: true, un_cut_stock: unCutStockIds });
 

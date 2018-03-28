@@ -1359,5 +1359,32 @@ router.put('/update/cost', co(async (req, res, nex) => {
 
 }));
 
+router.get('/count/approve', (req, res, next) => {
+  let db = req.db;
+  receiveModel.getCountApprove(db)
+    .then((results: any) => {
+      res.send({ ok: true, rows: results });
+    })
+    .catch(error => {
+      res.send({ ok: false, error: error.message })
+    })
+    .finally(() => {
+      db.destroy();
+    });
+});
+
+router.get('/count/approve/other', (req, res, next) => {
+  let db = req.db;
+  receiveModel.getCountApproveOther(db)
+    .then((results: any) => {
+      res.send({ ok: true, rows: results });
+    })
+    .catch(error => {
+      res.send({ ok: false, error: error.message })
+    })
+    .finally(() => {
+      db.destroy();
+    });
+});
 
 export default router;
