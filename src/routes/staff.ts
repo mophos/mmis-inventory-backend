@@ -230,7 +230,7 @@ router.post('/warehouse/save-minmax', co(async (req, res, next) => {
 
   let items = req.body.items;
 
-  if (items.length ) {
+  if (items.length) {
 
     let _items = [];
     items.forEach(v => {
@@ -689,8 +689,14 @@ router.delete('/transfer/:transferId', co(async (req, res, next) => {
   let transferId = req.params.transferId;
 
   try {
-    let rows = await transferModel.removeTransfer(db, transferId);
-    res.send({ ok: true });
+    const rs = await transferModel.checkStatus(db, transferId);
+    const status = rs[0];
+    if (status.confirmed === 'Y' || status.approved === 'Y') {
+      res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
+    } else {
+      let rows = await transferModel.removeTransfer(db, transferId);
+      res.send({ ok: true });
+    }
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -763,42 +769,48 @@ router.put('/transfer/save/:transferId', co(async (req, res, next) => {
 
   if (_generics.length && _summary) {
     try {
-      let transfer = {
-        transfer_date: _summary.transferDate,
-        people_user_id: req.decoded.people_user_id
-      }
+      const rs = await transferModel.checkStatus(db, transferId);
+      const status = rs[0];
+      if (status.confirmed === 'Y' || status.approved === 'Y' || status.mark_deleted === 'Y') {
+        res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
+      } else {
+        let transfer = {
+          transfer_date: _summary.transferDate,
+          people_user_id: req.decoded.people_user_id
+        }
 
-      await transferModel.deleteTransferGeneric(db, transferId);
-      await transferModel.deleteTransferProduct(db, transferId);
-      await transferModel.updateTransferSummary(db, transferId, transfer);
+        await transferModel.deleteTransferGeneric(db, transferId);
+        await transferModel.deleteTransferProduct(db, transferId);
+        await transferModel.updateTransferSummary(db, transferId, transfer);
 
-      for (const g of _generics) {
-        let generics = {
-          transfer_id: transferId,
-          generic_id: g.generic_id,
-          transfer_qty: g.transfer_qty,
-          primary_unit_id: g.primary_unit_id,
-          location_id: g.location_id,
-          create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-          create_by: req.decoded.people_user_id
-        };
-        let rsTransferGeneric = await transferModel.saveTransferGeneric(db, generics);
-
-        let products = [];
-        g.products.forEach(p => {
-          products.push({
+        for (const g of _generics) {
+          let generics = {
             transfer_id: transferId,
-            transfer_generic_id: rsTransferGeneric[0],
-            wm_product_id: p.wm_product_id,
-            product_qty: p.product_qty * p.conversion_qty,
+            generic_id: g.generic_id,
+            transfer_qty: g.transfer_qty,
+            primary_unit_id: g.primary_unit_id,
+            location_id: g.location_id,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
-          });
-        });
-        await transferModel.saveTransferProduct(db, products);
-      }
+          };
+          let rsTransferGeneric = await transferModel.saveTransferGeneric(db, generics);
 
-      res.send({ ok: true });
+          let products = [];
+          g.products.forEach(p => {
+            products.push({
+              transfer_id: transferId,
+              transfer_generic_id: rsTransferGeneric[0],
+              wm_product_id: p.wm_product_id,
+              product_qty: p.product_qty * p.conversion_qty,
+              create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+              create_by: req.decoded.people_user_id
+            });
+          });
+          await transferModel.saveTransferProduct(db, products);
+        }
+
+        res.send({ ok: true });
+      }
 
     } catch (error) {
       res.send({ ok: false, error: error.message });
@@ -818,9 +830,20 @@ router.post('/transfer/approve', co(async (req, res, next) => {
   let peopleUserId = req.decoded.people_user_id;
 
   try {
-    await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
-    await transferApprove(db, transferIds, peopleUserId);
-    res.send({ ok: true });
+    let isValid = true;
+    const rs = await transferModel.checkStatus(db, transferIds);
+    for (const i of rs) {
+      if (i.mark_deleted === 'Y') {
+        isValid = false;
+      }
+    }
+    if (isValid) {
+      await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
+      await transferApprove(db, transferIds, peopleUserId);
+      res.send({ ok: true });
+    } else {
+      res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะบางรายการมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
+    }
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -836,8 +859,19 @@ router.post('/transfer/confirm', co(async (req, res, next) => {
   let peopleUserId = req.decoded.people_user_id;
 
   try {
-    await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
-    res.send({ ok: true });
+    let isValid = true;
+    const rs = await transferModel.checkStatus(db, transferIds);
+    for (const i of rs) {
+      if (i.mark_deleted === 'Y') {
+        isValid = false;
+      }
+    }
+    if (isValid) {
+      await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
+      res.send({ ok: true });
+    } else {
+      res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะบางรายการมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
+    }
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -1964,7 +1998,7 @@ router.post('/his-transaction/list', co(async (req, res, next) => {
   let hospcode = req.decoded.his_hospcode;
   let genericType = req.body.genericTypes;
   try {
-    let rs = await hisTransactionModel.getHisTransaction(db, hospcode,genericType);
+    let rs = await hisTransactionModel.getHisTransaction(db, hospcode, genericType);
     res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -2096,7 +2130,7 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
         }
       }));
 
- 
+
       // save transaction status
       let peopleUserId = req.decoded.people_user_id;
       let cutStockDate = moment().format('YYYY-MM-DD HH:mm:ss');
