@@ -548,6 +548,44 @@ router.post('/orders/confirm-without-unpaid', async (req, res, next) => {
   }
 });
 
+router.put('/orders/confirm-without-unpaid/:confirmId', async (req, res, next) => {
+  let db = req.db;
+
+  try {
+    let requisitionId = req.body.requisitionId;
+    let items = req.body.items;
+    let confirmId = req.params.confirmId;
+
+    let _items = [];
+    let wmProductIds = [];
+    let people_id = req.decoded.people_id;
+
+    let order: any = {};
+    order.people_id = people_id;
+
+    // save order
+    let rsConfirm: any = await orderModel.updateConfirm(db, confirmId, order);
+
+    items.forEach(v => {
+      _items.push({
+        confirm_id: confirmId,
+        generic_id: v.generic_id,
+        wm_product_id: v.wm_product_id,
+        confirm_qty: v.confirm_qty // หน่วยย่อย
+      });
+    });
+    // remove old data
+    await orderModel.removeConfirmItems(db, confirmId);
+    await orderModel.saveConfirmItems(db, _items);
+
+    res.send({ ok: true });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
 router.post('/orders/confirm-with-unpaid', async (req, res, next) => {
   let db = req.db;
   try {
@@ -608,6 +646,87 @@ router.post('/orders/confirm-with-unpaid', async (req, res, next) => {
     // save items
     await orderModel.saveOrderUnpaidItems(db, unpaidItems);
     res.send({ ok: true });
+
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+// update confirm with unpaid
+router.put('/orders/confirm-with-unpaid/:confirmId', async (req, res, next) => {
+  let db = req.db;
+  try {
+    let requisitionId = req.body.requisitionId;
+    let items = req.body.items;
+    let confirmId = req.params.confirmId;
+
+    let generics = req.body.generics;
+    let _items = [];
+
+    let people_id = req.decoded.people_id;
+
+    let order: any = {};
+    order.people_id = people_id;
+
+    // save order
+    let rsConfirm: any = await orderModel.updateConfirm(db, confirmId, order);
+    let desProducts = [];
+
+    items.forEach(v => {
+      _items.push({
+        confirm_id: confirmId,
+        generic_id: v.generic_id,
+        wm_product_id: v.wm_product_id,
+        confirm_qty: v.confirm_qty // หน่วยย่อย
+      });
+    });
+    // remove old data
+    await orderModel.removeConfirmItems(db, confirmId);
+    await orderModel.saveConfirmItems(db, _items);
+
+    // save unpaid
+    let unpaidOrder: any = {};
+    unpaidOrder.unpaid_date = moment().format('YYYY-MM-DD');
+    unpaidOrder.requisition_order_id = requisitionId;
+    unpaidOrder.people_id = people_id;
+    unpaidOrder.created_at = moment().format('YYYY-MM-DD HH:mm:ss')
+    // get detail
+    let rsUnpaidDetail = await orderModel.getOrderUnpaidDetail(db, requisitionId);
+
+    if (rsUnpaidDetail.length) {
+      let unpaidId: any = rsUnpaidDetail[0].requisition_order_unpaid_id;
+      let orderUnpaidId = rsUnpaidDetail[0];
+
+      // save order 
+
+      // remove old data
+      await orderModel.removeOrderUnpaid(db, requisitionId);
+      // save new data
+      let rsOrderUnpaid = await orderModel.saveOrderUnpaid(db, unpaidOrder);
+
+      // remove unpaid items
+      await orderModel.removeOrderUnpaidItems(db, orderUnpaidId);
+      // new order unpaid items
+      let unpaidItems = [];
+      generics.forEach(v => {
+        let unpaidQty = v.requisition_qty - v.total_confirm_qty;
+        if (unpaidQty > 0) {
+          let obj: any = {};
+          obj.requisition_order_unpaid_id = orderUnpaidId;
+          obj.generic_id = v.generic_id;
+          obj.unpaid_qty = v.requisition_qty - v.total_confirm_qty;
+          unpaidItems.push(obj);
+        }
+      });
+      // save items
+      await orderModel.saveOrderUnpaidItems(db, unpaidItems);
+
+      res.send({ ok: true });
+    } else {
+      res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการแก้ไข' });
+    }
+
 
   } catch (error) {
     res.send({ ok: false, error: error.message });

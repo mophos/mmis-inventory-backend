@@ -13,9 +13,25 @@ export class RequisitionOrderModel {
       .insert(order, 'requisition_order_unpaid_id');
   }
 
+  removeOrderUnpaid(db: Knex, requisitionOrderId: any) {
+    return db('wm_requisition_order_unpaids')
+      .where('requisition_order_id', requisitionOrderId)
+      .del();
+  }
+
+  getOrderUnpaidDetail(db: Knex, requisitionOrderId: any) {
+    return db('wm_requisition_order_unpaids')
+      .where('requisition_order_id', requisitionOrderId);
+  }
+
   saveOrderUnpaidItems(db: Knex, items: Array<object>) {
     return db('wm_requisition_order_unpaid_items')
       .insert(items);
+  }
+
+  removeOrderUnpaidItems(db: Knex, requisitionOrderUnPaidId: any) {
+    return db('wm_requisition_order_unpaid_items')
+      .where('requisition_order_unpaid_id', requisitionOrderUnPaidId)
   }
 
   saveStockCard(db: Knex, items: Array<object>) {
@@ -392,6 +408,12 @@ export class RequisitionOrderModel {
     return db('wm_requisition_confirms')
       .where('confirm_id', confirmId)
       .del();
+  }
+
+  updateConfirm(db: Knex, confirmId: any, confirm: any) {
+    return db('wm_requisition_confirms')
+      .update(confirm)
+      .where('confirm_id', confirmId);
   }
 
   saveConfirm(db: Knex, confirm: any) {
