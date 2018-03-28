@@ -74,6 +74,7 @@ export class InventoryReportModel {
         r.requisition_order_id,
         wp.product_id,
         mp.product_name,
+        mp.working_code as trade_code,
         ro.requisition_qty,
         wp.cost,
         wp.lot_no,
@@ -85,6 +86,7 @@ export class InventoryReportModel {
         wh.warehouse_name,
         rc.confirm_date,
         mg.generic_id,
+        mg.working_code as generic_code,
         mg.generic_name,
         rci.confirm_qty AS qty,
         r.updated_at,
@@ -1159,6 +1161,12 @@ WHERE
     }
     commaQty(num) {
         if (num === null) { return 0; }
+        let minus = false;
+        if (num < 0) {
+            minus = true;
+            num = Math.abs(num);
+        }
+        num = num.toFixed(0);
         num = '' + num;
         var l = num.toString().length
         var num2 = '';
@@ -1168,7 +1176,11 @@ WHERE
             if (c == 3 && num[i - 1] != null) { c = 0; num2 = ',' + num[i] + num2 }
             else num2 = num[i] + num2
         }
-        return num2;
+        if (minus) {
+            return '-' + num2;
+        } else {
+            return num2;
+        }
 
     }
     bahtText(num) {
