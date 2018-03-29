@@ -22,7 +22,7 @@ export class ReceiveModel {
       .where('pl.type_id', "M");
   }
 
-  getReceiveWaiting(knex: Knex, limit: number, offset: number) {
+  getReceiveWaiting(knex: Knex, limit: number, offset: number, warehouseId) {
     return knex('wm_receives as r')
       .select('r.receive_id', 'r.is_cancel', 'r.receive_code', 'r.receive_tmp_code', 'r.purchase_order_id', 'r.receive_date', 'r.delivery_date',
         'r.delivery_code', 'l.labeler_name', 'pp.purchase_order_number', 'pp.purchase_order_book_number', 'pp.purchase_order_id', 'ra.approve_date', 'ra.approve_id')
@@ -49,75 +49,68 @@ export class ReceiveModel {
       .offset(offset);
   }
 
-  getReceiveApprove(knex: Knex, limit: number, offset: number) {
+  getReceiveApprove(knex: Knex, limit: number, offset: number, warehouseId) {
     return knex('wm_receives as r')
       .select('r.receive_id', 'r.is_cancel', 'r.receive_code', 'r.receive_tmp_code', 'r.purchase_order_id', 'r.receive_date', 'r.delivery_date',
         'r.delivery_code', 'l.labeler_name', 'pp.purchase_order_number', 'pp.purchase_order_book_number', 'pp.purchase_order_id', 'ra.approve_date', 'ra.approve_id')
       .leftJoin('mm_labelers as l', 'l.labeler_id', 'r.vendor_labeler_id')
       .leftJoin('pc_purchasing_order as pp', 'pp.purchase_order_id', 'r.purchase_order_id')
       .innerJoin('wm_receive_approve as ra', 'ra.receive_id', 'r.receive_id')
+      .whereRaw(`r.receive_id in (SELECT
+        rod.receive_id
+      FROM
+        wm_receive_detail rod
+      WHERE
+        rod.warehouse_id = ${warehouseId}
+      AND rod.receive_id = r.receive_id)`)
       .orderBy('r.receive_date', 'DESC')
       .orderBy('r.receive_code', 'DESC')
       .limit(limit)
       .offset(offset);
   }
 
-  getReceiveOtherNapprove(knex: Knex, limit: number, offset: number) {
-    return knex('wm_receive_other as r')
-      .select('r.receive_other_id', 'r.is_cancel', 'r.receive_code', 'r.receive_date',
-        'r.delivery_code', 'd.donator_name')
-      .leftJoin('wm_donators as d', 'd.donator_id', 'd.donator_id')
-      .whereNotExists(knex.select('*').from('wm_receive_approve as ra')
-        .whereRaw('r.receive_other_id = ra.receive_other_id'))
-      .orderBy('r.receive_date', 'DESC')
-      .orderBy('r.receive_code', 'DESC')
-      .limit(limit)
-      .offset(offset);
+  getReceiveWaitingTotal(knex: Knex, warehouseId) {
+    let sql = `
+      select count(*) as total from wm_receives r where r.receive_id in ( 
+      SELECT
+      rod.receive_id
+      FROM
+      wm_receive_detail rod
+      WHERE
+      rod.warehouse_id = ${warehouseId}
+      AND rod.receive_id = r.receive_id)`;
+    return knex.raw(sql)
   }
 
-  getReceiveOtherApprove(knex: Knex, limit: number, offset: number) {
-    return knex('wm_receive_other as r')
-      .select('r.receive_other_id', 'r.is_cancel', 'r.receive_code', 'r.receive_date',
-        'r.delivery_code', 'd.donator_name', 'ra.approve_date', 'ra.approve_id')
-      .leftJoin('wm_donators as d', 'd.donator_id', 'd.donator_id')
-      .innerJoin('wm_receive_approve as ra', 'ra.receive_other_id', 'r.receive_other_id')
-      .orderBy('r.receive_date', 'DESC')
-      .orderBy('r.receive_code', 'DESC')
-      .limit(limit)
-      .offset(offset);
+  getReceiveApproveTotal(knex: Knex, warehouseId) {
+    let sql = `
+      select count(*) as total from wm_receives r 
+      join wm_receive_approve as ra on r.receive_id = ra.receive_id
+      where r.receive_id in ( 
+      SELECT
+      rod.receive_id
+      FROM
+      wm_receive_detail rod
+      WHERE
+      rod.warehouse_id = ${warehouseId}
+      AND rod.receive_id = r.receive_id)`;
+    return knex.raw(sql)
   }
 
-  getReceiveWaitingTotal(knex: Knex) {
-    return knex('wm_receives as r')
-      .count('* as total');
-  }
-
-  getReceiveApproveTotal(knex: Knex) {
-    return knex('wm_receives as r')
-      .count('* as total')
-      .innerJoin('wm_receive_approve as ra', 'ra.receive_id', 'r.receive_id');
-  }
-
-  getReceiveNapproveTotal(knex: Knex) {
-    return knex('wm_receives as r')
-      .count('* as total')
-      .whereNotExists(knex.select('*').from('wm_receive_approve as ra')
-        .whereRaw('r.receive_id = ra.receive_id')
-      );
-  }
-
-  getReceiveOtherApproveTotal(knex: Knex) {
-    return knex('wm_receive_other as r')
-      .count('* as total')
-      .innerJoin('wm_receive_approve as ra', 'ra.receive_other_id', 'r.receive_other_id');
-  }
-
-  getReceiveOtherNapproveTotal(knex: Knex) {
-    return knex('wm_receive_other as r')
-      .count('* as total')
-      .whereNotExists(knex.select('*').from('wm_receive_approve as ra')
-        .whereRaw('r.receive_other_id = ra.receive_other_id')
-      );
+  getReceiveNapproveTotal(knex: Knex, warehouseId) {
+    let sql = `
+      select count(*) as total from wm_receives r 
+      left join wm_receive_approve as ra on r.receive_id = ra.receive_id
+      where r.receive_id in ( 
+      SELECT
+      rod.receive_id
+      FROM
+      wm_receive_detail rod
+      WHERE
+      rod.warehouse_id = ${warehouseId}
+      AND rod.receive_id = r.receive_id)
+      and ra.receive_id is null`;
+    return knex.raw(sql)
   }
 
   getProductReceive(knex: Knex) {
@@ -141,23 +134,6 @@ export class ReceiveModel {
       .offset(offset);
   }
 
-  getReceiveWaitingSearchOther(knex: Knex, limit: number, offset: number, query: string) {
-    let _query = `%${query}%`;
-    let sql = `
-    select rt.*, 'rt.is_cancel', (select count(*) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as total,
-    (select sum(rtd.cost * rtd.receive_qty) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as cost,
-    rtt.receive_type_name, d.donator_name, a.approve_id
-    from wm_receive_other as rt
-    left join wm_receive_types as rtt on rtt.receive_type_id=rt.receive_type_id
-    left join wm_donators as d on d.donator_id=rt.donator_id
-    left join wm_receive_approve as a on a.receive_other_id=rt.receive_other_id
-    where rt.receive_code like ? or d.donator_name like ?
-    order by rt.receive_code desc
-    limit ? offset ?
-    `;
-    return knex.raw(sql, [_query, _query, limit, offset]);
-  }
-
   getReceiveWaitingTotalSearch(knex: Knex, query: string) {
     let _query = `%${query}%`;
 
@@ -166,7 +142,9 @@ export class ReceiveModel {
       .where('r.receive_code', 'like', _query)
       .orWhere('pp.purchase_order_number', 'like', _query)
       .orWhere('pp.purchase_order_book_number', 'like', _query)
+
       .count('* as total');
+
   }
 
   getReceiveApproveTotalSearch(knex: Knex, query: string) {
@@ -227,69 +205,6 @@ export class ReceiveModel {
         .whereRaw('r.receive_id = ra.receive_id')
       )
       .count('* as total');
-  }
-
-  getReceiveOtherApproveTotalSearch(knex: Knex, query: string) {
-    let _query = `%${query}%`;
-
-    return knex('wm_receive_other as r')
-      .innerJoin('wm_receive_approve as ra', 'ra.receive_other_id', 'r.receive_other_id')
-      .where('r.receive_code', 'like', _query)
-      .count('* as total');
-  }
-
-  getReceiveOtherApproveSearch(knex: Knex, limit: number, offset: number, query: string) {
-    let _query = `%${query}%`;
-    return knex('wm_receive_other as r')
-      .select('r.receive_other_id', 'r.is_cancel', 'r.receive_code', 'r.receive_tmp_code', 'r.receive_date', 'r.delivery_date',
-        'r.delivery_code', 'd.donator_name', 'ra.approve_date', 'ra.approve_id')
-      .leftJoin('wm_donators as d', 'd.donator_id', 'r.donator_id')
-      .innerJoin('wm_receive_approve as ra', 'ra.receive_other_id', 'r.receive_other_id')
-      .orderBy('r.receive_code', 'DESC')
-      .where('r.receive_code', 'like', _query)
-      .limit(limit)
-      .offset(offset);
-  }
-
-  getReceiveOtherNapproveSearch(knex: Knex, limit: number, offset: number, query: string) {
-    let _query = `%${query}%`;
-    return knex('wm_receive_other as r')
-      .select('r.receive_other_id', 'r.is_cancel', 'r.receive_code', 'r.receive_date',
-        'r.delivery_code', 'd.donator_name')
-      .leftJoin('wm_donators as d', 'd.donator_id', 'r.donator_id')
-      .orderBy('r.receive_code', 'DESC')
-      .where('r.receive_code', 'like', _query)
-      .whereNotExists(knex.select('*').from('wm_receive_approve as ra')
-        .whereRaw('r.receive_other_id = ra.receive_other_id')
-      )
-      .limit(limit)
-      .offset(offset);
-  }
-
-  getReceiveOtherNapproveTotalSearch(knex: Knex, query: string) {
-    let _query = `%${query}%`;
-
-    return knex('wm_receive_other as r')
-      .where('r.receive_code', 'like', _query)
-      .whereNotExists(knex.select('*').from('wm_receive_approve as ra')
-        .whereRaw('r.receive_other_id = ra.receive_other_id')
-      )
-      .count('* as total');
-  }
-
-  getReceiveOtherList(knex: Knex, limit: number, offset: number) {
-    let sql = `
-    select rt.*, 'rt.is_cancel', (select count(*) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as total,
-    (select sum(rtd.cost * rtd.receive_qty) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as cost,
-    rtt.receive_type_name, d.donator_name, a.approve_id
-    from wm_receive_other as rt
-    left join wm_receive_types as rtt on rtt.receive_type_id=rt.receive_type_id
-    left join wm_donators as d on d.donator_id=rt.donator_id
-    left join wm_receive_approve as a on a.receive_other_id=rt.receive_other_id
-    order by rt.receive_code desc
-    limit ? offset ?
-    `;
-    return knex.raw(sql, [limit, offset]);
   }
 
   getOtherExpired(knex: Knex) {
@@ -397,13 +312,6 @@ export class ReceiveModel {
 
   }
 
-  getReceiveOtherTotal(knex: Knex) {
-    let sql = `
-    select count(*) as total
-    from wm_receive_other as rt
-    `;
-    return knex.raw(sql, []);
-  }
 
   getReceiveOtherDetail(knex: Knex, receiveOtherId: any) {
     return knex('wm_receive_other as r')
@@ -1082,23 +990,287 @@ export class ReceiveModel {
     return knex.raw(sql);
   }
 
-  getCountApprove(knex: Knex) {
-    return knex('wm_receives as r')
-      .count('* as count_approve')
-      .whereNotExists(knex.select('*')
-        .from('wm_receive_approve as ra')
-        .whereRaw('r.receive_id = ra.receive_id')
-      )
-      .where('r.is_cancel', 'N')
+  getCountApprove(knex: Knex, warehouseId) {
+    let sql = `
+    SELECT
+    count(*) AS count_approve
+    FROM
+      wm_receives AS r
+    LEFT JOIN wm_receive_approve AS ra ON ra.receive_id = r.receive_id
+    WHERE
+      r.receive_id IN (
+        SELECT
+          rd.receive_id
+        FROM
+          wm_receive_detail rd
+        WHERE
+          rd.warehouse_id = '${warehouseId}'
+        AND rd.receive_id = r.receive_id
+      )  and ra.receive_id is null`;
+    return knex.raw(sql);
   }
 
-  getCountApproveOther(knex: Knex) {
-    return knex('wm_receive_other as r')
-      .count('* as count_approve')
-      .whereNotExists(knex.select('*')
-        .from('wm_receive_approve as ra')
-        .whereRaw('r.receive_other_id = ra.receive_other_id')
-      )
-      .where('r.is_cancel', 'N')
+  getCountApproveOther(knex: Knex,warehouseId) {
+    let sql = `
+    select count(*) as count_approve from wm_receive_other as rt
+    left join wm_receive_approve as ra on ra.receive_other_id=rt.receive_other_id
+    where rt.receive_other_id in (
+      SELECT
+      rod.receive_other_id
+    FROM
+      wm_receive_other_detail rod
+    WHERE
+      rod.warehouse_id = ${warehouseId}
+    AND rod.receive_other_id = rt.receive_other_id
+    ) and ra.receive_other_id is null`;
+    return knex.raw(sql);
+  }
+
+  getReceiveOtherStatus(knex: Knex, limit: number, offset: number, warehouseId, status) {
+    let sql = `
+    select rt.*, rt.is_cancel, (select count(*) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as total,
+  (select sum(rtd.cost * rtd.receive_qty) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as cost,
+  rtt.receive_type_name, d.donator_name, ra.approve_id
+  from wm_receive_other as rt
+  left join wm_receive_types as rtt on rtt.receive_type_id=rt.receive_type_id
+  left join wm_donators as d on d.donator_id=rt.donator_id
+  left join wm_receive_approve as ra on ra.receive_other_id=rt.receive_other_id
+  WHERE rt.receive_other_id in (
+    SELECT
+      rod.receive_other_id
+    FROM
+      wm_receive_other_detail rod
+    WHERE
+      rod.warehouse_id = ${warehouseId}
+    AND rod.receive_other_id = rt.receive_other_id
+  )`;
+    if (status == 'approve') {
+      sql += ` and ra.receive_other_id is not null`
+    } else if (status == 'Napprove') {
+      sql += ` and ra.receive_other_id is null`
+    }
+    sql += ` order by rt.receive_code desc
+  limit ${limit} offset ${offset}`;
+    return knex.raw(sql);
+  }
+
+  getReceiveOtherStatusTotal(knex: Knex, warehouseId, status) {
+    let sql = `
+    select count(*) as total from wm_receive_other as rt
+    left join wm_receive_approve as ra on ra.receive_other_id=rt.receive_other_id
+    where rt.receive_other_id in (
+      SELECT
+      rod.receive_other_id
+    FROM
+      wm_receive_other_detail rod
+    WHERE
+      rod.warehouse_id = ${warehouseId}
+    AND rod.receive_other_id = rt.receive_other_id
+    ) `;
+    if (status == 'approve') {
+      sql += ` and ra.receive_other_id is not null`
+    } else if (status == 'Napprove') {
+      sql += ` and ra.receive_other_id is null`
+    }
+    return knex.raw(sql);
+  }
+
+  getReceiveOtherStatusSearch(knex: Knex, limit: number, offset: number, query: string, warehouseId, status) {
+    let _query = `%${query}%`;
+    let sql = `
+    select rt.*, rt.is_cancel, (select count(*) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as total,
+  (select sum(rtd.cost * rtd.receive_qty) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as cost,
+  rtt.receive_type_name, d.donator_name, ra.approve_id
+  from wm_receive_other as rt
+  left join wm_receive_types as rtt on rtt.receive_type_id=rt.receive_type_id
+  left join wm_donators as d on d.donator_id=rt.donator_id
+  left join wm_receive_approve as ra on ra.receive_other_id=rt.receive_other_id
+  WHERE rt.receive_other_id in (
+    SELECT
+      rod.receive_other_id
+    FROM
+      wm_receive_other_detail rod
+    WHERE
+      rod.warehouse_id = ${warehouseId}
+    AND rod.receive_other_id = rt.receive_other_id
+  )
+  and  (rt.receive_code like '${_query}' or d.donator_name like '${_query}')`;
+    if (status == 'approve') {
+      sql += ` and ra.receive_other_id is not null`
+    } else if (status == 'Napprove') {
+      sql += ` and ra.receive_other_id is null`
+    }
+    sql += ` order by rt.receive_code desc
+  limit ${limit} offset ${offset}`;
+    return knex.raw(sql);
+  }
+
+  getReceiveOtherStatusTotalSearch(knex: Knex, query: string, warehouseId, status) {
+    let _query = `%${query}%`;
+
+    let sql = `
+    select count(*) as total from wm_receive_other as rt
+    left join wm_receive_approve as ra on ra.receive_other_id=rt.receive_other_id
+    left join wm_donators as d on d.donator_id=rt.donator_id
+    where rt.receive_other_id in (
+      SELECT
+      rod.receive_other_id
+    FROM
+      wm_receive_other_detail rod
+    WHERE
+      rod.warehouse_id = ${warehouseId}
+    AND rod.receive_other_id = rt.receive_other_id
+    ) and  (rt.receive_code like '${_query}' or d.donator_name like '${_query}')`;
+    if (status == 'approve') {
+      sql += ` and ra.receive_other_id is not null`
+    } else if (status == 'Napprove') {
+      sql += ` and ra.receive_other_id is null`
+    }
+    return knex.raw(sql);
+  }
+
+  getReceiveStatus(knex: Knex, limit: number, offset: number, warehouseId, status) {
+    let sql = `
+      SELECT
+      r.*, r.is_cancel,
+      (
+        SELECT
+          count(*)
+        FROM
+          wm_receive_detail AS rd
+        WHERE
+          rd.receive_id = r.receive_id
+      ) AS total,
+      (
+        SELECT
+          sum(rd.cost * rd.receive_qty)
+        FROM
+          wm_receive_detail AS rd
+        WHERE
+          rd.receive_id = r.receive_id
+      ) AS cost,
+      l.labeler_name,
+      ra.approve_id
+    FROM
+      wm_receives AS r
+    LEFT JOIN mm_labelers AS l ON l.labeler_id = r.vendor_labeler_id
+    LEFT JOIN wm_receive_approve AS ra ON ra.receive_id = r.receive_id
+    WHERE
+      r.receive_id IN (
+        SELECT
+          rd.receive_id
+        FROM
+          wm_receive_detail rd
+        WHERE
+          rd.warehouse_id = '${warehouseId}'
+        AND rd.receive_id = r.receive_id
+      ) `;
+    if (status == 'approve') {
+      sql += ` and ra.receive_id is not null`
+    } else if (status == 'Napprove') {
+      sql += ` and ra.receive_id is null`
+    }
+    sql += ` order by r.receive_code desc
+  limit ${limit} offset ${offset}`;
+    return knex.raw(sql);
+  }
+
+  getReceiveStatusTotal(knex: Knex, warehouseId, status) {
+    let sql = `
+    SELECT
+    count(*) AS total
+    FROM
+      wm_receives AS r
+    LEFT JOIN wm_receive_approve AS ra ON ra.receive_id = r.receive_id
+    WHERE
+      r.receive_id IN (
+        SELECT
+          rd.receive_id
+        FROM
+          wm_receive_detail rd
+        WHERE
+          rd.warehouse_id = '${warehouseId}'
+        AND rd.receive_id = r.receive_id
+      ) `;
+    if (status == 'approve') {
+      sql += ` and ra.receive_id is not null`
+    } else if (status == 'Napprove') {
+      sql += ` and ra.receive_id is null`
+    }
+    return knex.raw(sql);
+  }
+  
+  getReceiveStatusSearch(knex: Knex, limit: number, offset: number, warehouseId, status, query) {
+    let _query = `%${query}%`;
+    let sql = `
+      SELECT
+      r.*, r.is_cancel,
+      (
+        SELECT
+          count(*)
+        FROM
+          wm_receive_detail AS rd
+        WHERE
+          rd.receive_id = r.receive_id
+      ) AS total,
+      (
+        SELECT
+          sum(rd.cost * rd.receive_qty)
+        FROM
+          wm_receive_detail AS rd
+        WHERE
+          rd.receive_id = r.receive_id
+      ) AS cost,
+      l.labeler_name,
+      ra.approve_id
+    FROM
+      wm_receives AS r
+    LEFT JOIN mm_labelers AS l ON l.labeler_id = r.vendor_labeler_id
+    LEFT JOIN wm_receive_approve AS ra ON ra.receive_id = r.receive_id
+    WHERE
+      r.receive_id IN (
+        SELECT
+          rd.receive_id
+        FROM
+          wm_receive_detail rd
+        WHERE
+          rd.warehouse_id = '${warehouseId}'
+        AND rd.receive_id = r.receive_id
+      ) and  (r.receive_code like '${_query}' or l.labeler_name like '${_query}')`;
+    if (status == 'approve') {
+      sql += ` and ra.receive_id is not null`
+    } else if (status == 'Napprove') {
+      sql += ` and ra.receive_id is null`
+    }
+    sql += ` order by r.receive_code desc
+    limit ${limit} offset ${offset}`;
+    return knex.raw(sql);
+  }
+
+  getReceiveStatusSearchTotal(knex: Knex, warehouseId, status, query) {
+    let _query = `%${query}%`;
+    let sql = `
+    SELECT
+    count(*) AS total
+    FROM
+      wm_receives AS r
+    LEFT JOIN wm_receive_approve AS ra ON ra.receive_id = r.receive_id
+    LEFT JOIN mm_labelers AS l ON l.labeler_id = r.vendor_labeler_id
+    WHERE
+      r.receive_id IN (
+        SELECT
+          rd.receive_id
+        FROM
+          wm_receive_detail rd
+        WHERE
+          rd.warehouse_id = '${warehouseId}'
+        AND rd.receive_id = r.receive_id
+      ) and  (r.receive_code like '${_query}' or l.labeler_name like '${_query}')`;
+    if (status == 'approve') {
+      sql += ` and ra.receive_id is not null`
+    } else if (status == 'Napprove') {
+      sql += ` and ra.receive_id is null`
+    }
+    return knex.raw(sql);
   }
 }
