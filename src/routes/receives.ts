@@ -423,22 +423,6 @@ router.put('/:receiveId', co(async (req, res, next) => {
 
 }));
 
-router.post('/other/list', co(async (req, res, next) => {
-  let db = req.db;
-  let limit = +req.body.limit;
-  let offset = +req.body.offset;
-
-  try {
-    let rsTotal = await receiveModel.getReceiveOtherTotal(db);
-    let total = +rsTotal[0][0].total;
-    let rs = await receiveModel.getReceiveOtherList(db, limit, offset);
-    res.send({ ok: true, rows: rs[0], total: total });
-  } catch (error) {
-    res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
-  }
-}));
 
 router.get('/other/expired/list', co(async (req, res, next) => {
   let db = req.db;
@@ -711,414 +695,6 @@ router.put('/other/:receiveOtherId', co(async (req, res, next) => {
 
 }));
 
-router.post('/waiting', co(async (req, res, next) => {
-  let db = req.db;
-  let limit = +req.body.limit;
-  let offset = +req.body.offset;
-
-  try {
-    let rsTotal = await receiveModel.getReceiveWaitingTotal(db);
-    let total = +rsTotal[0].total;
-    const results = await receiveModel.getReceiveWaiting(db, limit, offset);
-    let data: any = [];
-    results.forEach((v: any) => {
-      let obj: any = {
-        receive_id: v.receive_id,
-        purchase_order_id: v.purchase_order_id,
-        receive_date: v.receive_date,
-        delivery_date: v.delivery_date,
-        delivery_code: v.delivery_code,
-        labeler_name: v.labeler_name,
-        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
-        approve_id: v.approve_id,
-        purchase_order_number: v.purchase_order_number,
-        purchase_order_book_number: v.purchase_order_book_number,
-        receive_code: v.receive_code,
-        receive_tmp_code: v.receive_tmp_code,
-        is_cancel: v.is_cancel
-      }
-      data.push(obj);
-    });
-    console.log(data);
-
-    res.send({ ok: true, rows: data, total: total });
-  } catch (error) {
-    console.log(error);
-    res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
-  }
-}));
-
-router.post('/Napprove', co(async (req, res, next) => {
-  let db = req.db;
-  let limit = +req.body.limit;
-  let offset = +req.body.offset;
-
-  try {
-    let rsTotal = await receiveModel.getReceiveNapproveTotal(db);
-    let total = +rsTotal[0].total;
-    const results = await receiveModel.getReceiveNapprove(db, limit, offset);
-    let data: any = [];
-    results.forEach((v: any) => {
-      let obj: any = {
-        receive_id: v.receive_id,
-        purchase_order_id: v.purchase_order_id,
-        receive_date: v.receive_date,
-        delivery_date: v.delivery_date,
-        delivery_code: v.delivery_code,
-        labeler_name: v.labeler_name,
-        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
-        approve_id: v.approve_id,
-        purchase_order_number: v.purchase_order_number,
-        purchase_order_book_number: v.purchase_order_book_number,
-        receive_code: v.receive_code,
-        receive_tmp_code: v.receive_tmp_code,
-        is_cancel: v.is_cancel
-      }
-      data.push(obj);
-    });
-    console.log(data);
-
-    res.send({ ok: true, rows: data, total: total });
-  } catch (error) {
-    console.log(error);
-    res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
-  }
-}));
-
-router.post('/approve', co(async (req, res, next) => {
-  let db = req.db;
-  let limit = +req.body.limit;
-  let offset = +req.body.offset;
-
-  try {
-    let rsTotal = await receiveModel.getReceiveApproveTotal(db);
-    let total = +rsTotal[0].total;
-    const results = await receiveModel.getReceiveApprove(db, limit, offset);
-    let data: any = [];
-    results.forEach((v: any) => {
-      let obj: any = {
-        receive_id: v.receive_id,
-        purchase_order_id: v.purchase_order_id,
-        receive_date: v.receive_date,
-        delivery_date: v.delivery_date,
-        delivery_code: v.delivery_code,
-        labeler_name: v.labeler_name,
-        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
-        approve_id: v.approve_id,
-        purchase_order_number: v.purchase_order_number,
-        purchase_order_book_number: v.purchase_order_book_number,
-        receive_code: v.receive_code,
-        receive_tmp_code: v.receive_tmp_code,
-        is_cancel: v.is_cancel
-      }
-      data.push(obj);
-    });
-    console.log(data);
-
-    res.send({ ok: true, rows: data, total: total });
-  } catch (error) {
-    console.log(error);
-    res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
-  }
-}));
-
-router.post('/other/Napprove', co(async (req, res, next) => {
-  let db = req.db;
-  let limit = +req.body.limit;
-  let offset = +req.body.offset;
-
-  try {
-    let rsTotal = await receiveModel.getReceiveOtherNapproveTotal(db);
-    let total = +rsTotal[0].total;
-    const results = await receiveModel.getReceiveOtherNapprove(db, limit, offset);
-    let data: any = [];
-    results.forEach((v: any) => {
-      let obj: any = {
-        receive_id: v.receive_id,
-        receive_date: v.receive_date,
-        delivery_code: v.delivery_code,
-        donator_name: v.donator_name,
-        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
-        approve_id: v.approve_id,
-        receive_code: v.receive_code,
-        is_cancel: v.is_cancel
-      }
-      data.push(obj);
-    });
-    console.log(data);
-
-    res.send({ ok: true, rows: data, total: total });
-  } catch (error) {
-    console.log(error);
-    res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
-  }
-}));
-
-router.post('/other/approve/list', co(async (req, res, next) => {
-  let db = req.db;
-  let limit = +req.body.limit;
-  let offset = +req.body.offset;
-
-  try {
-    let rsTotal = await receiveModel.getReceiveOtherApproveTotal(db);
-    let total = +rsTotal[0].total;
-    const results = await receiveModel.getReceiveOtherApprove(db, limit, offset);
-    let data: any = [];
-    results.forEach((v: any) => {
-      let obj: any = {
-        receive_id: v.receive_id,
-        receive_date: v.receive_date,
-        delivery_code: v.delivery_code,
-        donator_name: v.donator_name,
-        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
-        approve_id: v.approve_id,
-        receive_code: v.receive_code,
-        is_cancel: v.is_cancel
-      }
-      data.push(obj);
-    });
-    console.log(data);
-
-    res.send({ ok: true, rows: data, total: total });
-  } catch (error) {
-    console.log(error);
-    res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
-  }
-}));
-
-router.post('/waiting/search', co(async (req, res, next) => {
-  let db = req.db;
-  let limit = +req.body.limit;
-  let offset = +req.body.offset;
-  let query = req.body.query;
-
-  try {
-    let rsTotal = await receiveModel.getReceiveWaitingTotalSearch(db, query);
-    let total = +rsTotal[0].total;
-    const results = await receiveModel.getReceiveWaitingSearch(db, limit, offset, query);
-    let data: any = [];
-    results.forEach((v: any) => {
-      let obj: any = {
-        receive_id: v.receive_id,
-        purchase_id: v.purchase_id,
-        receive_date: v.receive_date,
-        delivery_date: v.delivery_date,
-        delivery_code: v.delivery_code,
-        labeler_name: v.labeler_name,
-        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
-        approve_id: v.approve_id,
-        purchase_order_number: v.purchase_order_number,
-        purchase_order_book_number: v.purchase_order_book_number,
-        receive_code: v.receive_code,
-        receive_tmp_code: v.receive_tmp_code
-      }
-      data.push(obj);
-    });
-    res.send({ ok: true, rows: data, total: total });
-  } catch (error) {
-    console.log(error);
-    res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
-  }
-}));
-
-router.post('/approve/search', co(async (req, res, next) => {
-  let db = req.db;
-  let limit = +req.body.limit;
-  let offset = +req.body.offset;
-  let query = req.body.query;
-
-  try {
-    let rsTotal = await receiveModel.getReceiveApproveTotalSearch(db, query);
-    let total = +rsTotal[0].total;
-    const results = await receiveModel.getReceiveApproveSearch(db, limit, offset, query);
-    let data: any = [];
-    results.forEach((v: any) => {
-      let obj: any = {
-        receive_id: v.receive_id,
-        purchase_id: v.purchase_id,
-        receive_date: v.receive_date,
-        delivery_date: v.delivery_date,
-        delivery_code: v.delivery_code,
-        labeler_name: v.labeler_name,
-        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
-        approve_id: v.approve_id,
-        purchase_order_number: v.purchase_order_number,
-        purchase_order_book_number: v.purchase_order_book_number,
-        receive_code: v.receive_code,
-        receive_tmp_code: v.receive_tmp_code
-      }
-      data.push(obj);
-    });
-    res.send({ ok: true, rows: data, total: total });
-  } catch (error) {
-    console.log(error);
-    res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
-  }
-}));
-
-router.post('/napprove/search', co(async (req, res, next) => {
-  let db = req.db;
-  let limit = +req.body.limit;
-  let offset = +req.body.offset;
-  let query = req.body.query;
-
-  try {
-    let rsTotal = await receiveModel.getReceiveNapproveTotalSearch(db, query);
-    let total = +rsTotal[0].total;
-    const results = await receiveModel.getReceiveNapproveSearch(db, limit, offset, query);
-    let data: any = [];
-    results.forEach((v: any) => {
-      let obj: any = {
-        receive_id: v.receive_id,
-        purchase_id: v.purchase_id,
-        receive_date: v.receive_date,
-        delivery_date: v.delivery_date,
-        delivery_code: v.delivery_code,
-        labeler_name: v.labeler_name,
-        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
-        approve_id: v.approve_id,
-        purchase_order_number: v.purchase_order_number,
-        purchase_order_book_number: v.purchase_order_book_number,
-        receive_code: v.receive_code,
-        receive_tmp_code: v.receive_tmp_code
-      }
-      data.push(obj);
-    });
-    res.send({ ok: true, rows: data, total: total });
-  } catch (error) {
-    console.log(error);
-    res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
-  }
-}));
-
-router.post('/other/approve/search', co(async (req, res, next) => {
-  let db = req.db;
-  let limit = +req.body.limit;
-  let offset = +req.body.offset;
-  let query = req.body.query;
-
-  try {
-    let rsTotal = await receiveModel.getReceiveOtherApproveTotalSearch(db, query);
-    let total = +rsTotal[0].total;
-    const results = await receiveModel.getReceiveOtherApproveSearch(db, limit, offset, query);
-    let data: any = [];
-    results.forEach((v: any) => {
-      let obj: any = {
-        receive_id: v.receive_id,
-        receive_date: v.receive_date,
-        delivery_code: v.delivery_code,
-        donator_name: v.donator_name,
-        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
-        approve_id: v.approve_id,
-        receive_code: v.receive_code,
-        is_cancel: v.is_cancel
-      }
-      data.push(obj);
-    });
-    res.send({ ok: true, rows: data, total: total });
-  } catch (error) {
-    console.log(error);
-    res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
-  }
-}));
-
-router.post('/other/napprove/search', co(async (req, res, next) => {
-  let db = req.db;
-  let limit = +req.body.limit;
-  let offset = +req.body.offset;
-  let query = req.body.query;
-
-  try {
-    let rsTotal = await receiveModel.getReceiveOtherNapproveTotalSearch(db, query);
-    let total = +rsTotal[0].total;
-    const results = await receiveModel.getReceiveOtherNapproveSearch(db, limit, offset, query);
-    let data: any = [];
-    results.forEach((v: any) => {
-      let obj: any = {
-        receive_id: v.receive_id,
-        receive_date: v.receive_date,
-        delivery_code: v.delivery_code,
-        donator_name: v.donator_name,
-        approve_date: v.approve_date ? moment(v.approve_date).format('YYYY-MM-DD') : null,
-        approve_id: v.approve_id,
-        receive_code: v.receive_code,
-        is_cancel: v.is_cancel
-      }
-      data.push(obj);
-    });
-    res.send({ ok: true, rows: data, total: total });
-  } catch (error) {
-    console.log(error);
-    res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
-  }
-}));
-
-router.post('/waiting/search/other', co(async (req, res, next) => {
-  let db = req.db;
-  let limit = +req.body.limit;
-  let offset = +req.body.offset;
-  let query = req.body.query;
-
-  try {
-    let rsTotal = await receiveModel.getReceiveWaitingTotalSearch(db, query);
-    let total = +rsTotal[0].total;
-    let results = await receiveModel.getReceiveWaitingSearchOther(db, limit, offset, query);
-    results = results[0]
-    let data: any = [];
-    results.forEach((v: any) => {
-      if (v.receive_other_id) {
-        let obj: any = {
-          receive_other_id: v.receive_other_id,
-          receive_date: v.receive_date,
-          receive_code: v.receive_code,
-          information_name: v.information_name,
-          receive_type_id: v.receive_type_id,
-          comment: v.comment,
-          receive_status_id: v.receive_status_id,
-          is_printed: v.is_printed,
-          delivery_code: v.delivery_code,
-          donator_id: v.donator_id,
-          people_user_id: v.people_user_id,
-          created_at: v.created_at,
-          approve_id: v.approve_id,
-          receive_type_name: v.receive_type_name,
-          donator_name: v.donator_name,
-          total: v.total,
-          cost: v.cost,
-          is_expired: v.is_expired
-        }
-        data.push(obj);
-      }
-    });
-    res.send({ ok: true, rows: data, total: total });
-  } catch (error) {
-    console.log(error);
-    res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
-  }
-}));
-
 router.post('/approve', co(async (req, res, next) => {
   let db = req.db;
   let userId = req.decoded.id;
@@ -1243,122 +819,6 @@ router.post('/approve', co(async (req, res, next) => {
     console.log(adjust_price);
 
     res.send({ ok: true });
-  } catch (error) {
-    res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
-  }
-}));
-
-router.post('/other/approve', co(async (req, res, next) => {
-  let db = req.db;
-  let userId = req.decoded.id;
-  let peopleId = req.decoded.people_id;
-  let receiveIds = req.body.receiveIds;
-  let comment = req.body.comment;
-  let approveDate = req.body.approveDate;
-
-  try {
-    let approveDatas = [];
-    _.forEach(receiveIds, (v: any) => {
-      let _approveData = {
-        approve_date: approveDate,
-        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
-        people_user_id: req.decoded.people_user_id,
-        receive_other_id: v,
-        comment: comment
-      }
-
-      approveDatas.push(_approveData);
-    });
-
-    await receiveModel.removeOldApproveOther(db, receiveIds);
-    await receiveModel.saveApprove(db, approveDatas);
-    // get product
-    let _rproducts = await receiveModel.getReceiveOtherProductsImport(db, receiveIds);
-
-    let products: any = [];
-    _rproducts.forEach((v: any) => {
-      // let id = moment().add(10, 'ms').format('x');
-      let id = uuid();
-
-      let obj: any = {
-        wm_product_id: id,
-        warehouse_id: v.warehouse_id,
-        product_id: v.product_id,
-        generic_id: v.generic_id,
-        receive_code: v.receive_code,
-        receive_other_id: v.receive_other_id,
-        balance: v.balance,
-        qty: (v.receive_qty * v.conversion_qty),
-        price: (v.cost * v.receive_qty) / (v.receive_qty * v.conversion_qty),
-        cost: (v.cost * v.receive_qty) / (v.receive_qty * v.conversion_qty),
-        lot_no: v.lot_no,
-        expired_date: moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date, 'YYYY-MM-DD').format('YYYY-MM-DD') : null,
-        unit_generic_id: v.unit_generic_id,
-        donator_id: v.donator_id,
-        location_id: +v.location_id,
-        people_user_id: req.decoded.people_user_id,
-        created_at: moment().format('YYYY-MM-DD HH:mm:ss')
-      };
-      // add product
-      products.push(obj);
-    });
-
-    // get balance
-    let warehouseId = req.decoded.warehouseId;
-    let balances = await receiveModel.getProductRemainByReceiveOtherIds(db, receiveIds, warehouseId);
-    balances = balances[0];
-
-    console.log('******************************');
-    console.log(balances);
-    console.log('******************************');
-
-    // save stockcard
-    let data = [];
-
-    products.forEach(v => {
-      let obj: any = {};
-      obj.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-      obj.product_id = v.product_id;
-      obj.generic_id = v.generic_id;
-      obj.unit_generic_id = v.unit_generic_id;
-      obj.transaction_type = TransactionType.RECEIVE_OTHER;
-      obj.document_ref_id = v.receive_other_id;
-      obj.document_ref = v.receive_code;
-      obj.in_qty = v.qty;
-      obj.in_unit_cost = v.cost;
-
-      let balance = 0;
-      let balance_generic = 0;
-      let idx = _.findIndex(balances, {
-        product_id: v.product_id,
-        warehouse_id: v.warehouse_id
-      });
-
-      if (idx > -1) {
-        balance = balances[idx].balance + v.qty;
-        balance_generic = balances[idx].balance_generic + v.qty;
-        balances[idx].balance += v.qty;
-        balances[idx].balance_generic += v.qty;
-      }
-
-      obj.balance_qty = balance;
-      obj.balance_generic_qty = balance_generic;
-      obj.balance_unit_cost = v.cost;
-      obj.ref_src = v.donator_id;
-      obj.ref_dst = v.warehouse_id;
-      obj.comment = 'รับเข้าคลังแบบอื่นๆ';
-      obj.lot_no = v.lot_no;
-      obj.expired_date = v.expired_date;
-      data.push(obj);
-    });
-
-    await receiveModel.saveProducts(db, products);
-    await stockcard.saveFastStockTransaction(db, data);
-
-    res.send({ ok: true });
-
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -1647,9 +1107,10 @@ router.put('/update/cost', co(async (req, res, nex) => {
 
 router.get('/count/approve', (req, res, next) => {
   let db = req.db;
-  receiveModel.getCountApprove(db)
+  let warehouseId = req.decoded.warehouseId
+  receiveModel.getCountApprove(db, warehouseId)
     .then((results: any) => {
-      res.send({ ok: true, rows: results });
+      res.send({ ok: true, rows: results[0] });
     })
     .catch(error => {
       res.send({ ok: false, error: error.message })
@@ -1661,9 +1122,10 @@ router.get('/count/approve', (req, res, next) => {
 
 router.get('/count/approve/other', (req, res, next) => {
   let db = req.db;
-  receiveModel.getCountApproveOther(db)
+  let warehouseId = req.decoded.warehouseId
+  receiveModel.getCountApproveOther(db, warehouseId)
     .then((results: any) => {
-      res.send({ ok: true, rows: results });
+      res.send({ ok: true, rows: results[0] });
     })
     .catch(error => {
       res.send({ ok: false, error: error.message })
@@ -1673,4 +1135,81 @@ router.get('/count/approve/other', (req, res, next) => {
     });
 });
 
+router.post('/other/status', co(async (req, res, next) => {
+  let db = req.db;
+  let limit = +req.body.limit;
+  let offset = +req.body.offset;
+  let warehouseId = req.decoded.warehouseId;
+  let status = req.body.status;
+  try {
+    let rsTotal = await receiveModel.getReceiveOtherStatusTotal(db, warehouseId, status);
+    let total = +rsTotal[0][0].total;
+    const results = await receiveModel.getReceiveOtherStatus(db, limit, offset, warehouseId, status);
+    res.send({ ok: true, rows: results[0], total: total });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.post('/other/status/search', co(async (req, res, next) => {
+  let db = req.db;
+  let limit = +req.body.limit;
+  let offset = +req.body.offset;
+  let warehouseId = req.decoded.warehouseId;
+  let status = req.body.status;
+  let query = req.body.query;
+  try {
+    let rsTotal = await receiveModel.getReceiveOtherStatusTotalSearch(db, query, warehouseId, status);
+    let total = +rsTotal[0][0].total;
+    const results = await receiveModel.getReceiveOtherStatusSearch(db, limit, offset, query, warehouseId, status);
+    res.send({ ok: true, rows: results[0], total: total });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.post('/status', co(async (req, res, next) => {
+  let db = req.db;
+  let limit = +req.body.limit;
+  let offset = +req.body.offset;
+  let warehouseId = req.decoded.warehouseId;
+  let status = req.body.status;
+  try {
+    let rsTotal = await receiveModel.getReceiveStatusTotal(db, warehouseId, status);
+    let total = +rsTotal[0][0].total;
+    const results = await receiveModel.getReceiveStatus(db, limit, offset, warehouseId, status);
+    res.send({ ok: true, rows: results[0], total: total });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.post('/status/search', co(async (req, res, next) => {
+  let db = req.db;
+  let limit = +req.body.limit;
+  let offset = +req.body.offset;
+  let warehouseId = req.decoded.warehouseId;
+  let status = req.body.status;
+  let query = req.body.query;
+  try {
+    let rsTotal = await receiveModel.getReceiveStatusSearchTotal(db, warehouseId, status, query);
+    let total = +rsTotal[0][0].total;
+    const results = await receiveModel.getReceiveStatusSearch(db, limit, offset, warehouseId, status, query);
+    res.send({ ok: true, rows: results[0], total: total });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
 export default router;
