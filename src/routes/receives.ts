@@ -348,7 +348,8 @@ router.put('/:receiveId', co(async (req, res, next) => {
         expired_date: moment(v.expired_date, 'DD/MM/YYYY').isValid() ? moment(v.expired_date, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
         vendor_labeler_id: summary.supplierId,
         manufacturer_labeler_id: v.manufacture_id,
-        discount: +v.discount
+        discount: +v.discount,
+        is_free: v.is_free
       }
 
       // productIds.push(v.product_id);
