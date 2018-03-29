@@ -230,7 +230,7 @@ router.post('/warehouse/save-minmax', co(async (req, res, next) => {
 
   let items = req.body.items;
 
-  if (items.length ) {
+  if (items.length) {
 
     let _items = [];
     items.forEach(v => {
@@ -399,141 +399,144 @@ router.post('/counting/cycle/save-remark', co(async (req, res, next) => {
 }));
 
 // transfer
-const transferApprove = (async (db: Knex, transferIds: any[]) => {
+const transferApprove = (async (db: Knex, transferIds: any[], peopleUserId: any) => {
   let results = await transferModel.getProductListIds(db, transferIds);
   let dstProducts = [];
   let srcProducts = [];
   let srcWarehouseId = null;
+  let balances = [];
+  for (let v of results) {
+    if (+v.product_qty != 0) {
+      let obj: any = {};
+      let id = uuid();
 
-  results.forEach((v: any) => {
-    let obj: any = {};
-    let id = uuid();
+      obj.wm_product_id = id;
+      obj.dst_warehouse_id = v.dst_warehouse_id;
+      obj.src_warehouse_id = v.src_warehouse_id;
+      obj.current_balance_dst = v.balance_dst;
+      obj.current_balance_src = v.balance_src;
+      obj.product_id = v.product_id;
+      obj.generic_id = v.generic_id;
+      obj.unit_generic_id = v.unit_generic_id;
+      obj.transfer_code = v.transfer_code;
+      obj.transfer_id = v.transfer_id;
+      obj.qty = +v.product_qty;
+      obj.price = v.price;
+      obj.cost = v.cost;
+      obj.lot_no = v.lot_no;
+      obj.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
+      obj.location_id = v.location_id;
+      obj.people_user_id = v.people_user_id;
+      obj.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
+      dstProducts.push(obj);
 
-    obj.wm_product_id = id;
-    obj.dst_warehouse_id = v.dst_warehouse_id;
-    obj.src_warehouse_id = v.src_warehouse_id;
-    obj.current_balance_dst = v.balance_dst;
-    obj.current_balance_src = v.balance_src;
-    obj.product_id = v.product_id;
-    obj.generic_id = v.generic_id;
-    obj.unit_generic_id = v.unit_generic_id;
-    obj.transfer_code = v.transfer_code;
-    obj.qty = +v.product_qty;
-    obj.price = v.price;
-    obj.cost = v.cost;
-    obj.lot_no = v.lot_no;
-    obj.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
-    obj.location_id = v.location_id;
-    obj.people_user_id = v.people_user_id;
-    obj.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
+      // get balance 
+      let obj_remaint_dst: any = {}
+      let obj_remain_src: any = {}
+      let remain_dst = await transferModel.getProductRemainByTransferIds(db, v.product_id, v.dst_warehouse_id);
+      for (let v of remain_dst[0]) {
+        obj_remaint_dst.product_id = v.product_id;
+        obj_remaint_dst.warehouse_id = v.warehouse_id;
+        obj_remaint_dst.balance = v.balance;
+        obj_remaint_dst.unit_generic_id = v.unit_generic_id;
+        obj_remaint_dst.balance_generic = v.balance_generic;
+      }
+      let remain_src = await transferModel.getProductRemainByTransferIds(db, v.product_id, v.src_warehouse_id);
+      for (let v of remain_src[0]) {
+        obj_remain_src.product_id = v.product_id;
+        obj_remain_src.warehouse_id = v.warehouse_id;
+        obj_remain_src.balance = v.balance;
+        obj_remain_src.unit_generic_id = v.unit_generic_id;
+        obj_remain_src.balance_generic = v.balance_generic;
+      }
+      balances.push(obj_remaint_dst);
+      balances.push(obj_remain_src);
 
-    dstProducts.push(obj);
-  });
-
+    }
+  }
   let srcBalances = [];
   let dstBalances = [];
 
   srcProducts = _.clone(dstProducts);
 
-  dstProducts.forEach((v: any) => {
-    let idx = _.findIndex(dstBalances, {
-      product_id: v.product_id,
-      lot_no: v.lot_no,
-      expired_date: v.expired_date,
-      dst_warehouse_id: v.dst_warehouse_id
-    });
-    if (idx === -1) {
-      dstBalances.push({
-        product_id: v.product_id,
-        lot_no: v.lot_no,
-        expired_date: v.expired_date,
-        dst_warehouse_id: v.dst_warehouse_id,
-        balance_dst: v.current_balance_dst
-      });
-    }
-  });
-
-  srcProducts.forEach((v: any) => {
-    let idx = _.findIndex(srcBalances, {
-      product_id: v.product_id,
-      lot_no: v.lot_no,
-      expired_date: v.expired_date,
-      src_warehouse_id: v.src_warehouse_id
-    });
-    if (idx === -1) {
-      srcBalances.push({
-        product_id: v.product_id,
-        lot_no: v.lot_no,
-        expired_date: v.expired_date,
-        src_warehouse_id: v.src_warehouse_id,
-        balance_src: v.current_balance_src
-      });
-    }
-  });
-
+  // =================================== TRANSFER IN ========================
   let data = [];
 
   dstProducts.forEach(v => {
-    let objIn: any = {};
-    objIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-    objIn.product_id = v.product_id;
-    objIn.generic_id = v.generic_id;
-    objIn.unit_generic_id = v.unit_generic_id,
+    if (v.qty != 0) {
+      let objIn: any = {};
+      objIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+      objIn.product_id = v.product_id;
+      objIn.generic_id = v.generic_id;
+      objIn.unit_generic_id = v.unit_generic_id;
       objIn.transaction_type = TransactionType.TRANSFER_IN;
-    objIn.document_ref_id = v.transfer_code;
-    objIn.in_qty = v.qty;
-    objIn.in_unit_cost = v.cost;
-    let dstBalance = 0;
-    let dstIdx = _.findIndex(dstBalances, {
-      product_id: v.product_id,
-      dst_warehouse_id: v.dst_warehouse_id,
-      lot_no: v.lot_no,
-      expired_date: v.expired_date
-    });
-    if (dstIdx > -1) {
-      dstBalance = dstBalances[dstIdx].balance_dst + v.qty;
-      dstBalances[dstIdx].balance += v.qty;
+      objIn.document_ref_id = v.transfer_id;
+      objIn.document_ref = v.transfer_code;
+      objIn.in_qty = v.qty;
+      objIn.in_unit_cost = v.cost;
+      let dstBalance = 0;
+      let dstBalanceGeneric = 0;
+      let dstIdx = _.findIndex(balances, {
+        product_id: v.product_id,
+        warehouse_id: v.dst_warehouse_id,
+      });
+      if (dstIdx > -1) {
+        dstBalance = balances[dstIdx].balance + v.qty;
+        balances[dstIdx].balance += v.qty;
+        dstBalanceGeneric = balances[dstIdx].balance_generic + v.qty;
+        balances[dstIdx].balance_generic += v.qty;
+      }
+      objIn.balance_qty = dstBalance;
+      objIn.balance_generic_qty = dstBalanceGeneric;
+      objIn.balance_unit_cost = v.cost;
+      objIn.ref_src = v.src_warehouse_id;
+      objIn.ref_dst = v.dst_warehouse_id;
+      objIn.lot_no = v.lot_no;
+      objIn.expired_date = v.expired_date;
+      objIn.comment = 'รับโอน';
+      data.push(objIn);
     }
-    objIn.balance_qty = dstBalance;
-    objIn.balance_unit_cost = v.cost;
-    objIn.ref_src = v.src_warehouse_id;
-    objIn.ref_dst = v.dst_warehouse_id;
-    objIn.comment = 'รับโอน';
-    data.push(objIn);
   });
 
   srcProducts.forEach(v => {
-    let objOut: any = {};
-    objOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-    objOut.product_id = v.product_id;
-    objOut.generic_id = v.generic_id;
-    objOut.unit_generic_id = v.unit_generic_id;
-    objOut.transaction_type = TransactionType.TRANSFER_OUT;
-    objOut.document_ref_id = v.transfer_code;
-    objOut.out_qty = v.qty;
-    objOut.out_unit_cost = v.cost;
-    let srcBalance = 0;
-    let srcIdx = _.findIndex(srcBalances, {
-      product_id: v.product_id,
-      src_warehouse_id: v.src_warehouse_id,
-      lot_no: v.lot_no,
-      expired_date: v.expired_date
-    });
-    if (srcIdx > -1) {
-      srcBalance = srcBalances[srcIdx].balance_src - v.qty;
-      srcBalances[srcIdx].balance -= v.qty;
+    if (v.qty != 0) {
+      let objOut: any = {};
+      objOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+      objOut.product_id = v.product_id;
+      objOut.generic_id = v.generic_id;
+      objOut.unit_generic_id = v.unit_generic_id;
+      objOut.transaction_type = TransactionType.TRANSFER_OUT;
+      objOut.document_ref = v.transfer_code;
+      objOut.document_ref_id = v.transfer_id;
+      objOut.out_qty = v.qty;
+      objOut.out_unit_cost = v.cost;
+      let srcBalance = 0;
+      let srcBalanceGeneric = 0;
+      let srcIdx = _.findIndex(balances, {
+        product_id: v.product_id,
+        warehouse_id: v.src_warehouse_id,
+      });
+      if (srcIdx > -1) {
+        srcBalance = balances[srcIdx].balance - v.qty;
+        balances[srcIdx].balance -= v.qty;
+        srcBalanceGeneric = balances[srcIdx].balance_generic - v.qty;
+        balances[srcIdx].balance_generic -= v.qty;
+      }
+      objOut.balance_qty = srcBalance;
+      objOut.balance_unit_cost = v.cost;
+      objOut.ref_src = v.src_warehouse_id;
+      objOut.ref_dst = v.dst_warehouse_id;
+      objOut.balance_generic_qty = srcBalanceGeneric;
+      objOut.comment = 'โอน';
+      objOut.lot_no = v.lot_no;
+      objOut.expired_date = v.expired_date;
+      data.push(objOut);
     }
-    objOut.balance_qty = srcBalance;
-    objOut.balance_unit_cost = v.cost;
-    objOut.ref_src = v.src_warehouse_id;
-    objOut.ref_dst = v.dst_warehouse_id;
-    objOut.comment = 'โอน';
-    data.push(objOut);
   });
 
   await transferModel.saveDstProducts(db, dstProducts);
   await transferModel.decreaseQty(db, dstProducts);
-  await transferModel.changeApproveStatusIds(db, transferIds);
+  await transferModel.changeApproveStatusIds(db, transferIds, peopleUserId);
   await stockCardModel.saveFastStockTransaction(db, data);
 });
 
@@ -615,6 +618,7 @@ router.post('/transfer/save', co(async (req, res, next) => {
   let db = req.db;
   let _summary = req.body.summary;
   let _generics = req.body.generics;
+  let peopleUserId = req.decoded.people_user_id;
   const approveAuto = req.decoded.WM_TRANSFER_APPROVE === 'N' ? true : false;
 
   if (_generics.length && _summary) {
@@ -642,8 +646,8 @@ router.post('/transfer/save', co(async (req, res, next) => {
           let generics = {
             transfer_id: transferId,
             generic_id: g.generic_id,
-            transfer_qty: g.transfer_qty * g.conversion_qty,
-            unit_generic_id: g.unit_generic_id,
+            transfer_qty: g.transfer_qty,
+            primary_unit_id: g.primary_unit_id,
             location_id: g.location_id,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
@@ -665,7 +669,8 @@ router.post('/transfer/save', co(async (req, res, next) => {
         }
 
         if (approveAuto) {
-          await transferApprove(db, transferId);
+          await transferModel.changeConfirmStatusIds(db, transferId, peopleUserId);
+          await transferApprove(db, transferId, peopleUserId);
         }
 
         res.send({ ok: true });
@@ -687,8 +692,14 @@ router.delete('/transfer/:transferId', co(async (req, res, next) => {
   let transferId = req.params.transferId;
 
   try {
-    let rows = await transferModel.removeTransfer(db, transferId);
-    res.send({ ok: true });
+    const rs = await transferModel.checkStatus(db, transferId);
+    const status = rs[0];
+    if (status.confirmed === 'Y' || status.approved === 'Y') {
+      res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
+    } else {
+      let rows = await transferModel.removeTransfer(db, transferId);
+      res.send({ ok: true });
+    }
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -743,9 +754,6 @@ router.get('/transfer/info-detail/:transferId', co(async (req, res, next) => {
       const rsProducts = await transferModel.getProductsInfo(db, transferId, g.transfer_generic_id);
       let _products = rsProducts[0];
       g.products = _products;
-      g.total_transfer_qty = _.sumBy(_products, function (e: any) {
-        return e.product_qty * e.conversion_qty;
-      });
     }
     res.send({ ok: true, rows: _generics });
   } catch (error) {
@@ -764,42 +772,48 @@ router.put('/transfer/save/:transferId', co(async (req, res, next) => {
 
   if (_generics.length && _summary) {
     try {
-      let transfer = {
-        transfer_date: _summary.transferDate,
-        people_user_id: req.decoded.people_user_id
-      }
+      const rs = await transferModel.checkStatus(db, transferId);
+      const status = rs[0];
+      if (status.confirmed === 'Y' || status.approved === 'Y' || status.mark_deleted === 'Y') {
+        res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
+      } else {
+        let transfer = {
+          transfer_date: _summary.transferDate,
+          people_user_id: req.decoded.people_user_id
+        }
 
-      await transferModel.deleteTransferGeneric(db, transferId);
-      await transferModel.deleteTransferProduct(db, transferId);
-      await transferModel.updateTransferSummary(db, transferId, transfer);
+        await transferModel.deleteTransferGeneric(db, transferId);
+        await transferModel.deleteTransferProduct(db, transferId);
+        await transferModel.updateTransferSummary(db, transferId, transfer);
 
-      for (const g of _generics) {
-        let generics = {
-          transfer_id: transferId,
-          generic_id: g.generic_id,
-          transfer_qty: g.transfer_qty * g.conversion_qty,
-          unit_generic_id: g.unit_generic_id,
-          location_id: g.location_id,
-          create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-          create_by: req.decoded.people_user_id
-        };
-        let rsTransferGeneric = await transferModel.saveTransferGeneric(db, generics);
-
-        let products = [];
-        g.products.forEach(p => {
-          products.push({
+        for (const g of _generics) {
+          let generics = {
             transfer_id: transferId,
-            transfer_generic_id: rsTransferGeneric[0],
-            wm_product_id: p.wm_product_id,
-            product_qty: p.product_qty * p.conversion_qty,
+            generic_id: g.generic_id,
+            transfer_qty: g.transfer_qty,
+            primary_unit_id: g.primary_unit_id,
+            location_id: g.location_id,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
-          });
-        });
-        await transferModel.saveTransferProduct(db, products);
-      }
+          };
+          let rsTransferGeneric = await transferModel.saveTransferGeneric(db, generics);
 
-      res.send({ ok: true });
+          let products = [];
+          g.products.forEach(p => {
+            products.push({
+              transfer_id: transferId,
+              transfer_generic_id: rsTransferGeneric[0],
+              wm_product_id: p.wm_product_id,
+              product_qty: p.product_qty * p.conversion_qty,
+              create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+              create_by: req.decoded.people_user_id
+            });
+          });
+          await transferModel.saveTransferProduct(db, products);
+        }
+
+        res.send({ ok: true });
+      }
 
     } catch (error) {
       res.send({ ok: false, error: error.message });
@@ -816,10 +830,23 @@ router.post('/transfer/approve', co(async (req, res, next) => {
 
   let db = req.db;
   let transferIds = req.body.transferIds;
+  let peopleUserId = req.decoded.people_user_id;
 
   try {
-    await transferApprove(db, transferIds);
-    res.send({ ok: true });
+    let isValid = true;
+    const rs = await transferModel.checkStatus(db, transferIds);
+    for (const i of rs) {
+      if (i.mark_deleted === 'Y') {
+        isValid = false;
+      }
+    }
+    if (isValid) {
+      await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
+      await transferApprove(db, transferIds, peopleUserId);
+      res.send({ ok: true });
+    } else {
+      res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะบางรายการมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
+    }
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -828,7 +855,33 @@ router.post('/transfer/approve', co(async (req, res, next) => {
 
 }));
 
+router.post('/transfer/confirm', co(async (req, res, next) => {
 
+  let db = req.db;
+  let transferIds = req.body.transferIds;
+  let peopleUserId = req.decoded.people_user_id;
+
+  try {
+    let isValid = true;
+    const rs = await transferModel.checkStatus(db, transferIds);
+    for (const i of rs) {
+      if (i.mark_deleted === 'Y') {
+        isValid = false;
+      }
+    }
+    if (isValid) {
+      await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
+      res.send({ ok: true });
+    } else {
+      res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะบางรายการมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
 
 //===============================================================================//
 
@@ -1948,7 +2001,7 @@ router.post('/his-transaction/list', co(async (req, res, next) => {
   let hospcode = req.decoded.his_hospcode;
   let genericType = req.body.genericTypes;
   try {
-    let rs = await hisTransactionModel.getHisTransaction(db, hospcode,genericType);
+    let rs = await hisTransactionModel.getHisTransaction(db, hospcode, genericType);
     res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -2080,7 +2133,7 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
         }
       }));
 
- 
+
       // save transaction status
       let peopleUserId = req.decoded.people_user_id;
       let cutStockDate = moment().format('YYYY-MM-DD HH:mm:ss');

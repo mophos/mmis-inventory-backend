@@ -11,7 +11,7 @@ export class StaffModel {
 
     return knex('wm_borrow as wb')
       .select('wb.borrow_id', 'wb.borrow_date', 'who.warehouse_name as owner_warehouse_name',
-      'whb.warehouse_name as borrow_warehouse_name', 'wbt.borrow_type_name', 'wb.updated_at', queryTotal)
+        'whb.warehouse_name as borrow_warehouse_name', 'wbt.borrow_type_name', 'wb.updated_at', queryTotal)
       .leftJoin('wm_warehouses as who', 'who.warehouse_id', 'wb.owner_warehouse_id')
       .leftJoin('wm_warehouses as whb', 'whb.warehouse_id', 'wb.borrow_warehouse_id')
       .leftJoin('wm_borrow_types as wbt', 'wbt.borrow_type_id', 'wb.borrow_type_id')
@@ -29,7 +29,7 @@ export class StaffModel {
 
     return knex('wm_borrow as wb')
       .select('wb.borrow_id', 'wb.borrow_date', 'who.warehouse_name as owner_warehouse_name',
-      'whb.warehouse_name as borrow_warehouse_name', 'wbt.borrow_type_name', 'wb.updated_at', queryTotal)
+        'whb.warehouse_name as borrow_warehouse_name', 'wbt.borrow_type_name', 'wb.updated_at', queryTotal)
       .leftJoin('wm_warehouses as who', 'who.warehouse_id', 'wb.owner_warehouse_id')
       .leftJoin('wm_warehouses as whb', 'whb.warehouse_id', 'wb.borrow_warehouse_id')
       .leftJoin('wm_borrow_types as wbt', 'wbt.borrow_type_id', 'wb.borrow_type_id')
@@ -50,8 +50,8 @@ export class StaffModel {
 
     return knex('wm_borrow as wb')
       .select('wb.borrow_id', 'wb.borrow_date', 'who.warehouse_name as owner_warehouse_name',
-      'whb.warehouse_name as borrow_warehouse_name', 'wb.borrow_warehouse_id', 'wb.owner_warehouse_id',
-      'wbt.borrow_type_name', 'wb.updated_at', queryTotal)
+        'whb.warehouse_name as borrow_warehouse_name', 'wb.borrow_warehouse_id', 'wb.owner_warehouse_id',
+        'wbt.borrow_type_name', 'wb.updated_at', queryTotal)
       .leftJoin('wm_warehouses as who', 'who.warehouse_id', 'wb.owner_warehouse_id')
       .leftJoin('wm_warehouses as whb', 'whb.warehouse_id', 'wb.borrow_warehouse_id')
       .leftJoin('wm_borrow_types as wbt', 'wbt.borrow_type_id', 'wb.borrow_type_id')
@@ -80,8 +80,8 @@ export class StaffModel {
 
     return knex('wm_borrow as wb')
       .select('wb.borrow_id', 'wb.borrow_date', 'who.warehouse_name as owner_warehouse_name',
-      'whb.warehouse_name as borrow_warehouse_name', 'wb.owner_warehouse_id', 'wb.borrow_warehouse_id',
-      'wbt.borrow_type_name', 'wb.updated_at', queryFileCount, subQueryReturn, queryTotal)
+        'whb.warehouse_name as borrow_warehouse_name', 'wb.owner_warehouse_id', 'wb.borrow_warehouse_id',
+        'wbt.borrow_type_name', 'wb.updated_at', queryFileCount, subQueryReturn, queryTotal)
       .leftJoin('wm_warehouses as who', 'who.warehouse_id', 'wb.owner_warehouse_id')
       .leftJoin('wm_warehouses as whb', 'whb.warehouse_id', 'wb.borrow_warehouse_id')
       .leftJoin('wm_borrow_types as wbt', 'wbt.borrow_type_id', 'wb.borrow_type_id')
@@ -254,7 +254,7 @@ export class StaffModel {
   transferGetProductForTransfer(knex: Knex, productId: string, warehouseId: string) {
     return knex('wm_products as p')
       .select('p.id', 'p.product_id', 'p.qty', 'wl.expired_date', 'wl.lot_no',
-      'mpk.*', 'p.package_id', 'p.lot_id')
+        'mpk.*', 'p.package_id', 'p.lot_id')
       .innerJoin('mm_product_package as mpp', 'mpp.product_id', 'p.product_id')
       .innerJoin('wm_product_lots as wl', 'wl.lot_id', 'p.lot_id')
       .innerJoin('mm_packages as mpk', join => {
@@ -280,25 +280,26 @@ export class StaffModel {
   transferAll(knex: Knex, warehouseId: any) {
     return knex('wm_transfer as wmt')
       .select('wmt.transfer_id', 'wmt.mark_deleted', 'wmt.transfer_code', 'wmt.transfer_date',
-      'src.warehouse_name as src_warehouse_name',
-      'dst.warehouse_name as dst_warehouse_name', 'wmt.approved')
+        'src.warehouse_name as src_warehouse_name',
+        'dst.warehouse_name as dst_warehouse_name', 'wmt.approved',
+        'wmt.confirmed')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
       .where('wmt.src_warehouse_id', warehouseId)
       // .where('wmt.is_accepted', 'Y')
-      .orderBy('wmt.transfer_date', 'desc');
+      .orderBy('wmt.transfer_code', 'desc');
   }
 
   transferRequest(knex: Knex, warehouseId: any) {
     return knex('wm_transfer as wmt')
       .select('wmt.transfer_id', 'wmt.transfer_code', 'wmt.mark_deleted', 'wmt.transfer_date',
-      'src.warehouse_name as src_warehouse_name',
-      'dst.warehouse_name as dst_warehouse_name', 'wmt.approved')
+        'src.warehouse_name as src_warehouse_name',
+        'dst.warehouse_name as dst_warehouse_name', 'wmt.approved')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
       .where('wmt.dst_warehouse_id', warehouseId)
-      // .where('wmt.is_accepted', 'N')
-      .orderBy('wmt.transfer_date', 'desc');
+      .andWhere('wmt.confirmed', 'Y')
+      .orderBy('wmt.transfer_code', 'desc');
   }
 
   transferDetail(knex: Knex, transferId: string) {
