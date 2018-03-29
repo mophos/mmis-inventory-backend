@@ -378,8 +378,12 @@ router.put('/:receiveId', co(async (req, res, next) => {
           // product is in PO 
 
           if (summary.purchaseOrderId) {
-            let receiveCode = await serialModel.getSerial(db, 'RV');
-            data.receive_code = receiveCode;
+
+            let temp = summary.receiveCode.split('-');
+            if (temp[0] === 'RT') {
+              let receiveCode = await serialModel.getSerial(db, 'RV');
+              data.receive_code = receiveCode;
+            }
 
             let rsProduct = await receiveModel.getProductInPurchase(db, summary.purchaseOrderId);
             let isInPurchase = true;
@@ -945,7 +949,7 @@ router.post('/approve', co(async (req, res, next) => {
       obj.ref_src = v.vendor_labeler_id;
       obj.ref_dst = v.warehouse_id;
       obj.comment = 'รับเข้าคลังจากใบสั่งซื้อ';
-      obj.lot_no  = v.lot_no;
+      obj.lot_no = v.lot_no;
       obj.expired_date = v.expired_date;
       data.push(obj);
     });
@@ -1063,7 +1067,7 @@ router.post('/other/approve', co(async (req, res, next) => {
       obj.ref_src = v.donator_id;
       obj.ref_dst = v.warehouse_id;
       obj.comment = 'รับเข้าคลังแบบอื่นๆ';
-      obj.lot_no  = v.lot_no;
+      obj.lot_no = v.lot_no;
       obj.expired_date = v.expired_date;
       data.push(obj);
     });
@@ -1339,12 +1343,12 @@ router.put('/update/cost', co(async (req, res, nex) => {
   let products = req.body.products;
   let productsData = [];
   products.forEach((v: any) => {
-    if(v.cost != 0){
+    if (v.cost != 0) {
       let pdata: any = {
-      unit_generic_id: v.unit_generic_id,
-      cost: v.cost
-    }
-    productsData.push(pdata);
+        unit_generic_id: v.unit_generic_id,
+        cost: v.cost
+      }
+      productsData.push(pdata);
     }
   });
   try {
