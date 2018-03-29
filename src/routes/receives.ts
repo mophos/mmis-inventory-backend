@@ -378,8 +378,12 @@ router.put('/:receiveId', co(async (req, res, next) => {
           // product is in PO 
 
           if (summary.purchaseOrderId) {
-            let receiveCode = await serialModel.getSerial(db, 'RV');
-            data.receive_code = receiveCode;
+
+            let temp = summary.receiveCode.split('-');
+            if (temp[0] === 'RT') {
+              let receiveCode = await serialModel.getSerial(db, 'RV');
+              data.receive_code = receiveCode;
+            }
 
             let rsProduct = await receiveModel.getProductInPurchase(db, summary.purchaseOrderId);
             let isInPurchase = true;
