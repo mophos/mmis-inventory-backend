@@ -1048,7 +1048,7 @@ WHERE
             minus = true;
             num = Math.abs(num);
         }
-        num = num.toFixed(0);
+        // num = num.toFixed(0);
         num = '' + num;
         var l = num.toString().length
         var num2 = '';
