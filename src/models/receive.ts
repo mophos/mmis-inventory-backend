@@ -1151,11 +1151,12 @@ export class ReceiveModel {
       ) AS cost,
       l.labeler_name,
       ra.approve_id,
-      pc.purchasing_order_id
+      pc.purchase_order_id,
+      pc.purchase_order_number
     FROM
       wm_receives AS r
     LEFT JOIN mm_labelers AS l ON l.labeler_id = r.vendor_labeler_id
-    left join pc_purchasing_order pc on pc.purchasing_order_id = r.purchasing_order_id
+    left join pc_purchasing_order pc on pc.purchase_order_id = r.purchase_order_id
     LEFT JOIN wm_receive_approve AS ra ON ra.receive_id = r.receive_id
     WHERE
       r.receive_id IN (
