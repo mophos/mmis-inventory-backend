@@ -684,7 +684,13 @@ WHERE
         join mm_generics mg on mp.generic_id=mg.generic_id`
         return (knex.raw(sql, [startDate, endDate, startDate, endDate, startDate, startDate]))
     }
-    list_cost(knex: Knex) {
+
+    getGenericType(knex: Knex){
+        return knex('mm_generic_types')
+            .select('generic_type_id')
+            .orderBy('generic_type_id')
+    }
+    list_cost(knex: Knex ,genericTypeId , startDate, endDate ,warehouseId) {
         let sql = `
         SELECT
  	mgt.generic_type_name,
@@ -694,57 +700,89 @@ WHERE
 	wm_products wp
 	JOIN mm_products mp ON wp.product_id = mp.product_id
 	JOIN mm_generics mg ON mp.generic_id = mg.generic_id
-	RIGHT JOIN mm_generic_accounts mgda ON mg.account_id = mgda.account_id
-	JOIN mm_generic_types mgt ON mg.generic_type_id = mg.generic_type_id 
+	JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
+	left JOIN mm_generic_accounts mgda ON mg.account_id = mgda.account_id
     WHERE
-	mgt.generic_type_id = 1 
+    mgt.generic_type_id =${genericTypeId}
+    AND ( wp.expired_date BETWEEN ${startDate} AND ${endDate} or wp.expired_date is null or wp.expired_date = '0000-00-00' )
+    AND wp.warehouse_id LIKE '${warehouseId}'
     GROUP BY
-	mgda.account_id
-        UNION
-            SELECT
-                mgt.generic_type_name,
-                NULL,
-                round(IFNULL(sum(wp.cost), 0), 2) AS cost
-            FROM
-                wm_products wp
-            JOIN mm_products mp ON wp.product_id = mp.product_id
-            JOIN mm_generics mg ON mp.generic_id = mg.generic_id
-            JOIN mm_generic_types mgt ON mg.generic_type_id = mgt.generic_type_id
-            WHERE
-                mgt.generic_type_id = 2
-            GROUP BY
-                mgt.generic_type_id
-            UNION
-                SELECT
-                    'เวชภัณฑ์อื่นๆ',
-                    mgt.generic_type_name,
-                    round(IFNULL(sum(wp.cost), 0), 2) AS cost
-                FROM
-                    wm_products wp
-                JOIN mm_products mp ON wp.product_id = mp.product_id
-                JOIN mm_generics mg ON mp.generic_id = mg.generic_id
-                RIGHT JOIN mm_generic_types mgt ON mg.generic_type_id = mgt.generic_type_id
-                WHERE
-                    mgt.generic_type_id > 2
-                AND mgt.generic_type_id <= 5
-                GROUP BY
-                    mgt.generic_type_id
-                UNION
-                    SELECT
-                        'อื่นๆ',
-                        NULL,
-                        round(IFNULL(sum(wp.cost), 0), 2) AS cost
-                    FROM
-                        wm_products wp
-                    JOIN mm_products mp ON wp.product_id = mp.product_id
-                    JOIN mm_generics mg ON mp.generic_id = mg.generic_id
-                    RIGHT JOIN mm_generic_types mgt ON mg.generic_type_id = mgt.generic_type_id
-                    WHERE
-                        mgt.generic_type_id > 5
-                    GROUP BY
-                        mgt.generic_type_id`
+	mgda.account_id`
         return (knex.raw(sql))
     }
+    // list_cost(knex: Knex , startDate, endDate ,warehouseId) {
+    //     let sql = `
+    //     SELECT
+ 	// mgt.generic_type_name,
+	// mgda.account_name,
+	// round( IFNULL( sum( wp.cost ), 0 ), 2 ) AS cost 
+    // FROM
+	// wm_products wp
+	// JOIN mm_products mp ON wp.product_id = mp.product_id
+	// JOIN mm_generics mg ON mp.generic_id = mg.generic_id
+	// RIGHT JOIN mm_generic_accounts mgda ON mg.account_id = mgda.account_id
+	// JOIN mm_generic_types mgt ON mg.generic_type_id = mg.generic_type_id 
+    // WHERE
+    // mgt.generic_type_id = 1
+    // AND (wp.expired_date BETWEEN ${startDate}
+    //     AND ${endDate} or wp.expired_date is null or wp.expired_date = '0000-00-00')
+    // AND wp.warehouse_id LIKE '${warehouseId}'
+    // GROUP BY
+	// mgda.account_id
+    //     UNION
+    //         SELECT
+    //             mgt.generic_type_name,
+    //             NULL,
+    //             round(IFNULL(sum(wp.cost), 0), 2) AS cost
+    //         FROM
+    //             wm_products wp
+    //         JOIN mm_products mp ON wp.product_id = mp.product_id
+    //         JOIN mm_generics mg ON mp.generic_id = mg.generic_id
+    //         JOIN mm_generic_types mgt ON mg.generic_type_id = mgt.generic_type_id
+    //         WHERE
+    //             mgt.generic_type_id = 2
+    //             AND (wp.expired_date BETWEEN ${startDate}
+    //                 AND ${endDate} or wp.expired_date is null or wp.expired_date = '0000-00-00')
+    //             AND wp.warehouse_id LIKE '${warehouseId}'
+    //         GROUP BY
+    //             mgt.generic_type_id
+    //         UNION
+    //             SELECT
+    //                 'เวชภัณฑ์อื่นๆ',
+    //                 mgt.generic_type_name,
+    //                 round(IFNULL(sum(wp.cost), 0), 2) AS cost
+    //             FROM
+    //                 wm_products wp
+    //             JOIN mm_products mp ON wp.product_id = mp.product_id
+    //             JOIN mm_generics mg ON mp.generic_id = mg.generic_id
+    //             RIGHT JOIN mm_generic_types mgt ON mg.generic_type_id = mgt.generic_type_id
+    //             WHERE
+    //                 mgt.generic_type_id > 2
+    //             AND mgt.generic_type_id <= 5
+    //             AND (wp.expired_date BETWEEN ${startDate}
+    //                 AND ${endDate} or wp.expired_date is null or wp.expired_date = '0000-00-00')
+    //             AND wp.warehouse_id LIKE '${warehouseId}'
+    //             GROUP BY
+    //                 mgt.generic_type_id
+    //             UNION
+    //                 SELECT
+    //                     'อื่นๆ',
+    //                     NULL,
+    //                     round(IFNULL(sum(wp.cost), 0), 2) AS cost
+    //                 FROM
+    //                     wm_products wp
+    //                 JOIN mm_products mp ON wp.product_id = mp.product_id
+    //                 JOIN mm_generics mg ON mp.generic_id = mg.generic_id
+    //                 RIGHT JOIN mm_generic_types mgt ON mg.generic_type_id = mgt.generic_type_id
+    //                 WHERE
+    //                     mgt.generic_type_id > 5
+    //                     AND (wp.expired_date BETWEEN ${startDate}
+    //                         AND ${endDate} or wp.expired_date is null or wp.expired_date = '0000-00-00')
+    //                     AND wp.warehouse_id LIKE '${warehouseId}'
+    //                 GROUP BY
+    //                     mgt.generic_type_id`
+    //     return (knex.raw(sql))
+    // }
     list_receive(knex: Knex) {
         let sql = `SELECT
         wr.receive_id,
