@@ -625,7 +625,7 @@ export class ReceiveModel {
 
   // receive with purchase
 
-  getPurchaseList(knex: Knex) {
+  getPurchaseList(knex: Knex, limit: number, offset: number) {
 
     let sql = `
       select pc.purchase_order_book_number, pc.purchase_order_id, pc.purchase_order_number,
@@ -664,12 +664,28 @@ export class ReceiveModel {
       and pc.purchase_order_status != 'COMPLETED'
       and pc.is_cancel != 'Y'
       order by pc.purchase_order_number DESC
+      limit ${limit}
+      offset ${offset}
     `;
 
     return knex.raw(sql, []);
 
   }
+  getPurchaseListTotal(knex: Knex) {
 
+    let sql = `
+      select count(*) as total
+      from pc_purchasing_order as pc
+      left join mm_labelers as ml on ml.labeler_id=pc.labeler_id
+      left join l_bid_process as cmp on cmp.id=pc.purchase_method_id
+      where pc.purchase_order_status='APPROVED'
+      and pc.purchase_order_status != 'COMPLETED'
+      and pc.is_cancel != 'Y'
+    `;
+
+    return knex.raw(sql, []);
+
+  }
   getPurchaseProductList(knex: Knex, purchaseOrderId: any) {
     let sql = `
     select pi.product_id, p.product_name, pi.unit_generic_id,
@@ -1010,7 +1026,7 @@ export class ReceiveModel {
     return knex.raw(sql);
   }
 
-  getCountApproveOther(knex: Knex,warehouseId) {
+  getCountApproveOther(knex: Knex, warehouseId) {
     let sql = `
     select count(*) as count_approve from wm_receive_other as rt
     left join wm_receive_approve as ra on ra.receive_other_id=rt.receive_other_id
@@ -1204,7 +1220,7 @@ export class ReceiveModel {
     }
     return knex.raw(sql);
   }
-  
+
   getReceiveStatusSearch(knex: Knex, limit: number, offset: number, warehouseId, status, query) {
     let _query = `%${query}%`;
     let sql = `
