@@ -4,18 +4,18 @@ import * as moment from 'moment';
 export class ReportProductModel {
   getProductRemainWithWarehouse(knex: Knex, warehouseId: number) {
     return knex('wm_products as wp')
-      .select('wp.product_id', 'mp.product_name', knex.raw('sum(wp.qty) as total'),'mu.unit_name')
+      .select('wp.product_id', 'mp.product_name', knex.raw('sum(wp.qty) as total'), 'mu.unit_name')
       .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
-      .leftJoin('mm_units as mu','mu.unit_id','mp.primary_unit_id')
+      .leftJoin('mm_units as mu', 'mu.unit_id', 'mp.primary_unit_id')
       .where('wp.warehouse_id', warehouseId)
       .groupBy('wp.product_id')
   }
 
   getProductRemain(knex: Knex) {
     return knex('wm_products as wp')
-      .select('wp.product_id', 'mp.product_name', knex.raw('sum(wp.qty) as total'),'mu.unit_name')
+      .select('wp.product_id', 'mp.product_name', knex.raw('sum(wp.qty) as total'), 'mu.unit_name')
       .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
-      .leftJoin('mm_units as mu','mu.unit_id','mp.primary_unit_id')
+      .leftJoin('mm_units as mu', 'mu.unit_id', 'mp.primary_unit_id')
       .groupBy('wp.product_id')
 
   }
@@ -23,7 +23,7 @@ export class ReportProductModel {
   getProductRemainAllWarehouse(knex: Knex, productId: any) {
     return knex('wm_products as wp')
       .select('wp.product_id', 'w.warehouse_name', knex.raw('sum(wp.qty) as qty'),
-      'mp.product_name', 'wl.lot_no', 'wl.expired_date', 'mpk.*')
+        'mp.product_name', 'wl.lot_no', 'wl.expired_date', 'mpk.*')
       .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
       .innerJoin('mm_product_package as mpp', 'mpp.product_id', 'mp.product_id')
       .innerJoin('wm_product_lots as wl', 'wl.lot_id', 'wp.lot_id')
@@ -47,6 +47,14 @@ export class ReportProductModel {
       .where('wrd.product_id', productId)
       .groupByRaw('wr.receive_date, wrd.product_id')
       .orderBy('wr.receive_date', 'ASC');
+  }
+
+  getGenericInStockcrad(knex: Knex, warehouseId: string, startDate: any, endDate: any) {
+    return knex('view_stock_card_warehouse as vscw')
+      .select('vscw.generic_id', 'vscw.generic_name')
+      .where('vscw.warehouse_id', warehouseId)
+      .andWhereBetween('vscw.stock_date', [startDate, endDate])
+      .groupBy('vscw.generic_id')
   }
 
 }
