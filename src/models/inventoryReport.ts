@@ -937,31 +937,25 @@ WHERE
     }
     _list_receive5(knex: Knex, sID: any, eID: any) {
         return knex('wm_receives as wr')
-            .select('wrd.product_id',
-                'wr.receive_id',
-                'wr.receive_date',
-                'wr.delivery_code',
-                'wr.vendor_labeler_id',
-                'ml.labeler_name',
-                'vap.generic_id',
-                'vap.generic_name',
-                'wrd.receive_qty',
-                'vap.small_qty',
-                'vap.small_unit',
-                'wrd.expired_date',
-                'wrd.lot_no',
-                'wl.location_name',
-                'ml2.labeler_name AS labeler_name_m')
+            .select('wrd.product_id','wr.receive_id','wr.receive_code')
             .innerJoin('wm_receive_detail as wrd', 'wr.receive_id', 'wrd.receive_id')
-            .innerJoin('wm_receive_approve as wrp', 'wr.receive_id', 'wrp.receive_id')
-            .innerJoin('mm_labelers as ml', 'wr.vendor_labeler_id', 'ml.labeler_id')
-            .joinRaw('inner join view_all_product as vap on wrd.product_id=vap.product_id and wrd.unit_generic_id=vap.unit_generic_id')
-            .innerJoin('mm_products as mp', 'mp.product_id', 'wrd.product_id')
-            .leftJoin('mm_labelers as ml2', 'mp.m_labeler_id', 'ml2.labeler_id')
-            .leftJoin('wm_locations as wl', 'wl.location_id', 'wrd.location_id')
             .whereBetween('wr.receive_code', [sID, eID])
             .orderBy('wr.receive_code');
+    }
 
+    _list_receive5Date(knex: Knex, sDate: any, eDate: any) {
+        return knex('wm_receives as wr')
+            .select('wr.receive_id')
+            .whereBetween('wr.receive_date', [sDate, eDate])
+            .orderBy('wr.receive_date');
+    }
+
+    _list_receivePO(knex: Knex, sID: any, eID: any) {
+        return knex('wm_receives as wr')
+            .select('wr.receive_id')
+            .innerJoin('pc_purchasing_order as pp','pp.purchase_order_id','wr.purchase_order_id')
+            .whereBetween('pp.purchase_order_number', [sID, eID])
+            .orderBy('wr.receive_id');
     }
 
     _list_receive7(knex: Knex, sID: any, eID: any) {
@@ -1512,6 +1506,11 @@ OR sc.ref_src like ?
         where sc.stock_date BETWEEN '2010-01-01' and '2017-10-10'
         GROUP BY mgt.generic_type_id,mgda.drug_account_id`
     }
+    
+    checkReceiveId(knex: Knex, sID,eID){
+
+    }
+
     checkReceive(knex: Knex, receiveID) {
         let sql = `SELECT wr.receive_id,
         wr.receive_code,

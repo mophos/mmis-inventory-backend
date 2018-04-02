@@ -52,8 +52,24 @@ router.post('/remain-all-warehouse', wrap(async (req, res, next) => {
       let results = await reportProductModel.getProductRemainAllWarehouse(db, productId);
       res.send({ ok: true, rows: results });
     } else {
-      res.send({ok: false, error: 'ไม่พบรายการ'})
+      res.send({ ok: false, error: 'ไม่พบรายการ' })
     }
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.post('/genericinstockcrad', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.body.warehouseId;
+  let startDate = req.body.startDate;
+  let endDate = req.body.endDate;
+  try {
+    let results = await reportProductModel.getGenericInStockcrad(db, warehouseId, startDate, endDate)
+    res.send({ ok: true, rows: results });
   } catch (error) {
     console.log(error);
     res.send({ ok: false, error: error.message });
@@ -82,7 +98,7 @@ router.get('/remain/excel/:warehouseId', wrap(async (req, res, next) => {
 
   if (warehouseId) {
     try {
-      let results:any = await reportProductModel.getProductRemainWithWarehouse(db, warehouseId);
+      let results: any = await reportProductModel.getProductRemainWithWarehouse(db, warehouseId);
       results = _.orderBy(results, ['total'], ['desc']);
       let xcel = json2xls(results);
       let tmpDir = process.env.XLS_PATH;
@@ -201,7 +217,7 @@ router.get('/remain/all-warehouse/pdf/:productId', wrap(async (req, res, next) =
     let products = [];
 
     json.detail = productDetail[0];
-  
+
     results.forEach(v => {
       let obj: any = {
         warehouse_name: v.warehouse_name,
@@ -249,14 +265,14 @@ router.get('/remain/all-warehouse/pdf/:productId', wrap(async (req, res, next) =
           res.send({ ok: false, msg: err });
         } else {
           let data = fs.readFileSync(pdfName);
-            res.writeHead(200, {
-              'Content-Type': 'application/pdf',
-              'Content-Length': data.length
-            });
-            res.end(data);
+          res.writeHead(200, {
+            'Content-Type': 'application/pdf',
+            'Content-Length': data.length
+          });
+          res.end(data);
           // res.download(pdfName, function () {
-            rimraf.sync(dstPDFPath);
-            rimraf.sync(dstHTMLPath);
+          rimraf.sync(dstPDFPath);
+          rimraf.sync(dstHTMLPath);
           //   // fse.removeSync(pdfName);
           // });
         }
