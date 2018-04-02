@@ -217,11 +217,11 @@ router.post('/', co(async (req, res, next) => {
             let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId);
             let rsReceived = await receiveModel.getTotalPricePurcehaseReceived(db, summary.purchaseOrderId);
 
-            totalPrice = rsReceived[0].total + totalPriceReceive;
-            totalPo = rsPo[0].total
+            totalPrice = +rsReceived[0].total + totalPriceReceive;
+            totalPo = +rsPo[0].total
           }
 
-          if (totalPrice > totalPo) {
+          if (+totalPrice > +totalPo) {
             res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
           } else {
 
@@ -372,8 +372,8 @@ router.put('/:receiveId', co(async (req, res, next) => {
         let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId);
         let rsReceived = await receiveModel.getTotalPricePurcehaseReceivedWithoutOwner(db, summary.purchaseOrderId, receiveId);
 
-        let totalPrice = rsReceived[0].total + totalPriceReceive;
-        if (totalPrice > rsPo[0].total) {
+        let totalPrice = +rsReceived[0].total + totalPriceReceive;
+        if (+totalPrice > +rsPo[0].total) {
           res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
         } else {
           // product is in PO 
