@@ -1,0 +1,55 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='17') #{hospitalName}
+        tr
+          td.center.bold(colspan='17' ) รายงานการจัดซื้อ
+        tr
+          td.left(colspan='17') ณ วันที่ #{today}
+        tr
+          th.left #
+          th.left &nbsp; เลขที่ใบสั่งซื้อ
+          th.left วันที่
+          th.left Generic Code
+          th.left Generic Name
+          th.left Trade Code
+          th.left Trade Name
+          th.left Package
+          th.left ราคาต่อ Package
+          th.left จำนวนรวม Base Unit
+          th.left ราคารวม Package
+          th.left ชนิดรายการสินค้า
+          th.left ชนิดยาใน/นอกบัญชี
+          th.left ประเภทยา
+          th.left Company Name
+      tbody
+        - var i = 0
+        for p in purchase
+          - i++
+          tr
+            td.left #{i}
+            td.left #{p.purchase_order_number}
+            td.left #{p.order_date}
+            td.left #{p.generic_code}
+            td.left #{p.generic_name}
+            td.left #{p.trade_code}
+            td.left #{p.trade_name}
+            td #{p.large_unit} (#{p.conversion} #{p.small_unit})
+            td.right #{p.unit_price}
+            td.right #{p.total_qty}
+            td.right #{p.total_cost}
+            td.left #{p.generic_type_name}
+            td.left #{p.account_name}
+            td.left #{p.generic_hosp_name}
+            td.left #{p.labeler_name}
+      tfooter
+        tr
+          td.tbfooter.right(colspan="17")

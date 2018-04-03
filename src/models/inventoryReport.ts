@@ -1982,4 +1982,45 @@ OR sc.ref_src like ?
         r.requisition_order_id`
         return knex.raw(sql);
       }
+    
+    purchasingNotGiveaway(knex:Knex, startDate: any, endDate: any){
+        let sql=`SELECT
+        pc.purchase_order_number,
+        pc.purchase_order_book_number,
+        pc.order_date,
+        mg.working_code AS generic_code,
+        mg.generic_name,
+        mp.working_code AS trade_code,
+        mp.product_name AS trade_name,
+        mu.unit_name AS small_unit,
+        mug.qty AS conversion,
+        mu2.unit_name AS large_unit,
+        poi.unit_price,
+        poi.qty * mug.qty AS total_qty,
+        poi.qty * poi.unit_price AS total_cost,
+        mgt.generic_type_name,
+        mga.account_name,
+        mgh.name AS generic_hosp_name,
+        ml.labeler_name
+    FROM
+        pc_purchasing_order pc
+    JOIN pc_purchasing_order_item poi
+    JOIN mm_products mp ON poi.product_id = mp.product_id
+    JOIN mm_generics mg ON mp.generic_id = mg.generic_id
+    LEFT JOIN mm_unit_generics mug ON mug.unit_generic_id = poi.unit_generic_id
+    LEFT JOIN mm_units mu ON mu.unit_id = mug.to_unit_id
+    LEFT JOIN mm_units mu2 ON mu2.unit_id = mug.from_unit_id
+    LEFT JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
+    LEFT JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
+    LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
+    JOIN mm_labelers ml ON pc.labeler_id = ml.labeler_id
+    WHERE
+        poi.giveaway = 'N'
+    AND pc.order_date BETWEEN '${startDate}'
+    AND '${endDate}'
+    ORDER BY
+	pc.purchase_order_number`
+        return knex.raw(sql);
+    }
+
 }
