@@ -10,69 +10,43 @@ html
     table.table
       thead
         tr
-          td.center.bold(colspan='5') #{hospitalName}
+          td.center.bold(colspan='6') #{hospitalName}
         tr
-          td.center.bold(colspan='5' ) รายงานมูลค่ายาและเวชภัณฑ์คงคลัง
+          td.center.bold(colspan='6' ) รายงานมูลค่ายาและเวชภัณฑ์คงคลัง
+        if (warehouseName === 'ทุกคลังสินค้า')
+          tr
+            td.left(colspan='6' ) #{warehouseName}
+        else
+          tr
+            td.left(colspan='6' ) คลัง #{warehouseName}
         tr
-          td.left(colspan='5') ณ วันที่ #{date}
+          td.left(colspan='6') ณ วันที่ #{startDate} ถึง #{endDate}
         tr
           th.center ลำดับที่
           th.left รายการ
-          th
           th.right มูลค่าคงคลัง
           th.right ยอดรวม
+          th.right หมายเหตุ
       tbody
-      - y=1
-      for a in list_cost
-        if(a.generic_type_name=='ยา')
-          tr
-            td.center #{y}
-            if(y==1)
-              - y++
-              td #{a.generic_type_name}
-            else
-              - y++
-              td 
-            td #{a.account_name}
-            td.right #{a.cost}
-            if(y==3)
-              td.right #{drug}
-            else
-              td
-          
-      for a in list_cost
-        if(a.generic_type_name=='เวชภัณฑ์มิใช่ยา')
-          tr
-            td.center #{y}
-            td #{a.generic_type_name}
-            td #{a.account_name}
-            td.right #{a.cost}
-            td.right #{a.cost}
+      - y=0
+      - s=1
+      for array in list_cost
+        for a in array
+          if  (a.generic_type_name !== null)
             - y++
-      for a in list_cost
-        if(a.generic_type_name=='เวชภัณฑ์อื่นๆ')
-          tr
-            td.center #{y}
-            if(y==4)
-              - y++
+            tr
+              td.center #{y}
               td #{a.generic_type_name}
-            else
-              - y++
-              td 
-            td #{a.account_name}
-            td.right #{a.cost}
-            if(y==7)
-              td.right #{supot}
-            else 
               td
-      for a in list_cost
-        if(a.generic_type_name=='อื่นๆ')
+              td
+              td
           tr
-            td.center #{y}
-            td #{a.generic_type_name}
-            td #{a.account_name}
+            td  
+            td - #{a.account_name}
             td.right #{a.cost}
-            td.right #{ot}
+            td.right #{a.sum}
+            td.right (#{s})
+          - s++
       tfooter 
         tr
-          td.dash-top.right(colspan=5) รวมมูลค่าทั้งสิ้น #{sumt} บาท
+          td.dash-top.right(colspan=6) รวมมูลค่าทั้งสิ้น #{sumt} บาท
