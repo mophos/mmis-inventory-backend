@@ -509,10 +509,13 @@ router.post('/confirm', co(async (req, res, next) => {
 
 router.get('/request', co(async (req, res, next) => {
   let db = req.db;
+  let limit = +req.query.limit || 15;
+  let offset = +req.query.offset || 0;
   let warehouseId = req.decoded.warehouseId;
   try {
-    let rows = await transferModel.transferRequest(db, warehouseId);
-    res.send({ ok: true, rows: rows });
+    let rows = await transferModel.transferRequest(db, warehouseId, limit, offset);
+    let total = await transferModel.totaltransferRequest(db, warehouseId);
+    res.send({ ok: true, rows: rows, total: total[0].total });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
