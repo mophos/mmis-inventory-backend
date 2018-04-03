@@ -1855,4 +1855,26 @@ router.get('/report/product/all/excel', wrap(async (req, res, next) => {
   }
 }));
 
+router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req, res, next) => {
+  let db = req.db;
+  let startDate = req.params.startDate
+  let endDate = req.params.endDate
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  moment.locale('th');
+  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  let rs = await inventoryReportModel.purchasingNotGiveaway(db, startDate, endDate);
+  let purchase = rs[0]
+  purchase.forEach(e => {
+    e.order_date = moment(e.order_date).isValid() ? moment(e.order_date).format('DD/MM/') + (moment(e.order_date).get('year') + 543) : '-';
+  });
+  // res.send(rs[0]);
+
+  res.render('purchasing_notgiveaway', {
+    today: today,
+    hospitalName: hospitalName,
+    purchase: purchase,
+  });
+}));
+
 export default router;

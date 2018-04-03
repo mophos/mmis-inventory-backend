@@ -693,10 +693,10 @@ router.put('/orders/confirm-with-unpaid/:confirmId', async (req, res, next) => {
     unpaidOrder.created_at = moment().format('YYYY-MM-DD HH:mm:ss')
     // get detail
     let rsUnpaidDetail = await orderModel.getOrderUnpaidDetail(db, requisitionId);
-
+    
     if (rsUnpaidDetail.length) {
       let unpaidId: any = rsUnpaidDetail[0].requisition_order_unpaid_id;
-      let orderUnpaidId = rsUnpaidDetail[0];
+      let orderUnpaidId = rsUnpaidDetail[0].requisition_order_unpaid_id;
 
       // save order 
 

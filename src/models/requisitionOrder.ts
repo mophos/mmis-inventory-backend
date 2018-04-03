@@ -71,7 +71,7 @@ export class RequisitionOrderModel {
   getOrderDetail(db: Knex, requisitionId: any) {
     return db('wm_requisition_orders as ro')
       .select('ro.*', 'w1.warehouse_name as requisition_warehouse_name',
-      'w2.warehouse_name as withdraw_warehouse_name', 'rt.requisition_type')
+        'w2.warehouse_name as withdraw_warehouse_name', 'rt.requisition_type')
       .leftJoin('wm_warehouses as w1', 'w1.warehouse_id', 'ro.wm_requisition')
       .leftJoin('wm_warehouses as w2', 'w2.warehouse_id', 'ro.wm_withdraw')
       .leftJoin('wm_requisition_type as rt', 'rt.requisition_type_id', 'ro.requisition_type_id')
@@ -84,7 +84,7 @@ export class RequisitionOrderModel {
 
     let rs = db('wm_requisition_orders as ro')
       .select('ro.*', 'w1.warehouse_name as requisition_warehouse_name',
-      'w2.warehouse_name as withdraw_warehouse_name', 'rt.requisition_type')
+        'w2.warehouse_name as withdraw_warehouse_name', 'rt.requisition_type')
       .leftJoin('wm_warehouses as w1', 'w1.warehouse_id', 'ro.wm_requisition')
       .leftJoin('wm_warehouses as w2', 'w2.warehouse_id', 'ro.wm_withdraw')
       .leftJoin('wm_requisition_type as rt', 'rt.requisition_type_id', 'ro.requisition_type_id')
@@ -173,7 +173,7 @@ export class RequisitionOrderModel {
   getListApproved(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null) {
     let rs = db('wm_requisition_orders as ro')
       .select('ro.*', 'w1.warehouse_name as requisition_warehouse_name', 'rc.approve_date',
-      'w2.warehouse_name as withdraw_warehouse_name', 'rt.requisition_type', 'rc.confirm_id')
+        'w2.warehouse_name as withdraw_warehouse_name', 'rt.requisition_type', 'rc.confirm_id')
       .leftJoin('wm_warehouses as w1', 'w1.warehouse_id', 'ro.wm_requisition')
       .leftJoin('wm_warehouses as w2', 'w2.warehouse_id', 'ro.wm_withdraw')
       .leftJoin('wm_requisition_type as rt', 'rt.requisition_type_id', 'ro.requisition_type_id')
@@ -290,10 +290,10 @@ export class RequisitionOrderModel {
 
     return db('wm_requisition_order_items as ri')
       .select('ri.requisition_order_item_id', 'ri.requisition_order_id', 'ri.generic_id',
-      'ri.unit_generic_id', db.raw('floor(ri.requisition_qty/ug.qty) as requisition_qty'),
-      'g.generic_name', 'g.working_code', 'ug.qty as to_unit_qty', 'ug.cost',
-      'u.unit_name as primary_unit_name', 'u1.unit_name as from_unit_name',
-      'u2.unit_name as to_unit_name', 'ug.qty as conversion_qty', sqlRemain)
+        'ri.unit_generic_id', db.raw('floor(ri.requisition_qty/ug.qty) as requisition_qty'),
+        'g.generic_name', 'g.working_code', 'ug.qty as to_unit_qty', 'ug.cost',
+        'u.unit_name as primary_unit_name', 'u1.unit_name as from_unit_name',
+        'u2.unit_name as to_unit_name', 'ug.qty as conversion_qty', sqlRemain)
       .innerJoin('wm_requisition_orders as ro', 'ro.requisition_order_id', 'ri.requisition_order_id')
       .leftJoin('mm_generics as g', 'g.generic_id', 'ri.generic_id')
       .leftJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'ri.unit_generic_id')
@@ -606,7 +606,7 @@ export class RequisitionOrderModel {
     return knex.raw(sql, [confirmUnpaidId]);
   }
   getRequisitionOrderItem(knex: Knex, confirmId) {
-    let sql=`
+    let sql = `
       SELECT
       wrc.requisition_order_id,
       wr.requisition_code,
@@ -650,8 +650,8 @@ export class RequisitionOrderModel {
     GROUP BY wp.product_id,wp.lot_no`;
     return knex.raw(sql)
   }
-  getBalance(knex: Knex,productId, warehouseId){
-      let sql=`SELECT
+  getBalance(knex: Knex, productId, warehouseId) {
+    let sql = `SELECT
       wp.product_id,
       sum(wp.qty) AS balance,
       wp.warehouse_id,
@@ -685,7 +685,7 @@ export class RequisitionOrderModel {
     GROUP BY
       wp.product_id,
       wp.warehouse_id`;
-      return knex.raw(sql);
+    return knex.raw(sql);
   }
 
   updateRequisitionQtyForBorrowNote(db: Knex, data: any[]) {
