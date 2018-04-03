@@ -903,15 +903,15 @@ router.get('/report/list/receiveCodeOther/:sID/:eID', wrap(async (req, res, next
   res.render('_list_receive3', { hospitalName: hospitalName, today: today, list_receive2: list_receive2, array2: array2, sID: sID, eID: eID });
 }));
 
-router.get('/report/list/receivePoCheck/:sID/:eID', wrap(async (req, res, next) => { 
+router.get('/report/list/receivePoCheck/:sID/:eID', wrap(async (req, res, next) => {
   let db = req.db;
   let sID = req.params.sID
   let eID = req.params.eID
-  let rc_ID = await inventoryReportModel._list_receivePO(db, sID,eID);
-  rc_ID = _.map(rc_ID,(v:any)=>{return v.receive_id})
+  let rc_ID = await inventoryReportModel._list_receivePO(db, sID, eID);
+  rc_ID = _.map(rc_ID, (v: any) => { return v.receive_id })
   rc_ID = Array.isArray(rc_ID) ? rc_ID : [rc_ID]
   // res.send({sID:sID,eID:eID,rc_ID:rc_ID})
-  
+
   let receiveID: any = []
   let hosdetail = await inventoryReportModel.hospital(db);
   let master = hosdetail[0].managerName;
@@ -995,8 +995,8 @@ router.get('/report/list/receiveCodeCheck/:sID/:eID', wrap(async (req, res, next
   let db = req.db;
   let sID = req.params.sID;
   let eID = req.params.eID;
-  let receiveID = await inventoryReportModel._list_receive5(db, sID,eID);
-  receiveID = _.map(receiveID,(v:any)=>{return v.receive_id})
+  let receiveID = await inventoryReportModel._list_receive5(db, sID, eID);
+  receiveID = _.map(receiveID, (v: any) => { return v.receive_id })
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
   let hosdetail = await inventoryReportModel.hospital(db);
   let master = hosdetail[0].managerName;
@@ -1122,10 +1122,10 @@ router.get('/report/list/receiveDateCheck/:sDate/:eDate', wrap(async (req, res, 
   let db = req.db;
   let sDate = req.params.sDate;
   let eDate = req.params.eDate;
-  let receiveID = await inventoryReportModel._list_receive5Date(db, sDate,eDate);
-  receiveID = _.map(receiveID,(v:any)=>{return v.receive_id})
+  let receiveID = await inventoryReportModel._list_receive5Date(db, sDate, eDate);
+  receiveID = _.map(receiveID, (v: any) => { return v.receive_id })
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
-  if(receiveID[0] == undefined)  res.render('error404');
+  if (receiveID[0] == undefined) res.render('error404');
   // res.send({sDate:sDate,eDate:eDate,receiveID:receiveID})
   let hosdetail = await inventoryReportModel.hospital(db);
   let master = hosdetail[0].managerName;
@@ -1856,6 +1856,28 @@ router.get('/report/product/all/excel', wrap(async (req, res, next) => {
   } else {
     res.send({ ok: false, error: 'ไม่พบตารางข้อมูลที่ต้องการ' });
   }
+}));
+
+router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req, res, next) => {
+  let db = req.db;
+  let startDate = req.params.startDate
+  let endDate = req.params.endDate
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  moment.locale('th');
+  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  let rs = await inventoryReportModel.purchasingNotGiveaway(db, startDate, endDate);
+  let purchase = rs[0]
+  purchase.forEach(e => {
+    e.order_date = moment(e.order_date).isValid() ? moment(e.order_date).format('DD/MM/') + (moment(e.order_date).get('year') + 543) : '-';
+  });
+  // res.send(rs[0]);
+
+  res.render('purchasing_notgiveaway', {
+    today: today,
+    hospitalName: hospitalName,
+    purchase: purchase,
+  });
 }));
 
 export default router;
