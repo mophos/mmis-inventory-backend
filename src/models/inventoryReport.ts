@@ -681,7 +681,7 @@ WHERE
 	left JOIN mm_generic_accounts mgda ON mg.account_id = mgda.account_id
     WHERE
     mgt.generic_type_id =${genericTypeId}
-    
+    AND ( wp.expired_date BETWEEN ${startDate} AND ${endDate} or wp.expired_date is null or wp.expired_date = '0000-00-00' )
     AND wp.warehouse_id LIKE '${warehouseId}'
     GROUP BY
 	mgda.account_id`
