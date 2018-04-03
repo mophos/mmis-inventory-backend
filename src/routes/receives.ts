@@ -369,7 +369,7 @@ router.put('/:receiveId', co(async (req, res, next) => {
         res.send({ ok: false, error: 'บัญชีถูกปิดแล้ว' });
       } else {
 
-        let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId);
+        let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId); // 100
         let rsReceived = await receiveModel.getTotalPricePurcehaseReceivedWithoutOwner(db, summary.purchaseOrderId, receiveId);
 
         let totalPrice = +rsReceived[0].total + totalPriceReceive;
@@ -1082,11 +1082,14 @@ router.delete('/remove', co(async (req, res, next) => {
 }));
 
 router.get('/purchases/list', co(async (req, res, nex) => {
-
+  let limit = req.query.limit;
+  let offset = req.query.offset;
   let db = req.db;
   try {
-    const rows = await receiveModel.getPurchaseList(db);
-    res.send({ ok: true, rows: rows[0] });
+    const rows = await receiveModel.getPurchaseList(db, limit, offset);
+    const rstotal = await receiveModel.getPurchaseListTotal(db);
+    let total = +rstotal[0][0].total
+    res.send({ ok: true, rows: rows[0] ,total: total});
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
