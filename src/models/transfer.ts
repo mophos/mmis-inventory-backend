@@ -419,10 +419,19 @@ export class TransferModel {
       .offset(offset);
   }
 
-  totaltransferRequest(knex: Knex, warehouseId: any) {
+  totalTransferRequest(knex: Knex, warehouseId: any) {
     return knex('wm_transfer as wmt')
       .where('wmt.dst_warehouse_id', warehouseId)
       .andWhere('wmt.confirmed', 'Y')
+      .count('* as total');
+  }
+
+  totalNotApproveReceive(knex: Knex, warehouseId: any) {
+    return knex('wm_transfer as wmt')
+      .where('wmt.dst_warehouse_id', warehouseId)
+      .andWhere('wmt.confirmed', 'Y')
+      .andWhere('wmt.approved', 'N')
+      .andWhere('wmt.mark_deleted', 'N')
       .count('* as total');
   }
 
