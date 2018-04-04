@@ -43,32 +43,6 @@ export class InventoryReportModel {
         return knex.raw(sql)
     }
     approve_requis(knex: Knex, requisId) {
-        // let sql=`SELECT
-        //     wrd.requisition_id,
-        //     wrd.requisition_warehouse_id,
-        //     wh.warehouse_name,
-        //     wrc.check_date,
-        //     vap.generic_id,
-        //     vap.generic_name,
-        //     vap.dosage_name,
-        //     vap.small_unit,
-        //     wrd.requisition_qty,
-        //     wrcd.requisition_qty as requisition_qty_check,
-        //     wrcd.cost,
-        //     wrcd.expired_date,
-        //     round(
-        //             (
-        //                 wrcd.cost * wrcd.requisition_qty
-        //             ),
-        //             2
-        //         ) AS total_cost
-        // FROM
-        //     wm_requisition_check wrc
-        // JOIN wm_requisition_check_detail wrcd ON wrc.check_id = wrcd.check_id
-        // JOIN wm_requisition_detail wrd ON wrd.requisition_id = wrc.requisition_id
-        // JOIN view_all_product vap ON wrd.product_id = vap.product_id
-        // join wm_warehouses wh on wrd.requisition_warehouse_id=wh.warehouse_id
-        // where wrd.requisition_id=?`
         let sql = `SELECT
         r.requisition_code,
         r.requisition_order_id,
@@ -118,7 +92,8 @@ export class InventoryReportModel {
     }
     totalcost_warehouse(knex: Knex) {
         let sql = `SELECT a.generic_type_id,a.generic_type_name,c.summit,a.receive1m,b.issue1m,(c.summit+a.receive1m-b.issue1m) as balance from (
-            SELECT IFNULL(round(sum(wr.total_cost),2),0) as receive1m ,mgt.generic_type_id,mgt.generic_type_name  from wm_receive_check wrc
+            SELECT IFNULL(round(sum(wr.total_cost),2),0) as receive1m ,mgt.generic_type_id,mgt.generic_type_name  
+            from wm_receive_check wrc
             join wm_receives wr on wrc.receive_id=wr.receive_id
             join wm_receive_check_detail wrcd on wrcd.check_id=wrc.check_id
             join mm_products mp on wrcd.product_id=mp.product_id
@@ -136,7 +111,8 @@ export class InventoryReportModel {
             ) b on a.generic_type_id=b.generic_type_id
             join (
             SELECT IFNULL(round((a.receive-b.issue),2),0) as summit ,a.generic_type_id,a.generic_type_name from (
-            SELECT sum(wrcd.qty*wrcd.cost)as receive ,mgt.generic_type_id,mgt.generic_type_name from wm_receive_check_detail wrcd
+            SELECT sum(wrcd.qty*wrcd.cost)as receive ,mgt.generic_type_id,mgt.generic_type_name 
+            from wm_receive_check_detail wrcd
             join mm_products mp on wrcd.product_id=mp.product_id
             join mm_generics mg on mp.generic_id=mg.generic_id
             RIGHT join mm_generic_types mgt on mg.generic_type_id=mgt.generic_type_id
@@ -684,7 +660,14 @@ WHERE
         join mm_generics mg on mp.generic_id=mg.generic_id`
         return (knex.raw(sql, [startDate, endDate, startDate, endDate, startDate, startDate]))
     }
-    list_cost(knex: Knex) {
+
+    getGenericType(knex: Knex){
+        return knex('mm_generic_types')
+            .select('generic_type_id')
+            .orderBy('generic_type_id')
+    }
+
+    list_cost(knex: Knex ,genericTypeId , startDate, endDate ,warehouseId) {
         let sql = `
         SELECT
  	mgt.generic_type_name,
@@ -694,57 +677,17 @@ WHERE
 	wm_products wp
 	JOIN mm_products mp ON wp.product_id = mp.product_id
 	JOIN mm_generics mg ON mp.generic_id = mg.generic_id
-	RIGHT JOIN mm_generic_accounts mgda ON mg.account_id = mgda.account_id
-	JOIN mm_generic_types mgt ON mg.generic_type_id = mg.generic_type_id 
+	JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
+	left JOIN mm_generic_accounts mgda ON mg.account_id = mgda.account_id
     WHERE
-	mgt.generic_type_id = 1 
+    mgt.generic_type_id =${genericTypeId}
+    AND ( wp.expired_date BETWEEN ${startDate} AND ${endDate} or wp.expired_date is null or wp.expired_date = '0000-00-00' )
+    AND wp.warehouse_id LIKE '${warehouseId}'
     GROUP BY
-	mgda.account_id
-        UNION
-            SELECT
-                mgt.generic_type_name,
-                NULL,
-                round(IFNULL(sum(wp.cost), 0), 2) AS cost
-            FROM
-                wm_products wp
-            JOIN mm_products mp ON wp.product_id = mp.product_id
-            JOIN mm_generics mg ON mp.generic_id = mg.generic_id
-            JOIN mm_generic_types mgt ON mg.generic_type_id = mgt.generic_type_id
-            WHERE
-                mgt.generic_type_id = 2
-            GROUP BY
-                mgt.generic_type_id
-            UNION
-                SELECT
-                    'เวชภัณฑ์อื่นๆ',
-                    mgt.generic_type_name,
-                    round(IFNULL(sum(wp.cost), 0), 2) AS cost
-                FROM
-                    wm_products wp
-                JOIN mm_products mp ON wp.product_id = mp.product_id
-                JOIN mm_generics mg ON mp.generic_id = mg.generic_id
-                RIGHT JOIN mm_generic_types mgt ON mg.generic_type_id = mgt.generic_type_id
-                WHERE
-                    mgt.generic_type_id > 2
-                AND mgt.generic_type_id <= 5
-                GROUP BY
-                    mgt.generic_type_id
-                UNION
-                    SELECT
-                        'อื่นๆ',
-                        NULL,
-                        round(IFNULL(sum(wp.cost), 0), 2) AS cost
-                    FROM
-                        wm_products wp
-                    JOIN mm_products mp ON wp.product_id = mp.product_id
-                    JOIN mm_generics mg ON mp.generic_id = mg.generic_id
-                    RIGHT JOIN mm_generic_types mgt ON mg.generic_type_id = mgt.generic_type_id
-                    WHERE
-                        mgt.generic_type_id > 5
-                    GROUP BY
-                        mgt.generic_type_id`
+	mgda.account_id`
         return (knex.raw(sql))
     }
+
     list_receive(knex: Knex) {
         let sql = `SELECT
         wr.receive_id,
@@ -997,6 +940,7 @@ WHERE
         return knex('wm_receives as wr')
             .select('wr.receive_id')
             .whereIn('wr.purchase_order_id', ID)
+            .orderBy('wr.receive_date','DESC')
     }
     async hospital(knex: Knex) {
         let array = [];
@@ -1660,23 +1604,20 @@ OR sc.ref_src like ?
         FROM
             wm_receives AS r
         INNER JOIN wm_receive_detail AS wrd ON r.receive_id = wrd.receive_id
+        INNER JOIN wm_receive_approve AS wra ON wra.receive_id = r.receive_id
         INNER JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wrd.unit_generic_id
         INNER JOIN mm_products AS p ON wrd.product_id = p.product_id
-        
         INNER JOIN mm_labelers AS l ON r.vendor_labeler_id = l.labeler_id
         INNER JOIN mm_generics AS mg ON p.generic_id = mg.generic_id
         INNER JOIN wm_warehouses AS wh ON wrd.warehouse_id = wh.warehouse_id
-        
         INNER JOIN mm_units mu ON mug.to_unit_id = mu.unit_id -- inner join pc_purchasing_order ppo on r.purchase_order_id=ppo.purchase_order_id
         INNER JOIN pc_purchasing_order ppo ON r.purchase_order_id = ppo.purchase_order_id
         INNER JOIN l_bid_process lbp ON ppo.purchase_method_id = lbp.id
-        INNER JOIN l_bid_type lbt ON ppo.purchase_type = lbt.bid_id 
+        INNER JOIN l_bid_type lbt ON ppo.purchase_type_id = lbt.bid_id 
         INNER JOIN pc_purchasing_order_item ppoi on ppo.purchase_order_id=ppoi.purchase_order_id and wrd.product_id=ppoi.product_id
         inner join bm_bgtype bt on ppo.budgettype_id=bt.bgtype_id
         WHERE
-            r.receive_date BETWEEN ?
-        AND ?
-        AND r.is_completed = 'Y'`
+            r.receive_date BETWEEN ? AND ?`
         return knex.raw(sql, [startdate, enddate]);
     }
     productReceive2(knex: Knex, receiveID) {
@@ -1944,4 +1885,45 @@ OR sc.ref_src like ?
         r.requisition_order_id`
         return knex.raw(sql);
       }
+    
+    purchasingNotGiveaway(knex:Knex, startDate: any, endDate: any){
+        let sql=`SELECT
+        pc.purchase_order_number,
+        pc.purchase_order_book_number,
+        pc.order_date,
+        mg.working_code AS generic_code,
+        mg.generic_name,
+        mp.working_code AS trade_code,
+        mp.product_name AS trade_name,
+        mu.unit_name AS small_unit,
+        mug.qty AS conversion,
+        mu2.unit_name AS large_unit,
+        poi.unit_price,
+        poi.qty * mug.qty AS total_qty,
+        poi.qty * poi.unit_price AS total_cost,
+        mgt.generic_type_name,
+        mga.account_name,
+        mgh.name AS generic_hosp_name,
+        ml.labeler_name
+    FROM
+        pc_purchasing_order pc
+    JOIN pc_purchasing_order_item poi
+    JOIN mm_products mp ON poi.product_id = mp.product_id
+    JOIN mm_generics mg ON mp.generic_id = mg.generic_id
+    LEFT JOIN mm_unit_generics mug ON mug.unit_generic_id = poi.unit_generic_id
+    LEFT JOIN mm_units mu ON mu.unit_id = mug.to_unit_id
+    LEFT JOIN mm_units mu2 ON mu2.unit_id = mug.from_unit_id
+    LEFT JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
+    LEFT JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
+    LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
+    JOIN mm_labelers ml ON pc.labeler_id = ml.labeler_id
+    WHERE
+        poi.giveaway = 'N'
+    AND pc.order_date BETWEEN '${startDate}'
+    AND '${endDate}'
+    ORDER BY
+	pc.purchase_order_number`
+        return knex.raw(sql);
+    }
+
 }

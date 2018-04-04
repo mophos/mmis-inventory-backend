@@ -719,45 +719,42 @@ router.get('/report/check/receive/issue/:year', wrap(async (req, res, next) => {
 
   res.render('check_receive_issue', { hospitalName: hospitalName, today: today, check_receive_issue: check_receive_issue, startDate: startDate, endDate: endDate, year: year });
 }));//ตรวจสอบแล้ว 14-9-60
-router.get('/report/list/cost', wrap(async (req, res, next) => {
+router.get('/report/list/cost/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
   let db = req.db;
+  let startDate = req.params.startDate
+  let endDate = req.params.endDate
+  let warehouseId = req.params.warehouseId
+  let warehouseName = req.params.warehouseName
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
+  let list_cost: any = []
+  let sumt: any = 0
   moment.locale('th');
   let date = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
-
-  let list_cost: any[] = await inventoryReportModel.list_cost(db);
-  list_cost = list_cost[0];
-  let sum = 0;
-  let drug = 0;
-  let sup = 0;
-  let supot = 0;
-  let ot = 0;
-  list_cost.forEach(value => {
-    sum += value.cost;
-    if (value.generic_type_name == 'เวชภัณฑ์ยา') {
-      drug += value.cost
-    }
-
-    else if (value.generic_type_name == 'เวชภัณฑ์มิใช่ยา') {
-      sup += value.cost
-    }
-    else if (value.generic_type_name == 'เวชภัณฑ์อื่นๆ') {
-      supot += value.cost
-    }
-    else if (value.generic_type_name == 'อื่นๆ') {
-      ot += value.cost
-    }
-    value.cost = inventoryReportModel.comma(value.cost)
+  if (warehouseId == 0) { warehouseId = '%%'; }
+  else { warehouseId = '%' + warehouseId + '%'; }
+  let genericTypeId = await inventoryReportModel.getGenericType(db);
+  genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
+  genericTypeId = _.map(genericTypeId, (v: any) => { return v.generic_type_id })
+  for (let i in genericTypeId) {
+    let _list_cost = await inventoryReportModel.list_cost(db, genericTypeId[i], startDate, endDate, warehouseId);
+    if (_list_cost[0][0] !== undefined) list_cost.push(_list_cost[0])
+  }
+  _.forEach(list_cost, (opject: any) => {
+    let _sun = _.sumBy(opject, 'cost')
+    sumt += _sun
+    _.forEach(opject, (value: any, index: any) => {
+      value.cost = inventoryReportModel.comma(value.cost)
+      value.generic_type_name = index === 0 ? value.generic_type_name : null;
+      value.sum = index === opject.length - 1 ? inventoryReportModel.comma(_sun) : null;
+    })
   })
-  let sumt = inventoryReportModel.comma(sum)
-  let drugt = inventoryReportModel.comma(drug)
-  let supt = inventoryReportModel.comma(sup)
-  let supott = inventoryReportModel.comma(supot)
-  let ott = inventoryReportModel.comma(ot)
+  startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
+  endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+  sumt = inventoryReportModel.comma(sumt)
+  // res.send({ sumt: sumt, list_cost: list_cost, startDate: startDate, endDate: endDate, warehouseName: warehouseName })
   res.render('list_cost', {
-    title: 'Hey', date: date, list_cost: list_cost, hospitalName: hospitalName,
-    sumt: sumt, sup: supt, ot: ott, drug: drugt, supot: supott
+    sumt: sumt, startDate: startDate, endDate: endDate, list_cost: list_cost, hospitalName: hospitalName, warehouseName: warehouseName
   });
 }));//ตรวจสอบแล้ว 14-9-60
 router.get('/report/list/receiveOther', wrap(async (req, res, next) => {
@@ -1642,6 +1639,7 @@ router.get('/report/balance', wrap(async (req, res, next) => {
   if (warehouseId != null) { warehouseName = balance[0].warehouse_name; }
   res.render('balance', { hospitalName: hospitalName, today: today, balance: balance, warehouseName: warehouseName });
 }));
+
 router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, next) => {
   let db = req.db;
   let startdate = req.params.startdate
@@ -1667,6 +1665,7 @@ router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, 
 
   res.render('productReceive2', { hospitalName: hospitalName, today: today, productReceive: productReceive, startdate: startdate, enddate: enddate });
 }));
+
 router.get('/report/product/receive', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID = req.query.receiveID
@@ -1864,6 +1863,28 @@ router.get('/report/product/all/excel', wrap(async (req, res, next) => {
   } else {
     res.send({ ok: false, error: 'ไม่พบตารางข้อมูลที่ต้องการ' });
   }
+}));
+
+router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req, res, next) => {
+  let db = req.db;
+  let startDate = req.params.startDate
+  let endDate = req.params.endDate
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  moment.locale('th');
+  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  let rs = await inventoryReportModel.purchasingNotGiveaway(db, startDate, endDate);
+  let purchase = rs[0]
+  purchase.forEach(e => {
+    e.order_date = moment(e.order_date).isValid() ? moment(e.order_date).format('DD/MM/') + (moment(e.order_date).get('year') + 543) : '-';
+  });
+  // res.send(rs[0]);
+
+  res.render('purchasing_notgiveaway', {
+    today: today,
+    hospitalName: hospitalName,
+    purchase: purchase,
+  });
 }));
 
 export default router;

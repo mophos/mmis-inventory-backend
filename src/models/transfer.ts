@@ -95,6 +95,7 @@ export class TransferModel {
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
       .where('wmt.src_warehouse_id', warehouseId)
+      .andWhereNot('wmt.mark_deleted', 'Y')
       .andWhereNot('wmt.approved', 'Y')
       .andWhere('wmt.confirmed', 'Y')
       .limit(limit)
@@ -105,6 +106,7 @@ export class TransferModel {
   totalNotApproved(knex: Knex, warehouseId: any) {
     return knex('wm_transfer as wmt')
       .where('wmt.src_warehouse_id', warehouseId)
+      .andWhereNot('wmt.mark_deleted', 'Y')
       .andWhereNot('wmt.approved', 'Y')
       .andWhere('wmt.confirmed', 'Y')
       .count('* as total');
@@ -403,7 +405,7 @@ export class TransferModel {
     return knex.raw(sql);
   }
 
-  transferRequest(knex: Knex, warehouseId: any) {
+  transferRequest(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_transfer as wmt')
       .select('wmt.transfer_id', 'wmt.transfer_code', 'wmt.mark_deleted', 'wmt.transfer_date',
         'src.warehouse_name as src_warehouse_name',
@@ -412,7 +414,25 @@ export class TransferModel {
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
       .where('wmt.dst_warehouse_id', warehouseId)
       .andWhere('wmt.confirmed', 'Y')
-      .orderBy('wmt.transfer_code', 'desc');
+      .orderBy('wmt.transfer_code', 'desc')
+      .limit(limit)
+      .offset(offset);
+  }
+
+  totalTransferRequest(knex: Knex, warehouseId: any) {
+    return knex('wm_transfer as wmt')
+      .where('wmt.dst_warehouse_id', warehouseId)
+      .andWhere('wmt.confirmed', 'Y')
+      .count('* as total');
+  }
+
+  totalNotApproveReceive(knex: Knex, warehouseId: any) {
+    return knex('wm_transfer as wmt')
+      .where('wmt.dst_warehouse_id', warehouseId)
+      .andWhere('wmt.confirmed', 'Y')
+      .andWhere('wmt.approved', 'N')
+      .andWhere('wmt.mark_deleted', 'N')
+      .count('* as total');
   }
 
   checkStatus(knex: Knex, transferId: any[]) {

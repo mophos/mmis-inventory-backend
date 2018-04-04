@@ -149,10 +149,13 @@ router.put('/orders/:requisitionId', async (req, res, next) => {
 router.get('/orders/waiting', async (req, res, next) => {
 
   let db = req.db;
+  let limit = +req.query.limit || 15;
+  let offset = +req.query.offset || 0;
   let warehouseId = req.decoded.warehouseId;
   try {
-    let rs: any = await orderModel.getListWaiting(db, null, warehouseId);
-    res.send({ ok: true, rows: rs[0] });
+    let rs: any = await orderModel.getListWaiting(db, null, warehouseId, limit, offset);
+    let total: any = await orderModel.totalListWaiting(db, null, warehouseId);
+    res.send({ ok: true, rows: rs[0], total: total[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -164,11 +167,14 @@ router.get('/orders/waiting', async (req, res, next) => {
 router.get('/orders/waiting-approve', async (req, res, next) => {
 
   let db = req.db;
+  let limit = +req.query.limit || 15;
+  let offset = +req.query.offset || 0;
   let warehouseId = req.decoded.warehouseId;
 
   try {
-    let rs: any = await orderModel.getListWaitingApprove(db, null, warehouseId);
-    res.send({ ok: true, rows: rs[0] });
+    let rs: any = await orderModel.getListWaitingApprove(db, null, warehouseId, limit, offset);
+    let total: any = await orderModel.totalListWaitingApprove(db, null, warehouseId);
+    res.send({ ok: true, rows: rs[0], total: total[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -431,11 +437,14 @@ router.delete('/orders/:requisitionId', async (req, res, next) => {
 router.get('/orders/unpaid', async (req, res, next) => {
 
   let db = req.db;
+  let limit = +req.query.limit || 15;
+  let offset = +req.query.offset || 0;
   let warehouseId = req.decoded.warehouseId;
 
   try {
-    let rs: any = await orderModel.getUnPaidOrders(db, null, warehouseId);
-    res.send({ ok: true, rows: rs[0] });
+    let rs: any = await orderModel.getUnPaidOrders(db, null, warehouseId, limit, offset);
+    let total: any = await orderModel.totalUnPaidOrders(db, null, warehouseId);
+    res.send({ ok: true, rows: rs[0], total: total[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -693,10 +702,10 @@ router.put('/orders/confirm-with-unpaid/:confirmId', async (req, res, next) => {
     unpaidOrder.created_at = moment().format('YYYY-MM-DD HH:mm:ss')
     // get detail
     let rsUnpaidDetail = await orderModel.getOrderUnpaidDetail(db, requisitionId);
-
+    
     if (rsUnpaidDetail.length) {
       let unpaidId: any = rsUnpaidDetail[0].requisition_order_unpaid_id;
-      let orderUnpaidId = rsUnpaidDetail[0];
+      let orderUnpaidId = rsUnpaidDetail[0].requisition_order_unpaid_id;
 
       // save order 
 
