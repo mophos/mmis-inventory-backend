@@ -171,9 +171,10 @@ export class IssueModel {
 
   }
 
-  getListTotal(knex: Knex, status: any = '') {
+  getListTotal(knex: Knex, status: any = '', warehouseId: any) {
     let query = knex('wm_issue_summary as ss')
       .select(knex.raw('count(*) as total'))
+      .where('warehouse_id', warehouseId)
     if (status) {
       query.where('ss.approved', status);
     }
