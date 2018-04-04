@@ -1,5 +1,15 @@
 include css.pug
 style(media='print').
+style(type='text/css').
+  body{
+  font-size: 12pt;
+  }
+  @page{
+    size: landscape;
+    margin-top: 2cm;
+    margin-left: 0.5cm;
+    margin-right: 0.5cm;
+ }
 doctype html
 html
   head
@@ -38,15 +48,15 @@ html
         - var y = 0
           for b in productReceive
             - y++
-              tr(style="font-size: 13pt;")
+              tr(style="font-size: 12pt;")
                 td.left #{b.receive_code}
                 td.left #{b.receive_date}
                 td.left #{b.purchase_order_number}
                 td.left #{b.delivery_code}
                 td.left #{b.labeler_name}
                 td
-                td.right #{b.discount_percent}
-                td.right #{b.discount_cash}
+                td.right(style='font-size: 10pt;') #{b.discount_percent}
+                td.right(style='font-size: 10pt;') #{b.discount_cash}
                 td.right &nbsp;#{b.bid_name}
                 td.right #{b.bgtype_name}
               tr(style="font-size: 13pt;")

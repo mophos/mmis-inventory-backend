@@ -3,6 +3,8 @@ style(type='text/css').
   body{
   font-family:'THSarabunNewIT';
   font-size: 15pt;
+  margin-left: 50px;
+  margin-right: 50px;
   }
 doctype html
 html
@@ -18,34 +20,40 @@ html
         table.table
           tr
             td.left เลขที่รับ #{check_receive[c].receive_code}
-            td.right เขียนที่ #{hospitalName}
-        div(style='margin-left:50%;') วันที่ #{check_receive[c].receive_date}
+            td.center(style="padding-right:35px;") เขียนที่ #{hospitalName}
+        div(style='margin-left:35%;') วันที่ #{check_receive[c].receive_date}
         table.table
+          tr  
+            th(style="width:25%; border:0px")
+            th(style="width:25%; border:0px")
+            th(style="width:25%; border:0px")
+            th(style="width:25%; border:0px")
           tr
             td.center(colspan='2') ตามบันทึกที่ #{check_receive[c].purchase_order_number}
-            td(colspan='1')
-            td.center(colspan='1') ลงวันที่ #{check_receive[c].podate}
+            td.center(colspan='2') ลงวันที่ #{check_receive[c].podate}
           tr
             td.left(colspan='2') ได้แต่งตั้งคณะกรรมการตรวจรับพัสดุนั้น
-            td.center(colspan='1')
-            td.right(colspan='1') บัดนี้คณะกรรมการตรวจรับพัสดุได้ร่วมกันตรวจพัสดุซึ่ง
+            td.right(colspan='2') 
+              span บัดนี้คณะกรรมการตรวจรับพัสดุได้ร่วมกันตรวจพัสดุซึ่ง
           tr
             td.left(colspan='2') #{check_receive[c].labeler_name}
-            td.center(colspan='1')
-            td.right(colspan='1') ผู้ขายได้นำส่งมอบเมื่อ
+            td.right(colspan='2') 
+              span(style="padding-right:1.5em;") ผู้ขายได้นำส่งมอบเมื่อ
+          tr  
+            td.left(colspan='1')
+              span วันที่ &nbsp;&nbsp;#{check_receive[c].receive_date}
+            td.center(colspan='2')
+              span(style="padding-right:3em") ตามใบส่งของเลขที่ #{check_receive[c].delivery_code}
+            td.left(colspan='1')
+              span(style="padding-left:1.5em;") จำนวน #{check_receive[c].amount_qty} รายการ
           tr
-            td.left(colspan='2') วันที่ &nbsp;&nbsp;#{check_receive[c].receive_date}
-            td.center(colspan='1') ตามใบส่งของเลขที่ #{check_receive[c].delivery_code}
-            td.right(colspan='1') จำนวน #{check_receive[c].amount_qty} รายการ
-          tr
-            td.left(colspan='2') รวมเป็นเงินสุทธิ
-            td.center(colspan='1') #{check_receive[c].total_price} บาท (#{bahtText[c]})
-            td.right(colspan='1') 
+            td.left(colspan='1') รวมเป็นเงินสุทธิ
+            td.left(colspan='3' ) #{check_receive[c].total_price} บาท (#{bahtText[c]})
           tr
             td.left(colspan='4') เห็นว่ามีปริมาณและคุณภาพถูกต้องครบถ้วน และได้ส่งมอบให้เจ้าหน้าที่พัสดุรับไว้เรียบร้อยแล้ว
           tr
-            td
-            td.left(colspan='3') จึงพร้อมกันลงลายมือชื่อไว้เป็นหลักฐาน
+            td.left(colspan='4') 
+              span(style="padding-left:8em") จึงพร้อมกันลงลายมือชื่อไว้เป็นหลักฐาน
         //- .fontspace
         //- | ตามบันทึกที่ #{check_receive[c].purchase_order_number} ลงวันที่ #{check_receive[c].podate} ได้แต่งตั้งคณะกรรมการตรวจรับพัสดุนั้น บัดนี้คณะกรรมการตรวจรับพัสดุได้ร่วมกันตรวจพัสดุซึ่ง 
         //- | &nbsp;&nbsp;&nbsp;#{check_receive[c].labeler_name}&nbsp;&nbsp;&nbsp; ผู้ขายได้นำส่งมอบเมื่อ วันที่ &nbsp;&nbsp;#{check_receive[c].receive_date} &nbsp;&nbsp;ตามใบส่งของเลขที่ #{check_receive[c].delivery_code} จำนวน #{check_receive[c].amount_qty} รายการ 
@@ -107,7 +115,7 @@ html
             td
           tr
             td
-            td.center #{chief.position_name}
+            td.center(style='white-space: nowrap;') #{chief.position_name}
             td
           tr
             td

@@ -1631,6 +1631,7 @@ router.get('/report/balance', wrap(async (req, res, next) => {
   if (warehouseId != null) { warehouseName = balance[0].warehouse_name; }
   res.render('balance', { hospitalName: hospitalName, today: today, balance: balance, warehouseName: warehouseName });
 }));
+
 router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, next) => {
   let db = req.db;
   let startdate = req.params.startdate
@@ -1656,6 +1657,7 @@ router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, 
 
   res.render('productReceive2', { hospitalName: hospitalName, today: today, productReceive: productReceive, startdate: startdate, enddate: enddate });
 }));
+
 router.get('/report/product/receive', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID = req.query.receiveID
