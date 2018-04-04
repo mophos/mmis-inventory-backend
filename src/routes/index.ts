@@ -141,7 +141,9 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
       let _list: any = [];
       let requisition: any = [];
       let header = await inventoryReportModel.getHeadRequis(db, requisId[i]);
+
       header = header[0];
+      console.log('***', header);
       if (header[0] === undefined) { res.render('error404'); }
       let objHead: any = {};
       objHead.requisition_date = header[0].requisition_date;
@@ -186,9 +188,13 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         objTitle.items = items;
         objHead.title = objTitle;
         let _objHead = _.clone(objHead);
-        requisition.push(_objHead);
+        if (_objHead) {
+          requisition.push(_objHead);
+        }
       }
-      _list_requis.push(requisition);
+      if (requisition) {
+        _list_requis.push(requisition);
+      }
     }
     for (let page in _list_requis) {
       for (let head in _list_requis[page]) {
@@ -214,6 +220,8 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         }
       }
     }
+    console.log(_list_requis);
+
     res.render('list_requis', {
       hospitalName: hospitalName,
       today: today,
@@ -903,15 +911,15 @@ router.get('/report/list/receiveCodeOther/:sID/:eID', wrap(async (req, res, next
   res.render('_list_receive3', { hospitalName: hospitalName, today: today, list_receive2: list_receive2, array2: array2, sID: sID, eID: eID });
 }));
 
-router.get('/report/list/receivePoCheck/:sID/:eID', wrap(async (req, res, next) => { 
+router.get('/report/list/receivePoCheck/:sID/:eID', wrap(async (req, res, next) => {
   let db = req.db;
   let sID = req.params.sID
   let eID = req.params.eID
-  let rc_ID = await inventoryReportModel._list_receivePO(db, sID,eID);
-  rc_ID = _.map(rc_ID,(v:any)=>{return v.receive_id})
+  let rc_ID = await inventoryReportModel._list_receivePO(db, sID, eID);
+  rc_ID = _.map(rc_ID, (v: any) => { return v.receive_id })
   rc_ID = Array.isArray(rc_ID) ? rc_ID : [rc_ID]
   // res.send({sID:sID,eID:eID,rc_ID:rc_ID})
-  
+
   let receiveID: any = []
   let hosdetail = await inventoryReportModel.hospital(db);
   let master = hosdetail[0].managerName;
@@ -995,8 +1003,8 @@ router.get('/report/list/receiveCodeCheck/:sID/:eID', wrap(async (req, res, next
   let db = req.db;
   let sID = req.params.sID;
   let eID = req.params.eID;
-  let receiveID = await inventoryReportModel._list_receive5(db, sID,eID);
-  receiveID = _.map(receiveID,(v:any)=>{return v.receive_id})
+  let receiveID = await inventoryReportModel._list_receive5(db, sID, eID);
+  receiveID = _.map(receiveID, (v: any) => { return v.receive_id })
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
   let hosdetail = await inventoryReportModel.hospital(db);
   let master = hosdetail[0].managerName;
@@ -1122,10 +1130,10 @@ router.get('/report/list/receiveDateCheck/:sDate/:eDate', wrap(async (req, res, 
   let db = req.db;
   let sDate = req.params.sDate;
   let eDate = req.params.eDate;
-  let receiveID = await inventoryReportModel._list_receive5Date(db, sDate,eDate);
-  receiveID = _.map(receiveID,(v:any)=>{return v.receive_id})
+  let receiveID = await inventoryReportModel._list_receive5Date(db, sDate, eDate);
+  receiveID = _.map(receiveID, (v: any) => { return v.receive_id })
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
-  if(receiveID[0] == undefined)  res.render('error404');
+  if (receiveID[0] == undefined) res.render('error404');
   // res.send({sDate:sDate,eDate:eDate,receiveID:receiveID})
   let hosdetail = await inventoryReportModel.hospital(db);
   let master = hosdetail[0].managerName;
