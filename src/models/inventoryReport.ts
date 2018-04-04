@@ -1604,23 +1604,20 @@ OR sc.ref_src like ?
         FROM
             wm_receives AS r
         INNER JOIN wm_receive_detail AS wrd ON r.receive_id = wrd.receive_id
+        INNER JOIN wm_receive_approve AS wra ON wra.receive_id = r.receive_id
         INNER JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wrd.unit_generic_id
         INNER JOIN mm_products AS p ON wrd.product_id = p.product_id
-        
         INNER JOIN mm_labelers AS l ON r.vendor_labeler_id = l.labeler_id
         INNER JOIN mm_generics AS mg ON p.generic_id = mg.generic_id
         INNER JOIN wm_warehouses AS wh ON wrd.warehouse_id = wh.warehouse_id
-        
         INNER JOIN mm_units mu ON mug.to_unit_id = mu.unit_id -- inner join pc_purchasing_order ppo on r.purchase_order_id=ppo.purchase_order_id
         INNER JOIN pc_purchasing_order ppo ON r.purchase_order_id = ppo.purchase_order_id
         INNER JOIN l_bid_process lbp ON ppo.purchase_method_id = lbp.id
-        INNER JOIN l_bid_type lbt ON ppo.purchase_type = lbt.bid_id 
+        INNER JOIN l_bid_type lbt ON ppo.purchase_type_id = lbt.bid_id 
         INNER JOIN pc_purchasing_order_item ppoi on ppo.purchase_order_id=ppoi.purchase_order_id and wrd.product_id=ppoi.product_id
         inner join bm_bgtype bt on ppo.budgettype_id=bt.bgtype_id
         WHERE
-            r.receive_date BETWEEN ?
-        AND ?
-        AND r.is_completed = 'Y'`
+            r.receive_date BETWEEN ? AND ?`
         return knex.raw(sql, [startdate, enddate]);
     }
     productReceive2(knex: Knex, receiveID) {
