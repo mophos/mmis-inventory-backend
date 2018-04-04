@@ -103,7 +103,7 @@ export class RequisitionOrderModel {
     return rs.orderBy('ro.requisition_code', 'DESC');
   }
 
-  getListWaiting(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null) {
+  getListWaiting(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, limit: number, offset: number) {
     let sql = `
     select ro.*, w1.warehouse_name as requisition_warehouse_name, 
     w2.warehouse_name as withdraw_warehouse_name, rt.requisition_type, 
@@ -127,16 +127,36 @@ export class RequisitionOrderModel {
     ) and ro.is_temp='N' `;
 
     if (srcWarehouseId) {
-      sql += ` and ro.wm_requisition = ? order by ro.requisition_code DESC`;
-      return db.raw(sql, [srcWarehouseId]);
+      sql += ` and ro.wm_requisition = ? order by ro.requisition_code DESC
+      limit ? offset ?`;
+      return db.raw(sql, [srcWarehouseId, limit, offset]);
     } else {
-      sql += ` and ro.wm_withdraw = ? order by ro.requisition_code DESC`;
-      return db.raw(sql, [dstWarehouseId]);
+      sql += ` and ro.wm_withdraw = ? order by ro.requisition_code DESC
+      limit ? offset ?`;
+      return db.raw(sql, [dstWarehouseId, limit, offset]);
     }
-
   }
 
-  getListWaitingApprove(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null) {
+  totalListWaiting(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null) {
+    let sql = `
+    select count(*) as total
+    from wm_requisition_orders as ro
+    where ro.requisition_order_id not in
+    (
+      select distinct rc.requisition_order_id
+      from wm_requisition_confirms as rc
+    ) and ro.is_temp='N' `;
+
+    if (srcWarehouseId) {
+      sql += ` and ro.wm_requisition = ?`;
+      return db.raw(sql, [srcWarehouseId]);
+    } else {
+      sql += ` and ro.wm_withdraw = ?`;
+      return db.raw(sql, [dstWarehouseId]);
+    }
+  }
+
+  getListWaitingApprove(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, limit: number, offset: number) {
     let sqlSrc = `
       select
       rc.confirm_id, rc.confirm_date, rc.requisition_order_id, rc.is_cancel, 
@@ -150,6 +170,7 @@ export class RequisitionOrderModel {
       group by rc.requisition_order_id
       having confirm_qty>0
       order by ro.requisition_code desc
+      limit ? offset ?
     `;
 
     let sqlDst = `
@@ -165,6 +186,33 @@ export class RequisitionOrderModel {
       group by rc.requisition_order_id
       having confirm_qty>0
       order by ro.requisition_code desc
+      limit ? offset ?
+    `;
+
+    return srcWarehouseId ? db.raw(sqlSrc, [srcWarehouseId, limit, offset]) : db.raw(sqlDst, [dstWarehouseId, limit, offset]);
+  }
+
+  totalListWaitingApprove(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null) {
+    let sqlSrc = `
+      select count(*) total
+      from (
+        select count(*) as total
+        from wm_requisition_confirms as rc
+        inner join wm_requisition_orders as ro on ro.requisition_order_id=rc.requisition_order_id
+        where ro.wm_requisition=? and rc.is_approve<>'Y'
+        group by rc.requisition_order_id
+        having confirm_qty>0 ) t
+    `;
+
+    let sqlDst = `
+      select count(*) total
+      from (
+        select (select ifnull(sum(rci.confirm_qty), 0) from wm_requisition_confirm_items as rci where rci.confirm_id=rc.confirm_id) as confirm_qty
+        from wm_requisition_confirms as rc
+        inner join wm_requisition_orders as ro on ro.requisition_order_id=rc.requisition_order_id
+        where ro.wm_withdraw=? and rc.is_approve<>'Y'
+        group by rc.requisition_order_id
+        having confirm_qty>0 ) t
     `;
 
     return srcWarehouseId ? db.raw(sqlSrc, [srcWarehouseId]) : db.raw(sqlDst, [dstWarehouseId]);
@@ -359,7 +407,7 @@ export class RequisitionOrderModel {
     return db.raw(sql, [confirmId, genericId, warehouseId]);
   }
 
-  getUnPaidOrders(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null) {
+  getUnPaidOrders(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, limti: number, offset: number) {
 
     let sql = `
     select rou.requisition_order_unpaid_id, rou.unpaid_date, rou.requisition_order_id, whr.warehouse_name as requisition_warehouse, 
@@ -371,6 +419,7 @@ export class RequisitionOrderModel {
     left join wm_requisition_type as rt on rt.requisition_type_id=ro.requisition_type_id
     where rou.is_paid='N' and rou.is_cancel='N'
     order by ro.requisition_code DESC
+    limit ? offset ?
     `;
 
     let sqlWarehouse = `
@@ -384,6 +433,7 @@ export class RequisitionOrderModel {
     where rou.is_paid='N' and rou.is_cancel='N'
     and ro.wm_requisition=?
     order by ro.requisition_code DESC
+    limit ? offset ?
     `;
 
     let sqlWarehouseWithdraw = `
@@ -397,9 +447,39 @@ export class RequisitionOrderModel {
     where rou.is_paid='N' and rou.is_cancel='N'
     and ro.wm_withdraw=?
     order by ro.requisition_code DESC
+    limit ? offset ?
     `;
 
-    return srcWarehouseId ? db.raw(sqlWarehouse, [srcWarehouseId]) : dstWarehouseId ? db.raw(sqlWarehouseWithdraw, [dstWarehouseId]) : db.raw(sql, []);
+    return srcWarehouseId ? db.raw(sqlWarehouse, [srcWarehouseId, limti, offset])
+      : dstWarehouseId ? db.raw(sqlWarehouseWithdraw, [dstWarehouseId, limti, offset]) : db.raw(sql, [limti, offset]);
+  }
+
+  totalUnPaidOrders(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null) {
+
+    let sql = `
+    select count(*) as total
+    from wm_requisition_order_unpaids as rou
+    where rou.is_paid='N' and rou.is_cancel='N'
+    `;
+
+    let sqlWarehouse = `
+    select count(*) as total
+    from wm_requisition_order_unpaids as rou
+    inner join wm_requisition_orders as ro on ro.requisition_order_id=rou.requisition_order_id
+    where rou.is_paid='N' and rou.is_cancel='N'
+    and ro.wm_requisition=?
+    `;
+
+    let sqlWarehouseWithdraw = `
+    select count(*) as total
+    from wm_requisition_order_unpaids as rou
+    inner join wm_requisition_orders as ro on ro.requisition_order_id=rou.requisition_order_id
+    where rou.is_paid='N' and rou.is_cancel='N'
+    and ro.wm_withdraw=?
+    `;
+
+    return srcWarehouseId ? db.raw(sqlWarehouse, [srcWarehouseId])
+      : dstWarehouseId ? db.raw(sqlWarehouseWithdraw, [dstWarehouseId]) : db.raw(sql, []);
   }
 
   /*******  confirm ********/
