@@ -90,42 +90,87 @@ export class InventoryReportModel {
         mp.product_name`
         return knex.raw(sql, requisId)
     }
-    totalcost_warehouse(knex: Knex) {
-        let sql = `SELECT a.generic_type_id,a.generic_type_name,c.summit,a.receive1m,b.issue1m,(c.summit+a.receive1m-b.issue1m) as balance from (
-            SELECT IFNULL(round(sum(wr.total_cost),2),0) as receive1m ,mgt.generic_type_id,mgt.generic_type_name  
-            from wm_receive_check wrc
-            join wm_receives wr on wrc.receive_id=wr.receive_id
-            join wm_receive_check_detail wrcd on wrcd.check_id=wrc.check_id
-            join mm_products mp on wrcd.product_id=mp.product_id
-            join mm_generics mg on mp.generic_id=mg.generic_id
-            RIGHT join mm_generic_types mgt on mg.generic_type_id=mgt.generic_type_id
-            GROUP BY mgt.generic_type_name -- รับเช้าคลัง
-            ) as a
-            join ( 
-
-            select IFNULL(round(sum(wid.total_cost),2),0) as issue1m,mgt.generic_type_id,mgt.generic_type_name from wm_internalissue wi
-            join wm_internalissue_detail wid on wi.internalissue_id=wid.internalissue_id -- จ่ายออกจากคลัง
-            join mm_generics mg on wid.generic_id=mg.generic_id
-            RIGHT join mm_generic_types mgt on mg.generic_type_id=mgt.generic_type_id
-            GROUP BY mgt.generic_type_name -- รับเช้าคลัง
-            ) b on a.generic_type_id=b.generic_type_id
-            join (
-            SELECT IFNULL(round((a.receive-b.issue),2),0) as summit ,a.generic_type_id,a.generic_type_name from (
-            SELECT sum(wrcd.qty*wrcd.cost)as receive ,mgt.generic_type_id,mgt.generic_type_name 
-            from wm_receive_check_detail wrcd
-            join mm_products mp on wrcd.product_id=mp.product_id
-            join mm_generics mg on mp.generic_id=mg.generic_id
-            RIGHT join mm_generic_types mgt on mg.generic_type_id=mgt.generic_type_id
-            GROUP BY mgt.generic_type_name -- รับเช้าคลัง
-            ) a join (
-            select IFNULL(round(sum(wid.total_cost),2),0) as issue,mgt.generic_type_id,mgt.generic_type_name from wm_internalissue wi
-            join wm_internalissue_detail wid on wi.internalissue_id=wid.internalissue_id -- จ่ายออกจากคลัง
-            join mm_generics mg on wid.generic_id=mg.generic_id
-            RIGHT join mm_generic_types mgt on mg.generic_type_id=mgt.generic_type_id
-            GROUP BY mgt.generic_type_name -- รับเช้าคลัง
-            ) b on a.generic_type_id=b.generic_type_id) c on b.generic_type_id=c.generic_type_id ORDER BY a.generic_type_id`
+    totalcost_warehouse(knex: Knex,sDate,eDate,wareHouse) {
+    //     let sql = `SELECT
+    //     mgt.generic_type_name,
+    //     ROUND((sum(ws.in_qty * ws.in_unit_cost )) - (sum( ws.out_qty * ws.out_unit_cost)), 2) AS summit,
+    //     new.in_cost as receive1m,
+    //     new.out_cost as issue1m,
+    //     ROUND((((sum( ws.in_qty * ws.in_unit_cost) - sum(ws.out_qty * ws.out_unit_cost)) + new.in_cost) - new.out_cost), 2) AS balance 
+    // FROM
+    //     wm_stock_card ws
+    //     JOIN mm_generics mg ON mg.generic_id = ws.generic_id
+    //     JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
+    //     LEFT JOIN (
+    // SELECT
+    //     mgt.generic_type_name,
+    //     mgt.generic_type_id,
+    //     ROUND(sum(ws.in_qty * ws.in_unit_cost), 2) AS in_cost,
+    //     ROUND(sum(ws.out_qty * ws.out_unit_cost), 2) AS out_cost,
+    //     ROUND(( sum( ws.in_qty * ws.in_unit_cost)) - (sum(ws.out_qty * ws.out_unit_cost)), 2) AS cost 
+    // FROM
+    //     wm_stock_card ws
+    //     JOIN mm_generics mg ON mg.generic_id = ws.generic_id
+    //     JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id 
+    // WHERE
+    //     ws.stock_date between '${sDate}' and '${eDate}'
+    //     and 
+    // GROUP BY
+    //     mgt.generic_type_id 
+    //     ) AS new ON new.generic_type_id = mgt.generic_type_id 
+    // WHERE
+    //     ws.stock_date < '${sDate}'
+    // GROUP BY
+    //     mgt.generic_type_id`
+    let sql = ` SELECT
+        mgt.generic_type_name,
+        ROUND(
+       ( sum( ws.in_qty * ws.cost ) ) - ( sum( ws.out_qty * ws.cost ) ),
+       2 
+       ) AS summit,
+        new.in_cost AS receive1m,
+        new.out_cost AS issue1m,
+        ROUND(
+       (
+       (
+       ( sum( ws.in_qty * ws.cost ) - sum( ws.out_qty * ws.cost ) ) + new.in_cost 
+       ) - new.out_cost 
+       ),
+       2 
+       ) AS balance  
+   FROM
+        view_stock_card_warehouse ws 
+       JOIN mm_generics mg ON mg.generic_id = ws.generic_id 
+       JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id 
+       LEFT JOIN (
+        SELECT
+        mgt.generic_type_name,
+        mgt.generic_type_id,
+        ROUND( sum( ws.in_qty * ws.cost ), 2 ) AS in_cost,
+        ROUND( sum( ws.out_qty * ws.cost ), 2 ) AS out_cost,
+        ROUND(
+       ( sum( ws.in_qty * ws.cost ) ) - ( sum( ws.out_qty * ws.cost ) ),
+       2 
+       ) AS costs
+   FROM
+        view_stock_card_warehouse ws 
+       JOIN mm_generics mg ON mg.generic_id = ws.generic_id 
+       JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id  
+   WHERE
+        ws.stock_date BETWEEN  '${sDate}'
+        and '${eDate}'
+       and ws.warehouse_id LIKE '505'
+   GROUP BY
+        mgt.generic_type_id  
+       ) AS new ON new.generic_type_id = mgt.generic_type_id  
+   WHERE
+        ws.stock_date < '${sDate}'
+        and ws.warehouse_id LIKE '${wareHouse}'
+   GROUP BY
+        mgt.generic_type_id  `
         return knex.raw(sql)
     }
+    
     status_generic(knex: Knex) {
         let sql = `SELECT
 		mg.generic_id,
@@ -670,20 +715,20 @@ WHERE
     list_cost(knex: Knex ,genericTypeId , startDate, endDate ,warehouseId) {
         let sql = `
         SELECT
- 	mgt.generic_type_name,
+	mgt.generic_type_name,
 	mgda.account_name,
 	round( IFNULL( sum( wp.cost ), 0 ), 2 ) AS cost 
-    FROM
-	wm_products wp
-	JOIN mm_products mp ON wp.product_id = mp.product_id
-	JOIN mm_generics mg ON mp.generic_id = mg.generic_id
-	JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
-	left JOIN mm_generic_accounts mgda ON mg.account_id = mgda.account_id
-    WHERE
-    mgt.generic_type_id =${genericTypeId}
-    AND ( wp.expired_date BETWEEN ${startDate} AND ${endDate} or wp.expired_date is null or wp.expired_date = '0000-00-00' )
-    AND wp.warehouse_id LIKE '${warehouseId}'
-    GROUP BY
+FROM
+	mm_generic_types mgt
+	LEFT JOIN mm_generics mg ON mgt.generic_type_id = mg.generic_type_id
+	JOIN mm_generic_accounts mgda ON mg.account_id = mgda.account_id
+	LEFT JOIN mm_products mp ON mp.generic_id = mg.generic_id
+	LEFT JOIN wm_products wp ON wp.product_id = mp.product_id 
+WHERE
+	mgt.generic_type_id = ${genericTypeId} 
+	AND wp.warehouse_id LIKE '${warehouseId}' 
+GROUP BY
+	mgt.generic_type_id,
 	mgda.account_id`
         return (knex.raw(sql))
     }
