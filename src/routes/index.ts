@@ -275,28 +275,58 @@ router.get('/report/list/refill/:requisId', wrap(async (req, res, next) => {
   }
 }));
 
-router.get('/report/totalcost/warehouse', wrap(async (req, res, next) => {
+router.get('/report/totalcost/warehouse/:sDate/:eDate/:wareHouse/:wareHouseName', wrap(async (req, res, next) => {
   let db = req.db;
   try {
+    let sDate = req.params.sDate;
+    let eDate = req.params.eDate;
+    let wareHouse = req.params.wareHouse;
+    let wareHouseName = req.params.wareHouseName;
+    if (wareHouse == 0) { wareHouse = '%%'; }
+    else { wareHouse = '%' + wareHouse + '%'; }
+    if (wareHouse == '%%') { wareHouseName = 'ทุกคลังสินค้า'; }
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
     moment.locale('th');
     let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
-    let totalcost_warehouse = await inventoryReportModel.totalcost_warehouse(db);
+    let totalcost_warehouse = await inventoryReportModel.totalcost_warehouse(db, sDate, eDate, wareHouse);
     totalcost_warehouse = totalcost_warehouse[0];
-    let no = totalcost_warehouse[0].requisition_id
-    let warehouse = totalcost_warehouse[0].warehouse_name
+    // let no = totalcost_warehouse[0].requisition_id
+    // let warehouse = totalcost_warehouse[0].warehouse_name
     // let checkdate=totalcost_warehouse[0].checkname;
-    // let date = moment(checkdate).format('D MMMM ') + (moment(checkdate).get('year') + 543);
-    let sum = 0;
+    let sdate = moment(sDate).format('D MMMM ') + (moment(sDate).get('year') + 543);
+    let edate = moment(eDate).format('D MMMM ') + (moment(eDate).get('year') + 543);
+    let sum: any = {
+      summit: 0,
+      receive1m: 0,
+      issue1m: 0,
+      balance: 0
+    };
     totalcost_warehouse.forEach(value => {
-      sum += value.balance;
-      value.summit = (value.summit).toFixed(2);
-      value.receive1m = (value.receive1m).toFixed(2);
-      value.issue1m = (value.issue1m).toFixed(2);
-      value.balance = (value.balance).toFixed(2);
+      sum.summit += value.summit ? value.summit : 0
+      sum.receive1m += value.receive1m ? value.receive1m : 0
+      sum.issue1m += value.issue1m ? value.issue1m : 0
+      sum.balance += value.balance ? value.balance : value.summit
+      value.summit = value.summit ? inventoryReportModel.comma(value.summit) : inventoryReportModel.comma(0);
+      value.receive1m = value.receive1m ? inventoryReportModel.comma(value.receive1m) : inventoryReportModel.comma(0);
+      value.issue1m = value.issue1m ? inventoryReportModel.comma(value.issue1m) : inventoryReportModel.comma(0);
+      value.balance = value.balance ? inventoryReportModel.comma(value.balance) : value.summit;
     })
-    res.render('totalcost_warehouse', { hospitalName: hospitalName, today: today, totalcost_warehouse: totalcost_warehouse, no: no, warehouse: warehouse, sum: sum.toFixed(2) });
+    sum.summit = inventoryReportModel.comma(sum.summit)
+    sum.receive1m = inventoryReportModel.comma(sum.receive1m)
+    sum.issue1m = inventoryReportModel.comma(sum.issue1m)
+    sum.balance = inventoryReportModel.comma(sum.balance)
+    res.render('totalcost_warehouse', {
+      hospitalName: hospitalName,
+      today: today,
+      sdate: sdate,
+      edate: edate,
+      wareHouseName: wareHouseName,
+      totalcost_warehouse: totalcost_warehouse,
+      // no: no, 
+      // warehouse: warehouse, 
+      sum: sum
+    });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -732,6 +762,7 @@ router.get('/report/list/cost/:startDate/:endDate/:warehouseId/:warehouseName', 
   if (warehouseId == 0) { warehouseId = '%%'; }
   else { warehouseId = '%' + warehouseId + '%'; }
   let genericTypeId = await inventoryReportModel.getGenericType(db);
+  // res.send(genericTypeId)
   genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
   genericTypeId = _.map(genericTypeId, (v: any) => { return v.generic_type_id })
   for (let i in genericTypeId) {
@@ -1653,6 +1684,7 @@ router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, 
   startdate = moment(startdate).format('D MMMM ') + (moment(startdate).get('year') + 543);
   enddate = moment(enddate).format('D MMMM ') + (moment(enddate).get('year') + 543);
   productReceive.forEach(value => {
+    value.total_cost = inventoryReportModel.comma(value.total_cost);
     value.receive_date = moment(value.receive_date).format('D/MM/YYYY');
     value.expired_date = moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543);
     if (value.discount_percent == null) value.discount_percent = '0.00%';
@@ -1882,6 +1914,46 @@ router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req
     today: today,
     hospitalName: hospitalName,
     purchase: purchase,
+  });
+}));
+
+router.get('/report/inventorystatus/:warehouseId/:genericTypeId', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.params.warehouseId
+  let genericTypeId = req.params.genericTypeId
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  moment.locale('th');
+  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  let rs = await inventoryReportModel.inventoryStatus(db, warehouseId, genericTypeId);
+  let list = rs[0]
+  let sumlist = [];
+  let sum = 0
+  let totalsum = 0;
+  let totalsumShow: any;
+  list = _.chunk(list, 40)
+  // res.send({list:list});
+  for (let i in list) {
+    sum = _.sumBy(list[i], 'cost')
+    sumlist.push(sum)
+    for (let ii in list[i]) {
+      list[i][ii].cost = inventoryReportModel.comma(list[i][ii].cost);
+    }
+  }
+  for (let s in sumlist) {
+    totalsum = totalsum + sumlist[s]
+    sumlist[s] = inventoryReportModel.comma(sumlist[s]);
+  }
+  totalsumShow = inventoryReportModel.comma(totalsum);
+  // res.send(sumlist);
+
+  res.render('inventorystatus', {
+    today: today,
+    hospitalName: hospitalName,
+    list: list,
+    sumlist: sumlist,
+    totalsum: totalsum,
+    totalsumShow: totalsumShow
   });
 }));
 
