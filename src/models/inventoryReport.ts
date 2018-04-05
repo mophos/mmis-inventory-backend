@@ -1952,7 +1952,7 @@ OR sc.ref_src like ?
         ml.labeler_name
     FROM
         pc_purchasing_order pc
-    JOIN pc_purchasing_order_item poi
+    JOIN pc_purchasing_order_item poi on pc.purchase_order_id = poi.purchase_order_id
     JOIN mm_products mp ON poi.product_id = mp.product_id
     JOIN mm_generics mg ON mp.generic_id = mg.generic_id
     LEFT JOIN mm_unit_generics mug ON mug.unit_generic_id = poi.unit_generic_id
