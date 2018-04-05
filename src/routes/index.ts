@@ -66,8 +66,8 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
           value.total_cost = inventoryReportModel.comma(value.total_cost);
           value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
           value.cost = inventoryReportModel.comma(value.cost);
-          value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.small_qty);
-          value.qty = inventoryReportModel.commaQty(value.qty / value.small_qty);
+          value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.conversion_qty);
+          value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
           value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
           value.expired_date = value.expired_date ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
           value.today = today
@@ -188,7 +188,11 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         let _objHead = _.clone(objHead);
         requisition.push(_objHead);
       }
-      _list_requis.push(requisition);
+      if(requisition.length > 0) {
+        _list_requis.push(requisition);
+      } else if (requisition.length === 0){
+        res.render('error404');
+      }
     }
     for (let page in _list_requis) {
       for (let head in _list_requis[page]) {
@@ -214,6 +218,8 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         }
       }
     }
+    console.log(_list_requis);
+
     res.render('list_requis', {
       hospitalName: hospitalName,
       today: today,
