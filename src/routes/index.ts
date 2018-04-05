@@ -269,28 +269,58 @@ router.get('/report/list/refill/:requisId', wrap(async (req, res, next) => {
   }
 }));
 
-router.get('/report/totalcost/warehouse', wrap(async (req, res, next) => {
+router.get('/report/totalcost/warehouse/:sDate/:eDate/:wareHouse/:wareHouseName', wrap(async (req, res, next) => {
   let db = req.db;
   try {
+    let sDate = req.params.sDate;
+    let eDate = req.params.eDate;
+    let wareHouse = req.params.wareHouse;
+    let wareHouseName = req.params.wareHouseName;
+    if (wareHouse == 0) { wareHouse = '%%'; }
+    else { wareHouse = '%' + wareHouse + '%'; }
+    if (wareHouse == '%%') { wareHouseName = 'ทุกคลังสินค้า'; }
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
     moment.locale('th');
     let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
-    let totalcost_warehouse = await inventoryReportModel.totalcost_warehouse(db);
+    let totalcost_warehouse = await inventoryReportModel.totalcost_warehouse(db, sDate, eDate, wareHouse);
     totalcost_warehouse = totalcost_warehouse[0];
-    let no = totalcost_warehouse[0].requisition_id
-    let warehouse = totalcost_warehouse[0].warehouse_name
+    // let no = totalcost_warehouse[0].requisition_id
+    // let warehouse = totalcost_warehouse[0].warehouse_name
     // let checkdate=totalcost_warehouse[0].checkname;
-    // let date = moment(checkdate).format('D MMMM ') + (moment(checkdate).get('year') + 543);
-    let sum = 0;
+    let sdate = moment(sDate).format('D MMMM ') + (moment(sDate).get('year') + 543);
+    let edate = moment(eDate).format('D MMMM ') + (moment(eDate).get('year') + 543);
+    let sum: any = {
+      summit: 0,
+      receive1m: 0,
+      issue1m: 0,
+      balance: 0
+    };
     totalcost_warehouse.forEach(value => {
-      sum += value.balance;
-      value.summit = (value.summit).toFixed(2);
-      value.receive1m = (value.receive1m).toFixed(2);
-      value.issue1m = (value.issue1m).toFixed(2);
-      value.balance = (value.balance).toFixed(2);
+      sum.summit += value.summit ? value.summit : 0
+      sum.receive1m += value.receive1m ? value.receive1m : 0
+      sum.issue1m += value.issue1m ? value.issue1m : 0
+      sum.balance += value.balance ? value.balance : value.summit
+      value.summit = value.summit ? inventoryReportModel.comma(value.summit) : inventoryReportModel.comma(0);
+      value.receive1m = value.receive1m ? inventoryReportModel.comma(value.receive1m) : inventoryReportModel.comma(0);
+      value.issue1m = value.issue1m ? inventoryReportModel.comma(value.issue1m) : inventoryReportModel.comma(0);
+      value.balance = value.balance ? inventoryReportModel.comma(value.balance) : value.summit;
     })
-    res.render('totalcost_warehouse', { hospitalName: hospitalName, today: today, totalcost_warehouse: totalcost_warehouse, no: no, warehouse: warehouse, sum: sum.toFixed(2) });
+    sum.summit = inventoryReportModel.comma(sum.summit)
+    sum.receive1m = inventoryReportModel.comma(sum.receive1m)
+    sum.issue1m = inventoryReportModel.comma(sum.issue1m)
+    sum.balance = inventoryReportModel.comma(sum.balance)
+    res.render('totalcost_warehouse', {
+      hospitalName: hospitalName,
+      today: today,
+      sdate: sdate,
+      edate: edate,
+      wareHouseName: wareHouseName,
+      totalcost_warehouse: totalcost_warehouse,
+      // no: no, 
+      // warehouse: warehouse, 
+      sum: sum
+    });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -726,6 +756,7 @@ router.get('/report/list/cost/:startDate/:endDate/:warehouseId/:warehouseName', 
   if (warehouseId == 0) { warehouseId = '%%'; }
   else { warehouseId = '%' + warehouseId + '%'; }
   let genericTypeId = await inventoryReportModel.getGenericType(db);
+  // res.send(genericTypeId)
   genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
   genericTypeId = _.map(genericTypeId, (v: any) => { return v.generic_type_id })
   for (let i in genericTypeId) {

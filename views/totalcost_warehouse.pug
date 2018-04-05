@@ -13,16 +13,20 @@ html
         tr
           td.center.bold(colspan='6' ) สรุปงานคลังเวชภัณฑ์
         tr
-          td.center(colspan='6') ประจำเดือน #{date}
+          td.center(colspan='6') ประจำวันที่ #{sdate} ถึง #{edate}
+        tr
+          td.left(colspan='6') คลัง #{wareHouseName}
         tr
           td.left(colspan='6') ณ วันที่ #{today}
         tr
-          th ลำดับที่
-          th.left รายการ
-          th.right ยอดคงคลังยกมาจากเดือนพฤษภาคม
-          th.right รับเข้าคลัง<br>(ใน 1 เดือน)
-          th.right จ่ายออกจากคลัง<br>(ใน 1 เดือน)
-          th.right เหลือคงคลัง<br>(เมื่อสิ้นเดือน)
+          th(colspan='1' rowspan='2' style='vertical-align: text-bottom;') ลำดับที่
+          th.left(colspan='1' rowspan='2' style='vertical-align: text-bottom;') รายการ
+          th.center(colspan='4') มีมูลค่า ( บาท )
+        tr
+          th.right ยอดคงคลังยกมาถึงวันที่ <br>#{sdate}
+          th.right รับเข้าคลัง<br>(ในวันที่ #{sdate} <br>ถึง #{edate})
+          th.right จ่ายออกจากคลัง<br>(ในวันที่ #{sdate} <br>ถึง #{edate})
+          th.right เหลือคงคลัง<br>(เมื่อวันที่ #{edate})
       tbody
       - y=0
       for a in totalcost_warehouse
@@ -35,5 +39,12 @@ html
           td.right #{a.issue1m}
           td.right #{a.balance}
       tfooter
+        tr
+          td.tbfooter
+          td.tbfooter.left รวมทุกประเภท
+          td.tbfooter.right #{sum.summit}
+          td.tbfooter.right #{sum.receive1m}
+          td.tbfooter.right #{sum.issue1m}
+          td.tbfooter.right #{sum.balance}
         tr
           td.tbfooter(colspan="6")
