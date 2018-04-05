@@ -5,7 +5,6 @@ style(type='text/css').
   font-size: 12pt;
   }
   @page{
-    size: landscape;
     margin-top: 2cm;
     margin-left: 0.5cm;
     margin-right: 0.5cm;
@@ -31,19 +30,18 @@ html
           td.left เลขที่ใบสั่งซื้อ
           td.left เลขที่ใบส่งของ
           td.left บริษัทผู้จำหน่าย
-          td.right 
-          td(colspan='2').center ส่วนลด
-          td.center วิธีจัดซื้อ
-          td.center ประเภทงบ
+          td(colspan='2').right ส่วนลด
+          td.right วิธีจัดซื้อ
+          td.right ประเภทงบ
         tr.dash-bottom(style="font-size: 13pt;")
           td 
           td.left รหัสยา
-          td(colspan='3').left รายการยา
-          td จำนวนสั่ง
-          td จำนวนที่รับ
-          td.left .
-          td.center มูลค่า
-          td.center วันหมดอายุ
+          td
+          td(colspan='2').left รายการยา
+          td
+          td.right จำนวนที่รับ
+          td.right มูลค่า
+          td.right วันหมดอายุ
       tbody
         - var y = 0
           for b in productReceive
@@ -55,7 +53,6 @@ html
                 td.left #{b.delivery_code}
                 td.left #{b.labeler_name}
                 td
-                td.right(style='font-size: 10pt;') #{b.discount_percent}
                 td.right(style='font-size: 10pt;') #{b.discount_cash}
                 td.right &nbsp;#{b.bid_name}
                 td.right #{b.bgtype_name}
@@ -63,9 +60,8 @@ html
                 td
                 td #{b.generic_id}
                 td.left(colspan='3')  #{b.generic_name}
-                td.left #{b.reqty} x #{b.qty} (#{b.unit_name})
-                td.right #{b.receive_qty}
-                td.right #{b.unit_name}
+                td
+                td.right #{b.receive_qty} x #{b.qty} (#{b.unit_name})
                 td.right #{b.total_cost}
                 td.right #{b.expired_date}
       tfooter
