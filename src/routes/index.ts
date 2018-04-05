@@ -1910,4 +1910,44 @@ router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req
   });
 }));
 
+router.get('/report/inventorystatus/:warehouseId/:genericTypeId', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.params.warehouseId
+  let genericTypeId = req.params.genericTypeId
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  moment.locale('th');
+  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  let rs = await inventoryReportModel.inventoryStatus(db, warehouseId, genericTypeId);
+  let list = rs[0]
+  let sumlist = [];
+  let sum = 0
+  let totalsum = 0;
+  let totalsumShow: any;
+  list = _.chunk(list, 40)
+  // res.send({list:list});
+  for (let i in list) {
+    sum = _.sumBy(list[i], 'cost')
+    sumlist.push(sum)
+    for (let ii in list[i]) {
+      list[i][ii].cost = inventoryReportModel.comma(list[i][ii].cost);
+    }
+  }
+  for (let s in sumlist) {
+    totalsum = totalsum + sumlist[s]
+    sumlist[s] = inventoryReportModel.comma(sumlist[s]);
+  }
+  totalsumShow = inventoryReportModel.comma(totalsum);
+  // res.send(sumlist);
+
+  res.render('inventorystatus', {
+    today: today,
+    hospitalName: hospitalName,
+    list: list,
+    sumlist: sumlist,
+    totalsum: totalsum,
+    totalsumShow: totalsumShow
+  });
+}));
+
 export default router;

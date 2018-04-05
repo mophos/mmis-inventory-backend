@@ -1,0 +1,58 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    - var c=0
+    - for(var i in list)
+      span.page
+      table.table
+        thead
+          tr
+            td.center.bold(colspan='8') #{hospitalName}
+          tr
+            td.center.bold(colspan='8') รายงานสถานะเวชภัณฑ์คงคลัง
+          tr
+            td.left.bold(colspan='4' ) ประจำวันที่ #{today}
+            td.right.bold(colspan='4' ) หน้า #{(i*1)+1}
+          tr
+            td.left(colspan='8') 
+          tr
+            th.center เลขที่
+            th.left รหัสเวชภัณฑ์
+            th.left(style="width:45%") รายการเวชภัณฑ์
+            th.left หน่วย
+            th.left Rate/Month
+            th.right ปริมาณต่ำสุด
+            th.right จำนวน
+            th.right มูลค่า
+        tbody
+        - var y=0
+        for a in  list[i]
+          - y++
+          - c++
+          tr
+            td.center #{c}
+            td.left #{a.generic_code}
+            td.left #{a.generic_name}
+            td.left #{a.unit_name}
+            td.right #{a.max_qty}
+            td.right #{a.min_qty}
+            td.right #{a.qty}
+            td.right #{a.cost}
+        tfooter 
+          tr
+            th(colspan='8')
+          tr
+            td(colspan='8')
+              | &nbsp;
+          tr
+            if(((i*1)+1) !== sumlist.length)
+              td.bold.right(colspan='8') รวมมูลค่า #{sumlist[i]} บาท
+            else
+              td.bold.right(colspan='8') รวมมูลค่าทั้งสิ้น #{totalsumShow} บาท
+      if(y == list[i].length)
+            .pagebreak
