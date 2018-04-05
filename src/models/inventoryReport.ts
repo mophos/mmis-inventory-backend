@@ -1931,6 +1931,7 @@ OR sc.ref_src like ?
         mg.working_code AS generic_code,
         mg.generic_name,
         mu.unit_name,
+        mgp.max_qty,
         mg.min_qty,
         sum(wp.qty) AS qty,
         sum(wp.qty)*wp.cost AS cost
@@ -1940,9 +1941,10 @@ OR sc.ref_src like ?
     JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
     JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wp.unit_generic_id
     JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
+    JOIN mm_generic_planning mgp ON mgp.generic_id = mg.generic_id
     WHERE
-        wp.warehouse_id = ${warehouseId}`
-        if (genericTypeId != '') {
+        wp.warehouse_id = ${warehouseId} `
+        if (genericTypeId != 0) {
             sql = sql + ` AND mg.generic_type_id = ${genericTypeId}`
         }
         sql = sql + `
