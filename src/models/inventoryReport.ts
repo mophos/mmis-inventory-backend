@@ -477,7 +477,7 @@ export class InventoryReportModel {
 
         return srcWarehouseId ? db.raw(sqlWarehouse, [srcWarehouseId]) : dstWarehouseId ? db.raw(sqlWarehouseWithdraw, [dstWarehouseId]) : db.raw(sql, []);
     }
-    getOrderItemsByRequisition(db: Knex, requisId: any,product_id: any) {
+    getOrderItemsByRequisition(db: Knex, requisId: any, product_id: any) {
         let sql = `SELECT
         r.requisition_code,
         wl.location_name,
@@ -706,13 +706,13 @@ WHERE
         return (knex.raw(sql, [startDate, endDate, startDate, endDate, startDate, startDate]))
     }
 
-    getGenericType(knex: Knex){
+    getGenericType(knex: Knex) {
         return knex('mm_generic_types')
             .select('generic_type_id')
             .orderBy('generic_type_id')
     }
 
-    list_cost(knex: Knex ,genericTypeId , startDate, endDate ,warehouseId) {
+    list_cost(knex: Knex, genericTypeId, startDate, endDate, warehouseId) {
         let sql = `
         SELECT
 	mgt.generic_type_name,
@@ -925,7 +925,7 @@ GROUP BY
     }
     _list_receive5(knex: Knex, sID: any, eID: any) {
         return knex('wm_receives as wr')
-            .select('wrd.product_id','wr.receive_id','wr.receive_code')
+            .select('wrd.product_id', 'wr.receive_id', 'wr.receive_code')
             .innerJoin('wm_receive_detail as wrd', 'wr.receive_id', 'wrd.receive_id')
             .whereBetween('wr.receive_code', [sID, eID])
             .orderBy('wr.receive_code');
@@ -941,7 +941,7 @@ GROUP BY
     _list_receivePO(knex: Knex, sID: any, eID: any) {
         return knex('wm_receives as wr')
             .select('wr.receive_id')
-            .innerJoin('pc_purchasing_order as pp','pp.purchase_order_id','wr.purchase_order_id')
+            .innerJoin('pc_purchasing_order as pp', 'pp.purchase_order_id', 'wr.purchase_order_id')
             .whereBetween('pp.purchase_order_number', [sID, eID])
             .orderBy('wr.receive_id');
     }
@@ -985,7 +985,7 @@ GROUP BY
         return knex('wm_receives as wr')
             .select('wr.receive_id')
             .whereIn('wr.purchase_order_id', ID)
-            .orderBy('wr.receive_date','DESC')
+            .orderBy('wr.receive_date', 'DESC')
     }
     async hospital(knex: Knex) {
         let array = [];
@@ -1272,7 +1272,7 @@ GROUP BY
         return knex.raw(sql, tranferId)
     }
 
-    tranferListProduct(knex: Knex, tranferId,product_id) {
+    tranferListProduct(knex: Knex, tranferId, product_id) {
         let sql = `SELECT
         wp.product_id,
         mp.product_name,
@@ -1495,8 +1495,8 @@ OR sc.ref_src like ?
         where sc.stock_date BETWEEN '2010-01-01' and '2017-10-10'
         GROUP BY mgt.generic_type_id,mgda.drug_account_id`
     }
-    
-    checkReceiveId(knex: Knex, sID,eID){
+
+    checkReceiveId(knex: Knex, sID, eID) {
 
     }
 
@@ -1825,8 +1825,8 @@ OR sc.ref_src like ?
       ORDER BY mg.generic_id`
         return knex.raw(sql);
     }
-    getDetailListRequis(knex:Knex ,requisId,warehouseId,productId){
-        let sql=`select * from (SELECT
+    getDetailListRequis(knex: Knex, requisId, warehouseId, productId) {
+        let sql = `select * from (SELECT
           mg.working_code AS generic_code,
           mg.generic_name,
           mg.generic_id,
@@ -1910,9 +1910,9 @@ OR sc.ref_src like ?
         group by a.product_id,a.lot_no
         ORDER BY a.generic_code desc`
         return knex.raw(sql);
-      }
-    getHeadRequis(knex:Knex ,requisId){
-        let sql=`SELECT
+    }
+    getHeadRequis(knex: Knex, requisId) {
+        let sql = `SELECT
         r.requisition_date,
         r.requisition_code,
         r.requisition_order_id,
@@ -1930,10 +1930,10 @@ OR sc.ref_src like ?
     ORDER BY
         r.requisition_order_id`
         return knex.raw(sql);
-      }
-    
-    purchasingNotGiveaway(knex:Knex, startDate: any, endDate: any){
-        let sql=`SELECT
+    }
+
+    purchasingNotGiveaway(knex: Knex, startDate: any, endDate: any) {
+        let sql = `SELECT
         pc.purchase_order_number,
         pc.purchase_order_book_number,
         pc.order_date,
@@ -1969,6 +1969,36 @@ OR sc.ref_src like ?
     AND '${endDate}'
     ORDER BY
 	pc.purchase_order_number`
+        return knex.raw(sql);
+    }
+
+    inventoryStatus(knex: Knex, warehouseId: any, genericTypeId: any) {
+        let sql = `SELECT
+        mg.working_code AS generic_code,
+        mg.generic_name,
+        mu.unit_name,
+        mgp.max_qty,
+        mg.min_qty,
+        sum(wp.qty) AS qty,
+        sum(wp.qty)*wp.cost AS cost
+    FROM
+        wm_products AS wp
+    JOIN mm_products AS mp ON mp.product_id = wp.product_id
+    JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
+    JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wp.unit_generic_id
+    JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
+    JOIN mm_generic_planning mgp ON mgp.generic_id = mg.generic_id
+    WHERE
+        wp.warehouse_id = ${warehouseId} `
+        if (genericTypeId != 0) {
+            sql = sql + ` AND mg.generic_type_id = ${genericTypeId}`
+        }
+        sql = sql + `
+    GROUP BY
+        mg.generic_id
+    ORDER BY
+        mg.generic_name
+        `
         return knex.raw(sql);
     }
 
