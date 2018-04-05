@@ -1643,7 +1643,7 @@ OR sc.ref_src like ?
         ppoi.discount_cash,
         ppoi.discount_percent,
         ppoi.qty as reqty,
-        wrd.cost*wrd.receive_qty as total_cost,
+        sum(wrd.cost*wrd.receive_qty) as total_cost,
         bt.bgtype_name
         FROM
             wm_receives AS r
