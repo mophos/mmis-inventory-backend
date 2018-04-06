@@ -930,7 +930,7 @@ router.post('/other/approve', co(async (req, res, next) => {
       obj.ref_src = v.donator_id;
       obj.ref_dst = v.warehouse_id;
       obj.comment = 'รับเข้าคลังแบบอื่นๆ';
-      obj.lot_no  = v.lot_no;
+      obj.lot_no = v.lot_no;
       obj.expired_date = v.expired_date;
       data.push(obj);
     });
@@ -1089,7 +1089,25 @@ router.get('/purchases/list', co(async (req, res, nex) => {
     const rows = await receiveModel.getPurchaseList(db, limit, offset);
     const rstotal = await receiveModel.getPurchaseListTotal(db);
     let total = +rstotal[0][0].total
-    res.send({ ok: true, rows: rows[0] ,total: total});
+    res.send({ ok: true, rows: rows[0], total: total });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/purchases/list/search', co(async (req, res, nex) => {
+  let limit = req.query.limit;
+  let offset = req.query.offset;
+  let query = req.query.query;
+  let db = req.db;
+  try {
+    const rows = await receiveModel.getPurchaseListSearch(db, limit, offset, query);
+    const rstotal = await receiveModel.getPurchaseListTotalSearch(db, query);
+    let total = +rstotal[0][0].total
+    res.send({ ok: true, rows: rows[0], total: total });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {

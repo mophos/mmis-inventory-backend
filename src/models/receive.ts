@@ -668,7 +668,72 @@ export class ReceiveModel {
       offset ${offset}
     `;
 
-    return knex.raw(sql, []);
+    return knex.raw(sql);
+
+  }
+
+  getPurchaseListSearch(knex: Knex, limit: number, offset: number, query) {
+    let _query = `%${query}%`;
+    let sql = `
+      select pc.purchase_order_book_number, pc.purchase_order_id, pc.purchase_order_number,
+      pc.order_date, 
+      (
+        select sum(pci.qty*pci.unit_price)
+        from pc_purchasing_order_item as pci 
+        where pci.purchase_order_id=pc.purchase_order_id
+        and pci.giveaway='N'
+      ) as purchase_price, 
+      pc.labeler_id as vendor_id, pc.contract_id,
+      cmp.name as purchase_method_name, ml.labeler_name,
+      (
+        select sum(pi.qty)
+        from pc_purchasing_order_item as pi
+        where pi.purchase_order_id=pc.purchase_order_id
+      ) as purchase_qty,
+      (
+        select sum(rd.receive_qty) 
+        from wm_receive_detail as rd
+        inner join wm_receives as r on r.receive_id=rd.receive_id
+        where r.purchase_order_id=pc.purchase_order_id
+      ) as receive_qty,
+      (
+        select sum(rd.receive_qty*rd.cost) 
+        from wm_receive_detail as rd
+        inner join wm_receives as r on r.receive_id=rd.receive_id
+        where rd.is_free='N'
+        and r.purchase_order_id=pc.purchase_order_id
+        
+      ) as receive_price
+      from pc_purchasing_order as pc
+      left join mm_labelers as ml on ml.labeler_id=pc.labeler_id
+      left join l_bid_process as cmp on cmp.id=pc.purchase_method_id
+      where pc.purchase_order_status='APPROVED'
+      and pc.purchase_order_status != 'COMPLETED'
+      and pc.is_cancel != 'Y'
+      and (
+        pc.purchase_order_book_number LIKE '${_query}'
+        OR pc.purchase_order_number LIKE '${_query}'
+        OR ml.labeler_name like '${_query}'
+        OR pc.purchase_order_id IN (
+          SELECT
+            poi.purchase_order_id
+          FROM
+            pc_purchasing_order_item poi
+          JOIN mm_products mp ON mp.product_id = poi.product_id
+          JOIN mm_generics mg ON mp.generic_id = mg.generic_id
+          WHERE
+            mp.product_name LIKE '${_query}'
+          OR mg.generic_name LIKE '${_query}'
+          OR mp.working_code = '${query}'
+          OR mg.working_code = '${query}'
+        )
+      )
+      order by pc.purchase_order_number DESC
+      limit ${limit}
+      offset ${offset}
+    `;
+
+    return knex.raw(sql);
 
   }
   getPurchaseListTotal(knex: Knex) {
@@ -684,6 +749,39 @@ export class ReceiveModel {
     `;
 
     return knex.raw(sql, []);
+
+  }
+  getPurchaseListTotalSearch(knex: Knex, query) {
+    let _query = `%${query}%`;
+    let sql = `
+      select count(*) as total
+      from pc_purchasing_order as pc
+      left join mm_labelers as ml on ml.labeler_id=pc.labeler_id
+      left join l_bid_process as cmp on cmp.id=pc.purchase_method_id
+      where pc.purchase_order_status='APPROVED'
+      and pc.purchase_order_status != 'COMPLETED'
+      and pc.is_cancel != 'Y'
+      and (
+        pc.purchase_order_book_number LIKE '${_query}'
+        OR pc.purchase_order_number LIKE '${_query}'
+        OR ml.labeler_name like '${_query}'
+        OR pc.purchase_order_id IN (
+          SELECT
+            poi.purchase_order_id
+          FROM
+            pc_purchasing_order_item poi
+          JOIN mm_products mp ON mp.product_id = poi.product_id
+          JOIN mm_generics mg ON mp.generic_id = mg.generic_id
+          WHERE
+            mp.product_name LIKE '${_query}'
+          OR mg.generic_name LIKE '${_query}'
+          OR mp.working_code = '${query}'
+          OR mg.working_code = '${query}'
+        )
+      )
+    `;
+
+    return knex.raw(sql);
 
   }
   getPurchaseProductList(knex: Knex, purchaseOrderId: any) {
