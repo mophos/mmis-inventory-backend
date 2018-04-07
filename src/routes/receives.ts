@@ -650,7 +650,8 @@ router.put('/other/:receiveOtherId', co(async (req, res, next) => {
       delivery_code: summary.deliveryCode,
       donator_id: summary.donatorId,
       people_user_id: req.decoded.people_user_id,
-      is_expired: summary.is_expired
+      is_expired: summary.is_expired,
+      comment_expired: summary.comment_expired
     }
 
     let productsData = [];
@@ -930,7 +931,7 @@ router.post('/other/approve', co(async (req, res, next) => {
       obj.ref_src = v.donator_id;
       obj.ref_dst = v.warehouse_id;
       obj.comment = 'รับเข้าคลังแบบอื่นๆ';
-      obj.lot_no  = v.lot_no;
+      obj.lot_no = v.lot_no;
       obj.expired_date = v.expired_date;
       data.push(obj);
     });
@@ -1089,7 +1090,25 @@ router.get('/purchases/list', co(async (req, res, nex) => {
     const rows = await receiveModel.getPurchaseList(db, limit, offset);
     const rstotal = await receiveModel.getPurchaseListTotal(db);
     let total = +rstotal[0][0].total
-    res.send({ ok: true, rows: rows[0] ,total: total});
+    res.send({ ok: true, rows: rows[0], total: total });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/purchases/list/search', co(async (req, res, nex) => {
+  let limit = req.query.limit;
+  let offset = req.query.offset;
+  let query = req.query.query;
+  let db = req.db;
+  try {
+    const rows = await receiveModel.getPurchaseListSearch(db, limit, offset, query);
+    const rstotal = await receiveModel.getPurchaseListTotalSearch(db, query);
+    let total = +rstotal[0][0].total
+    res.send({ ok: true, rows: rows[0], total: total });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -1175,12 +1194,10 @@ router.get('/purchases/check-expire', co(async (req, res, nex) => {
   try {
     const rows = await receiveModel.getPurchaseCheckExpire(db, genericId);
     const day = rows[0].num_days;
-    let expired_date = expiredDate.substring(6, 10) + '-' + expiredDate.substring(3, 5) + '-' + expiredDate.substring(0, 2)
-    console.log(expired_date);
     moment.locale('th');
-    console.log(moment(expired_date));
+    console.log(moment(expiredDate));
 
-    diffday = moment(expired_date).diff(moment(), 'days');
+    diffday = moment(expiredDate).diff(moment(), 'days');
     console.log(diffday);
 
     if (day > diffday) {
