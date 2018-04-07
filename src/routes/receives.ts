@@ -650,7 +650,8 @@ router.put('/other/:receiveOtherId', co(async (req, res, next) => {
       delivery_code: summary.deliveryCode,
       donator_id: summary.donatorId,
       people_user_id: req.decoded.people_user_id,
-      is_expired: summary.is_expired
+      is_expired: summary.is_expired,
+      comment_expired: summary.comment_expired
     }
 
     let productsData = [];
@@ -1193,12 +1194,10 @@ router.get('/purchases/check-expire', co(async (req, res, nex) => {
   try {
     const rows = await receiveModel.getPurchaseCheckExpire(db, genericId);
     const day = rows[0].num_days;
-    let expired_date = expiredDate.substring(6, 10) + '-' + expiredDate.substring(3, 5) + '-' + expiredDate.substring(0, 2)
-    console.log(expired_date);
     moment.locale('th');
-    console.log(moment(expired_date));
+    console.log(moment(expiredDate));
 
-    diffday = moment(expired_date).diff(moment(), 'days');
+    diffday = moment(expiredDate).diff(moment(), 'days');
     console.log(diffday);
 
     if (day > diffday) {
