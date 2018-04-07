@@ -207,7 +207,7 @@ export class ReceiveModel {
   //     .count('* as total');
   // }
 
-  getOtherExpired(knex: Knex) {
+  getOtherExpired(knex: Knex, limit, offset) {
     let sql = `
     select rt.*, (select count(*) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as total,
     (select sum(rtd.cost * rtd.receive_qty) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as cost,
@@ -218,6 +218,20 @@ export class ReceiveModel {
     left join wm_receive_approve as a on a.receive_other_id=rt.receive_other_id
     where rt.is_expired = 'Y'
     order by rt.receive_other_id desc
+    limit ${limit}
+    offset ${offset}
+    `;
+    return knex.raw(sql);
+  }
+
+  getOtherExpiredTotal(knex: Knex) {
+    let sql = `
+    select count(*) as total
+    from wm_receive_other as rt
+    left join wm_receive_types as rtt on rtt.receive_type_id=rt.receive_type_id
+    left join wm_donators as d on d.donator_id=rt.donator_id
+    left join wm_receive_approve as a on a.receive_other_id=rt.receive_other_id
+    where rt.is_expired = 'Y'
     `;
     return knex.raw(sql);
   }
@@ -235,7 +249,7 @@ export class ReceiveModel {
     `;
     return knex.raw(sql, [q, q]);
   }
-  getExpired(knex: Knex) {
+  getExpired(knex: Knex, limit, offset) {
     let sql = `
       SELECT
       r.receive_id,
@@ -269,7 +283,23 @@ export class ReceiveModel {
         r.is_expired = 'Y'
       ORDER BY
       r.receive_date DESC
+      limit ${limit}
+      offset ${offset}
       `;
+    return knex.raw(sql);
+
+  }
+  getExpiredTotal(knex: Knex) {
+    let sql = `
+      SELECT
+        count(*) as total
+      FROM
+        wm_receives AS r
+      LEFT JOIN mm_labelers AS l ON l.labeler_id = r.vendor_labeler_id
+      LEFT JOIN pc_purchasing_order AS pp ON pp.purchase_order_id = r.purchase_order_id
+      LEFT JOIN wm_receive_approve AS ra ON ra.receive_id = r.receive_id
+      WHERE
+        r.is_expired = 'Y'`;
     return knex.raw(sql);
 
   }

@@ -431,10 +431,13 @@ router.put('/:receiveId', co(async (req, res, next) => {
 
 router.get('/other/expired/list', co(async (req, res, next) => {
   let db = req.db;
+  let limit = req.query.limit;
+  let offset = req.query.offset;
 
   try {
-    let rs = await receiveModel.getOtherExpired(db);
-    res.send({ ok: true, rows: rs[0] });
+    let rs = await receiveModel.getOtherExpired(db, limit, offset);
+    let rsTotal = await receiveModel.getOtherExpiredTotal(db);
+    res.send({ ok: true, rows: rs[0], total: rsTotal[0][0].total });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -458,10 +461,13 @@ router.get('/other/expired/search', co(async (req, res, next) => {
 
 router.get('/expired/list', co(async (req, res, next) => {
   let db = req.db;
+  let limit = req.query.limit;
+  let offset = req.query.offset;
 
   try {
-    let rs = await receiveModel.getExpired(db);
-    res.send({ ok: true, rows: rs[0] });
+    let rs = await receiveModel.getExpired(db, limit, offset);
+    let rsTotal = await receiveModel.getExpiredTotal(db);
+    res.send({ ok: true, rows: rs[0], total: rsTotal[0][0].total });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
