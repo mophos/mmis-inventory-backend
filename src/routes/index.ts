@@ -1931,7 +1931,7 @@ router.get('/report/inventorystatus/:warehouseId/:genericTypeId', wrap(async (re
   let sum = 0
   let totalsum = 0;
   let totalsumShow: any;
-  list = _.chunk(list, 40)
+  list = _.chunk(list, 35)
   // res.send({list:list});
   for (let i in list) {
     sum = _.sumBy(list[i], 'cost')
