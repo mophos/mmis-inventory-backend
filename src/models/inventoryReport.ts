@@ -89,84 +89,55 @@ export class InventoryReportModel {
             mp.product_name`
         return knex.raw(sql, requisId)
     }
+    
     totalcost_warehouse(knex: Knex,sDate,eDate,wareHouse) {
-    //     let sql = `SELECT
-    //     mgt.generic_type_name,
-    //     ROUND((sum(ws.in_qty * ws.in_unit_cost )) - (sum( ws.out_qty * ws.out_unit_cost)), 2) AS summit,
-    //     new.in_cost as receive1m,
-    //     new.out_cost as issue1m,
-    //     ROUND((((sum( ws.in_qty * ws.in_unit_cost) - sum(ws.out_qty * ws.out_unit_cost)) + new.in_cost) - new.out_cost), 2) AS balance 
-    // FROM
-    //     wm_stock_card ws
-    //     JOIN mm_generics mg ON mg.generic_id = ws.generic_id
-    //     JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
-    //     LEFT JOIN (
-    // SELECT
-    //     mgt.generic_type_name,
-    //     mgt.generic_type_id,
-    //     ROUND(sum(ws.in_qty * ws.in_unit_cost), 2) AS in_cost,
-    //     ROUND(sum(ws.out_qty * ws.out_unit_cost), 2) AS out_cost,
-    //     ROUND(( sum( ws.in_qty * ws.in_unit_cost)) - (sum(ws.out_qty * ws.out_unit_cost)), 2) AS cost 
-    // FROM
-    //     wm_stock_card ws
-    //     JOIN mm_generics mg ON mg.generic_id = ws.generic_id
-    //     JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id 
-    // WHERE
-    //     ws.stock_date between '${sDate}' and '${eDate}'
-    //     and 
-    // GROUP BY
-    //     mgt.generic_type_id 
-    //     ) AS new ON new.generic_type_id = mgt.generic_type_id 
-    // WHERE
-    //     ws.stock_date < '${sDate}'
-    // GROUP BY
-    //     mgt.generic_type_id`
-    let sql = ` SELECT
-        mgt.generic_type_name,
-        ROUND(
-       ( sum( ws.in_qty * ws.cost ) ) - ( sum( ws.out_qty * ws.cost ) ),
-       2 
-       ) AS summit,
-        new.in_cost AS receive1m,
-        new.out_cost AS issue1m,
-        ROUND(
-       (
-       (
-       ( sum( ws.in_qty * ws.cost ) - sum( ws.out_qty * ws.cost ) ) + new.in_cost 
-       ) - new.out_cost 
-       ),
-       2 
-       ) AS balance  
-   FROM
-        view_stock_card_warehouse ws 
-       JOIN mm_generics mg ON mg.generic_id = ws.generic_id 
-       JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id 
-       LEFT JOIN (
-        SELECT
-        mgt.generic_type_name,
-        mgt.generic_type_id,
-        ROUND( sum( ws.in_qty * ws.cost ), 2 ) AS in_cost,
-        ROUND( sum( ws.out_qty * ws.cost ), 2 ) AS out_cost,
-        ROUND(
-       ( sum( ws.in_qty * ws.cost ) ) - ( sum( ws.out_qty * ws.cost ) ),
-       2 
-       ) AS costs
-   FROM
-        view_stock_card_warehouse ws 
-       JOIN mm_generics mg ON mg.generic_id = ws.generic_id 
-       JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id  
-   WHERE
-        ws.stock_date BETWEEN  '${sDate}'
-        and '${eDate}'
-       and ws.warehouse_id LIKE '505'
-   GROUP BY
-        mgt.generic_type_id  
-       ) AS new ON new.generic_type_id = mgt.generic_type_id  
-   WHERE
-        ws.stock_date < '${sDate}'
-        and ws.warehouse_id LIKE '${wareHouse}'
-   GROUP BY
-        mgt.generic_type_id  `
+    let sql = `SELECT
+	mgt.generic_type_name,
+	(case WHEN sum(old.summit) IS NULL then 0 else ROUND( sum( old.summit ), 2 ) end) AS summit,
+	(case WHEN sum(new.receive1m) IS NULL then 0 else ROUND( sum( new.receive1m ), 2 ) end) AS receive1m,
+	(case WHEN sum(new.issue1m) IS NULL then 0 else ROUND( sum( new.issue1m ), 2 ) end) AS issue1m,
+	(
+CASE
+	WHEN sum(old.summit) IS NULL and sum(new.receive1m) IS NULL and sum(new.issue1m) IS NULL
+	THEN 0
+	WHEN sum(old.summit) IS NULL
+	THEN ROUND( sum( new.receive1m - new.issue1m ), 2 )
+	WHEN sum(new.receive1m) IS NULL or sum(new.issue1m) IS NULL
+	THEN ROUND( sum( old.summit ), 2 )
+	else ROUND( (sum( old.summit ) +sum(new.receive1m))-sum(new.issue1m), 2 )
+	END 
+	) AS balance 
+FROM
+	mm_generics mg
+	LEFT JOIN mm_generic_types mgt ON mg.generic_type_id = mgt.generic_type_id
+	LEFT JOIN (
+	SELECT
+		generic_id,
+		( CASE WHEN sum( ( in_qty * cost ) - ( out_qty * cost ) ) IS NULL THEN 0 ELSE ROUND( sum( ( in_qty * cost ) - ( out_qty * cost ) ), 2 ) END ) AS summit
+	FROM
+		view_stock_card_warehouse
+	WHERE
+		stock_date < '${sDate}' 
+		AND warehouse_id LIKE '${wareHouse}' 
+	GROUP BY
+		generic_id
+	) AS old ON old.generic_id = mg.generic_id
+	LEFT JOIN (
+	SELECT
+		generic_id,
+		( CASE WHEN sum( in_qty * cost ) IS NULL THEN 0 ELSE ROUND( sum( in_qty * cost ), 2 ) END ) AS receive1m,
+		( CASE WHEN sum( out_qty * cost ) IS NULL THEN 0 ELSE ROUND( sum( out_qty * cost ), 2 ) END ) AS issue1m
+	FROM
+		view_stock_card_warehouse 
+	WHERE
+		stock_date BETWEEN '${sDate}' 
+		AND '${eDate}' 
+		AND warehouse_id LIKE '${wareHouse}' 
+	GROUP BY
+		generic_id 
+	) AS new ON mg.generic_id = new.generic_id 
+GROUP BY
+mgt.generic_type_id `
         return knex.raw(sql)
     }
     
