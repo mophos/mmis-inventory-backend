@@ -237,7 +237,7 @@ export class RequisitionOrderModel {
 
   getOrderItemsByRequisition(db: Knex, requisitionId: any) {
     let sql = `
-      select roi.requisition_order_item_id, roi.requisition_order_id, roi.generic_id, 
+      select ro.temp_confirm_id,roi.requisition_order_item_id, roi.requisition_order_id, roi.generic_id, 
     roi.requisition_qty/ug.qty as requisition_qty, roi.unit_generic_id, mg.generic_name, mg.working_code,
     ug.qty as conversion_qty, u1.unit_name as from_unit_name, u2.unit_name as to_unit_name,
     (
@@ -778,6 +778,20 @@ export class RequisitionOrderModel {
       .where('requisition_order_id', requisitionId)
       .whereIn('generic_id', genericIds)
       .del();
+  }
+  updateTempConfirm(db: Knex, confirmId, requisitionOrderId) {
+    return db('wm_requisition_orders')
+      .where('requisition_order_id', requisitionOrderId)
+      .update('temp_confirm_id', confirmId);
+  }
+  getConfirmTemp(db: Knex, confirmId) {
+    return db('wm_requisition_confirm_item_temp')
+      .where('confirm_id', confirmId)
+  }
+  insertConfirmTemp(db: Knex, confirmId) {
+    let sql = `insert into wm_requisition_confirm_item_temp 
+    select * from wm_requisition_confirm_items where confirm_id = ${confirmId}`;
+    return db.raw(sql);
   }
 
 }
