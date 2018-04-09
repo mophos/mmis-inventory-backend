@@ -188,9 +188,9 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         let _objHead = _.clone(objHead);
         requisition.push(_objHead);
       }
-      if(requisition.length > 0) {
+      if (requisition.length > 0) {
         _list_requis.push(requisition);
-      } else if (requisition.length === 0){
+      } else if (requisition.length === 0) {
         res.render('error404');
       }
     }
@@ -1300,6 +1300,29 @@ router.get('/report/requis/day/:date', wrap(async (req, res, next) => {
   });
   res.render('requis', { hospitalName: hospitalName, today: today, requis: requis });
 }));
+
+router.get('/report/un-receive', wrap(async (req, res, next) => {
+  let db = req.db;
+
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+
+  moment.locale('th');
+  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  let unReceive = await inventoryReportModel.unReceive(db);
+  unReceive = unReceive[0];
+
+  unReceive.forEach(value => {
+    value.order_date = moment(value.order_date).format('D MMMM ') + (moment(value.order_date).get('year') + 543);
+  });
+  
+  res.render('un-receive', {
+    hospitalName: hospitalName,
+    today: today,
+    unReceive: unReceive
+  });
+}));
+
 router.get('/report/tranfer/:tranferId', wrap(async (req, res, next) => {
   let db = req.db;
   let tranferId = req.params.tranferId;
@@ -1954,6 +1977,45 @@ router.get('/report/inventorystatus/:warehouseId/:genericTypeId', wrap(async (re
     sumlist: sumlist,
     totalsum: totalsum,
     totalsumShow: totalsumShow
+  });
+}));
+
+router.get('/report/summary/disbursement/:startDate/:endDate', wrap(async (req, res, next) => {
+  let db = req.db;
+  let startDate = req.params.startDate
+  let endDate = req.params.endDate
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  moment.locale('th');
+  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate);
+  let summary = rs[0]
+  let warehouse_id = []
+  let summary_list = []
+
+  summary.forEach(v => {
+    v.cost = inventoryReportModel.comma(v.cost);
+    warehouse_id.push(v.wm_requisition)
+  });
+
+  for (let i in summary) {
+    let list = await inventoryReportModel.summaryDisbursement_list(db, startDate, endDate, warehouse_id[i]);
+    list = list[0]
+    list.forEach(v => {
+      v.cost = v.cost !== null ? v.cost : '0';
+      v.count = v.count !== null ? v.count : '0';
+      v.cost = inventoryReportModel.comma(v.cost);
+    });
+    summary_list.push(list)
+  }
+  // res.send(summary_list);
+  let month = moment(startDate).format(' MMMM ') + (moment(startDate).get('year') + 543);
+  res.render('summary_disbursement', {
+    today: today,
+    hospitalName: hospitalName,
+    summary: summary,
+    summary_list: summary_list,
+    month: month
   });
 }));
 

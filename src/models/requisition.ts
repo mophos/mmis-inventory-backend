@@ -276,9 +276,11 @@ group by wwp.warehouse_id,wwp.product_id
   
   getProductInWarehousesByGenerics(db: Knex, generics: any[], warehouseId: any) {
     return db('wm_products as wp')
-      .select('wp.*', 'mp.generic_id', 'ug.unit_generic_id', 'ug.qty as conversion_qty')
+      .select('wp.*', 'mp.generic_id', 'ug.unit_generic_id', 'ug.qty as conversion_qty',
+        db.raw('ifnull(rv.remain_qty, 0) as remain_with_reserve'), 'rv.reserve_qty')
       .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
       .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'wp.unit_generic_id')
+      .leftJoin('view_product_reserve as rv', 'rv.wm_product_id', 'wp.wm_product_id')
       .whereIn('mp.generic_id', generics)
       .where('wp.warehouse_id', warehouseId)
       .orderBy('wp.expired_date', 'asc')

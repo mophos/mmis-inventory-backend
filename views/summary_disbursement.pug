@@ -1,0 +1,75 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table
+        thead
+          tr
+            td.center.bold(colspan='6') #{hospitalName}
+          tr
+            td.center.bold(colspan='6') รายงาน สรุปการเบิกแยกตามหน่วยเบิก
+          tr
+            td.center.bold(colspan='6')
+              span ประจำเดือน #{month}
+          tr
+            td.center.bold(colspan='6')
+              | &nbsp;
+        - var c = 0
+        for a in summary
+          tr
+            th(style="width:16.6%")
+            th(style="width:16.6%")
+            th(style="width:16.6%")
+            th(style="width:16.6%")
+            th(style="width:16.6%")
+            th(style="width:16.6%")
+          tr
+            td(colspan='6',style="padding-top:0.5em") รหัสหน่วยเบิก : #{a.short_code}
+          tr
+            td(colspan='6') 
+              span(style="padding-left:1em") หน่วยเบิก : #{a.warehouse_name}
+          tr
+            td 
+              span(style="padding-left:1em") จำนวนใบเบิกรวม 
+            td(colspan='5') #{a.count_requisition}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ใบ
+          tr
+            td
+              span(style="padding-left:1em") จำนวนรายการรวม 
+            td #{a.count_requisition_item}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; รายการ
+            td
+              span(style="padding-left:1em") มูลค่ารวม 
+            td #{a.cost}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; บาท
+          tr
+            td(colspan='6')
+              span(style="padding-left:1em") แยกรายการตามประเภท
+          tr
+            td(colspan='2')
+              span(style="padding-left:1em") ~~~~~~~~~~~~~~~~
+            td
+              span จำนวนรายการ
+            td(colspan='3')
+              span มูลค่าเบิก 
+            for i in summary_list[c]
+              tr
+                td(colspan='2')
+                  span(style="padding-left:1em") #{i.generic_type_name} 
+                  if(i.account_name != null) 
+                    span (#{i.account_name})
+                td
+                  span #{i.count}
+                td
+                  span #{i.cost} บาท
+          - c ++
+          tr
+            td(colspan='6',style="padding-bottom:0.5em")
+          tr  
+            th
+            th
+            th
+            th
+            th
+            th
