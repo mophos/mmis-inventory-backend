@@ -60,7 +60,7 @@ router.get('/warehouse/search/autocomplete', async (req, res, next) => {
 
   try {
     let rs: any = await genericModel.warehouseSearchAutocomplete(db, warehouseId, q);
-    res.send(rs);
+    res.send(rs[0]);
   } catch (error) {
     console.log(error);
 

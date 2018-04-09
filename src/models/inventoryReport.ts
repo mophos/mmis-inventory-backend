@@ -1965,41 +1965,42 @@ OR sc.ref_src like ?
 
     purchasingNotGiveaway(knex: Knex, startDate: any, endDate: any) {
         let sql = `SELECT
-        pc.purchase_order_number,
-        pc.purchase_order_book_number,
-        pc.order_date,
+        ppo.purchase_order_number,
+        ppo.order_date,
         mg.working_code AS generic_code,
         mg.generic_name,
-        mp.working_code AS trade_code,
-        mp.product_name AS trade_name,
-        mu.unit_name AS small_unit,
+        mp.working_code AS product_code,
+        mp.product_name,
+        mu.unit_name,
         mug.qty AS conversion,
-        mu2.unit_name AS large_unit,
-        poi.unit_price,
-        poi.qty * mug.qty AS total_qty,
-        poi.qty * poi.unit_price AS total_cost,
+        mu2.unit_name AS package,
+        wrd.cost,
+        wrd.receive_qty * mug.qty AS total_qty,
+        wrd.receive_qty * wrd.cost AS total_cost,
         mgt.generic_type_name,
         mga.account_name,
-        mgh.name AS generic_hosp_name,
+        mgh. NAME AS generic_hosp_name,
         ml.labeler_name
     FROM
-        pc_purchasing_order pc
-    JOIN pc_purchasing_order_item poi on pc.purchase_order_id = poi.purchase_order_id
-    JOIN mm_products mp ON poi.product_id = mp.product_id
-    JOIN mm_generics mg ON mp.generic_id = mg.generic_id
-    LEFT JOIN mm_unit_generics mug ON mug.unit_generic_id = poi.unit_generic_id
-    LEFT JOIN mm_units mu ON mu.unit_id = mug.to_unit_id
-    LEFT JOIN mm_units mu2 ON mu2.unit_id = mug.from_unit_id
+        wm_receives AS wr
+    JOIN wm_receive_detail AS wrd ON wrd.receive_id = wr.receive_id
+    JOIN pc_purchasing_order AS ppo ON ppo.purchase_order_id = wr.purchase_order_id
+    JOIN wm_receive_approve AS wra ON wra.receive_id = wr.receive_id
+    JOIN mm_products AS mp ON mp.product_id = wrd.product_id
+    JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
+    JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wrd.unit_generic_id
+    JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
+    JOIN mm_units mu2 ON mu2.unit_id = mug.from_unit_id
     LEFT JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
     LEFT JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
     LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
-    JOIN mm_labelers ml ON pc.labeler_id = ml.labeler_id
+    LEFT JOIN mm_labelers ml ON ppo.labeler_id = ml.labeler_id
     WHERE
-        poi.giveaway = 'N'
-    AND pc.order_date BETWEEN '${startDate}'
+        wrd.is_free = 'N'
+    AND wr.receive_date BETWEEN '${startDate}'
     AND '${endDate}'
     ORDER BY
-	pc.purchase_order_number`
+        wr.receive_date`
         return knex.raw(sql);
     }
 
@@ -2030,6 +2031,67 @@ OR sc.ref_src like ?
     ORDER BY
         mg.generic_name
         `
+        return knex.raw(sql);
+    }
+
+    summaryDisbursement(knex: Knex, startDate: any, endDate: any) {
+        let sql = `SELECT
+        ro.wm_requisition,
+        (
+         SELECT
+          count(*)
+         FROM
+          wm_requisition_orders r
+         WHERE
+          r.wm_requisition = ro.wm_requisition
+         AND r.is_cancel = 'N'
+         GROUP BY
+          r.wm_requisition
+        ) count_requisition,
+        count(*) AS count_requisition_item,
+        SUM(wp.cost*rci.confirm_qty) AS cost,
+        ww.warehouse_name,
+        ww.short_code
+       FROM
+        wm_requisition_orders ro
+       JOIN wm_requisition_confirms rc ON ro.requisition_order_id = rc.requisition_order_id
+       JOIN wm_requisition_confirm_items rci ON rc.confirm_id = rci.confirm_id
+       JOIN wm_products wp ON rci.wm_product_id = wp.wm_product_id
+       JOIN wm_warehouses ww ON ww.warehouse_id = ro.wm_requisition
+       where ro.requisition_date BETWEEN '${startDate}' and '${endDate}'
+       GROUP BY
+        ro.wm_requisition`
+        return knex.raw(sql);
+    }
+
+    summaryDisbursement_list(knex: Knex, startDate: any, endDate: any, warehouse_id: any) {
+        let sql = `SELECT
+        mgt.generic_type_name,
+       a.*
+       FROM
+        mm_generic_types mgt
+       LEFT JOIN (
+        SELECT
+         mgt.generic_type_id,
+         mga.account_name,
+       mga.account_id,
+         count(*) AS count,
+         sum(wp.cost*rci.confirm_qty) AS cost
+        FROM
+         wm_requisition_orders ro
+        JOIN wm_requisition_confirms rc ON ro.requisition_order_id = rc.requisition_order_id
+        JOIN wm_requisition_confirm_items rci ON rc.confirm_id = rci.confirm_id
+        JOIN mm_generics mg ON rci.generic_id = mg.generic_id
+        LEFT JOIN mm_generic_types mgt ON mg.generic_type_id = mgt.generic_type_id
+        LEFT JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
+        JOIN wm_products wp ON rci.wm_product_id = wp.wm_product_id
+        WHERE
+         ro.wm_requisition = '${warehouse_id}'
+       and  ro.requisition_date BETWEEN '${startDate}' and '${endDate}'
+        GROUP BY
+         mgt.generic_type_id,
+         mga.account_id
+       ) AS a ON a.generic_type_id = mgt.generic_type_id`
         return knex.raw(sql);
     }
 

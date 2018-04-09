@@ -357,20 +357,10 @@ export class RequisitionOrderModel {
     let sql = `
       select wp.wm_product_id, floor(wp.qty/ug.qty) as remain_qty, wp.cost, wp.lot_no,
       wp.expired_date, wp.unit_generic_id, mp.product_name, mp.generic_id, u1.unit_name as from_unit_name,
-      u2.unit_name as to_unit_name, ug.qty as conversion_qty,
-      IFNULL((SELECT
-        sum(roi.confirm_qty/mug.qty) AS boox_qty
-      FROM
-        wm_requisition_orders ro
-      LEFT JOIN wm_requisition_confirms rc ON ro.requisition_order_id = rc.requisition_order_id
-      JOIN wm_requisition_confirm_items roi ON rc.confirm_id = roi.confirm_id
-      JOIN mm_products m ON roi.generic_id = m.generic_id
-      join wm_products wp on roi.wm_product_id = wp.wm_product_id
-      join mm_unit_generics mug on wp.unit_generic_id = mug.unit_generic_id
-      WHERE rc.is_approve='N' and m.product_id = mp.product_id and wp.warehouse_id='${warehouseId}'
-      GROUP BY m.product_id),0) as book_qty
+      u2.unit_name as to_unit_name, ug.qty as conversion_qty, ifnull(rv.reserve_qty, 0) as book_qty
       from wm_products as wp
       inner join mm_products as mp on mp.product_id=wp.product_id
+      left join view_product_reserve as rv on rv.wm_product_id=wp.wm_product_id
       left join mm_unit_generics as ug on ug.unit_generic_id=wp.unit_generic_id
       left join mm_units as u1 on u1.unit_id=ug.from_unit_id
       left join mm_units as u2 on u2.unit_id=ug.to_unit_id
