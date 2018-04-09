@@ -39,8 +39,8 @@ router.get('/search-autocomplete', co(async (req, res, next) => {
       rs = await productModel.adminSearchAllProducts(db, query);
     }
     
-    if (rs.length) {
-      res.send(rs);
+    if (rs[0].length) {
+      res.send(rs[0]);
     } else {
       res.send([]);
     }

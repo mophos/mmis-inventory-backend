@@ -18,55 +18,117 @@ export class GenericModel {
   }
 
   searchAutocomplete(knex: Knex, q: any) {
-    let _q = `${q}%`;
-    let _qKeyword = `%${q}%`;
-
-    return knex('mm_generics')
-      .where(w => {
-        w.where('generic_name', 'like', _q)
-          .orWhere('working_code', 'like', q)
-          .orWhere('short_code', 'like', q)
-          .orWhere('keywords', 'like', _qKeyword)
-      })
-      .orderBy('generic_name')
-      .limit(10);
+    let q_ = `${q}%`;
+    let _q_ = `%${q}%`;
+    let sql =`SELECT
+    DISTINCT *
+      FROM
+      (
+        SELECT
+          *
+        FROM
+          (
+            SELECT
+              *
+            FROM
+              mm_generics
+            WHERE
+              working_code = '${q}'
+          ) AS s
+        UNION ALL
+          SELECT
+            *
+          FROM
+            (
+              SELECT
+                *
+              FROM
+                mm_generics
+              WHERE
+                generic_name LIKE '${q_}'
+              LIMIT 5
+            ) AS s
+          UNION ALL
+            SELECT
+              *
+            FROM
+              (
+                SELECT
+                  *
+                FROM
+                  mm_generics
+                WHERE
+                  generic_name LIKE '${_q_}'
+                OR keywords LIKE '${_q_}'
+                ORDER BY
+                  generic_name
+                LIMIT 10
+              ) AS s
+      ) AS a`
+    return knex.raw(sql);
   }
 
   warehouseSearchAutocomplete(knex: Knex, warehouseId: any, q: any) {
-    let _q = `${q}%`;
-
-    let subQuery = knex('wm_products as wp')
-      .select(knex.raw('sum(wp.qty)'))
-      .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
-      .whereRaw('mp.generic_id=mg.generic_id')
-      .where('wp.warehouse_id', warehouseId)
-      .as('qty');
-    
-    return knex('mm_generics as mg')
-      .select('mg.generic_id', 'mg.generic_name', 'mg.working_code', subQuery)
-      .where(w => {
-        w.where('mg.generic_name', 'like', _q)
-          .orWhere('mg.working_code', 'like', _q)
-          .orWhere('mg.short_code', 'like', _q)
-          .orWhere('mg.keywords', 'like', _q)
-      })
-      .orderBy('mg.generic_name')
-      .limit(10);
-    
-    // let sql =`select mg.working_code,mg.generic_name,mg.generic_id,sum(wm.qty) as qty,u.unit_name,wm.unit_generic_id 
-    // from mm_generics mg 
-    // join mm_products mp on mg.generic_id=mp.generic_id
-    // join wm_products wm on wm.product_id = mp.product_id
-    // left join mm_units u on u.unit_id=mg.primary_unit_id
-    // where (mg.generic_name like '${_q}' 
-    // or mg.working_code like '${_q}'
-    // or mg.short_code like '${_q}'
-    // or mg.keywords like '${_q}')
-    // and wm.warehouse_id = '${warehouseId}'
-    // group by wm.product_id
-    // order by mg.generic_name
-    // limit 10`
-    // return knex.raw(sql);
+    let q_ = `${q}%`;
+    let _q_ = `%${q}%`;
+    let sql =`SELECT
+    DISTINCT a.generic_id,
+      a.generic_name,
+      a.working_code,
+      (
+        SELECT
+          sum(wp.qty)
+        FROM
+          wm_products AS wp
+        INNER JOIN mm_products AS mp ON mp.product_id = wp.product_id
+        WHERE
+          mp.generic_id = a.generic_id
+        AND wp.warehouse_id = ${warehouseId}
+      ) AS qty
+      FROM
+      (
+        SELECT
+          *
+        FROM
+          (
+            SELECT
+              *
+            FROM
+              mm_generics
+            WHERE
+              working_code = '${q}'
+          ) AS s
+        UNION ALL
+          SELECT
+            *
+          FROM
+            (
+              SELECT
+                *
+              FROM
+                mm_generics
+              WHERE
+                generic_name LIKE '${q_}'
+              LIMIT 5
+            ) AS s
+          UNION ALL
+            SELECT
+              *
+            FROM
+              (
+                SELECT
+                  *
+                FROM
+                  mm_generics
+                WHERE
+                  generic_name LIKE '${_q_}'
+                OR keywords LIKE '${_q_}'
+                ORDER BY
+                  generic_name
+                LIMIT 10
+              ) AS s
+      ) AS a`
+    return knex.raw(sql);
   }
   searchGenericZeroWarehouse(knex: Knex, query: any, warehouseId: any) {
     let _query = `%${query}%`;

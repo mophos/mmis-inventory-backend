@@ -243,12 +243,13 @@ router.get('/generics-requisition/:requisitionId', async (req, res, next) => {
       obj.generic_id = v.generic_id;
       obj.requisition_qty = v.requisition_qty; // base unit
       obj.products = [];
+
       rsProducts.forEach(x => {
         if (x.generic_id === v.generic_id) {
           let _obj: any = {};
           _obj.wm_product_id = x.wm_product_id;
-          _obj.remain_qty = x.qty; // base unit
-          _obj.reseve_qty = x.remain_with_reserve; // ยอดจอง จากรายการตัดจ่าย, โอน, เบิก, เติม ที่รออนุมัติ
+          _obj.remain_qty = x.remain_with_reserve; // base unit
+          _obj.reseve_qty = x.reserve_qty; // ยอดจอง จากรายการตัดจ่าย, โอน, เบิก, เติม ที่รออนุมัติ
           _obj.expired_date = x.expired_date;
           _obj.conversion_qty = x.conversion_qty;
           _obj.unit_generic_id = x.unit_generic_id;
@@ -261,7 +262,7 @@ router.get('/generics-requisition/:requisitionId', async (req, res, next) => {
     let pays = [];
 
     items.forEach((v, i) => {
-      let reqQty = v.requisition_qty - v.remain_with_reserve; // base unit
+      let reqQty = v.requisition_qty; // base unit
       let products = v.products;
 
       products.forEach((x, idx) => {
