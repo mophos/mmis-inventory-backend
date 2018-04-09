@@ -7,17 +7,17 @@ html
   body
     button.btn.btn-sm.btn-success(onclick='window.print()') Print
     table.table
-        thead
-          tr
-            td.center.bold(colspan='6') #{hospitalName}
-          tr
-            td.center.bold(colspan='6') รายงาน สรุปการเบิกแยกตามหน่วยเบิก
-          tr
-            td.center.bold(colspan='6')
-              span ประจำเดือน #{month}
-          tr
-            td.center.bold(colspan='6')
-              | &nbsp;
+      thead
+        tr
+          td.center.bold(colspan='6') #{hospitalName}
+        tr
+          td.center.bold(colspan='6') รายงาน สรุปการเบิกแยกตามหน่วยเบิก
+        tr
+          td.center.bold(colspan='6')
+            span ประจำเดือน #{month}
+        tr
+          td.center.bold(colspan='6')
+            | &nbsp;
         - var c = 0
         for a in summary
           tr
@@ -66,10 +66,10 @@ html
           - c ++
           tr
             td(colspan='6',style="padding-bottom:0.5em")
-          tr  
-            th
-            th
-            th
-            th
-            th
-            th
+        tr  
+          th
+          th
+          th
+          th
+          th
+          th
