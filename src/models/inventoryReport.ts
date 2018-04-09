@@ -1183,6 +1183,7 @@ GROUP BY
         pc.purchase_order_id,
         pc.purchase_order_number,
         pc.order_date,
+        ml.labeler_name,
         ( SELECT mp.product_name FROM mm_products AS mp WHERE mp.product_id = pci.product_id ) AS product_name,
         (
     SELECT
@@ -1946,11 +1947,11 @@ OR sc.ref_src like ?
         mug.qty AS conversion,
         mu2.unit_name AS package,
         wrd.cost,
-        wrd.receive_qty * mug.qty AS total_qty,
+        wrd.receive_qty AS total_qty,
         wrd.receive_qty * wrd.cost AS total_cost,
         mgt.generic_type_name,
         mga.account_name,
-        mgh. NAME AS generic_hosp_name,
+        mgh.name AS generic_hosp_name,
         ml.labeler_name
     FROM
         wm_receives AS wr

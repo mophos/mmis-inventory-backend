@@ -21,6 +21,7 @@ html
                 td(style='border:none;') วันที่สั่งซื้อ
                 td(style='border:none;') รายการ
                 td(style='border:none;') จำนวน
+                td(style='border:none;') ชื่อผู้จำหน่าย
             - var b = 0
                 for a in unReceive
                     - ++b
@@ -30,6 +31,7 @@ html
                             td #{a.order_date}
                             td #{a.product_name} 
                             td #{a.unit}
+                            td #{a.labeler_name}
         tfooter
             tr.dash-bottom 
                 td(colspan = '5')
