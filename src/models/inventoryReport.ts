@@ -1947,11 +1947,11 @@ OR sc.ref_src like ?
         mug.qty AS conversion,
         mu2.unit_name AS package,
         wrd.cost,
-        wrd.receive_qty * mug.qty AS total_qty,
+        wrd.receive_qty AS total_qty,
         wrd.receive_qty * wrd.cost AS total_cost,
         mgt.generic_type_name,
         mga.account_name,
-        mgh. NAME AS generic_hosp_name,
+        mgh.name AS generic_hosp_name,
         ml.labeler_name
     FROM
         wm_receives AS wr

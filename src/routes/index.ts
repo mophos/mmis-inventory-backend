@@ -1929,6 +1929,8 @@ router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req
   let rs = await inventoryReportModel.purchasingNotGiveaway(db, startDate, endDate);
   let purchase = rs[0]
   purchase.forEach(e => {
+    e.cost = inventoryReportModel.comma(e.cost);
+    e.total_cost = inventoryReportModel.comma(e.total_cost);
     e.order_date = moment(e.order_date).isValid() ? moment(e.order_date).format('DD/MM/') + (moment(e.order_date).get('year') + 543) : '-';
   });
   // res.send(rs[0]);
