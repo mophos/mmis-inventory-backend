@@ -1613,7 +1613,6 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     const receivePo = await inventoryReportModel.receiveByPoId(db, receive[i].purchase_order_id)
     receiveID.push(receivePo)
   }
-  console.log('_________________', receiveID)
 
   for (let i in receiveID) {
     let _check_receive: any = []
@@ -1707,7 +1706,9 @@ router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, 
   productReceive = productReceive[0];
   startdate = moment(startdate).format('D MMMM ') + (moment(startdate).get('year') + 543);
   enddate = moment(enddate).format('D MMMM ') + (moment(enddate).get('year') + 543);
+  let allcost: any = 0;
   productReceive.forEach(value => {
+    allcost += value.total_cost;
     value.total_cost = inventoryReportModel.comma(value.total_cost);
     value.receive_date = moment(value.receive_date).format('D/MM/YYYY');
     value.expired_date = moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543);
@@ -1717,7 +1718,16 @@ router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, 
     else { value.discount_cash = (value.discount_cash.toFixed(2)) + 'บาท' }
   });
 
-  res.render('productReceive2', { hospitalName: hospitalName, today: today, productReceive: productReceive, startdate: startdate, enddate: enddate });
+  allcost = inventoryReportModel.comma(allcost);
+
+  res.render('productReceive2', {
+    allcost: allcost,
+    hospitalName: hospitalName,
+    today: today,
+    productReceive: productReceive,
+    startdate: startdate,
+    enddate: enddate
+  });
 }));
 
 router.get('/report/product/receive', wrap(async (req, res, next) => {
@@ -1747,7 +1757,9 @@ router.get('/report/product/receive', wrap(async (req, res, next) => {
   });
 
   res.render('productReceive2', {
-    hospitalName: hospitalName, today: today, productReceive: productReceive
+    hospitalName: hospitalName,
+    today: today,
+    productReceive: productReceive
     // ,startdate:startdate,enddate:enddate
   });
 }));
@@ -1930,8 +1942,6 @@ router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req
   let rs = await inventoryReportModel.purchasingNotGiveaway(db, startDate, endDate);
   let purchase = rs[0]
   purchase.forEach(e => {
-    e.cost = inventoryReportModel.comma(e.cost);
-    e.total_cost = inventoryReportModel.comma(e.total_cost);
     e.order_date = moment(e.order_date).isValid() ? moment(e.order_date).format('DD/MM/') + (moment(e.order_date).get('year') + 543) : '-';
   });
   // res.send(rs[0]);
