@@ -18,18 +18,54 @@ export class GenericModel {
   }
 
   searchAutocomplete(knex: Knex, q: any) {
-    let _q = `${q}%`;
-    let _qKeyword = `%${q}%`;
-
-    return knex('mm_generics')
-      .where(w => {
-        w.where('generic_name', 'like', _q)
-          .orWhere('working_code', 'like', q)
-          .orWhere('short_code', 'like', q)
-          .orWhere('keywords', 'like', _qKeyword)
-      })
-      .orderBy('generic_name')
-      .limit(10);
+    let q_ = `${q}%`;
+    let _q_ = `%${q}%`;
+    let sql =`SELECT
+    DISTINCT *
+      FROM
+      (
+        SELECT
+          *
+        FROM
+          (
+            SELECT
+              *
+            FROM
+              mm_generics
+            WHERE
+              working_code = '${q}'
+          ) AS s
+        UNION ALL
+          SELECT
+            *
+          FROM
+            (
+              SELECT
+                *
+              FROM
+                mm_generics
+              WHERE
+                generic_name LIKE '${q_}'
+              LIMIT 5
+            ) AS s
+          UNION ALL
+            SELECT
+              *
+            FROM
+              (
+                SELECT
+                  *
+                FROM
+                  mm_generics
+                WHERE
+                  generic_name LIKE '${_q_}'
+                OR keywords LIKE '${_q_}'
+                ORDER BY
+                  generic_name
+                LIMIT 10
+              ) AS s
+      ) AS a`
+    return knex.raw(sql);
   }
 
   warehouseSearchAutocomplete(knex: Knex, warehouseId: any, q: any) {
