@@ -13,7 +13,7 @@ export class WarehouseModel {
         ) as his_warehouse
       from wm_warehouses as w
       left join wm_types as t on t.type_id=w.type_id
-      order by w.warehouse_id
+      order by w.short_code
     `;
 
     return knex.raw(sql, []);
@@ -386,6 +386,7 @@ export class WarehouseModel {
     left join wm_warehouses as dst on dst.warehouse_id=sn.destination_warehouse_id
     where sn.source_warehouse_id = ?
     and sn.transfer_type = ? and dst.is_enable='Y'
+    order by dst.short_code
     `;
     return knex.raw(sql, [warehouseId, type]);
   }
