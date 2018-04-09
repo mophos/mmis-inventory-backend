@@ -89,39 +89,39 @@ export class InventoryReportModel {
             mp.product_name`
         return knex.raw(sql, requisId)
     }
-    totalcost_warehouse(knex: Knex,sDate,eDate,wareHouse) {
-    //     let sql = `SELECT
-    //     mgt.generic_type_name,
-    //     ROUND((sum(ws.in_qty * ws.in_unit_cost )) - (sum( ws.out_qty * ws.out_unit_cost)), 2) AS summit,
-    //     new.in_cost as receive1m,
-    //     new.out_cost as issue1m,
-    //     ROUND((((sum( ws.in_qty * ws.in_unit_cost) - sum(ws.out_qty * ws.out_unit_cost)) + new.in_cost) - new.out_cost), 2) AS balance 
-    // FROM
-    //     wm_stock_card ws
-    //     JOIN mm_generics mg ON mg.generic_id = ws.generic_id
-    //     JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
-    //     LEFT JOIN (
-    // SELECT
-    //     mgt.generic_type_name,
-    //     mgt.generic_type_id,
-    //     ROUND(sum(ws.in_qty * ws.in_unit_cost), 2) AS in_cost,
-    //     ROUND(sum(ws.out_qty * ws.out_unit_cost), 2) AS out_cost,
-    //     ROUND(( sum( ws.in_qty * ws.in_unit_cost)) - (sum(ws.out_qty * ws.out_unit_cost)), 2) AS cost 
-    // FROM
-    //     wm_stock_card ws
-    //     JOIN mm_generics mg ON mg.generic_id = ws.generic_id
-    //     JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id 
-    // WHERE
-    //     ws.stock_date between '${sDate}' and '${eDate}'
-    //     and 
-    // GROUP BY
-    //     mgt.generic_type_id 
-    //     ) AS new ON new.generic_type_id = mgt.generic_type_id 
-    // WHERE
-    //     ws.stock_date < '${sDate}'
-    // GROUP BY
-    //     mgt.generic_type_id`
-    let sql = ` SELECT
+    totalcost_warehouse(knex: Knex, sDate, eDate, wareHouse) {
+        //     let sql = `SELECT
+        //     mgt.generic_type_name,
+        //     ROUND((sum(ws.in_qty * ws.in_unit_cost )) - (sum( ws.out_qty * ws.out_unit_cost)), 2) AS summit,
+        //     new.in_cost as receive1m,
+        //     new.out_cost as issue1m,
+        //     ROUND((((sum( ws.in_qty * ws.in_unit_cost) - sum(ws.out_qty * ws.out_unit_cost)) + new.in_cost) - new.out_cost), 2) AS balance 
+        // FROM
+        //     wm_stock_card ws
+        //     JOIN mm_generics mg ON mg.generic_id = ws.generic_id
+        //     JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
+        //     LEFT JOIN (
+        // SELECT
+        //     mgt.generic_type_name,
+        //     mgt.generic_type_id,
+        //     ROUND(sum(ws.in_qty * ws.in_unit_cost), 2) AS in_cost,
+        //     ROUND(sum(ws.out_qty * ws.out_unit_cost), 2) AS out_cost,
+        //     ROUND(( sum( ws.in_qty * ws.in_unit_cost)) - (sum(ws.out_qty * ws.out_unit_cost)), 2) AS cost 
+        // FROM
+        //     wm_stock_card ws
+        //     JOIN mm_generics mg ON mg.generic_id = ws.generic_id
+        //     JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id 
+        // WHERE
+        //     ws.stock_date between '${sDate}' and '${eDate}'
+        //     and 
+        // GROUP BY
+        //     mgt.generic_type_id 
+        //     ) AS new ON new.generic_type_id = mgt.generic_type_id 
+        // WHERE
+        //     ws.stock_date < '${sDate}'
+        // GROUP BY
+        //     mgt.generic_type_id`
+        let sql = ` SELECT
         mgt.generic_type_name,
         ROUND(
        ( sum( ws.in_qty * ws.cost ) ) - ( sum( ws.out_qty * ws.cost ) ),
@@ -169,7 +169,7 @@ export class InventoryReportModel {
         mgt.generic_type_id  `
         return knex.raw(sql)
     }
-    
+
     status_generic(knex: Knex) {
         let sql = `SELECT
 		mg.generic_id,
@@ -1205,6 +1205,38 @@ GROUP BY
         wrcd.product_id`
         return knex.raw(sql, date)
     }
+
+    unReceive(knex: Knex) {
+        let sql = `SELECT
+        pc.purchase_order_book_number,
+        pc.purchase_order_id,
+        pc.purchase_order_number,
+        pc.order_date,
+        ( SELECT mp.product_name FROM mm_products AS mp WHERE mp.product_id = pci.product_id ) AS product_name,
+        (
+    SELECT
+        CONCAT( pci.qty, ' ', uu.unit_name, '( ', mug.qty, ' ', u.unit_name, ' )' ) 
+    FROM
+        mm_unit_generics AS mug
+        JOIN mm_units AS u ON mug.to_unit_id = u.unit_id
+        JOIN mm_units AS uu ON mug.from_unit_id = uu.unit_id 
+    WHERE
+        pci.unit_generic_id = mug.unit_generic_id 
+        ) AS unit 
+    FROM
+        pc_purchasing_order AS pc
+        JOIN pc_purchasing_order_item AS pci ON pci.purchase_order_id = pc.purchase_order_id
+        JOIN mm_labelers AS ml ON ml.labeler_id = pc.labeler_id
+        JOIN l_bid_process AS cmp ON cmp.id = pc.purchase_method_id 
+    WHERE
+        pc.purchase_order_status = 'APPROVED' 
+        AND pc.purchase_order_status != 'COMPLETED' 
+        AND pc.is_cancel != 'Y' 
+    ORDER BY
+        pc.purchase_order_number DESC`;
+        return knex.raw(sql);
+    }
+
     tranfer(knex: Knex, tranferId) {
         let sql = `SELECT
         t.transfer_code,

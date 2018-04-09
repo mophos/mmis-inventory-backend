@@ -188,9 +188,9 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         let _objHead = _.clone(objHead);
         requisition.push(_objHead);
       }
-      if(requisition.length > 0) {
+      if (requisition.length > 0) {
         _list_requis.push(requisition);
-      } else if (requisition.length === 0){
+      } else if (requisition.length === 0) {
         res.render('error404');
       }
     }
@@ -1300,6 +1300,29 @@ router.get('/report/requis/day/:date', wrap(async (req, res, next) => {
   });
   res.render('requis', { hospitalName: hospitalName, today: today, requis: requis });
 }));
+
+router.get('/report/un-receive', wrap(async (req, res, next) => {
+  let db = req.db;
+
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+
+  moment.locale('th');
+  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  let unReceive = await inventoryReportModel.unReceive(db);
+  unReceive = unReceive[0];
+
+  unReceive.forEach(value => {
+    value.order_date = moment(value.order_date).format('D MMMM ') + (moment(value.order_date).get('year') + 543);
+  });
+  
+  res.render('un-receive', {
+    hospitalName: hospitalName,
+    today: today,
+    unReceive: unReceive
+  });
+}));
+
 router.get('/report/tranfer/:tranferId', wrap(async (req, res, next) => {
   let db = req.db;
   let tranferId = req.params.tranferId;
