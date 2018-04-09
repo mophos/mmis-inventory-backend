@@ -1205,6 +1205,38 @@ GROUP BY
         wrcd.product_id`
         return knex.raw(sql, date)
     }
+
+    unReceive(knex: Knex) {
+        let sql = `SELECT
+        pc.purchase_order_book_number,
+        pc.purchase_order_id,
+        pc.purchase_order_number,
+        pc.order_date,
+        ( SELECT mp.product_name FROM mm_products AS mp WHERE mp.product_id = pci.product_id ) AS product_name,
+        (
+    SELECT
+        CONCAT( pci.qty, ' ', uu.unit_name, '( ', mug.qty, ' ', u.unit_name, ' )' ) 
+    FROM
+        mm_unit_generics AS mug
+        JOIN mm_units AS u ON mug.to_unit_id = u.unit_id
+        JOIN mm_units AS uu ON mug.from_unit_id = uu.unit_id 
+    WHERE
+        pci.unit_generic_id = mug.unit_generic_id 
+        ) AS unit 
+    FROM
+        pc_purchasing_order AS pc
+        JOIN pc_purchasing_order_item AS pci ON pci.purchase_order_id = pc.purchase_order_id
+        JOIN mm_labelers AS ml ON ml.labeler_id = pc.labeler_id
+        JOIN l_bid_process AS cmp ON cmp.id = pc.purchase_method_id 
+    WHERE
+        pc.purchase_order_status = 'APPROVED' 
+        AND pc.purchase_order_status != 'COMPLETED' 
+        AND pc.is_cancel != 'Y' 
+    ORDER BY
+        pc.purchase_order_number DESC`;
+        return knex.raw(sql);
+    }
+
     tranfer(knex: Knex, tranferId) {
         let sql = `SELECT
         t.transfer_code,
