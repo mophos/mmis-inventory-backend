@@ -1183,6 +1183,7 @@ GROUP BY
         pc.purchase_order_id,
         pc.purchase_order_number,
         pc.order_date,
+        ml.labeler_name,
         ( SELECT mp.product_name FROM mm_products AS mp WHERE mp.product_id = pci.product_id ) AS product_name,
         (
     SELECT
