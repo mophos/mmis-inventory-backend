@@ -381,13 +381,14 @@ export class RequisitionOrderModel {
     floor(rci.confirm_qty/ug.qty) as confirm_qty, floor(wp.qty/ug.qty) as remain_qty, 
     wp.cost, wp.lot_no, wp.expired_date, 
     ug.qty as conversion_qty, u1.unit_name as from_unit_name, 
-    u2.unit_name as to_unit_name, mp.product_name
+    u2.unit_name as to_unit_name, mp.product_name,ifnull(rv.reserve_qty, 0) as book_qty
     from wm_requisition_confirm_items as rci
     inner join wm_products as wp on wp.wm_product_id=rci.wm_product_id
     inner join mm_unit_generics as ug on ug.unit_generic_id=wp.unit_generic_id
     inner join mm_products as mp on mp.product_id=wp.product_id
     left join mm_units as u1 on u1.unit_id=ug.from_unit_id
     left join mm_units as u2 on u2.unit_id=ug.to_unit_id
+    left join view_product_reserve as rv on rv.wm_product_id=wp.wm_product_id
     where rci.confirm_id=?
     and rci.generic_id=? 
     and wp.warehouse_id=?
