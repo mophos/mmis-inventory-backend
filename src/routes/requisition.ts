@@ -244,9 +244,6 @@ router.get('/generics-requisition/:requisitionId', async (req, res, next) => {
       obj.requisition_qty = v.requisition_qty; // base unit
       obj.products = [];
 
-      console.log(rsProducts);
-      console.log('================');
-
       rsProducts.forEach(x => {
         if (x.generic_id === v.generic_id) {
           let _obj: any = {};
@@ -261,8 +258,6 @@ router.get('/generics-requisition/:requisitionId', async (req, res, next) => {
       });
       items.push(obj);
     });
-
-    console.log(JSON.stringify(items));
 
     let pays = [];
 
