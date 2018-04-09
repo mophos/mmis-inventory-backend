@@ -1315,7 +1315,7 @@ router.get('/report/un-receive', wrap(async (req, res, next) => {
   unReceive.forEach(value => {
     value.order_date = moment(value.order_date).format('D MMMM ') + (moment(value.order_date).get('year') + 543);
   });
-  
+
   res.render('un-receive', {
     hospitalName: hospitalName,
     today: today,
@@ -1613,6 +1613,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     const receivePo = await inventoryReportModel.receiveByPoId(db, receive[i].purchase_order_id)
     receiveID.push(receivePo)
   }
+  console.log('_________________', receiveID)
 
   for (let i in receiveID) {
     let _check_receive: any = []
