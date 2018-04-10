@@ -1394,7 +1394,7 @@ export class ReceiveModel {
         WHERE
           rd.warehouse_id = '${warehouseId}'
         AND rd.receive_id = r.receive_id
-      ) and  (r.receive_code like '${_query}' or l.labeler_name like '${_query}')`;
+      ) and  (r.receive_code like '${_query}' or l.labeler_name like '${_query}' or pc.purchase_order_number like '${_query}' or pc.purchase_order_book_number like '${_query}')`;
     if (status == 'approve') {
       sql += ` and ra.receive_id is not null`
     } else if (status == 'Napprove') {
