@@ -955,7 +955,7 @@ GROUP BY
         return knex('wm_receives as wr')
             .select('wr.receive_id')
             .whereIn('wr.purchase_order_id', ID)
-            .andWhere('wr.is_cancel', 'Y')
+            .andWhere('wr.is_cancel', 'N')
             .orderBy('wr.receive_date', 'DESC')
     }
     async hospital(knex: Knex) {
