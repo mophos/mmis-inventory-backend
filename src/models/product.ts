@@ -182,12 +182,13 @@ export class ProductModel {
 
   adminGetAllProducts(knex: Knex, genericType: any, limit: number, offset: number) {
     let query = knex('wm_products as p')
-      .select('p.wm_product_id', 'p.product_id', 'mp.working_code', knex.raw('sum(p.qty) as qty'), knex.raw('sum(p.qty * p.cost) as total_cost'),
+      .select('p.wm_product_id', 'p.product_id', 'mp.working_code', knex.raw('sum(p.qty) as qty'), knex.raw('ifnull(sum(v.reserve_qty),0) as reserve_qty'), knex.raw('sum(p.qty * p.cost) as total_cost'),
       'mp.product_name', 'g.generic_name', 'g.working_code as generic_working_code', 'mp.primary_unit_id', 'u.unit_name as primary_unit_name',
       'g.min_qty', 'g.max_qty')
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
       .leftJoin('mm_generics as g', 'g.generic_id', 'mp.generic_id')
       .leftJoin('mm_units as u', 'u.unit_id', 'mp.primary_unit_id')
+      .leftJoin('view_product_reserve as v','v.wm_product_id','p.wm_product_id')
       .where('mp.mark_deleted', 'N')
       .whereIn('g.generic_type_id', genericType);
     
@@ -210,7 +211,7 @@ export class ProductModel {
     let sql = `
     select p.wm_product_id, p.product_id, sum(p.qty) as qty, floor(sum(p.qty)/ug.qty) as pack_qty, sum(p.cost*p.qty) as total_cost, p.cost, p.warehouse_id,
     w.warehouse_name, p.lot_no, p.expired_date, mpp.max_qty, mpp.min_qty, u1.unit_name as from_unit_name, ug.qty as conversion_qty,
-    u2.unit_name as to_unit_name
+    u2.unit_name as to_unit_name,v.reserve_qty
     from wm_products as p
     left join wm_warehouses as w on w.warehouse_id=p.warehouse_id
     inner join mm_products as mp on mp.product_id=p.product_id
@@ -218,6 +219,7 @@ export class ProductModel {
     inner join mm_unit_generics as ug on ug.unit_generic_id=p.unit_generic_id
     left join mm_units as u1 on u1.unit_id=ug.from_unit_id
     left join mm_units as u2 on u2.unit_id=ug.to_unit_id
+    left join view_product_reserve v on v.wm_product_id = p.wm_product_id
     where p.product_id=?
     group by p.lot_no, p.expired_date, p.warehouse_id
     HAVING sum(p.qty) != 0
@@ -638,11 +640,12 @@ group by mpp.product_id
       let sql = `
     select p.wm_product_id, p.product_id, sum(p.qty) as qty, sum(p.qty * p.cost) as total_cost,
     mp.product_name, mp.working_code, g.generic_name, g.working_code as generic_working_code, mp.primary_unit_id, u.unit_name as primary_unit_name,
-    g.min_qty, g.max_qty
+    g.min_qty, g.max_qty,ifnull(sum(v.reserve_qty),0) as reserve_qty
     from wm_products as p
     inner join mm_products as mp on mp.product_id=p.product_id
     left join mm_generics as g on g.generic_id=mp.generic_id
     left join mm_units as u on u.unit_id=mp.primary_unit_id
+    left join view_product_reserve v on v.wm_product_id = p.wm_product_id
     where mp.mark_deleted='N'
     and (
       mp.product_name like ? or 
