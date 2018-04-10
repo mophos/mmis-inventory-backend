@@ -1631,22 +1631,24 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
 
   let totalPrice: any = 0;
   let allPrice: any = 0;
+  let _bahtText: any = []
   _.forEach(check_receive, objects => {
     let _generic_name: any = []
-    let _bahtText: any = []
+    totalPrice = 0
     _.forEach(objects, object => {
       object.receive_date = moment(object.receive_date).format('D MMMM ') + (moment(object.receive_date).get('year') + 543);
       object.delivery_date = moment(object.delivery_date).format('D MMMM ') + (moment(object.delivery_date).get('year') + 543);
       object.podate = moment(object.podate).format('D MMMM ') + (moment(object.podate).get('year') + 543);
       check_receive.podate = moment(check_receive.podate).format('D MMMM ') + (moment(check_receive.podate).get('year') + 543);
       object.approve_date = moment(object.approve_date).format('D MMMM ') + (moment(object.approve_date).get('year') + 543);
-      _bahtText.push(inventoryReportModel.bahtText(object.total_price));
+      // _bahtText.push(inventoryReportModel.bahtText(object.total_price));
       totalPrice += object.total_price;
       object.total_price = inventoryReportModel.comma(object.total_price);
       _generic_name.push(object.generic_type_name)
     })
     allPrice = inventoryReportModel.comma(totalPrice);
     bahtText.push(allPrice)
+    _bahtText.push(inventoryReportModel.bahtText(totalPrice));
     _generic_name = _.join(_.uniq(_generic_name), ', ')
     generic_name.push(_generic_name)
   })
@@ -1657,6 +1659,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
 
   res.render('check_receives', {
     totalPrice: totalPrice,
+    _bahtText:_bahtText,
     chief: chief[0],
     staffReceive: staffReceive[0],
     master: master,
