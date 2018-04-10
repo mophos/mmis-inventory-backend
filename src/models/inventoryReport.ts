@@ -89,9 +89,9 @@ export class InventoryReportModel {
             mp.product_name`
         return knex.raw(sql, requisId)
     }
-    
-    totalcost_warehouse(knex: Knex,sDate,eDate,wareHouse) {
-    let sql = `SELECT
+
+    totalcost_warehouse(knex: Knex, sDate, eDate, wareHouse) {
+        let sql = `SELECT
 	mgt.generic_type_name,
 	(case WHEN sum(old.summit) IS NULL then 0 else ROUND( sum( old.summit ), 2 ) end) AS summit,
 	(case WHEN sum(new.receive1m) IS NULL then 0 else ROUND( sum( new.receive1m ), 2 ) end) AS receive1m,
@@ -955,6 +955,7 @@ GROUP BY
         return knex('wm_receives as wr')
             .select('wr.receive_id')
             .whereIn('wr.purchase_order_id', ID)
+            .andWhere('wr.is_cancel', 'Y')
             .orderBy('wr.receive_date', 'DESC')
     }
     async hospital(knex: Knex) {
