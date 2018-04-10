@@ -135,7 +135,8 @@ export class GenericModel {
     // let _warehouseId = `%${warehouseId}%`;
     let sql = `
     select p.unit_generic_id,sum(p.qty) as qty, g.generic_name, g.generic_id
-    , g.working_code, g.primary_unit_id, u.unit_name as primary_unit_name
+    , g.working_code, g.primary_unit_id, u.unit_name as primary_unit_name,
+    (select sum(vp.reserve_qty) from view_product_reserve as vp where vp.product_id = p.product_id and vp.warehouse_id = p.warehouse_id GROUP BY vp.product_id) as reserve_qty
     from wm_products as p
     inner join mm_products as mp on mp.product_id=p.product_id
     left join mm_generics as g on g.generic_id=mp.generic_id
