@@ -1315,7 +1315,7 @@ router.get('/report/un-receive', wrap(async (req, res, next) => {
   unReceive.forEach(value => {
     value.order_date = moment(value.order_date).format('D MMMM ') + (moment(value.order_date).get('year') + 543);
   });
-  
+
   res.render('un-receive', {
     hospitalName: hospitalName,
     today: today,
@@ -1631,22 +1631,24 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
 
   let totalPrice: any = 0;
   let allPrice: any = 0;
+  let _bahtText: any = []
   _.forEach(check_receive, objects => {
     let _generic_name: any = []
-    let _bahtText: any = []
+    totalPrice = 0
     _.forEach(objects, object => {
       object.receive_date = moment(object.receive_date).format('D MMMM ') + (moment(object.receive_date).get('year') + 543);
       object.delivery_date = moment(object.delivery_date).format('D MMMM ') + (moment(object.delivery_date).get('year') + 543);
       object.podate = moment(object.podate).format('D MMMM ') + (moment(object.podate).get('year') + 543);
       check_receive.podate = moment(check_receive.podate).format('D MMMM ') + (moment(check_receive.podate).get('year') + 543);
       object.approve_date = moment(object.approve_date).format('D MMMM ') + (moment(object.approve_date).get('year') + 543);
-      _bahtText.push(inventoryReportModel.bahtText(object.total_price));
+      // _bahtText.push(inventoryReportModel.bahtText(object.total_price));
       totalPrice += object.total_price;
       object.total_price = inventoryReportModel.comma(object.total_price);
       _generic_name.push(object.generic_type_name)
     })
     allPrice = inventoryReportModel.comma(totalPrice);
     bahtText.push(allPrice)
+    _bahtText.push(inventoryReportModel.bahtText(totalPrice));
     _generic_name = _.join(_.uniq(_generic_name), ', ')
     generic_name.push(_generic_name)
   })
@@ -1657,6 +1659,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
 
   res.render('check_receives', {
     totalPrice: totalPrice,
+    _bahtText:_bahtText,
     chief: chief[0],
     staffReceive: staffReceive[0],
     master: master,
@@ -1706,7 +1709,9 @@ router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, 
   productReceive = productReceive[0];
   startdate = moment(startdate).format('D MMMM ') + (moment(startdate).get('year') + 543);
   enddate = moment(enddate).format('D MMMM ') + (moment(enddate).get('year') + 543);
+  let allcost: any = 0;
   productReceive.forEach(value => {
+    allcost += value.total_cost;
     value.total_cost = inventoryReportModel.comma(value.total_cost);
     value.receive_date = moment(value.receive_date).format('D/MM/YYYY');
     value.expired_date = moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543);
@@ -1716,7 +1721,16 @@ router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, 
     else { value.discount_cash = (value.discount_cash.toFixed(2)) + 'บาท' }
   });
 
-  res.render('productReceive2', { hospitalName: hospitalName, today: today, productReceive: productReceive, startdate: startdate, enddate: enddate });
+  allcost = inventoryReportModel.comma(allcost);
+
+  res.render('productReceive2', {
+    allcost: allcost,
+    hospitalName: hospitalName,
+    today: today,
+    productReceive: productReceive,
+    startdate: startdate,
+    enddate: enddate
+  });
 }));
 
 router.get('/report/product/receive', wrap(async (req, res, next) => {
@@ -1746,7 +1760,9 @@ router.get('/report/product/receive', wrap(async (req, res, next) => {
   });
 
   res.render('productReceive2', {
-    hospitalName: hospitalName, today: today, productReceive: productReceive
+    hospitalName: hospitalName,
+    today: today,
+    productReceive: productReceive
     // ,startdate:startdate,enddate:enddate
   });
 }));
@@ -1929,8 +1945,6 @@ router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req
   let rs = await inventoryReportModel.purchasingNotGiveaway(db, startDate, endDate);
   let purchase = rs[0]
   purchase.forEach(e => {
-    e.cost = inventoryReportModel.comma(e.cost);
-    e.total_cost = inventoryReportModel.comma(e.total_cost);
     e.order_date = moment(e.order_date).isValid() ? moment(e.order_date).format('DD/MM/') + (moment(e.order_date).get('year') + 543) : '-';
   });
   // res.send(rs[0]);
