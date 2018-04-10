@@ -41,8 +41,8 @@ router.get('/search-autocomplete', async (req, res, next) => {
   let q = req.query.q;
   try {
     let rs: any = await genericModel.searchAutocomplete(db, q);
-    if (rs.length) {
-      res.send(rs);
+    if (rs[0].length) {
+      res.send(rs[0]);
     } else {
       res.send([]);
     }
