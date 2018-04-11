@@ -778,7 +778,9 @@ router.post('/approve', co(async (req, res, next) => {
       //ปรับราคาต่อแพค
       obj_adjust.unit_generic_id = v.unit_generic_id;
       obj_adjust.cost = v.cost;
-      adjust_price.push(obj_adjust);
+      if(v.cost > 0){
+        adjust_price.push(obj_adjust);
+      }
     });
 
     // get balance
