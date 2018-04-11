@@ -716,6 +716,7 @@ export class ReceiveModel {
         from pc_purchasing_order_item as pci 
         where pci.purchase_order_id=pc.purchase_order_id
         and pci.giveaway='N'
+        and pc.is_cancel = 'N'
       ) as purchase_price, 
       pc.labeler_id as vendor_id, pc.contract_id,
       cmp.name as purchase_method_name, ml.labeler_name,
@@ -723,12 +724,14 @@ export class ReceiveModel {
         select sum(pi.qty)
         from pc_purchasing_order_item as pi
         where pi.purchase_order_id=pc.purchase_order_id
+        and pc.is_cancel = 'N'
       ) as purchase_qty,
       (
         select sum(rd.receive_qty) 
         from wm_receive_detail as rd
         inner join wm_receives as r on r.receive_id=rd.receive_id
         where r.purchase_order_id=pc.purchase_order_id
+        and r.is_cancel ='N'
       ) as receive_qty,
       (
         select sum(rd.receive_qty*rd.cost) 
@@ -736,6 +739,7 @@ export class ReceiveModel {
         inner join wm_receives as r on r.receive_id=rd.receive_id
         where rd.is_free='N'
         and r.purchase_order_id=pc.purchase_order_id
+        and r.is_cancel ='N'
         
       ) as receive_price
       from pc_purchasing_order as pc
