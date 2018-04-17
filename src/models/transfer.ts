@@ -357,10 +357,9 @@ export class TransferModel {
     join mm_generics as mg on mg.generic_id = tg.generic_id
     join mm_units as mu on mu.unit_id = mg.primary_unit_id
     join (
-      select wp.warehouse_id, mp.generic_id, sum(qty) as remain_qty
-      from wm_products wp
-      join mm_products mp on mp.product_id = wp.product_id
-      group by wp.warehouse_id, mp.generic_id
+      select pr.warehouse_id, pr.generic_id, sum(pr.remain_qty) as remain_qty
+      from view_product_reserve pr
+      group by pr.warehouse_id, pr.generic_id
     ) sg on sg.generic_id = tg.generic_id and sg.warehouse_id = ${srcWarehouseId}
     where tg.transfer_id = ?
     `;
