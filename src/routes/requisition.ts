@@ -1250,6 +1250,8 @@ router.delete('/rollbackOrder/:confirmId/:requisitionOrderId', async (req, res, 
 
   try {
     await orderModel.updateTempConfirm(db, confirmId, requisitionOrderId);
+    await orderModel.removeOrderUnpaid(db, requisitionOrderId);
+    await orderModel.removeOrderUnpaidItems(db, requisitionOrderId);
     await orderModel.insertConfirmTemp(db, confirmId);
     await orderModel.removeConfirm(db, confirmId);
     await orderModel.removeConfirmItems(db, confirmId);
