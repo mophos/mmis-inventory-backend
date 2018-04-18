@@ -212,6 +212,8 @@ mgt.generic_type_id `
             ned DESC`
         return knex.raw(sql, [startdate, enddate])
     }
+
+    // คิวรี่ view stockcards หลัก
     generic_stock(knex: Knex, genericId, startDate, endDate, warehouseId) {
         let sql = `SELECT
         vscw.stock_card_id,
@@ -252,11 +254,74 @@ mgt.generic_type_id `
    vscw.warehouse_id = '${warehouseId}'
    AND
    vscw.generic_id = '${genericId}'
-   AND vscw.stock_date BETWEEN '${startDate}'
-   AND '${endDate}'
+   AND vscw.stock_date BETWEEN '${startDate} 00:00:00'
+   AND '${endDate} 23:59:59'
     ORDER BY
         vscw.stock_date,
         vscw.stock_card_id`
+        return knex.raw(sql)
+    }
+
+    // ยอดยกมาใน stockcard 
+    summit_stockcard(knex: Knex, genericId, startDate, warehouseId) {
+        let sql = `SELECT
+        vscw.stock_card_id,
+        vscw.product_id,
+        vscw.generic_id,
+        vscw.generic_name,
+        vscw.stock_date,
+        'SUMMIT' AS transaction_type,
+        'ยอดยกมา' AS comment,
+        '' AS document_ref,
+        '' AS document_ref_id,
+        vscw.small_unit,
+        vscw.large_unit,
+        vscw.conversion_qty,
+        vscw.dosage_name,
+        '' AS lot_no,
+        vscw.expired_date,
+        vscw.ref_src,
+        vscw.ref_dst,
+        '' AS warehouse_name,
+        sum(vscw.in_qty) - sum(vscw.out_qty) AS in_qty,
+        0 AS out_qty,
+        vscw.cost,
+        sum(vscw.in_qty) - sum(vscw.out_qty) AS balance_generic_qty,
+        sum(vscw.in_qty) - sum(vscw.out_qty) AS balance_qty,
+        vscw.balance_unit_cost,
+        vscw.balance_amount,
+        vscw.warehouse_id,
+        '' AS delivery_code,
+        '' AS delivery_code_other
+    FROM
+        view_stock_card_warehouse AS vscw
+    WHERE
+        vscw.warehouse_id = '${warehouseId}'
+    AND vscw.generic_id = '${genericId}'
+    AND vscw.stock_date < '${startDate} 00:00:00'
+    GROUP BY
+        vscw.generic_id`
+        return knex.raw(sql)
+    }
+
+    // คิวรี่ คงคลังใน stockcard โชว์เป็น แพ๊ค
+    inventory_stockcard(knex: Knex, genericId, endDate, warehouseId) {
+        let sql = `SELECT
+        vscw.unit_generic_id,
+        vscw.lot_no,
+        sum(vscw.in_qty) AS in_qty,
+        sum(vscw.out_qty) AS out_qty,
+        vscw.conversion_qty,
+        vscw.large_unit,
+        vscw.small_unit
+    FROM
+        view_stock_card_warehouse AS vscw
+    WHERE
+        vscw.warehouse_id = '${warehouseId}'
+    AND vscw.generic_id = '${genericId}'
+    AND vscw.stock_date < '${endDate} 23:59:59'
+    GROUP BY
+        vscw.unit_generic_id`
         return knex.raw(sql)
     }
 
