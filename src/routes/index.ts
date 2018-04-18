@@ -10,6 +10,7 @@ import { StockCard } from '../models/stockcard';
 import { IssueModel } from '../models/issue'
 import { TIMEOUT } from 'dns';
 import { awaitExpression } from 'babel-types';
+import { Z_VERSION_ERROR } from 'zlib';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const serialModel = new SerialModel();
@@ -554,6 +555,118 @@ router.get('/report/generic/stock2/', wrap(async (req, res, next) => {
   });
 }));
 
+router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
+  let db = req.db;
+  let genericId = req.query.genericId;
+  let startDate = req.query.startDate;
+  let endDate = req.query.endDate;
+  let warehouseId = req.query.warehouseId;
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+
+  moment.locale('th');
+  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
+  let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
+
+  startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
+  endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+
+  let _generic_stock: any = [];
+  let _generic_name = [];
+  let _unit = [];
+  let _dosage_name = [];
+  let _conversion_qty = [];
+  let generic_stock: any = [];
+  let _genericId: any = [];
+  let summit: any = [];
+  let _summit: any = [];
+  let balance: any = [];
+  let inventory_stock: any = [];
+  let _inventory_stock: any = [];
+  genericId = Array.isArray(genericId) ? genericId : [genericId]
+  Array.isArray(genericId)
+  // console.log(genericId, '**************');
+
+  for (let id in genericId) {
+    summit = await inventoryReportModel.summit_stockcard(db, genericId[id], _startDate, warehouseId)
+    generic_stock = await inventoryReportModel.generic_stock(db, genericId[id], _startDate, _endDate, warehouseId);
+    inventory_stock = await inventoryReportModel.inventory_stockcard(db, genericId[id], _endDate, warehouseId)
+
+    if (generic_stock[0].length > 0) {
+      _genericId.push(generic_stock[0][0].generic_id)
+      _generic_name.push(generic_stock[0][0].generic_name)
+      _dosage_name.push(generic_stock[0][0].dosage_name)
+      if (generic_stock[0][0].conversion_qty) {
+        _unit.push(generic_stock[0][0].large_unit + ' (' + generic_stock[0][0].conversion_qty + ' ' + generic_stock[0][0].small_unit + ')')
+      } else {
+        _unit.push(generic_stock[0][0].small_unit)
+      }
+
+      summit[0].forEach(e => {
+        e.stock_date = moment(e.stock_date).format('DD/MM/') + (moment(e.stock_date).get('year') + 543);
+        e.expired_date = moment(e.expired_date, 'YYYY-MM-DD').isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year')) : '-';
+        e.balance_generic_qty = inventoryReportModel.commaQty(e.balance_generic_qty);
+        e.in_cost = inventoryReportModel.comma(+e.in_qty * +e.balance_unit_cost);
+        e.out_cost = inventoryReportModel.comma(+e.out_qty * +e.balance_unit_cost);
+        if (e.conversion_qty) {
+          e.balance_unit_cost = inventoryReportModel.comma(e.balance_unit_cost * e.conversion_qty);
+          e.in_qty = inventoryReportModel.commaQty(e.in_qty / e.conversion_qty);
+          e.out_qty = inventoryReportModel.commaQty(e.out_qty / e.conversion_qty);
+        } else {
+          e.balance_unit_cost = inventoryReportModel.comma(e.balance_unit_cost);
+          e.in_qty = inventoryReportModel.commaQty(e.in_qty);
+          e.out_qty = inventoryReportModel.commaQty(e.out_qty);
+        }
+      });
+
+      generic_stock[0].forEach(v => {
+        v.stock_date = moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543);
+        v.expired_date = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('DD/MM/') + (moment(v.expired_date).get('year')) : '-';
+        v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
+        v.in_cost = inventoryReportModel.comma(+v.in_qty * +v.balance_unit_cost);
+        v.out_cost = inventoryReportModel.comma(+v.out_qty * +v.balance_unit_cost);
+        if (v.conversion_qty) {
+          v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost * v.conversion_qty);
+          v.in_qty = inventoryReportModel.commaQty(v.in_qty / v.conversion_qty);
+          v.out_qty = inventoryReportModel.commaQty(v.out_qty / v.conversion_qty);
+        } else {
+          v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost);
+          v.in_qty = inventoryReportModel.commaQty(v.in_qty);
+          v.out_qty = inventoryReportModel.commaQty(v.out_qty);
+        }
+      });
+
+      inventory_stock[0].forEach(e => {
+        e.in_qty = +e.in_qty - +e.out_qty
+        e.in_qty = inventoryReportModel.commaQty(e.in_qty / e.conversion_qty);
+      });
+
+      _inventory_stock.push(inventory_stock[0])
+      _summit.push(summit[0])
+      _generic_stock.push(generic_stock[0])
+    }
+  }
+  if (_generic_stock.length <= 0) {
+    res.render('error404');
+  }
+  res.render('generic_stock3', {
+    generic_stock: generic_stock,
+    _generic_stock: _generic_stock,
+    _summit: _summit,
+    _inventory_stock: _inventory_stock,
+    hospitalName: hospitalName,
+    today: today,
+    genericId: genericId,
+    generic_name: _generic_name,
+    unit: _unit,
+    conversion_qty: _conversion_qty,
+    dosage_name: _dosage_name,
+    _genericId: _genericId,
+    startDate: startDate,
+    endDate: endDate
+  });
+}));
 
 router.get('/report/count/requis/:date', wrap(async (req, res, next) => {
   let db = req.db;
@@ -1659,7 +1772,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
 
   res.render('check_receives', {
     totalPrice: totalPrice,
-    _bahtText:_bahtText,
+    _bahtText: _bahtText,
     chief: chief[0],
     staffReceive: staffReceive[0],
     master: master,
