@@ -1,0 +1,118 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    - for(var i in _genericId)
+      span.page
+      table.table
+        thead
+          tr 
+            td.center.bold(colspan='10') #{hospitalName}
+          tr 
+            td.center.bold(colspan='10') บัญชีคุมคลังเวชภัณฑ์
+          tr 
+            td.center(colspan='10') ตั้งแต่วันที่ #{startDate} ถึง #{endDate}
+          tr 
+            td.left(colspan='5') รหัสเวชภัณฑ์ #{genericId[i]}
+            //- td.right(colspan='5') หน่วย #{unit[i]}
+          tr 
+            td.left(colspan='5') ชื่อสามัญ #{generic_name[i]}
+            td.right(colspan='5') 
+              if(dosage_name[i])
+                | รูปแบบ #{dosage_name[i]}
+          tr 
+            td.left(colspan='10') ณ วันที่ #{today}
+          tr
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") วัน/เดือน/ปี
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") เลขที่เอกสาร
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") รับ/จ่าย
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") หน่วยงาน
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") รับ / จ่าย
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") รับ / จ่าย
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px; solid;") คงคลัง
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") ราคา
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") มูลค่า
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") Lot.
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") วันหมดอายุ
+        tbody
+        - var y=0
+        for g in _summit[i]
+          - y++
+          tr 
+            td(style="border:1px solid; padding:0.2em;") #{g.stock_date}
+            td(style="border:1px solid; padding:0.2em;") #{g.document_ref}
+              if(g.delivery_code)
+                br
+                | #{g.delivery_code}
+              if(g.delivery_code_other)
+                br
+                | #{g.delivery_code_other}
+            td(style="border:1px solid; padding:0.2em;") #{g.comment}
+            td(style="border:1px solid; padding:0.2em;") #{g.warehouse_name}
+            td.right(style="border:1px solid; padding:0.2em;") 
+              if(g.in_qty != 0)
+                | #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
+              else
+                | #{g.out_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
+            td.right(style="border:1px solid; padding:0.2em;") 
+              if(g.in_qty != 0)
+                | #{g.conversion_qty * g.in_qty} 
+              else
+                | #{g.conversion_qty * g.out_qty}
+            td.right(style="border:1px solid; padding:0.2em;") #{g.balance_generic_qty}
+            td.right(style="border:1px solid; padding:0.2em;") #{g.balance_unit_cost}
+            td.right(style="border:1px solid; padding:0.2em;")
+              if(g.in_qty != 0)
+                | #{g.in_cost}
+              else
+                | #{g.out_cost}
+            td.right(style="border:1px solid; padding:0.2em;") #{g.lot_no}
+            td(style="border:1px solid; padding:0.2em;") #{g.expired_date}        
+
+        for a in _generic_stock[i]
+          - y++
+          tr 
+            td(style="border:1px solid; padding:0.2em;") #{a.stock_date}
+            td(style="border:1px solid; padding:0.2em;") #{a.document_ref}
+              if(a.delivery_code)
+                br
+                | #{a.delivery_code}
+              if(a.delivery_code_other)
+                br
+                | #{a.delivery_code_other}
+            td(style="border:1px solid; padding:0.2em;") #{a.comment}
+            td(style="border:1px solid; padding:0.2em;") #{a.warehouse_name}
+            td.right(style="border:1px solid; padding:0.2em;") 
+              if(a.in_qty != 0)
+                | #{a.in_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
+              else
+                | #{a.out_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
+            td.right(style="border:1px solid; padding:0.2em;") 
+              if(a.in_qty != 0)
+                | #{a.conversion_qty * a.in_qty}
+              else
+                | #{a.conversion_qty * a.out_qty}
+            td.right(style="border:1px solid; padding:0.2em;") #{a.balance_generic_qty}
+            td.right(style="border:1px solid; padding:0.2em;") #{a.balance_unit_cost}
+            td.right(style="border:1px solid; padding:0.2em;")
+              if(a.in_qty != 0)
+                | #{a.in_cost}
+              else
+                | #{a.out_cost}
+            td.right(style="border:1px solid; padding:0.2em;") #{a.lot_no}
+            td(style="border:1px solid; padding:0.2em;") #{a.expired_date}
+        tr
+          td(colspan='11') &nbsp;
+        tr
+          td(colspan='11') คงคลัง ณ วันที่ #{endDate}
+        for s in _inventory_stock[i]
+          tr
+            td(colspan='11') #{s.in_qty} #{s.large_unit} (#{s.conversion_qty} #{s.small_unit})
+        //- tfoot 
+        //-   tr.tbfooter
+        //-     td(colspan='10')
+      .pagebreak

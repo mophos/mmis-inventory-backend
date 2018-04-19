@@ -103,7 +103,8 @@ export class RequisitionOrderModel {
     return rs.orderBy('ro.requisition_code', 'DESC');
   }
 
-  getListWaiting(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, limit: number, offset: number) {
+  getListWaiting(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, limit: number, offset: number, query = '', fillterCancel) {
+    let _query = `%${query}%`;
     let sql = `
     select ro.*, w1.warehouse_name as requisition_warehouse_name, 
     w2.warehouse_name as withdraw_warehouse_name, rt.requisition_type, 
@@ -125,7 +126,15 @@ export class RequisitionOrderModel {
       select distinct rc.requisition_order_id 
       from wm_requisition_confirms as rc
     ) and ro.is_temp='N' `;
-
+    if (query) {
+      sql += ` and (ro.requisition_code like '${_query}' or 
+      w1.warehouse_name like '${_query}')`;
+    }
+    if (fillterCancel === 'nCancel') {
+      sql += ` and ro.is_cancel = 'N' `;
+    } else if (fillterCancel === 'cancel') {
+      sql += ` and ro.is_cancel = 'Y' `;
+    }
     if (srcWarehouseId) {
       sql += ` and ro.wm_requisition = ? order by ro.requisition_code DESC
       limit ? offset ?`;
@@ -137,7 +146,8 @@ export class RequisitionOrderModel {
     }
   }
 
-  totalListWaiting(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null) {
+  totalListWaiting(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, query = '', fillterCancel) {
+    let _query = `%${query}%`;
     let sql = `
     select count(*) as total
     from wm_requisition_orders as ro
@@ -147,6 +157,14 @@ export class RequisitionOrderModel {
       from wm_requisition_confirms as rc
     ) and ro.is_temp='N' `;
 
+    if (query) {
+      sql += ` and (ro.requisition_code like '${_query}')`;
+    }
+    if (fillterCancel === 'nCancel') {
+      sql += ` and ro.is_cancel = 'N' `;
+    } else if (fillterCancel === 'cancel') {
+      sql += ` and ro.is_cancel = 'Y' `;
+    }
     if (srcWarehouseId) {
       sql += ` and ro.wm_requisition = ?`;
       return db.raw(sql, [srcWarehouseId]);
@@ -156,7 +174,8 @@ export class RequisitionOrderModel {
     }
   }
 
-  getListWaitingApprove(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, limit: number, offset: number) {
+  getListWaitingApprove(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, limit: number, offset: number, query = '', fillterCancel = 'all') {
+    let _q = `%${query}%`;
     let sqlSrc = `
       select
       rc.confirm_id, rc.confirm_date, rc.requisition_order_id, rc.is_cancel, 
@@ -166,11 +185,20 @@ export class RequisitionOrderModel {
       inner join wm_requisition_orders as ro on ro.requisition_order_id=rc.requisition_order_id
       left join wm_requisition_type as rt on rt.requisition_type_id=ro.requisition_type_id
       inner join wm_warehouses as wh on wh.warehouse_id=ro.wm_withdraw
-      where ro.wm_requisition=? and rc.is_approve<>'Y'
-      group by rc.requisition_order_id
+      where ro.wm_requisition='${srcWarehouseId}' and rc.is_approve<>'Y'`
+    if (query) {
+      sqlSrc += ` and (ro.requisition_code like '${_q}' or
+        wh.warehouse_name like '${_q}') `
+    }
+    if (fillterCancel === 'nCancel') {
+      sqlSrc += ` and rc.is_cancel = 'N' `;
+    } else if (fillterCancel === 'cancel') {
+      sqlSrc += ` and rc.is_cancel = 'Y' `;
+    }
+    sqlSrc += `group by rc.requisition_order_id
       having confirm_qty>0
       order by ro.requisition_code desc
-      limit ? offset ?
+      limit ${limit} offset ${offset}
     `;
 
     let sqlDst = `
@@ -182,27 +210,46 @@ export class RequisitionOrderModel {
       inner join wm_requisition_orders as ro on ro.requisition_order_id=rc.requisition_order_id
       left join wm_requisition_type as rt on rt.requisition_type_id=ro.requisition_type_id
       inner join wm_warehouses as wh on wh.warehouse_id=ro.wm_requisition
-      where ro.wm_withdraw=? and rc.is_approve<>'Y'
-      group by rc.requisition_order_id
+      where ro.wm_withdraw='${dstWarehouseId}' and rc.is_approve<>'Y'`;
+    if (query) {
+      sqlDst += ` and (ro.requisition_code like '${_q}' or
+        wh.warehouse_name like '${_q}') `
+    }
+    if (fillterCancel === 'nCancel') {
+      sqlDst += ` and rc.is_cancel = 'N' `;
+    } else if (fillterCancel === 'cancel') {
+      sqlDst += ` and rc.is_cancel = 'Y' `;
+    }
+    sqlDst += `group by rc.requisition_order_id
       having confirm_qty>0
       order by ro.requisition_code desc
-      limit ? offset ?
+      limit ${limit} offset ${offset}
     `;
 
-    return srcWarehouseId ? db.raw(sqlSrc, [srcWarehouseId, limit, offset]) : db.raw(sqlDst, [dstWarehouseId, limit, offset]);
+    return srcWarehouseId ? db.raw(sqlSrc) : db.raw(sqlDst);
   }
 
-  totalListWaitingApprove(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null) {
+  totalListWaitingApprove(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, query, fillterCancel) {
+    let _q = `%${query}%`;
     let sqlSrc = `
       select count(*) total
       from (
         select count(*) as total
         from wm_requisition_confirms as rc
         inner join wm_requisition_orders as ro on ro.requisition_order_id=rc.requisition_order_id
-        where ro.wm_requisition=? and rc.is_approve<>'Y'
-        group by rc.requisition_order_id
-        having confirm_qty>0 ) t
-    `;
+        inner join wm_warehouses as wh on wh.warehouse_id=ro.wm_withdraw
+        where ro.wm_requisition='${srcWarehouseId}' and rc.is_approve<>'Y'`
+    if (query) {
+      sqlSrc += ` and (ro.requisition_code like '${_q}' or
+          wh.warehouse_name like '${_q}') `
+    }
+    if (fillterCancel === 'nCancel') {
+      sqlSrc += ` and rc.is_cancel = 'N' `;
+    } else if (fillterCancel === 'cancel') {
+      sqlSrc += ` and rc.is_cancel = 'Y' `;
+    }
+    sqlSrc += `group by rc.requisition_order_id
+        having confirm_qty>0 ) t`;
 
     let sqlDst = `
       select count(*) total
@@ -210,29 +257,71 @@ export class RequisitionOrderModel {
         select (select ifnull(sum(rci.confirm_qty), 0) from wm_requisition_confirm_items as rci where rci.confirm_id=rc.confirm_id) as confirm_qty
         from wm_requisition_confirms as rc
         inner join wm_requisition_orders as ro on ro.requisition_order_id=rc.requisition_order_id
-        where ro.wm_withdraw=? and rc.is_approve<>'Y'
-        group by rc.requisition_order_id
-        having confirm_qty>0 ) t
-    `;
+        inner join wm_warehouses as wh on wh.warehouse_id=ro.wm_requisition
+        where ro.wm_withdraw='${dstWarehouseId}' and rc.is_approve<>'Y'`
+    if (query) {
+      sqlDst += ` and (ro.requisition_code like '${_q}' or
+          wh.warehouse_name like '${_q}') `
+    }
+    if (fillterCancel === 'nCancel') {
+      sqlDst += ` and rc.is_cancel = 'N' `;
+    } else if (fillterCancel === 'cancel') {
+      sqlDst += ` and rc.is_cancel = 'Y' `;
+    }
+    sqlDst += `group by rc.requisition_order_id
+        having confirm_qty>0 ) t`;
 
-    return srcWarehouseId ? db.raw(sqlSrc, [srcWarehouseId]) : db.raw(sqlDst, [dstWarehouseId]);
+    return srcWarehouseId ? db.raw(sqlSrc) : db.raw(sqlDst);
   }
 
-  getListApproved(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null) {
-    let rs = db('wm_requisition_orders as ro')
-      .select('ro.*', 'w1.warehouse_name as requisition_warehouse_name', 'rc.approve_date',
-        'w2.warehouse_name as withdraw_warehouse_name', 'rt.requisition_type', 'rc.confirm_id')
-      .leftJoin('wm_warehouses as w1', 'w1.warehouse_id', 'ro.wm_requisition')
-      .leftJoin('wm_warehouses as w2', 'w2.warehouse_id', 'ro.wm_withdraw')
-      .leftJoin('wm_requisition_type as rt', 'rt.requisition_type_id', 'ro.requisition_type_id')
-      // .whereIn('ro.requisition_id', qConfirm)
-      .innerJoin('wm_requisition_confirms as rc', 'rc.requisition_order_id', 'ro.requisition_order_id')
-      .where('rc.is_approve', 'Y');
+  getListApproved(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, limit: number = 15, offset: number = 0, query = '') {
+    let q = `%${query}%`;
+    let sql = `select ro.*, w1.warehouse_name as requisition_warehouse_name, rc.approve_date,
+    w2.warehouse_name as withdraw_warehouse_name, rt.requisition_type, rc.confirm_id 
+    from wm_requisition_orders as ro
+    left join wm_warehouses as w1 on w1.warehouse_id = ro.wm_requisition
+    left join wm_warehouses as w2 on w1.warehouse_id = ro.wm_withdraw
+    left join wm_requisition_type as rt on rt.requisition_type_id = ro.requisition_type_id
+    inner join wm_requisition_confirms as rc on rc.requisition_order_id = ro.requisition_order_id
+    where rc.is_approve = 'Y' `;
 
-    if (srcWarehouseId) rs.where('ro.wm_requisition', srcWarehouseId);
-    if (dstWarehouseId) rs.where('ro.wm_withdraw', dstWarehouseId);
+    if (srcWarehouseId) {
+      sql += ` and ro.wm_requisition = '${srcWarehouseId}' `;
+    }
+    if (dstWarehouseId) {
+      sql += ` and ro.wm_withdraw = '${dstWarehouseId}' `;
+    }
+    if (query) {
+      sql += ` and (ro.requisition_code like '${q}' or
+      w1.warehouse_name like '${q}') `
+    }
+    sql += ` order by ro.requisition_code desc
+    limit ${limit} offset ${offset}`;
 
-    return rs.orderBy('ro.requisition_code', 'DESC');
+    return db.raw(sql);
+  }
+
+  totalListApproved(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, query) {
+    let q = `%${query}%`;
+    let sql = `select count(*) as total
+    from wm_requisition_orders as ro
+    left join wm_warehouses as w1 on w1.warehouse_id = ro.wm_requisition
+    left join wm_warehouses as w2 on w1.warehouse_id = ro.wm_withdraw
+    left join wm_requisition_type as rt on rt.requisition_type_id = ro.requisition_type_id
+    inner join wm_requisition_confirms as rc on rc.requisition_order_id = ro.requisition_order_id
+    where rc.is_approve = 'Y' `;
+
+    if (srcWarehouseId) {
+      sql += ` and ro.wm_requisition = '${srcWarehouseId}' `;
+    }
+    if (dstWarehouseId) {
+      sql += ` and ro.wm_withdraw = '${dstWarehouseId}' `;
+    }
+    if (query) {
+      sql += ` and (ro.requisition_code like '${q}' or
+      w1.warehouse_name like '${q}') `
+    }
+    return db.raw(sql);
   }
 
   getOrderItemsByRequisition(db: Knex, requisitionId: any) {
@@ -398,8 +487,8 @@ export class RequisitionOrderModel {
     return db.raw(sql, [confirmId, genericId, warehouseId]);
   }
 
-  getUnPaidOrders(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, limti: number, offset: number) {
-
+  getUnPaidOrders(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, limit: number, offset: number, query = '', fillterCancel= 'all') {
+    let _q = `%${query}%`
     let sql = `
     select rou.requisition_order_unpaid_id, rou.unpaid_date, rou.requisition_order_id, whr.warehouse_name as requisition_warehouse, 
     whw.warehouse_name as withdraw_warehouse, ro.requisition_code, ro.requisition_date, rt.requisition_type
@@ -408,9 +497,18 @@ export class RequisitionOrderModel {
     inner join wm_warehouses as whr on whr.warehouse_id=ro.wm_requisition
     inner join wm_warehouses as whw on whw.warehouse_id=ro.wm_withdraw
     left join wm_requisition_type as rt on rt.requisition_type_id=ro.requisition_type_id
-    where rou.is_paid='N' and rou.is_cancel='N'
-    order by ro.requisition_code DESC
-    limit ? offset ?
+    where rou.is_paid='N' and rou.is_cancel='N'`;
+    if (query) {
+      sql += ` and (ro.requisition_code like '${_q}' or
+      whr.warehouse_name like '${_q}') `
+    }
+    if (fillterCancel === 'nCancel') {
+      sql += ` and ro.is_cancel = 'N' `;
+    } else if (fillterCancel === 'cancel') {
+      sql += ` and ro.is_cancel = 'Y' `;
+    }
+    sql += `order by ro.requisition_code DESC
+    limit ${limit} offset ${offset}
     `;
 
     let sqlWarehouse = `
@@ -421,10 +519,20 @@ export class RequisitionOrderModel {
     inner join wm_warehouses as whr on whr.warehouse_id=ro.wm_requisition
     inner join wm_warehouses as whw on whw.warehouse_id=ro.wm_withdraw
     left join wm_requisition_type as rt on rt.requisition_type_id=ro.requisition_type_id
-    where rou.is_paid='N' and rou.is_cancel='N'
-    and ro.wm_requisition=?
+    where rou.is_paid='N' and rou.is_cancel='N'`;
+    if (query) {
+      sqlWarehouse += ` and (ro.requisition_code like '${_q}' or
+      whr.warehouse_name like '${_q}') `
+    }
+    if (fillterCancel === 'nCancel') {
+      sqlWarehouse += ` and ro.is_cancel = 'N' `;
+    } else if (fillterCancel === 'cancel') {
+      sqlWarehouse += ` and ro.is_cancel = 'Y' `;
+    }
+    sqlWarehouse += `
+    and ro.wm_requisition='${srcWarehouseId}'
     order by ro.requisition_code DESC
-    limit ? offset ?
+    limit ${limit} offset ${offset}
     `;
 
     let sqlWarehouseWithdraw = `
@@ -435,42 +543,77 @@ export class RequisitionOrderModel {
     inner join wm_warehouses as whr on whr.warehouse_id=ro.wm_requisition
     inner join wm_warehouses as whw on whw.warehouse_id=ro.wm_withdraw
     left join wm_requisition_type as rt on rt.requisition_type_id=ro.requisition_type_id
-    where rou.is_paid='N' and rou.is_cancel='N'
-    and ro.wm_withdraw=?
+    where rou.is_paid='N' and rou.is_cancel='N'`;
+    if (query) {
+      sqlWarehouseWithdraw += ` and (ro.requisition_code like '${_q}' or
+      whr.warehouse_name like '${_q}') `
+    }
+    if (fillterCancel === 'nCancel') {
+      sqlWarehouseWithdraw += ` and ro.is_cancel = 'N' `;
+    } else if (fillterCancel === 'cancel') {
+      sqlWarehouseWithdraw += ` and ro.is_cancel = 'Y' `;
+    }
+    sqlWarehouseWithdraw += `
+    and ro.wm_withdraw='${dstWarehouseId}'
     order by ro.requisition_code DESC
-    limit ? offset ?
+    limit ${limit} offset ${offset}
     `;
 
-    return srcWarehouseId ? db.raw(sqlWarehouse, [srcWarehouseId, limti, offset])
-      : dstWarehouseId ? db.raw(sqlWarehouseWithdraw, [dstWarehouseId, limti, offset]) : db.raw(sql, [limti, offset]);
+    return srcWarehouseId ? db.raw(sqlWarehouse) : dstWarehouseId ? db.raw(sqlWarehouseWithdraw) : db.raw(sql);
   }
 
-  totalUnPaidOrders(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null) {
-
+  totalUnPaidOrders(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, query = '', fillterCancel) {
+    let _q = `%${query}%`
     let sql = `
     select count(*) as total
     from wm_requisition_order_unpaids as rou
-    where rou.is_paid='N' and rou.is_cancel='N'
-    `;
+    inner join wm_requisition_orders as ro on ro.requisition_order_id=rou.requisition_order_id
+    inner join wm_warehouses as whr on whr.warehouse_id=ro.wm_requisition
+    where rou.is_paid='N' and rou.is_cancel='N'`;
+    if (query) {
+      sql += ` and (ro.requisition_code like '${_q}' or
+      whr.warehouse_name like '${_q}') `;
+    }
+    if (fillterCancel === 'nCancel') {
+      sql += ` and ro.is_cancel = 'N' `;
+    } else if (fillterCancel === 'cancel') {
+      sql += ` and ro.is_cancel = 'Y' `;
+    }
 
     let sqlWarehouse = `
     select count(*) as total
     from wm_requisition_order_unpaids as rou
     inner join wm_requisition_orders as ro on ro.requisition_order_id=rou.requisition_order_id
-    where rou.is_paid='N' and rou.is_cancel='N'
-    and ro.wm_requisition=?
-    `;
+    inner join wm_warehouses as whr on whr.warehouse_id=ro.wm_requisition
+    where rou.is_paid='N' and rou.is_cancel='N'`;
+    if (query) {
+      sql += ` and (ro.requisition_code like '${_q}' or
+      whr.warehouse_name like '${_q}') `;
+    }
+    sqlWarehouse += ` and ro.wm_requisition='${srcWarehouseId}'`;
+    if (fillterCancel === 'nCancel') {
+      sqlWarehouse += ` and ro.is_cancel = 'N' `;
+    } else if (fillterCancel === 'cancel') {
+      sqlWarehouse += ` and ro.is_cancel = 'Y' `;
+    }
 
     let sqlWarehouseWithdraw = `
     select count(*) as total
     from wm_requisition_order_unpaids as rou
     inner join wm_requisition_orders as ro on ro.requisition_order_id=rou.requisition_order_id
+    inner join wm_warehouses as whr on whr.warehouse_id=ro.wm_requisition
     where rou.is_paid='N' and rou.is_cancel='N'
-    and ro.wm_withdraw=?
-    `;
-
-    return srcWarehouseId ? db.raw(sqlWarehouse, [srcWarehouseId])
-      : dstWarehouseId ? db.raw(sqlWarehouseWithdraw, [dstWarehouseId]) : db.raw(sql, []);
+    and ro.wm_withdraw='${dstWarehouseId}'`;
+    if (query) {
+      sqlWarehouseWithdraw += ` and (ro.requisition_code like '${_q}' or
+      whr.warehouse_name like '${_q}') `;
+    }
+    if (fillterCancel === 'nCancel') {
+      sqlWarehouseWithdraw += ` and ro.is_cancel = 'N' `;
+    } else if (fillterCancel === 'cancel') {
+      sqlWarehouseWithdraw += ` and ro.is_cancel = 'Y' `;
+    }
+    return srcWarehouseId ? db.raw(sqlWarehouse) : dstWarehouseId ? db.raw(sqlWarehouseWithdraw) : db.raw(sql);
   }
 
   /*******  confirm ********/
