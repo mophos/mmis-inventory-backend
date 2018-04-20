@@ -257,7 +257,6 @@ mgt.generic_type_id `
    AND vscw.stock_date BETWEEN '${startDate} 00:00:00'
    AND '${endDate} 23:59:59'
     ORDER BY
-        vscw.stock_date,
         vscw.stock_card_id`
         return knex.raw(sql)
     }
