@@ -23,7 +23,7 @@ html
         | ซึ่ง #{check_receive[s][0].labeler_name} ผู้ขายได้นำส่งตามใบสั่งซื้อของ#{hospitalName}
         | เลขที่ #{check_receive[s][0].purchase_order_number} ลงวันที่ #{check_receive[s][0].podate} 
         | เพื่อใช้ในงานการรักษาของ#{hospitalName}
-        - if(length[s] <= 4)
+        - if(length[s] <= 5)
           | ดังปรากฏรายละเอียดตรวจรับ คือ
           table.table
             - var i = 0
@@ -112,11 +112,11 @@ html
             td
           tr
             td
-            td(style="height:50px;")
+            td(style="height:20px;")
             td
           tr
             td
-            td(style="height:70px;").center ทราบ
+            td(style="height:60px;").center ทราบ
             td
           tr
             td.right(width="5%") (ลงชื่อ)
@@ -132,7 +132,7 @@ html
               | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{province}
             td
         .pagebreak
-        - if(length > 4)
+        - if(length > 5)
           .center.bold รายละเอียดตรวจรับ(ใบแนบ)
           br
           table.table

@@ -1479,11 +1479,13 @@ router.get('/requisition/orders/waiting-approve', async (req, res, next) => {
 router.get('/requisition/orders/approved', async (req, res, next) => {
 
   let db = req.db;
+  let limit = +req.query.limit || 15;
+  let offset = +req.query.offset || 0;
   let warehouseId = req.decoded.warehouseId;
 
   try {
-    let rs: any = await orderModel.getListApproved(db, warehouseId);
-    res.send({ ok: true, rows: rs });
+    let rs: any = await orderModel.getListApproved(db, warehouseId, limit, offset);
+    res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {

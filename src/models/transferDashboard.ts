@@ -30,7 +30,7 @@ export class TransferDashboard {
       .whereNot('wp.warehouse_id', srcWareHouseId)
       .whereIn('mg.generic_type_id', genericTypes)
       .groupByRaw('wp.warehouse_id, mp.generic_id, pt.total_transfer_qty, mgp.min_qty')
-      .havingRaw('sum(wp.qty) + IFNULL(pt.total_transfer_qty, 0) < mgp.min_qty');
+      .havingRaw('sum(wp.qty) + IFNULL(pt.total_transfer_qty, 0) <= mgp.min_qty');
   }
 
   getWarehouseGeneric(knex: Knex, dstWareHouseId: any, srcWarehouseId: any, genericTypes: any[]) { //generic ที่มีคงคลัง รวมกับรายการเติมที่รออนุมัติ และคงเหลือยังน้อยกว่า min
@@ -81,7 +81,7 @@ export class TransferDashboard {
       .where('wp.warehouse_id', dstWareHouseId)
       .whereIn('mg.generic_type_id', genericTypes)
       .groupByRaw('wp.warehouse_id, mp.generic_id, pt.total_transfer_qty, mgp.min_qty')
-      .havingRaw('sum(wp.qty) + IFNULL(pt.total_transfer_qty, 0) < mgp.min_qty');
+      .havingRaw('sum(wp.qty) + IFNULL(pt.total_transfer_qty, 0) <= mgp.min_qty');
   }
 
   getGenericDetail(knex: Knex, genericId: any, warehouseId: any) { //not used now
@@ -182,7 +182,7 @@ export class TransferDashboard {
       .join('wm_warehouses as ww', 'ww.warehouse_id', 'trx.dst_warehouse_id')
       .where('trx.status', 'OPEN')
       .andWhere('trx.src_warehouse_id', srcWarehouseId)
-      .orderByRaw('trx.transaction_id');
+      .orderBy('trx.transaction_code', 'desc');
   }
 
   getTransactionInfo(knex: Knex, transactionId: any, srcWarehouseId: any) { //รายการ generic ที่อยู่ในใบเติมแล้ว
