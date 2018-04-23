@@ -16,7 +16,7 @@ router.post('/', async (req, res, next) => {
   let detail = req.body.detail;
 
   notes.people_user_id = req.decoded.people_user_id;
-
+  
   notes.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
 
   try {
@@ -42,7 +42,7 @@ router.post('/', async (req, res, next) => {
   } finally {
     db.destroy();
   }
-
+  
 });
 
 router.put('/:borrowNoteId/edit', async (req, res, next) => {
@@ -81,7 +81,7 @@ router.put('/:borrowNoteId/edit', async (req, res, next) => {
 router.get('/:borrowNoteId/detail-list', async (req, res, next) => {
   let db = req.db;
   let borrowNoteId = req.params.borrowNoteId;
-
+  
   try {
     let rs: any = await borrowModel.getDetailList(db, borrowNoteId);
     res.send({ ok: true, rows: rs });
@@ -97,7 +97,7 @@ router.delete('/:borrowNoteId', async (req, res, next) => {
   let db = req.db;
   let borrowNoteId = req.params.borrowNoteId;
 
-
+  
 
   let cancelData: any = {};
   cancelData.cancel_date = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -141,12 +141,12 @@ router.get('/', async (req, res, next) => {
   // this.admin = _.indexOf(this.rights, 'WM_ADMIN') === -1 ? true : false;
   let warehouse = req.decoded.warehouseId;
   // if(this.admin){
-  warehouse = '%' + warehouse + '%';
+    warehouse = '%'+warehouse+'%'
   // } else{
   //   warehouse = '%%'
   // }
   try {
-    let rs: any = await borrowModel.getList(db, query, warehouse);
+    let rs: any = await borrowModel.getList(db, query,warehouse);
     let rsTotal: any = await borrowModel.getListTotal(db, query);
     res.send({ ok: true, rows: rs, total: rsTotal[0].total });
   } catch (error) {
@@ -167,12 +167,12 @@ router.get('/admin', async (req, res, next) => {
   // this.admin = _.indexOf(this.rights, 'WM_ADMIN') === -1 ? true : false;
   let warehouse = req.decoded.warehouseId;
   // if(this.admin){
-  warehouse = '%' + warehouse + '%';
+    warehouse = '%'+warehouse+'%'
   // } else{
-  // warehouse = '%%'
+    // warehouse = '%%'
   // }
   try {
-    let rs: any = await borrowModel.getListAdmin(db, query, warehouse);
+    let rs: any = await borrowModel.getListAdmin(db, query,warehouse);
     let rsTotal: any = await borrowModel.getListTotalAdmin(db, query);
     res.send({ ok: true, rows: rs, total: rsTotal[0].total });
   } catch (error) {
@@ -188,8 +188,8 @@ router.put('/update-requisition/:requisitionOrderId', async (req, res, next) => 
   let data: any = req.body.data;
   let bItems: any = req.body.borrowItems;
   let requisitionOrderId = req.params.requisitionOrderId;
-  console.log(data, bItems);
-
+  console.log(data,bItems);
+  
   try {
     // remove old data
     let generics: any = [];
@@ -213,7 +213,7 @@ router.put('/update-requisition/:requisitionOrderId', async (req, res, next) => 
       objBorrow.requisition_order_id = requisitionOrderId;
       borrowItems.push(objBorrow);
     });
-
+    
     // remove requisition items
     await reqModel.removeRequisitionQtyForBorrowNote(db, requisitionOrderId, generics);
     // await borrowModel.approveRequisitionQtyForBorrowNote(db, requisitionOrderId);
@@ -225,7 +225,7 @@ router.put('/update-requisition/:requisitionOrderId', async (req, res, next) => 
       borrowNnoteDetailId.push(item.borrow_note_detail_id)
     }
     console.log(borrowNnoteDetailId);
-
+    
     // await reqModel.updateBorrowNote(db, borrowNnoteDetailId);
 
     res.send({ ok: true });
