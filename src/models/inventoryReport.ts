@@ -1586,15 +1586,15 @@ OR sc.ref_src like ?
         ppo.purchase_order_number,
         (
             SELECT
-                COUNT( DISTINCT mg.generic_id )
+                COUNT( mg.generic_id )
             FROM
-                wm_receives wr
-                JOIN wm_receive_detail wrd ON wrd.receive_id = wr.receive_id
-                LEFT JOIN pc_purchasing_order ppo ON ppo.purchase_order_id = wr.purchase_order_id
+                wm_receives wrr
+                JOIN wm_receive_detail wrd ON wrd.receive_id = wrr.receive_id
+                LEFT JOIN pc_purchasing_order ppo ON ppo.purchase_order_id = wrr.purchase_order_id
                 LEFT JOIN mm_products mp ON mp.product_id = wrd.product_id
                 LEFT JOIN mm_generics mg ON mg.generic_id = mp.generic_id 
                 WHERE
-                wr.receive_id IN ( ${receiveID} ) 
+                wrr.receive_id = wr.receive_id
         ) as amount_qty,
         mgt.generic_type_name
         FROM wm_receives wr
