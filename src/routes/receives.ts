@@ -253,6 +253,7 @@ router.post('/', co(async (req, res, next) => {
               purchase_order_id: summary.purchaseOrderId,
               people_user_id: req.decoded.people_user_id,
               comment: summary.comment,
+              is_expired: summary.is_expired,
               committee_id: summary.committee_id,
               created_at: moment().format('YYYY-MM-DD HH:mm:ss')
             }
