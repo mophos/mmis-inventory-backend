@@ -906,14 +906,6 @@ export class RequisitionOrderModel {
     return db('wm_requisition_order_items')
       .insert(data);
   }
-  updateBorrowNote(db: Knex, borrowNnoteDetailId: any[]) {
-    let sql =`UPDATE wm_borrow_notes AS bn
-    LEFT JOIN wm_borrow_note_detail AS bnd ON bnd.borrow_note_id = bn.borrow_note_id
-    SET bn.is_approve = 'Y' 
-    WHERE
-      bnd.borrow_note_detail_id IN ( ${borrowNnoteDetailId} )`
-    return db.raw(sql)
-  }
 
   removeRequisitionQtyForBorrowNote(db: Knex, requisitionId: any, genericIds: any[]) {
     return db('wm_requisition_order_items')
