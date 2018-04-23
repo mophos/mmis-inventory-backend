@@ -3,6 +3,7 @@ import * as moment from 'moment';
 
 import { BorrowNoteModel } from '../models/borrowNote';
 import { RequisitionOrderModel } from '../models/requisitionOrder';
+import _ = require('lodash');
 
 const router = express.Router();
 
@@ -15,6 +16,7 @@ router.post('/', async (req, res, next) => {
   let detail = req.body.detail;
 
   notes.people_user_id = req.decoded.people_user_id;
+  
   notes.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
 
   try {
@@ -79,7 +81,7 @@ router.put('/:borrowNoteId/edit', async (req, res, next) => {
 router.get('/:borrowNoteId/detail-list', async (req, res, next) => {
   let db = req.db;
   let borrowNoteId = req.params.borrowNoteId;
-
+  
   try {
     let rs: any = await borrowModel.getDetailList(db, borrowNoteId);
     res.send({ ok: true, rows: rs });
@@ -94,6 +96,8 @@ router.get('/:borrowNoteId/detail-list', async (req, res, next) => {
 router.delete('/:borrowNoteId', async (req, res, next) => {
   let db = req.db;
   let borrowNoteId = req.params.borrowNoteId;
+
+  
 
   let cancelData: any = {};
   cancelData.cancel_date = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -132,10 +136,44 @@ router.get('/', async (req, res, next) => {
   let query = req.query.query;
   let limit = +req.query.limit || 20;
   let offset = +req.query.offset || 0;
-
+  let accessRight = req.decoded.accessRight;
+  this.rights = accessRight.split(',');
+  // this.admin = _.indexOf(this.rights, 'WM_ADMIN') === -1 ? true : false;
+  let warehouse = req.decoded.warehouseId;
+  // if(this.admin){
+    warehouse = '%'+warehouse+'%'
+  // } else{
+  //   warehouse = '%%'
+  // }
   try {
-    let rs: any = await borrowModel.getList(db, query);
+    let rs: any = await borrowModel.getList(db, query,warehouse);
     let rsTotal: any = await borrowModel.getListTotal(db, query);
+    res.send({ ok: true, rows: rs, total: rsTotal[0].total });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+});
+
+router.get('/admin', async (req, res, next) => {
+  let db = req.db;
+  let query = req.query.query;
+  let limit = +req.query.limit || 20;
+  let offset = +req.query.offset || 0;
+  let accessRight = req.decoded.accessRight;
+  this.rights = accessRight.split(',');
+  // this.admin = _.indexOf(this.rights, 'WM_ADMIN') === -1 ? true : false;
+  let warehouse = req.decoded.warehouseId;
+  // if(this.admin){
+    warehouse = '%'+warehouse+'%'
+  // } else{
+    // warehouse = '%%'
+  // }
+  try {
+    let rs: any = await borrowModel.getListAdmin(db, query,warehouse);
+    let rsTotal: any = await borrowModel.getListTotalAdmin(db, query);
     res.send({ ok: true, rows: rs, total: rsTotal[0].total });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -150,7 +188,8 @@ router.put('/update-requisition/:requisitionOrderId', async (req, res, next) => 
   let data: any = req.body.data;
   let bItems: any = req.body.borrowItems;
   let requisitionOrderId = req.params.requisitionOrderId;
-
+  console.log(data,bItems);
+  
   try {
     // remove old data
     let generics: any = [];
@@ -177,12 +216,17 @@ router.put('/update-requisition/:requisitionOrderId', async (req, res, next) => 
     
     // remove requisition items
     await reqModel.removeRequisitionQtyForBorrowNote(db, requisitionOrderId, generics);
+    // await borrowModel.approveRequisitionQtyForBorrowNote(db, requisitionOrderId);
     // save new data
     await reqModel.updateRequisitionQtyForBorrowNote(db, items);
-
+    let borrowNnoteDetailId = []
     for (let item of borrowItems) {
       await borrowModel.updateBorrowItems(db, item.borrow_note_detail_id, item.requisition_people_user_id, requisitionOrderId);
+      borrowNnoteDetailId.push(item.borrow_note_detail_id)
     }
+    console.log(borrowNnoteDetailId);
+    
+    // await reqModel.updateBorrowNote(db, borrowNnoteDetailId);
 
     res.send({ ok: true });
 

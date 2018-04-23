@@ -207,6 +207,7 @@ router.get('/warehouses', co(async(req, res, next) => {
 
 }));
 
+
 router.get('/network-types', co(async(req, res, next) => {
 
   let db = req.db;
