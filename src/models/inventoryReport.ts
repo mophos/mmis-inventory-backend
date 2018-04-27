@@ -1593,7 +1593,7 @@ OR sc.ref_src like ?
                 LEFT JOIN mm_products mp ON mp.product_id = wrd.product_id
                 LEFT JOIN mm_generics mg ON mg.generic_id = mp.generic_id 
                 WHERE
-                wrr.receive_id = wr.receive_id
+               wrr.receive_id = wr.receive_id
         ) as amount_qty,
         mgt.generic_type_name
         FROM wm_receives wr
