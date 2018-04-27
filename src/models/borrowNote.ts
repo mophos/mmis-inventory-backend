@@ -100,7 +100,7 @@ export class BorrowNoteModel {
 
     return sql.orderBy('bn.borrow_date', 'DESC');
   }
-
+  
   getListTotal(db: Knex, query: any) {
     let sql = db('wm_borrow_notes as bn')
       .select(db.raw('count(*) as total'))
@@ -162,14 +162,14 @@ export class BorrowNoteModel {
         requisition_people_user_id: requisitionPeopleUserId,
         requisition_order_id: requisitionOrderId
       });
-  }
-
+  }  
+  
   // approveRequisitionQtyForBorrowNote(db: Knex, borrowNoteDetailId: any) {
-  //   return db('wm_borrow_note_detail')
-  //     .where('borrow_note_detail_id', borrowNoteDetailId)
-  //     .update({
-  //       requisition_people_user_id: requisitionPeopleUserId,
-  //       requisition_order_id: requisitionOrderId
-  //     });
-  // }
+    //   return db('wm_borrow_note_detail')
+    //     .where('borrow_note_detail_id', borrowNoteDetailId)
+    //     .update({
+    //       requisition_people_user_id: requisitionPeopleUserId,
+    //       requisition_order_id: requisitionOrderId
+    //     });
+    // }
 }

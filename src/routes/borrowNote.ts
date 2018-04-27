@@ -16,7 +16,6 @@ router.post('/', async (req, res, next) => {
   let detail = req.body.detail;
 
   notes.people_user_id = req.decoded.people_user_id;
-
   notes.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
 
   try {
@@ -42,7 +41,7 @@ router.post('/', async (req, res, next) => {
   } finally {
     db.destroy();
   }
-
+  
 });
 
 router.put('/:borrowNoteId/edit', async (req, res, next) => {
@@ -96,8 +95,6 @@ router.get('/:borrowNoteId/detail-list', async (req, res, next) => {
 router.delete('/:borrowNoteId', async (req, res, next) => {
   let db = req.db;
   let borrowNoteId = req.params.borrowNoteId;
-
-
 
   let cancelData: any = {};
   cancelData.cancel_date = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -156,7 +153,6 @@ router.get('/', async (req, res, next) => {
   }
 
 });
-
 router.get('/admin', async (req, res, next) => {
   let db = req.db;
   let query = req.query.query;
@@ -188,7 +184,6 @@ router.put('/update-requisition/:requisitionOrderId', async (req, res, next) => 
   let data: any = req.body.data;
   let bItems: any = req.body.borrowItems;
   let requisitionOrderId = req.params.requisitionOrderId;
-  console.log(data, bItems);
 
   try {
     // remove old data
@@ -213,10 +208,9 @@ router.put('/update-requisition/:requisitionOrderId', async (req, res, next) => 
       objBorrow.requisition_order_id = requisitionOrderId;
       borrowItems.push(objBorrow);
     });
-
+    
     // remove requisition items
     await reqModel.removeRequisitionQtyForBorrowNote(db, requisitionOrderId, generics);
-    // await borrowModel.approveRequisitionQtyForBorrowNote(db, requisitionOrderId);
     // save new data
     await reqModel.updateRequisitionQtyForBorrowNote(db, items);
     let borrowNnoteDetailId = []

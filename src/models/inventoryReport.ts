@@ -257,7 +257,6 @@ mgt.generic_type_id `
    AND vscw.stock_date BETWEEN '${startDate} 00:00:00'
    AND '${endDate} 23:59:59'
     ORDER BY
-        vscw.stock_date,
         vscw.stock_card_id`
         return knex.raw(sql)
     }
@@ -1594,7 +1593,7 @@ OR sc.ref_src like ?
                 LEFT JOIN mm_products mp ON mp.product_id = wrd.product_id
                 LEFT JOIN mm_generics mg ON mg.generic_id = mp.generic_id 
                 WHERE
-                wrr.receive_id = wr.receive_id
+               wrr.receive_id = wr.receive_id
         ) as amount_qty,
         mgt.generic_type_name
         FROM wm_receives wr
