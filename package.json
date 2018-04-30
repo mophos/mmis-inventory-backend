@@ -8,7 +8,7 @@
     "build": "npx tsc"
   },
   "dependencies": {
-    "@risingstack/protect": "^1.1.0",
+    "@risingstack/protect": "^1.2.0",
     "@types/uuid": "^3.4.3",
     "body-parser": "^1.17.1",
     "co-express": "^2.0.0",
@@ -51,6 +51,7 @@
     "@types/random-js": "^1.0.28",
     "@types/serve-favicon": "^2.2.27",
     "nodemon": "^1.17.2",
+    "ts-node": "^6.0.2",
     "typescript": "^2.7.2"
   }
 }
