@@ -8,7 +8,7 @@
     "build": "npx tsc"
   },
   "dependencies": {
-    "@risingstack/protect": "^1.1.0",
+    "@risingstack/protect": "^1.2.0",
     "@types/uuid": "^3.4.3",
     "body-parser": "^1.17.1",
     "co-express": "^2.0.0",
