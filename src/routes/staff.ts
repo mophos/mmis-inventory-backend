@@ -1484,7 +1484,7 @@ router.get('/requisition/orders/approved', async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
 
   try {
-    let rs: any = await orderModel.getListApproved(db, warehouseId, limit, offset);
+    let rs: any = await orderModel.getListApproved(db, warehouseId, null, limit, offset);
     res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
