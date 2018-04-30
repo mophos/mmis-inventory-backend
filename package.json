@@ -3,7 +3,7 @@
   "version": "0.1.1",
   "private": true,
   "scripts": {
-    "start": "npx nodemon app/bin/www.js",
+    "start": "npx nodemon",
     "build:watch": "npx tsc -w",
     "build": "npx tsc"
   },
