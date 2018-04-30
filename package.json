@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "npx nodemon",
-    "start:dist": "npx nodemon app/bin/www.js",
+    "start:dist": "node app/bin/www.js",
     "build:watch": "npx tsc -w",
     "build": "npx tsc"
   },
