@@ -658,7 +658,8 @@ export class ReceiveModel {
   getPurchaseList(knex: Knex, limit: number, offset: number) {
 
     let sql = `
-      select pc.purchase_order_book_number, pc.purchase_order_id, pc.purchase_order_number,
+      select pc.purchase_order_book_number, pc.purchase_order_id, 
+      IF(pc.purchase_order_book_number is null,pc.purchase_order_number,pc.purchase_order_book_number) as purchase_order_number,
       pc.order_date, 
       (
         select sum(pci.qty*pci.unit_price)
