@@ -58,6 +58,12 @@ export class AlertExpiredModel {
     let queries = sqls.join(';');
     return knex.raw(queries);
   }
+
+  saveNumdaysAll(knex: Knex, type: any, numDays: number) {
+    let sql = `update wm_generic_expired_alert ge join mm_generics mg on ge.generic_id = mg.generic_id
+    set num_days = ${numDays} where mg.generic_type_id in (${type})`
+    return knex.raw(sql);
+  }
   productExpired(knex: Knex){
     let sql=`SELECT
       xp.generic_id,
