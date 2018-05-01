@@ -19,6 +19,11 @@ export class MinMaxModel {
       .select('wp.warehouse_id', 'g.generic_id', 'g.generic_name', 'g.working_code', 'g.primary_unit_id'
         , knex.raw('ifnull(gp.min_qty, 0) as min_qty')
         , knex.raw('ifnull(gp.max_qty, 0) as max_qty')
+        , knex.raw('ifnull(gp.lead_time_day, 0) as lead_time_day')
+        , knex.raw('ifnull(gp.rop_qty, 0) as rop_qty')
+        , knex.raw('ifnull(gp.ordering_cost, 0) as ordering_cost')
+        , knex.raw('ifnull(gp.carrying_cost, 0) as carrying_cost')
+        , knex.raw('ifnull(gp.eoq_qty, 0) as eoq_qty')
         , 'u.unit_name', 'gp.use_per_day', 'gp.safty_stock_day', 'gp.use_total', knex.raw('sum(wp.qty) as qty'))
       .innerJoin('mm_products as mp', 'mp.generic_id', 'g.generic_id')
       .innerJoin('wm_products as wp', 'wp.product_id', 'mp.product_id')
@@ -43,6 +48,11 @@ export class MinMaxModel {
       select mp.generic_id, mg.working_code, mg.generic_name, sum(wp.qty) qty, mu.unit_name 
       , IFNULL(sc.use_total, 0) use_total, IFNULL(CEIL(sc.use_per_day), 0) use_per_day
       , IFNULL(gp.safty_stock_day, 0) safty_stock_day, mg.primary_unit_id
+      , IFNULL(gp.lead_time_day, 0) lead_time_day
+      , IFNULL(gp.rop_qty, 0) rop_qty
+      , IFNULL(gp.ordering_cost, 0) ordering_cost
+      , IFNULL(gp.carrying_cost, 0) carrying_cost
+      , IFNULL(gp.eoq_qty, 0) eoq_qty
       from wm_products wp
       join mm_products mp on mp.product_id = wp.product_id
       join mm_generics mg on mg.generic_id = mp.generic_id
