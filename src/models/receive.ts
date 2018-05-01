@@ -1175,7 +1175,7 @@ export class ReceiveModel {
     WHERE
       rod.warehouse_id = ${warehouseId}
     AND rod.receive_other_id = rt.receive_other_id
-    ) and ra.receive_other_id is null and r.is_cancel = 'N'`;
+    ) and ra.receive_other_id is null and rt.is_cancel = 'N'`;
     return knex.raw(sql);
   }
 
