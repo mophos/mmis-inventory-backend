@@ -936,7 +936,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             if (srcIdx > -1) {
               balances[srcIdx].balance_qty -= +v.confirm_qty;
               srcBalance = balances[srcIdx].balance_qty
-              balances[srcIdx].balance_generic_qty -= v.confirm_qty;
+              balances[srcIdx].balance_generic_qty -= +v.confirm_qty;
               srcBalanceGeneric = balances[srcIdx].balance_generic_qty;
             }
             objStockcardOut.balance_qty = srcBalance;
@@ -971,7 +971,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             if (dstIdx > -1) {
               balances[dstIdx].balance_qty += +v.confirm_qty;
               dstBalance = balances[dstIdx].balance_qty;
-              balances[dstIdx].balance_generic_qty += v.confirm_qty;
+              balances[dstIdx].balance_generic_qty += +v.confirm_qty;
               dstBalanceGeneric = balances[dstIdx].balance_generic_qty;
             }
             objStockcardIn.balance_qty = dstBalance
@@ -1075,26 +1075,33 @@ router.post('/unpaid/confirm', async (req, res, next) => {
 
     let balances = [];
     let stockCard = [];
-    for (let s of products) {
+    console.log('products', products);
+    let sc: any = await orderModel.getRequisitionOrderUnpaidItem(db, orderUnpaidId);    
+    for (let s of sc[0]) {
       let srcObjBalance: any = {};
       let dstObjBalance: any = {};
       let srcBalance = await orderModel.getBalance(db, s.product_id, s.wm_withdraw);
+      console.log('srcBalance', srcBalance[0]);
+      
       srcBalance[0].forEach(v => {
         srcObjBalance.product_id = v.product_id;
         srcObjBalance.warehouse_id = v.warehouse_id;
         srcObjBalance.balance_qty = v.balance;
         srcObjBalance.balance_generic_qty = v.balance_generic;
+        balances.push(srcObjBalance);
       });
-      balances.push(srcObjBalance);
-      let dstBalance = await orderModel.getBalance(db, s.product_id, s.wm_requisition)
+      let dstBalance = await orderModel.getBalance(db, s.product_id, s.wm_requisition);
+      console.log('dstBalance' , dstBalance[0]);
+      
       dstBalance[0].forEach(v => {
         dstObjBalance.product_id = v.product_id;
         dstObjBalance.warehouse_id = v.warehouse_id;
         dstObjBalance.balance_qty = v.balance;
         dstObjBalance.balance_generic_qty = v.balance_generic;
+        balances.push(dstObjBalance);
       });
-      balances.push(dstObjBalance);
     }
+    console.log('balances', balances);
 
     products.forEach(v => {
       let objStockcardOut: any = {}
@@ -1163,6 +1170,8 @@ router.post('/unpaid/confirm', async (req, res, next) => {
       objStockcardIn.comment = 'เบิก';
       stockCard.push(objStockcardIn);
     })
+    console.log('stockCard', stockCard);
+
     // save stock card
     await orderModel.saveStockCard(db, stockCard);
 
