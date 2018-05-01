@@ -486,7 +486,7 @@ export class RequisitionOrderModel {
     return db.raw(sql, [confirmId, genericId, warehouseId]);
   }
 
-  getUnPaidOrders(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, limit: number, offset: number, query = '', fillterCancel= 'all') {
+  getUnPaidOrders(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, limit: number, offset: number, query = '', fillterCancel = 'all') {
     let _q = `%${query}%`
     let sql = `
     select rou.requisition_order_unpaid_id, rou.unpaid_date, rou.requisition_order_id, whr.warehouse_name as requisition_warehouse, 
@@ -817,6 +817,54 @@ export class RequisitionOrderModel {
     `;
 
     return knex.raw(sql, [confirmUnpaidId]);
+  }
+
+  getRequisitionOrderUnpaidItem(knex: Knex, confirmUnpaidId) {
+    let sql = `
+      SELECT
+      wrc.requisition_order_id,
+      wr.requisition_code,
+      wrc.confirm_id,
+      wrci.confirm_item_id,
+      wp.product_id,
+      wrci.generic_id,
+      wp.unit_generic_id,
+      sum(wrci.confirm_qty) as confirm_qty, 
+      sum(wp.cost) as cost,
+      wp.lot_no,
+      wp.expired_date,
+      (
+        SELECT
+          sum(qty)
+        FROM
+          wm_products wmp
+        WHERE
+          wmp.product_id = wp.product_id and wmp.warehouse_id=wr.wm_withdraw
+        GROUP BY
+          wmp.product_id
+      ) AS src_balance_qty,
+    (
+        SELECT
+          sum(qty)
+        FROM
+          wm_products wmp
+        WHERE
+          wmp.product_id = wp.product_id and wmp.warehouse_id=wr.wm_requisition
+        GROUP BY
+          wmp.product_id
+      ) AS dst_balance_qty,
+      wr.wm_requisition as dst_warehouse,
+      wr.wm_withdraw as src_warehouse
+    FROM
+      wm_requisition_confirms wrc
+    join wm_requisition_orders wr on wrc.requisition_order_id = wr.requisition_order_id
+    JOIN wm_requisition_confirm_items wrci ON wrc.confirm_id = wrci.confirm_id
+    join wm_requisition_order_unpaids rou on rou.requisition_order_id = wr.requisition_order_id
+    join wm_requisition_confirm_unpaids rcu on rcu.requisition_order_unpaid_id = rou.requisition_order_unpaid_id
+    JOIN wm_products wp ON wrci.wm_product_id = wp.wm_product_id
+    where rcu.confirm_unpaid_id='${confirmUnpaidId}' and wrci.confirm_qty != 0
+    GROUP BY wp.product_id,wp.lot_no`;
+    return knex.raw(sql)
   }
   getRequisitionOrderItem(knex: Knex, confirmId) {
     let sql = `
