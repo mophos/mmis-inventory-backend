@@ -119,6 +119,7 @@ router.put('/orders/:requisitionId', async (req, res, next) => {
       _order.people_id = people_id;
       _order.updated_at = moment().format('YYYY-MM-DD HH:mm:ss');
       _order.requisition_type_id = order.requisition_type_id;
+      _order.requisition_date = order.requisition_date;
 
       let rsOrder: any = await orderModel.updateOrder(db, requisitionId, _order);
 
