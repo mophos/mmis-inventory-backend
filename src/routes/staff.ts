@@ -1414,6 +1414,7 @@ router.put('/requisition/orders/:requisitionId', async (req, res, next) => {
     _order.updated_at = moment().format('YYYY-MM-DD HH:mm:ss');
     _order.requisition_type_id = order.requisition_type_id;
     _order.is_temp = order.is_temp;
+    _order.requisition_date = order.requisition_date;
 
     if (order.is_temp === 'N' && !order.requisition_code) {
       _order.requisition_code = order.is_temp !== 'Y' ? await serialModel.getSerial(db, 'RQ') : null;
