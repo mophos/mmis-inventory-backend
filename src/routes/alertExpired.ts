@@ -17,7 +17,7 @@ const receiveModel = new ReceiveModel();
 router.get('/generics', async (req, res, next) => {
   let db = req.db;
   let gid = req.decoded.generic_type_id;
-  let _data:any = [];
+  let _data: any = [];
   if (gid) {
     let pgs = gid.split(',');
     pgs.forEach(v => {
@@ -25,7 +25,7 @@ router.get('/generics', async (req, res, next) => {
     });
   }
   try {
-    let rs: any = await alertModel.getAllGenerics(db,_data);
+    let rs: any = await alertModel.getAllGenerics(db, _data);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -38,7 +38,7 @@ router.get('/genericSelec', async (req, res, next) => {
   let db = req.db;
   let _data = req.query.id
   try {
-    let rs: any = await alertModel.getAllGenerics(db,_data);
+    let rs: any = await alertModel.getAllGenerics(db, _data);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -95,7 +95,7 @@ router.get('/get-status', (req, res, next) => {
     });
 });
 
-router.post('/save-status', wrap(async(req, res, next) => {
+router.post('/save-status', wrap(async (req, res, next) => {
   let db = req.db;
   let value = req.body.status;
   try {
@@ -123,7 +123,7 @@ router.get('/products/unset', (req, res, next) => {
     });
 });
 
-router.post('/', wrap(async(req, res, next) => {
+router.post('/', wrap(async (req, res, next) => {
   let numDays: any = req.body.numDays;
   let ids: any[] = req.body.ids;
   let db = req.db;
@@ -137,9 +137,30 @@ router.post('/', wrap(async(req, res, next) => {
       db.destroy();
     }
   } else {
-    res.send({ok: false, error: 'กรุณาระบุข้อมูลให้ครบถ้วน'})
+    res.send({ ok: false, error: 'กรุณาระบุข้อมูลให้ครบถ้วน' })
   }
 }));
+
+router.post('/all', async (req, res, next) => {
+  let numDays: any = req.body.numDays;
+  let db = req.db;
+  let gid = req.decoded.generic_type_id;
+  let _data: any = [];
+  if (gid) {
+    let pgs = gid.split(',');
+    pgs.forEach(v => {
+      _data.push(v);
+    });
+  }
+  try {
+    let rs: any = await alertModel.saveNumdaysAll(db, _data, numDays);
+    res.send({ ok: true });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
 
 router.get('/products/expired', (req, res, next) => {
   let db = req.db;
