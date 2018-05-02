@@ -80,6 +80,12 @@ router.post('/calculate', co(async (req, res, next) => {
         } else {
           r.max_qty = r.min_qty + (r.use_per_day * r.safty_stock_day);
         }
+        r.rop_qty = r.use_per_day * r.lead_time_day;
+        if (r.carrying_cost) {
+          r.eoq_qty = Math.round(Math.sqrt((2*r.use_total*r.ordering_cost)/r.carrying_cost));
+        } else {
+          r.eoq_qty = 0;
+        }
       }
       res.send({ ok: true, rows: rs });
     } else {
