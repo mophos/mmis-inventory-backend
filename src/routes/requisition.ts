@@ -466,6 +466,75 @@ router.get('/orders/unpaid', async (req, res, next) => {
 
 });
 
+router.post('/orders/unpaid/reorder', async (req, res, next) => {
+
+  let db = req.db;
+  let requisitionOrderUnpaidId = req.body.requisitionOrderUnpaidId;
+  let requisitionOrderId = req.body.requisitionOrderId;
+
+  let requisitionOrderDate = moment().format('YYYY-MM-DD');
+
+  let year = moment(requisitionOrderDate, 'YYYY-MM-DD').get('year');
+  let month = moment(requisitionOrderDate, 'YYYY-MM-DD').get('month') + 1;
+
+  let isClose = await periodModel.isPeriodClose(db, year, month);
+
+  if (isClose) {
+    res.send({ ok: false, error: 'รอบบัญชีถูกปิดแล้ว' })
+  } else {
+
+    try {
+      // get summary
+      let rs: any = await orderModel.getUnpaidReorderSummaryDetail(db, requisitionOrderUnpaidId);
+      // get items
+      let rsItems = await orderModel.getUnpaidReorderItems(db, requisitionOrderUnpaidId, requisitionOrderId);
+
+      if (rs[0] && rsItems[0]) {
+        let _order: any = rs[0][0];
+
+        let orders: any = {};
+        orders.requisition_date = _order.requisition_date;
+        orders.wm_requisition = _order.wm_requisition;
+        orders.wm_withdraw = _order.wm_withdraw;
+        orders.requisition_type_id = _order.requisition_type_id;
+        orders.remark = 'สร้างใหม่จากรายการค้างจ่าย เลขที่ใบเบิก ' + _order.requisition_code;
+        orders.doc_type = _order.doc_type;
+        orders.people_id = _order.people_id;
+        orders.requisition_code = await serialModel.getSerial(db, 'RQ');
+        orders.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        let rsOrder: any = await orderModel.saveOrder(db, orders);
+        let requisitionId = rsOrder[0];
+        let items: any = [];
+
+        let _items = rsItems[0];
+
+        _items.forEach((v: any) => {
+          let obj: any = {
+            requisition_order_id: requisitionId,
+            generic_id: v.generic_id,
+            requisition_qty: v.requisition_qty, // small qty
+            unit_generic_id: v.unit_generic_id
+          }
+          items.push(obj);
+        });
+        await orderModel.saveItems(db, items);
+        // remove unpaid 
+        await orderModel.changeToUnpaidCancel(db, [requisitionOrderId]);
+        res.send({ ok: true });
+        
+      } else {
+        res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการออกใบเบิกใหม่' })
+      }
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  }
+
+});
+
 // router.post('/orders/approve/:requisitionId', async (req, res, next) => {
 //   let requisitionId = req.params.requisitionId;
 //   let db = req.db;
@@ -1297,5 +1366,6 @@ router.get('/confirm/temp/:confirmId', async (req, res, next) => {
     db.destroy();
   }
 });
+
 
 export default router;
