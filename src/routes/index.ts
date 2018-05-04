@@ -800,9 +800,10 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
   product_expired = product_expired[0];
   let sumn = 0;
   product_expired.forEach(value => {
-    value.expired_date = moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year') + 543);
+    value.expired_date = moment (value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year') + 543) : '-';
     sumn += value.cost;
-    value.cost = inventoryReportModel.comma((value.cost).toFixed(2));
+    value.cost = inventoryReportModel.comma(value.cost);
+    value.qty = inventoryReportModel.commaQty(value.qty);
   })
   let sum = inventoryReportModel.comma(sumn);
   let wareHouseName;
