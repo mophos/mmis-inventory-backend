@@ -22,7 +22,8 @@ const path = require('path')
 const fse = require('fs-extra');
 const fs = require('fs');
 const json2xls = require('json2xls');
-
+moment.locale('th');
+const printDate = 'วันที่พิมพ์ ' + moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(', HH:mm:ss น.');
 
 router.get('/', (req, res, next) => {
   res.send({ ok: true, message: 'Welcome to Inventory API server' });
@@ -461,7 +462,7 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
     generic_stock: generic_stock,
     _generic_stock: _generic_stock,
     hospitalName: hospitalName,
-    today: today,
+    printDate: printDate,
     genericId: genericId,
     generic_name: _generic_name,
     unit: _unit,
@@ -543,7 +544,7 @@ router.get('/report/generic/stock2/', wrap(async (req, res, next) => {
     generic_stock: generic_stock,
     _generic_stock: _generic_stock,
     hospitalName: hospitalName,
-    today: today,
+    printDate: printDate,
     genericId: genericId,
     generic_name: _generic_name,
     unit: _unit,
@@ -664,7 +665,8 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
     dosage_name: _dosage_name,
     _genericId: _genericId,
     startDate: startDate,
-    endDate: endDate
+    endDate: endDate,
+    printDate: printDate
   });
 }));
 
@@ -800,7 +802,7 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
   product_expired = product_expired[0];
   let sumn = 0;
   product_expired.forEach(value => {
-    value.expired_date = moment (value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year') + 543) : '-';
+    value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year') + 543) : '-';
     sumn += value.cost;
     value.cost = inventoryReportModel.comma(value.cost);
     value.qty = inventoryReportModel.commaQty(value.qty);
@@ -897,7 +899,7 @@ router.get('/report/list/cost/:startDate/:endDate/:warehouseId/:warehouseName', 
   sumt = inventoryReportModel.comma(sumt)
   // res.send({ sumt: sumt, list_cost: list_cost, startDate: startDate, endDate: endDate, warehouseName: warehouseName })
   res.render('list_cost', {
-    sumt: sumt, startDate: startDate, endDate: endDate, list_cost: list_cost, hospitalName: hospitalName, warehouseName: warehouseName
+    sumt: sumt, startDate: startDate, endDate: endDate, list_cost: list_cost, hospitalName: hospitalName, warehouseName: warehouseName, printDate: printDate
   });
 }));//ตรวจสอบแล้ว 14-9-60
 router.get('/report/list/receiveOther', wrap(async (req, res, next) => {
@@ -1822,8 +1824,11 @@ router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, 
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
   moment.locale('th');
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  let today = 'วันที่พิมพ์' + moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(', HH:mm:ss น.');
   let productReceive = await inventoryReportModel.productReceive(db, startdate, enddate);
+  // console.log(productReceive);
+  if (productReceive[0].length == 0) { res.render('error404') }
+
   productReceive = productReceive[0];
   startdate = moment(startdate).format('D MMMM ') + (moment(startdate).get('year') + 543);
   enddate = moment(enddate).format('D MMMM ') + (moment(enddate).get('year') + 543);
@@ -2080,8 +2085,6 @@ router.get('/report/inventorystatus/:warehouseId/:genericTypeId', wrap(async (re
   let genericTypeId = req.params.genericTypeId
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  moment.locale('th');
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let rs = await inventoryReportModel.inventoryStatus(db, warehouseId, genericTypeId);
   let list = rs[0]
   let sumlist = [];
@@ -2095,6 +2098,9 @@ router.get('/report/inventorystatus/:warehouseId/:genericTypeId', wrap(async (re
     sumlist.push(sum)
     for (let ii in list[i]) {
       list[i][ii].cost = inventoryReportModel.comma(list[i][ii].cost);
+      list[i][ii].max_qty = inventoryReportModel.commaQty(list[i][ii].max_qty);
+      list[i][ii].min_qty = inventoryReportModel.commaQty(list[i][ii].min_qty);
+      list[i][ii].qty = inventoryReportModel.commaQty(list[i][ii].qty);
     }
   }
   for (let s in sumlist) {
@@ -2105,7 +2111,7 @@ router.get('/report/inventorystatus/:warehouseId/:genericTypeId', wrap(async (re
   // res.send(sumlist);
 
   res.render('inventorystatus', {
-    today: today,
+    printDate: printDate,
     hospitalName: hospitalName,
     list: list,
     sumlist: sumlist,
@@ -2123,6 +2129,7 @@ router.get('/report/summary/disbursement/:startDate/:endDate', wrap(async (req, 
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate);
+  if(rs[0].length == 0){res.render('error404');}
   let summary = rs[0]
   let warehouse_id = []
   let summary_list = []
@@ -2145,7 +2152,7 @@ router.get('/report/summary/disbursement/:startDate/:endDate', wrap(async (req, 
   // res.send(summary_list);
   let month = moment(startDate).format(' MMMM ') + (moment(startDate).get('year') + 543);
   res.render('summary_disbursement', {
-    today: today,
+    printDate: printDate,
     hospitalName: hospitalName,
     summary: summary,
     summary_list: summary_list,
