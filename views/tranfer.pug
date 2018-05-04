@@ -10,7 +10,7 @@ html
     .center.bold ใบโอนเวชภัณฑ์
     br
     .left ใบโอนเลขที่ #{tranfer[0].transfer_code}
-    .left ณ วันที่ #{today}
+    .left #{printDate}
     br
     .fontspace
     | คลัง #{tranfer[0].src_warehouse_name}  มีความประสงค์ขอโอนเวชภัณฑ์ ไปยังคลัง #{tranfer[0].dst_warehouse_name}  จำนวน #{tranferCount[0].count} รายการ ดังต่อไปนี้

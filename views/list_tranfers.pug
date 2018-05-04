@@ -21,6 +21,8 @@ html
             td.left(colspan='10') หน่วยงานที่เบิก #{_tranfers[i][0].dst_warehouse_name}
           tr 
             td.left(colspan='10') หน่วยงานที่จ่าย #{_tranfers[i][0].src_warehouse_name}
+          tr 
+            td.left(colspan='10') #{printDate}
         tbody
         - y = 0
         for a in _tranfers[i]
