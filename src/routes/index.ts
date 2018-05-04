@@ -1678,13 +1678,17 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     let _bahtText = inventoryReportModel.bahtText(check_receive[v].total_price);
     bahtText.push(_bahtText)
     check_receive[v].total_price = inventoryReportModel.comma(check_receive[v].total_price);
-  }
-  for (let i in receiveID) {
-    let _committee = await inventoryReportModel.invenCommittee(db, receiveID[i]);
+    let _committee = await inventoryReportModel.invenCommittee(db, check_receive[v].receive_id);
     committee.push(_committee[0]);
-    let _invenChief = await inventoryReportModel.inven2Chief(db, receiveID[i])
+    let _invenChief = await inventoryReportModel.inven2Chief(db, check_receive[v].receive_id)
     invenChief.push(_invenChief[0]);
   }
+  // for (let i in receiveID) {
+  //   let _committee = await inventoryReportModel.invenCommittee(db, receiveID[i]);
+  //   committee.push(_committee[0]);
+  //   let _invenChief = await inventoryReportModel.inven2Chief(db, receiveID[i])
+  //   invenChief.push(_invenChief[0]);
+  // }
   if (committee[0] === undefined) { res.render('no_commitee'); }
   let staffReceive = await inventoryReportModel.staffReceive(db);
   let chief = await inventoryReportModel.getChief(db, 'CHIEF');
