@@ -16,8 +16,7 @@ html
           td.center.bold(colspan='6')
             span ประจำเดือน #{month}
         tr
-          td.center.bold(colspan='6')
-            | &nbsp;
+          td.left.bold(colspan='6') #{printDate}
         - var c = 0
         for a in summary
           tr
