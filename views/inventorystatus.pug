@@ -16,7 +16,7 @@ html
           tr
             td.center.bold(colspan='8') รายงานสถานะเวชภัณฑ์คงคลัง
           tr
-            td.left.bold(colspan='4' ) ประจำวันที่ #{today}
+            td.left.bold(colspan='4' ) #{printDate}
             td.right.bold(colspan='4' ) 
               //- span หน้า #{(i*1)+1}
           tr
@@ -25,10 +25,10 @@ html
             th.center เลขที่
             th.left รหัสเวชภัณฑ์
             th.left(style="width:45%") รายการเวชภัณฑ์
-            th.left หน่วย
             th.left Rate/Month
             th.right ปริมาณต่ำสุด
             th.right จำนวน
+            th.left &nbsp;หน่วย
             th.right มูลค่า
         tbody
         - var y=0
@@ -39,10 +39,10 @@ html
             td.center #{c}
             td.left #{a.generic_code}
             td.left #{a.generic_name}
-            td.left #{a.unit_name}
             td.right #{a.max_qty}
             td.right #{a.min_qty}
             td.right #{a.qty}
+            td.left &nbsp;#{a.unit_name}
             td.right #{a.cost}
         tfooter 
           tr

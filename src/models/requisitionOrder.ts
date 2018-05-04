@@ -486,6 +486,31 @@ export class RequisitionOrderModel {
     return db.raw(sql, [confirmId, genericId, warehouseId]);
   }
 
+  getUnpaidReorderSummaryDetail(db: Knex, requisitionOrderUnpaidId: any) {
+    let sql = `
+    select current_date() as requisition_date, ro.wm_requisition, ro.wm_withdraw,
+    ro.requisition_type_id, ro.remark, ro.doc_type, ro.people_id, ro.requisition_code
+    from wm_requisition_order_unpaids as un
+    inner join wm_requisition_orders as ro on ro.requisition_order_id=un.requisition_order_id
+    where un.requisition_order_unpaid_id=?
+    `;
+
+    return db.raw(sql, [requisitionOrderUnpaidId]);
+
+  }
+
+  getUnpaidReorderItems(db: Knex, requisitionOrderUnpaidId: any, requisitionOrderId: any) {
+    let sql = `
+    select ri.generic_id, ri.unit_generic_id, un.unpaid_qty as requisition_qty
+    from wm_requisition_order_unpaid_items as un
+    inner join wm_requisition_order_items as ri on ri.generic_id=un.generic_id and ri.requisition_order_id=?
+    where un.requisition_order_unpaid_id=?
+    `;
+
+    return db.raw(sql, [requisitionOrderId, requisitionOrderUnpaidId]);
+
+  }
+
   getUnPaidOrders(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, limit: number, offset: number, query = '', fillterCancel = 'all') {
     let _q = `%${query}%`
     let sql = `
