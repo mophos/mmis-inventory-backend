@@ -2152,4 +2152,21 @@ router.get('/report/summary/disbursement/:startDate/:endDate', wrap(async (req, 
   });
 }));
 
+router.get('/report/product-remain/:warehouseId/:genericTypeId', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.params.warehouseId
+  let genericTypeId = req.params.genericTypeId
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  moment.locale('th');
+  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  let rs = await inventoryReportModel.productRemain(db, warehouseId, genericTypeId);
+
+  // res.send(summary_list);
+  res.render('summary_disbursement', {
+    today: today,
+    hospitalName: hospitalName
+  });
+}));
+
 export default router;
