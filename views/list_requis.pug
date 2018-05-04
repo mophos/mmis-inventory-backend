@@ -25,7 +25,7 @@ html
           tr 
             td.left หน่วยงานที่จ่าย #{list_requis[page][0].withdraw_warehouse_name}
           tr 
-            td.left ณ วันที่ #{today}
+            td.left #{printDate}
         - for(var head in list_requis[page])
           tbody
             tr.dash-top
