@@ -1414,6 +1414,7 @@ router.put('/requisition/orders/:requisitionId', async (req, res, next) => {
     _order.updated_at = moment().format('YYYY-MM-DD HH:mm:ss');
     _order.requisition_type_id = order.requisition_type_id;
     _order.is_temp = order.is_temp;
+    _order.requisition_date = order.requisition_date;
 
     if (order.is_temp === 'N' && !order.requisition_code) {
       _order.requisition_code = order.is_temp !== 'Y' ? await serialModel.getSerial(db, 'RQ') : null;
@@ -1446,11 +1447,17 @@ router.put('/requisition/orders/:requisitionId', async (req, res, next) => {
 router.get('/requisition/orders/waiting', async (req, res, next) => {
 
   let db = req.db;
+  let limit = +req.query.limit || 15;
+  let offset = +req.query.offset || 0;
+  let query = req.query.query;
+  let fillterCancel = req.query.fillterCancel;
   let warehouseId = req.decoded.warehouseId;
 
   try {
-    let rs: any = await orderModel.getListWaitingStaff(db, warehouseId);
-    res.send({ ok: true, rows: rs });
+    // let rs: any = await orderModel.getListWaitingStaff(db, warehouseId);
+    let rs: any = await orderModel.getListWaiting(db, warehouseId, null, limit, offset, query, fillterCancel);
+    let total: any = await orderModel.totalListWaiting(db, warehouseId, null, query, fillterCancel);
+    res.send({ ok: true, rows: rs[0], total: total[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -1464,10 +1471,14 @@ router.get('/requisition/orders/waiting-approve', async (req, res, next) => {
   let db = req.db;
   let limit = +req.query.limit || 15;
   let offset = +req.query.offset || 0;
+  let query = req.query.query;
   let warehouseId = req.decoded.warehouseId;
+  let fillterCancel = req.query.fillterCancel;
+
   try {
-    let rs: any = await orderModel.getListWaitingApprove(db, warehouseId, null, limit, offset);
-    res.send({ ok: true, rows: rs[0] });
+    let rs: any = await orderModel.getListWaitingApprove(db, warehouseId, null, limit, offset, query, fillterCancel);
+    let total: any = await orderModel.totalListWaitingApprove(db, warehouseId, null, query, fillterCancel);
+    res.send({ ok: true, rows: rs[0], total: total[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -1482,10 +1493,12 @@ router.get('/requisition/orders/approved', async (req, res, next) => {
   let limit = +req.query.limit || 15;
   let offset = +req.query.offset || 0;
   let warehouseId = req.decoded.warehouseId;
+  let query = req.query.query;
 
   try {
-    let rs: any = await orderModel.getListApproved(db, warehouseId, limit, offset);
-    res.send({ ok: true, rows: rs[0] });
+    let rs: any = await orderModel.getListApproved(db, warehouseId, null, limit, offset, query);
+    let rsTotal: any = await orderModel.totalListApproved(db, warehouseId, null, query);
+    res.send({ ok: true, rows: rs[0], total: rsTotal[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -1634,11 +1647,14 @@ router.get('/requisition/orders/unpaid', async (req, res, next) => {
   let db = req.db;
   let limit = +req.query.limit || 15;
   let offset = +req.query.offset || 0;
+  let query = req.query.query;
   let warehouseId = req.decoded.warehouseId;
+  let fillterCancel = req.query.fillterCancel;
 
   try {
-    let rs: any = await orderModel.getUnPaidOrders(db, warehouseId, null, limit, offset);
-    res.send({ ok: true, rows: rs[0] });
+    let rs: any = await orderModel.getUnPaidOrders(db, warehouseId, null, limit, offset, query, fillterCancel);
+    let total: any = await orderModel.totalUnPaidOrders(db, warehouseId, null, query, fillterCancel);
+    res.send({ ok: true, rows: rs[0], total: total[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
