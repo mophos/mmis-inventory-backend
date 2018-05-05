@@ -338,7 +338,7 @@ export class RequisitionOrderModel {
     ) as confirm_qty,
     
     (
-	  select vr.remain_qty
+	  select sum(vr.remain_qty) as remain_qty
       from view_product_reserve as vr
       
       where vr.warehouse_id=ro.wm_withdraw and vr.generic_id=roi.generic_id
@@ -347,7 +347,7 @@ export class RequisitionOrderModel {
     ) as remain_qty,
     
 (
-	  select vr.stock_qty
+	  select sum(vr.stock_qty) as stock_qty
       from view_product_reserve as vr
       
       where vr.warehouse_id=ro.wm_withdraw and vr.generic_id=roi.generic_id
