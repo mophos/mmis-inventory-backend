@@ -2115,7 +2115,7 @@ router.get('/report/summary/disbursement/:startDate/:endDate', wrap(async (req, 
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate);
-  if(rs[0].length == 0){res.render('error404');}
+  if (rs[0].length == 0) { res.render('error404'); }
   let summary = rs[0]
   let warehouse_id = []
   let summary_list = []
@@ -2155,11 +2155,17 @@ router.get('/report/product-remain/:warehouseId/:genericTypeId', wrap(async (req
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let rs = await inventoryReportModel.productRemain(db, warehouseId, genericTypeId);
+  let productRemain: any = rs[0];
+  productRemain.forEach(e => {
+    e.expired_date = moment(e.expired_date).isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year') + 543) : '-';
+  });
 
   // res.send(summary_list);
-  res.render('summary_disbursement', {
+  res.render('productRemain', {
     today: today,
-    hospitalName: hospitalName
+    hospitalName: hospitalName,
+    productRemain: productRemain,
+    printDate: printDate
   });
 }));
 

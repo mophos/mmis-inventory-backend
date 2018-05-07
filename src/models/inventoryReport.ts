@@ -2146,6 +2146,7 @@ OR sc.ref_src like ?
     productRemain(knex: Knex, warehouseId: any, genericTypeId: any) {
         let sql = `SELECT
         wp.product_id,
+        mp.working_code,
         mp.product_name,
         sum(wp.qty) AS qty,
         mu1.unit_name AS large_unit,
@@ -2153,7 +2154,8 @@ OR sc.ref_src like ?
         mug.qty AS conversion,
         wp.lot_no,
         wp.expired_date,
-        mg.generic_type_id
+        mg.generic_type_id,
+        mgt.generic_type_name
     FROM
         wm_products AS wp
     INNER JOIN mm_products AS mp ON mp.product_id = wp.product_id
@@ -2161,12 +2163,13 @@ OR sc.ref_src like ?
     LEFT JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id
     LEFT JOIN mm_units AS mu2 ON mu2.unit_id = mug.to_unit_id
     LEFT JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
+    LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
     WHERE
-        wp.warehouse_id = '${warehouseId}'
-    AND
-        mg.generic_type_id = '${genericTypeId}'
-    AND
-        wp.qty != 0
+        wp.warehouse_id = '${warehouseId}'`
+        if (genericTypeId != 0) {
+    sql += `AND mg.generic_type_id = '${genericTypeId}'`
+        }
+    sql += `AND wp.qty != 0
     GROUP BY
         wp.product_id,
         wp.unit_generic_id,
