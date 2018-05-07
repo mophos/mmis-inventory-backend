@@ -243,13 +243,16 @@ mgt.generic_type_id `
         vscw.balance_amount,
         vscw.warehouse_id,
         wr.delivery_code,
-        wro.delivery_code AS delivery_code_other
+        wro.delivery_code AS delivery_code_other,
+        wrt.receive_type_name,
+        wr.receive_type_id
    FROM
        view_stock_card_warehouse AS vscw
    LEFT JOIN wm_receives AS wr ON wr.receive_id = vscw.document_ref_id
    AND vscw.transaction_type = 'REV'
    LEFT JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
    AND vscw.transaction_type = 'REV_OTHER'
+   LEFT JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id
    WHERE 
    vscw.warehouse_id = '${warehouseId}'
    AND

@@ -52,6 +52,9 @@ html
                 br
                 | #{g.delivery_code_other}
             td(style="border:1px solid; padding:0.2em;") #{g.comment}
+              if(g.receive_type_name)
+                br
+                | #{g.receive_type_name}
             td(style="border:1px solid; padding:0.2em;") #{g.warehouse_name}
             td.right(style="border:1px solid; padding:0.2em;") 
               if(g.in_qty != 0)
@@ -85,6 +88,11 @@ html
                 br
                 | #{a.delivery_code_other}
             td(style="border:1px solid; padding:0.2em;") #{a.comment}
+              if(a.receive_type_name)
+                br
+                | #{a.receive_type_name}
+              else
+                | 
             td(style="border:1px solid; padding:0.2em;") #{a.warehouse_name}
             td.right(style="border:1px solid; padding:0.2em;") 
               if(a.in_qty != 0)
