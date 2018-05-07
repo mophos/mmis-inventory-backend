@@ -1,0 +1,60 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table
+      thead
+        tr 
+          td.center.bold(colspan='8') #{hospitalName}
+        tr 
+          td.center.bold(colspan='8') รายงานสินค้าคงเหลือ
+        tr 
+          td.left(colspan='8') #{printDate}
+      tbody
+      - y=0
+      - for(var i in  productRemain)
+        - y++
+        - u = 0
+        if(u == 0 && oldWorkingCode != productRemain[i].working_code)
+          tr
+            td(style='border-top:1px dashed')
+            td(style='border-top:1px dashed')
+            td(style='border-top:1px dashed')
+            td(style='border-top:1px dashed')
+            td(style='border-top:1px dashed')
+            td(style='border-top:1px dashed')
+            td(style='border-top:1px dashed')
+            td(style='border-top:1px dashed')
+        tr
+          if(oldWorkingCode == productRemain[i].working_code)
+            - u++
+            tr
+              td
+              td #{productRemain[i].qty/productRemain[i].conversion} #{productRemain[i].large_unit} (#{productRemain[i].conversion} #{productRemain[i].small_unit})
+              td #{productRemain[i].lot_no}
+              td #{productRemain[i].expired_date}
+          else
+            - u = 0
+            tr
+              td.left รหัสยา:
+              td.left #{productRemain[i].working_code}
+            tr
+              td.left ชื่อสามัญ:
+              td.left #{productRemain[i].product_name}
+              td.left ประเภท:
+              td.left #{productRemain[i].generic_type_name}
+            tr
+              td
+              td คงเหลือ
+              td lot no
+              td วันหมดอายุ
+            tr
+              td
+              td #{productRemain[i].qty/productRemain[i].conversion} #{productRemain[i].large_unit} (#{productRemain[i].conversion} #{productRemain[i].small_unit})
+              td #{productRemain[i].lot_no}
+              td #{productRemain[i].expired_date}
+        - oldWorkingCode = productRemain[i].working_code
