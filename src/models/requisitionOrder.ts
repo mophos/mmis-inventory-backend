@@ -338,24 +338,22 @@ export class RequisitionOrderModel {
     ) as confirm_qty,
     
     (
-	  select sum(roix.confirm_qty)
-      from wm_requisition_confirms rcx
-	  inner join wm_requisition_confirm_items roix ON rcx.confirm_id = roix.confirm_id
-      inner join mm_products mp ON mp.generic_id = roix.generic_id
-      inner join wm_products wp on roix.wm_product_id = wp.wm_product_id
-      inner join mm_unit_generics mug on wp.unit_generic_id = mug.unit_generic_id
+	  select sum(vr.remain_qty) as remain_qty
+      from view_product_reserve as vr
       
-      where rcx.is_approve='N' and roix.generic_id=roi.generic_id and wp.warehouse_id=ro.wm_withdraw
+      where vr.warehouse_id=ro.wm_withdraw and vr.generic_id=roi.generic_id
 
       
-    ) as book_qty,
+    ) as remain_qty,
     
 (
-	select sum(wp.qty)
-	from wm_products as wp
-	inner join mm_products as mp on mp.product_id=wp.product_id
-	where mp.generic_id=roi.generic_id and wp.warehouse_id=ro.wm_withdraw
-    ) as remain_qty
+	  select sum(vr.stock_qty) as stock_qty
+      from view_product_reserve as vr
+      
+      where vr.warehouse_id=ro.wm_withdraw and vr.generic_id=roi.generic_id
+
+      
+    ) as stock_qty
     
     from wm_requisition_order_items as roi
     inner join mm_generics as mg on mg.generic_id=roi.generic_id
