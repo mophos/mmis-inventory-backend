@@ -1586,6 +1586,7 @@ OR sc.ref_src like ?
         wr.delivery_date,
         ppo.purchase_order_book_number,
         ppo.purchase_order_number,
+        ppo.chief_id,
         (
             SELECT
                 COUNT( mg.generic_id )
@@ -1666,7 +1667,7 @@ OR sc.ref_src like ?
     }
     getChief(knex: Knex, typeCode: any) {
         //ดึงหัวหน้าเจ้าหน้าที่พัสดุ ส่ง 4 เข้ามา
-        return knex.select('t.title_name as title', 'p.fname', 'p.lname', 'upos.position_name', 'upot.type_name as position')
+        return knex.select('upo.people_id','t.title_name as title', 'p.fname', 'p.lname', 'upos.position_name', 'upot.type_name as position')
             .from('um_purchasing_officer as upo')
             .join('um_people as p', 'upo.people_id', 'p.people_id')
             .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
