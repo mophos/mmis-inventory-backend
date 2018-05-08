@@ -1693,7 +1693,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   idxChiefPo > -1 ? cName.push(chief[idxChiefPo]) : cName = [];
 
   res.render('check_receive', {
-    chief: chief[0],
+    chief: cName[0],
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
