@@ -1690,7 +1690,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let chief = await inventoryReportModel.getChief(db, 'CHIEF');
   let idxChiefPo = _.findIndex(chief, { people_id: chiefPo });
   idxChiefPo > -1 ? cName.push(chief[idxChiefPo]) : cName = [];
-
+ 
   res.render('check_receive', {
     chief: cName[0],
     staffReceive: staffReceive[0],
@@ -1779,7 +1779,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
   let chief = await inventoryReportModel.getChief(db, 'CHIEF');
   let idxChiefPo = _.findIndex(chief, { people_id: chiefPo });
   idxChiefPo > -1 ? cName.push(chief[idxChiefPo]) : cName = [];
-  
+
   res.render('check_receives', {
     totalPrice: totalPrice,
     _bahtText: _bahtText,
