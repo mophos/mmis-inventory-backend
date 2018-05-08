@@ -1657,14 +1657,12 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
 
-  let chiefPo = null;
   let qty = 0;
   let bahtText: any = []
   let committee: any = []
   let invenChief: any = []
   check_receive = check_receive[0];
   for (let v in check_receive) {
-    chiefPo = check_receive[v].chief_id;
     check_receive[v].receive_date = moment(check_receive[v].receive_date).format('D MMMM ') + (moment(check_receive[v].receive_date).get('year') + 543);
     check_receive[v].delivery_date = moment(check_receive[v].delivery_date).format('D MMMM ') + (moment(check_receive[v].delivery_date).get('year') + 543);
     check_receive[v].podate = moment(check_receive[v].podate).format('D MMMM ') + (moment(check_receive[v].podate).get('year') + 543);
@@ -1685,14 +1683,10 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   // }
   if (committee[0] === undefined) { res.render('no_commitee'); }
   let staffReceive = await inventoryReportModel.staffReceive(db);
-
-  let cName = []
   let chief = await inventoryReportModel.getChief(db, 'CHIEF');
-  let idxChiefPo = _.findIndex(chief, { people_id: chiefPo });
-  idxChiefPo > -1 ? cName.push(chief[idxChiefPo]) : cName = [];
 
   res.render('check_receive', {
-    chief: cName[0],
+    chief: chief[0],
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
