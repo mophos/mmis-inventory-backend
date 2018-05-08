@@ -1653,7 +1653,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
 
   if (committees === undefined) { res.render('no_commitee'); }
   let staffReceive = await inventoryReportModel.staffReceive(db);
-  let chief = await inventoryReportModel.getChief(db, 'CHIEF')
+  let chief = await inventoryReportModel.getChief(db, 'CHIEF');
 
   res.render('check_receives', {
     totalPrice: totalPrice,
