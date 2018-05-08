@@ -192,7 +192,9 @@ router.post('/', co(async (req, res, next) => {
 
     // get total price
     products.forEach((v: any) => {
-      totalPriceReceive += (v.receive_qty * v.cost);
+      if(v.is_free === 'N'){
+        totalPriceReceive += (v.receive_qty * v.cost);
+      }
     });
 
     try {
@@ -217,10 +219,12 @@ router.post('/', co(async (req, res, next) => {
             let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId);
             let rsReceived = await receiveModel.getTotalPricePurcehaseReceived(db, summary.purchaseOrderId);
 
-            totalPrice = +rsReceived[0].total + totalPriceReceive;
-            totalPo = +rsPo[0].total
+            totalPrice = Math.round(+rsReceived[0].total + totalPriceReceive);
+            totalPo = Math.round(+rsPo[0].total);
           }
-
+          console.log(+totalPrice);
+          console.log(+totalPo);
+          
           if (+totalPrice > +totalPo) {
             res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
           } else {
@@ -253,6 +257,7 @@ router.post('/', co(async (req, res, next) => {
               purchase_order_id: summary.purchaseOrderId,
               people_user_id: req.decoded.people_user_id,
               comment: summary.comment,
+              is_expired: summary.is_expired,
               committee_id: summary.committee_id,
               created_at: moment().format('YYYY-MM-DD HH:mm:ss')
             }
@@ -778,7 +783,9 @@ router.post('/approve', co(async (req, res, next) => {
       //ปรับราคาต่อแพค
       obj_adjust.unit_generic_id = v.unit_generic_id;
       obj_adjust.cost = v.cost;
-      adjust_price.push(obj_adjust);
+      if(v.cost > 0){
+        adjust_price.push(obj_adjust);
+      }
     });
 
     // get balance

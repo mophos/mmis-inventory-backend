@@ -658,7 +658,8 @@ export class ReceiveModel {
   getPurchaseList(knex: Knex, limit: number, offset: number) {
 
     let sql = `
-      select pc.purchase_order_book_number, pc.purchase_order_id, pc.purchase_order_number,
+      select pc.purchase_order_book_number, pc.purchase_order_id, 
+      IF(pc.purchase_order_book_number is null,pc.purchase_order_number,pc.purchase_order_book_number) as purchase_order_number,
       pc.order_date, 
       (
         select sum(pci.qty*pci.unit_price)
@@ -716,6 +717,7 @@ export class ReceiveModel {
         from pc_purchasing_order_item as pci 
         where pci.purchase_order_id=pc.purchase_order_id
         and pci.giveaway='N'
+        and pc.is_cancel = 'N'
       ) as purchase_price, 
       pc.labeler_id as vendor_id, pc.contract_id,
       cmp.name as purchase_method_name, ml.labeler_name,
@@ -723,12 +725,14 @@ export class ReceiveModel {
         select sum(pi.qty)
         from pc_purchasing_order_item as pi
         where pi.purchase_order_id=pc.purchase_order_id
+        and pc.is_cancel = 'N'
       ) as purchase_qty,
       (
         select sum(rd.receive_qty) 
         from wm_receive_detail as rd
         inner join wm_receives as r on r.receive_id=rd.receive_id
         where r.purchase_order_id=pc.purchase_order_id
+        and r.is_cancel ='N'
       ) as receive_qty,
       (
         select sum(rd.receive_qty*rd.cost) 
@@ -736,6 +740,7 @@ export class ReceiveModel {
         inner join wm_receives as r on r.receive_id=rd.receive_id
         where rd.is_free='N'
         and r.purchase_order_id=pc.purchase_order_id
+        and r.is_cancel ='N'
         
       ) as receive_price
       from pc_purchasing_order as pc
@@ -825,7 +830,7 @@ export class ReceiveModel {
       pi.qty as purchase_qty, pi.unit_price as cost, lm.labeler_name as m_labeler_name, 
       lv.labeler_name as v_labeler_name, p.working_code,
       mu.from_unit_id, mu.to_unit_id as base_unit_id, mu.qty as conversion_qty,
-      u1.unit_name as to_unit_name, u2.unit_name as from_unit_name, pi.giveaway, 
+      u1.unit_name as to_unit_name, u2.unit_name as from_unit_name, pi.giveaway,p.is_lot_control,
       (
       	select ifnull(sum(rdx.receive_qty), 0)
       	from wm_receive_detail as rdx
@@ -1154,7 +1159,7 @@ export class ReceiveModel {
         WHERE
           rd.warehouse_id = '${warehouseId}'
         AND rd.receive_id = r.receive_id
-      )  and ra.receive_id is null`;
+      )  and ra.receive_id is null and r.is_cancel = 'N'`;
     return knex.raw(sql);
   }
 
@@ -1170,7 +1175,7 @@ export class ReceiveModel {
     WHERE
       rod.warehouse_id = ${warehouseId}
     AND rod.receive_other_id = rt.receive_other_id
-    ) and ra.receive_other_id is null`;
+    ) and ra.receive_other_id is null and rt.is_cancel = 'N'`;
     return knex.raw(sql);
   }
 
@@ -1238,11 +1243,16 @@ export class ReceiveModel {
       rod.receive_other_id
     FROM
       wm_receive_other_detail rod
+      join mm_products mp on rod.product_id = mp.product_id
     WHERE
       rod.warehouse_id = ${warehouseId}
     AND rod.receive_other_id = rt.receive_other_id
+    and (
+      mp.working_code = '${query}' or
+      mp.product_name like '${_query}'      
+    )
   )
-  and  (rt.receive_code like '${_query}' or d.donator_name like '${_query}')`;
+  or  (rt.receive_code like '${_query}' or d.donator_name like '${_query}')`;
     if (status == 'approve') {
       sql += ` and ra.receive_other_id is not null`
     } else if (status == 'Napprove') {
@@ -1265,10 +1275,15 @@ export class ReceiveModel {
       rod.receive_other_id
     FROM
       wm_receive_other_detail rod
+      join mm_products mp on rod.product_id = mp.product_id
     WHERE
       rod.warehouse_id = ${warehouseId}
     AND rod.receive_other_id = rt.receive_other_id
-    ) and  (rt.receive_code like '${_query}' or d.donator_name like '${_query}')`;
+    and (
+      mp.working_code = '${query}' or
+      mp.product_name like '${_query}'      
+    )
+    ) or  (rt.receive_code like '${_query}' or d.donator_name like '${_query}')`;
     if (status == 'approve') {
       sql += ` and ra.receive_other_id is not null`
     } else if (status == 'Napprove') {
@@ -1391,10 +1406,15 @@ export class ReceiveModel {
           rd.receive_id
         FROM
           wm_receive_detail rd
+        join mm_products mp on mp.product_id = rd.product_id
         WHERE
           rd.warehouse_id = '${warehouseId}'
         AND rd.receive_id = r.receive_id
-      ) and  (r.receive_code like '${_query}' or l.labeler_name like '${_query}')`;
+        and (
+          mp.working_code = '${query}' or
+          mp.product_name like '${_query}'
+        )
+      ) or  (r.receive_code like '${_query}' or l.labeler_name like '${_query}' or pc.purchase_order_number like '${_query}' or pc.purchase_order_book_number like '${_query}')`;
     if (status == 'approve') {
       sql += ` and ra.receive_id is not null`
     } else if (status == 'Napprove') {
@@ -1414,16 +1434,22 @@ export class ReceiveModel {
       wm_receives AS r
     LEFT JOIN wm_receive_approve AS ra ON ra.receive_id = r.receive_id
     LEFT JOIN mm_labelers AS l ON l.labeler_id = r.vendor_labeler_id
+    left join pc_purchasing_order pc on pc.purchase_order_id = r.purchase_order_id
     WHERE
       r.receive_id IN (
         SELECT
           rd.receive_id
         FROM
           wm_receive_detail rd
+          join mm_products mp on mp.product_id = rd.product_id
         WHERE
           rd.warehouse_id = '${warehouseId}'
         AND rd.receive_id = r.receive_id
-      ) and  (r.receive_code like '${_query}' or l.labeler_name like '${_query}')`;
+        and (
+          mp.working_code = '${query}' or
+          mp.product_name like '${_query}'
+        )
+      ) or (r.receive_code like '${_query}' or l.labeler_name like '${_query}' or pc.purchase_order_number like '${_query}' or pc.purchase_order_book_number like '${_query}')`;
     if (status == 'approve') {
       sql += ` and ra.receive_id is not null`
     } else if (status == 'Napprove') {

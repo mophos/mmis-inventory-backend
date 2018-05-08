@@ -212,6 +212,8 @@ mgt.generic_type_id `
             ned DESC`
         return knex.raw(sql, [startdate, enddate])
     }
+
+    // คิวรี่ view stockcards หลัก
     generic_stock(knex: Knex, genericId, startDate, endDate, warehouseId) {
         let sql = `SELECT
         vscw.stock_card_id,
@@ -241,22 +243,87 @@ mgt.generic_type_id `
         vscw.balance_amount,
         vscw.warehouse_id,
         wr.delivery_code,
-        wro.delivery_code AS delivery_code_other
+        wro.delivery_code AS delivery_code_other,
+        wrt.receive_type_name,
+        wr.receive_type_id
    FROM
        view_stock_card_warehouse AS vscw
    LEFT JOIN wm_receives AS wr ON wr.receive_id = vscw.document_ref_id
    AND vscw.transaction_type = 'REV'
    LEFT JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
    AND vscw.transaction_type = 'REV_OTHER'
+   LEFT JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id
    WHERE 
    vscw.warehouse_id = '${warehouseId}'
    AND
    vscw.generic_id = '${genericId}'
-   AND vscw.stock_date BETWEEN '${startDate}'
-   AND '${endDate}'
+   AND vscw.stock_date BETWEEN '${startDate} 00:00:00'
+   AND '${endDate} 23:59:59'
     ORDER BY
-        vscw.stock_date,
         vscw.stock_card_id`
+        return knex.raw(sql)
+    }
+
+    // ยอดยกมาใน stockcard 
+    summit_stockcard(knex: Knex, genericId, startDate, warehouseId) {
+        let sql = `SELECT
+        vscw.stock_card_id,
+        vscw.product_id,
+        vscw.generic_id,
+        vscw.generic_name,
+        vscw.stock_date,
+        'SUMMIT' AS transaction_type,
+        'ยอดยกมา' AS comment,
+        '' AS document_ref,
+        '' AS document_ref_id,
+        vscw.small_unit,
+        vscw.large_unit,
+        vscw.conversion_qty,
+        vscw.dosage_name,
+        '' AS lot_no,
+        vscw.expired_date,
+        vscw.ref_src,
+        vscw.ref_dst,
+        '' AS warehouse_name,
+        sum(vscw.in_qty) - sum(vscw.out_qty) AS in_qty,
+        0 AS out_qty,
+        vscw.cost,
+        sum(vscw.in_qty) - sum(vscw.out_qty) AS balance_generic_qty,
+        sum(vscw.in_qty) - sum(vscw.out_qty) AS balance_qty,
+        vscw.balance_unit_cost,
+        vscw.balance_amount,
+        vscw.warehouse_id,
+        '' AS delivery_code,
+        '' AS delivery_code_other
+    FROM
+        view_stock_card_warehouse AS vscw
+    WHERE
+        vscw.warehouse_id = '${warehouseId}'
+    AND vscw.generic_id = '${genericId}'
+    AND vscw.stock_date < '${startDate} 00:00:00'
+    GROUP BY
+        vscw.generic_id`
+        return knex.raw(sql)
+    }
+
+    // คิวรี่ คงคลังใน stockcard โชว์เป็น แพ๊ค
+    inventory_stockcard(knex: Knex, genericId, endDate, warehouseId) {
+        let sql = `SELECT
+        vscw.unit_generic_id,
+        vscw.lot_no,
+        sum(vscw.in_qty) AS in_qty,
+        sum(vscw.out_qty) AS out_qty,
+        vscw.conversion_qty,
+        vscw.large_unit,
+        vscw.small_unit
+    FROM
+        view_stock_card_warehouse AS vscw
+    WHERE
+        vscw.warehouse_id = '${warehouseId}'
+    AND vscw.generic_id = '${genericId}'
+    AND vscw.stock_date < '${endDate} 23:59:59'
+    GROUP BY
+        vscw.unit_generic_id`
         return knex.raw(sql)
     }
 
@@ -1519,7 +1586,18 @@ OR sc.ref_src like ?
         wr.delivery_date,
         ppo.purchase_order_book_number,
         ppo.purchase_order_number,
-        COUNT(*) amount_qty,
+        (
+            SELECT
+                COUNT( mg.generic_id )
+            FROM
+                wm_receives wrr
+                JOIN wm_receive_detail wrd ON wrd.receive_id = wrr.receive_id
+                LEFT JOIN pc_purchasing_order ppo ON ppo.purchase_order_id = wrr.purchase_order_id
+                LEFT JOIN mm_products mp ON mp.product_id = wrd.product_id
+                LEFT JOIN mm_generics mg ON mg.generic_id = mp.generic_id 
+                WHERE
+               wrr.receive_id = wr.receive_id
+        ) as amount_qty,
         mgt.generic_type_name
         FROM wm_receives wr
         JOIN wm_receive_detail wrd ON wrd.receive_id=wr.receive_id
@@ -2065,6 +2143,40 @@ OR sc.ref_src like ?
          mgt.generic_type_id,
          mga.account_id
        ) AS a ON a.generic_type_id = mgt.generic_type_id`
+        return knex.raw(sql);
+    }
+
+    productRemain(knex: Knex, warehouseId: any, genericTypeId: any) {
+        let sql = `SELECT
+        wp.product_id,
+        mp.working_code,
+        mp.product_name,
+        sum(wp.qty) AS qty,
+        mu1.unit_name AS large_unit,
+        mu2.unit_name AS small_unit,
+        mug.qty AS conversion,
+        wp.lot_no,
+        wp.expired_date,
+        mg.generic_type_id,
+        mgt.generic_type_name
+    FROM
+        wm_products AS wp
+    INNER JOIN mm_products AS mp ON mp.product_id = wp.product_id
+    LEFT JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wp.unit_generic_id
+    LEFT JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id
+    LEFT JOIN mm_units AS mu2 ON mu2.unit_id = mug.to_unit_id
+    LEFT JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
+    LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+    WHERE
+        wp.warehouse_id = '${warehouseId}'`
+        if (genericTypeId != 0) {
+    sql += `AND mg.generic_type_id = '${genericTypeId}'`
+        }
+    sql += `AND wp.qty != 0
+    GROUP BY
+        wp.product_id,
+        wp.unit_generic_id,
+        wp.lot_no`
         return knex.raw(sql);
     }
 

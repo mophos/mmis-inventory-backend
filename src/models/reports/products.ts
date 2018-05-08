@@ -4,19 +4,25 @@ import * as moment from 'moment';
 export class ReportProductModel {
   getProductRemainWithWarehouse(knex: Knex, warehouseId: number) {
     return knex('wm_products as wp')
-      .select('wp.product_id', 'mp.product_name', knex.raw('sum(wp.qty) as total'), 'mu.unit_name')
+      .select('wp.product_id', 'mp.product_name', knex.raw('sum(wp.qty) as total'), 'mu.unit_name', knex.raw('concat(mu1.unit_name,"(",mug.qty," ",mu2.unit_name,")") as package'))
       .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
       .leftJoin('mm_units as mu', 'mu.unit_id', 'mp.primary_unit_id')
+      .leftJoin('mm_unit_generics as mug', 'mug.unit_generic_id', 'wp.unit_generic_id')
+      .leftJoin('mm_units as mu1', 'mu1.unit_id', 'mug.from_unit_id')
+      .leftJoin('mm_units as mu2', 'mu2.unit_id', 'mug.to_unit_id')
       .where('wp.warehouse_id', warehouseId)
-      .groupBy('wp.product_id')
+      .groupBy('wp.product_id','wp.unit_generic_id')
   }
 
   getProductRemain(knex: Knex) {
     return knex('wm_products as wp')
-      .select('wp.product_id', 'mp.product_name', knex.raw('sum(wp.qty) as total'), 'mu.unit_name')
+      .select('wp.product_id', 'mp.product_name', knex.raw('sum(wp.qty) as total'), 'mu.unit_name', knex.raw('concat(mu1.unit_name,"(",mug.qty," ",mu2.unit_name,")") as package'))
       .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
       .leftJoin('mm_units as mu', 'mu.unit_id', 'mp.primary_unit_id')
-      .groupBy('wp.product_id')
+      .leftJoin('mm_unit_generics as mug', 'mug.unit_generic_id', 'wp.unit_generic_id')
+      .leftJoin('mm_units as mu1', 'mu1.unit_id', 'mug.from_unit_id')
+      .leftJoin('mm_units as mu2', 'mu2.unit_id', 'mug.to_unit_id')
+      .groupBy('wp.product_id','wp.unit_generic_id')
 
   }
 
@@ -34,7 +40,7 @@ export class ReportProductModel {
       })
       .where('wp.product_id', productId)
       // .where('wp.qty', '>', 0)
-      .groupBy('wp.warehouse_id')
+      .groupBy('wp.warehouse_id,mpk.package_id')
   }
 
   getProductReceives(knex: Knex, productId: string) {

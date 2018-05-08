@@ -119,6 +119,7 @@ router.put('/orders/:requisitionId', async (req, res, next) => {
       _order.people_id = people_id;
       _order.updated_at = moment().format('YYYY-MM-DD HH:mm:ss');
       _order.requisition_type_id = order.requisition_type_id;
+      _order.requisition_date = order.requisition_date;
 
       let rsOrder: any = await orderModel.updateOrder(db, requisitionId, _order);
 
@@ -151,10 +152,12 @@ router.get('/orders/waiting', async (req, res, next) => {
   let db = req.db;
   let limit = +req.query.limit || 15;
   let offset = +req.query.offset || 0;
+  let query = req.query.query;
+  let fillterCancel = req.query.fillterCancel;
   let warehouseId = req.decoded.warehouseId;
   try {
-    let rs: any = await orderModel.getListWaiting(db, null, warehouseId, limit, offset);
-    let total: any = await orderModel.totalListWaiting(db, null, warehouseId);
+    let rs: any = await orderModel.getListWaiting(db, null, warehouseId, limit, offset, query, fillterCancel);
+    let total: any = await orderModel.totalListWaiting(db, null, warehouseId, query, fillterCancel);
     res.send({ ok: true, rows: rs[0], total: total[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -169,11 +172,13 @@ router.get('/orders/waiting-approve', async (req, res, next) => {
   let db = req.db;
   let limit = +req.query.limit || 15;
   let offset = +req.query.offset || 0;
+  let query = req.query.query;
   let warehouseId = req.decoded.warehouseId;
+  let fillterCancel = req.query.fillterCancel;
 
   try {
-    let rs: any = await orderModel.getListWaitingApprove(db, null, warehouseId, limit, offset);
-    let total: any = await orderModel.totalListWaitingApprove(db, null, warehouseId);
+    let rs: any = await orderModel.getListWaitingApprove(db, null, warehouseId, limit, offset, query, fillterCancel);
+    let total: any = await orderModel.totalListWaitingApprove(db, null, warehouseId, query, fillterCancel);
     res.send({ ok: true, rows: rs[0], total: total[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -186,11 +191,16 @@ router.get('/orders/waiting-approve', async (req, res, next) => {
 router.get('/orders/approved', async (req, res, next) => {
 
   let db = req.db;
+  let limit = +req.query.limit || 15;
+  let offset = +req.query.offset || 0;
+  let query = req.query.query;
   let warehouseId = req.decoded.warehouseId;
+  let fillterCancel = req.query.fillterCancel;
 
   try {
-    let rs: any = await orderModel.getListApproved(db, null, warehouseId);
-    res.send({ ok: true, rows: rs });
+    let rs: any = await orderModel.getListApproved(db, null, warehouseId, limit, offset, query);
+    let rsTotal: any = await orderModel.totalListApproved(db, null, warehouseId, query);
+    res.send({ ok: true, rows: rs[0], total: rsTotal[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -440,16 +450,87 @@ router.get('/orders/unpaid', async (req, res, next) => {
   let db = req.db;
   let limit = +req.query.limit || 15;
   let offset = +req.query.offset || 0;
+  let query = req.query.query;
   let warehouseId = req.decoded.warehouseId;
+  let fillterCancel = req.query.fillterCancel;
 
   try {
-    let rs: any = await orderModel.getUnPaidOrders(db, null, warehouseId, limit, offset);
-    let total: any = await orderModel.totalUnPaidOrders(db, null, warehouseId);
+    let rs: any = await orderModel.getUnPaidOrders(db, null, warehouseId, limit, offset, query, fillterCancel);
+    let total: any = await orderModel.totalUnPaidOrders(db, null, warehouseId, query, fillterCancel);
     res.send({ ok: true, rows: rs[0], total: total[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
+  }
+
+});
+
+router.post('/orders/unpaid/reorder', async (req, res, next) => {
+
+  let db = req.db;
+  let requisitionOrderUnpaidId = req.body.requisitionOrderUnpaidId;
+  let requisitionOrderId = req.body.requisitionOrderId;
+
+  let requisitionOrderDate = moment().format('YYYY-MM-DD');
+
+  let year = moment(requisitionOrderDate, 'YYYY-MM-DD').get('year');
+  let month = moment(requisitionOrderDate, 'YYYY-MM-DD').get('month') + 1;
+
+  let isClose = await periodModel.isPeriodClose(db, year, month);
+
+  if (isClose) {
+    res.send({ ok: false, error: 'รอบบัญชีถูกปิดแล้ว' })
+  } else {
+
+    try {
+      // get summary
+      let rs: any = await orderModel.getUnpaidReorderSummaryDetail(db, requisitionOrderUnpaidId);
+      // get items
+      let rsItems = await orderModel.getUnpaidReorderItems(db, requisitionOrderUnpaidId, requisitionOrderId);
+
+      if (rs[0] && rsItems[0]) {
+        let _order: any = rs[0][0];
+
+        let orders: any = {};
+        orders.requisition_date = _order.requisition_date;
+        orders.wm_requisition = _order.wm_requisition;
+        orders.wm_withdraw = _order.wm_withdraw;
+        orders.requisition_type_id = _order.requisition_type_id;
+        orders.remark = 'สร้างใหม่จากรายการค้างจ่าย เลขที่ใบเบิก ' + _order.requisition_code;
+        orders.doc_type = _order.doc_type;
+        orders.people_id = _order.people_id;
+        orders.requisition_code = await serialModel.getSerial(db, 'RQ');
+        orders.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        let rsOrder: any = await orderModel.saveOrder(db, orders);
+        let requisitionId = rsOrder[0];
+        let items: any = [];
+
+        let _items = rsItems[0];
+
+        _items.forEach((v: any) => {
+          let obj: any = {
+            requisition_order_id: requisitionId,
+            generic_id: v.generic_id,
+            requisition_qty: v.requisition_qty, // small qty
+            unit_generic_id: v.unit_generic_id
+          }
+          items.push(obj);
+        });
+        await orderModel.saveItems(db, items);
+        // remove unpaid 
+        await orderModel.changeToUnpaidCancel(db, [requisitionOrderId]);
+        res.send({ ok: true });
+        
+      } else {
+        res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการออกใบเบิกใหม่' })
+      }
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
   }
 
 });
@@ -925,7 +1006,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             if (srcIdx > -1) {
               balances[srcIdx].balance_qty -= +v.confirm_qty;
               srcBalance = balances[srcIdx].balance_qty
-              balances[srcIdx].balance_generic_qty -= v.confirm_qty;
+              balances[srcIdx].balance_generic_qty -= +v.confirm_qty;
               srcBalanceGeneric = balances[srcIdx].balance_generic_qty;
             }
             objStockcardOut.balance_qty = srcBalance;
@@ -960,7 +1041,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             if (dstIdx > -1) {
               balances[dstIdx].balance_qty += +v.confirm_qty;
               dstBalance = balances[dstIdx].balance_qty;
-              balances[dstIdx].balance_generic_qty += v.confirm_qty;
+              balances[dstIdx].balance_generic_qty += +v.confirm_qty;
               dstBalanceGeneric = balances[dstIdx].balance_generic_qty;
             }
             objStockcardIn.balance_qty = dstBalance
@@ -1064,26 +1145,33 @@ router.post('/unpaid/confirm', async (req, res, next) => {
 
     let balances = [];
     let stockCard = [];
-    for (let s of products) {
+    console.log('products', products);
+    let sc: any = await orderModel.getRequisitionOrderUnpaidItem(db, orderUnpaidId);    
+    for (let s of sc[0]) {
       let srcObjBalance: any = {};
       let dstObjBalance: any = {};
       let srcBalance = await orderModel.getBalance(db, s.product_id, s.wm_withdraw);
+      console.log('srcBalance', srcBalance[0]);
+      
       srcBalance[0].forEach(v => {
         srcObjBalance.product_id = v.product_id;
         srcObjBalance.warehouse_id = v.warehouse_id;
         srcObjBalance.balance_qty = v.balance;
         srcObjBalance.balance_generic_qty = v.balance_generic;
+        balances.push(srcObjBalance);
       });
-      balances.push(srcObjBalance);
-      let dstBalance = await orderModel.getBalance(db, s.product_id, s.wm_requisition)
+      let dstBalance = await orderModel.getBalance(db, s.product_id, s.wm_requisition);
+      console.log('dstBalance' , dstBalance[0]);
+      
       dstBalance[0].forEach(v => {
         dstObjBalance.product_id = v.product_id;
         dstObjBalance.warehouse_id = v.warehouse_id;
         dstObjBalance.balance_qty = v.balance;
         dstObjBalance.balance_generic_qty = v.balance_generic;
+        balances.push(dstObjBalance);
       });
-      balances.push(dstObjBalance);
     }
+    console.log('balances', balances);
 
     products.forEach(v => {
       let objStockcardOut: any = {}
@@ -1152,6 +1240,8 @@ router.post('/unpaid/confirm', async (req, res, next) => {
       objStockcardIn.comment = 'เบิก';
       stockCard.push(objStockcardIn);
     })
+    console.log('stockCard', stockCard);
+
     // save stock card
     await orderModel.saveStockCard(db, stockCard);
 
@@ -1250,6 +1340,8 @@ router.delete('/rollbackOrder/:confirmId/:requisitionOrderId', async (req, res, 
 
   try {
     await orderModel.updateTempConfirm(db, confirmId, requisitionOrderId);
+    await orderModel.removeOrderUnpaid(db, requisitionOrderId);
+    await orderModel.removeOrderUnpaidItems(db, requisitionOrderId);
     await orderModel.insertConfirmTemp(db, confirmId);
     await orderModel.removeConfirm(db, confirmId);
     await orderModel.removeConfirmItems(db, confirmId);
@@ -1274,5 +1366,6 @@ router.get('/confirm/temp/:confirmId', async (req, res, next) => {
     db.destroy();
   }
 });
+
 
 export default router;

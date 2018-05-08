@@ -476,7 +476,7 @@ router.get('/dashboard/warehouse/:warehouseId', async (req, res, next) => {
           return o.transfer_qty * o.conversion_qty;
         });
         // e.is_success = ((e.total_transfer_qty === (e.dst_max_qty - e.dst_remain_qty)) && ((e.src_remain_qty - e.total_transfer_qty) >= 0)) ? 'Y' : 'N';
-        e.is_success = e.total_transfer_qty ? 'Y' : 'N';
+        e.is_success = (e.total_transfer_qty || productsTransfer.length) ? 'Y' : 'N';
         e.detail = productsTransfer;
       }));
       res.send({ ok: true, rows: rs });
