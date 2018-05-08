@@ -1658,6 +1658,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
 
   let chiefPo = null;
+
   let qty = 0;
   let bahtText: any = []
   let committee: any = []
@@ -1690,9 +1691,9 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let chief = await inventoryReportModel.getChief(db, 'CHIEF');
   let idxChiefPo = _.findIndex(chief, { people_id: chiefPo });
   idxChiefPo > -1 ? cName.push(chief[idxChiefPo]) : cName = [];
- 
+
   res.render('check_receive', {
-    chief: cName[0],
+    chief: chief[0],
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
