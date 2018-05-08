@@ -1739,6 +1739,8 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     check_receive.push(_check_receive);
   }
 
+  let chiefPo: any = null;
+
   let totalPrice: any = 0;
   let allPrice: any = 0;
   let _bahtText: any = []
@@ -1746,6 +1748,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     let _generic_name: any = []
     totalPrice = 0
     _.forEach(objects, object => {
+      chiefPo = object.chief_id;
       object.receive_date = moment(object.receive_date).format('D MMMM ') + (moment(object.receive_date).get('year') + 543);
       object.delivery_date = moment(object.delivery_date).format('D MMMM ') + (moment(object.delivery_date).get('year') + 543);
       object.podate = moment(object.podate).format('D MMMM ') + (moment(object.podate).get('year') + 543);
@@ -1765,12 +1768,16 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
 
   if (committees === undefined) { res.render('no_commitee'); }
   let staffReceive = await inventoryReportModel.staffReceive(db);
-  let chief = await inventoryReportModel.getChief(db, 'CHIEF');
 
+  let cName = []
+  let chief = await inventoryReportModel.getChief(db, 'CHIEF');
+  let idxChiefPo = _.findIndex(chief, { people_id: chiefPo });
+  idxChiefPo > -1 ? cName.push(chief[idxChiefPo]) : cName = [];
+  
   res.render('check_receives', {
     totalPrice: totalPrice,
     _bahtText: _bahtText,
-    chief: chief[0],
+    chief: cName[0],
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
