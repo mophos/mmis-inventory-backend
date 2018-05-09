@@ -1657,12 +1657,15 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
 
+  let chiefPo = null;
+
   let qty = 0;
   let bahtText: any = []
   let committee: any = []
   let invenChief: any = []
   check_receive = check_receive[0];
   for (let v in check_receive) {
+    chiefPo = check_receive[v].chief_id;
     check_receive[v].receive_date = moment(check_receive[v].receive_date).format('D MMMM ') + (moment(check_receive[v].receive_date).get('year') + 543);
     check_receive[v].delivery_date = moment(check_receive[v].delivery_date).format('D MMMM ') + (moment(check_receive[v].delivery_date).get('year') + 543);
     check_receive[v].podate = moment(check_receive[v].podate).format('D MMMM ') + (moment(check_receive[v].podate).get('year') + 543);
@@ -1683,10 +1686,14 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   // }
   if (committee[0] === undefined) { res.render('no_commitee'); }
   let staffReceive = await inventoryReportModel.staffReceive(db);
+
+  let cName = []
   let chief = await inventoryReportModel.getChief(db, 'CHIEF');
+  let idxChiefPo = _.findIndex(chief, { people_id: chiefPo });
+  idxChiefPo > -1 ? cName.push(chief[idxChiefPo]) : cName = [];
 
   res.render('check_receive', {
-    chief: chief[0],
+    chief: cName[0],
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
@@ -1739,6 +1746,8 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     check_receive.push(_check_receive);
   }
 
+  let chiefPo: any = null;
+
   let totalPrice: any = 0;
   let allPrice: any = 0;
   let _bahtText: any = []
@@ -1746,6 +1755,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     let _generic_name: any = []
     totalPrice = 0
     _.forEach(objects, object => {
+      chiefPo = object.chief_id;
       object.receive_date = moment(object.receive_date).format('D MMMM ') + (moment(object.receive_date).get('year') + 543);
       object.delivery_date = moment(object.delivery_date).format('D MMMM ') + (moment(object.delivery_date).get('year') + 543);
       object.podate = moment(object.podate).format('D MMMM ') + (moment(object.podate).get('year') + 543);
@@ -1765,12 +1775,16 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
 
   if (committees === undefined) { res.render('no_commitee'); }
   let staffReceive = await inventoryReportModel.staffReceive(db);
-  let chief = await inventoryReportModel.getChief(db, 'CHIEF')
+
+  let cName = []
+  let chief = await inventoryReportModel.getChief(db, 'CHIEF');
+  let idxChiefPo = _.findIndex(chief, { people_id: chiefPo });
+  idxChiefPo > -1 ? cName.push(chief[idxChiefPo]) : cName = [];
 
   res.render('check_receives', {
     totalPrice: totalPrice,
     _bahtText: _bahtText,
-    chief: chief[0],
+    chief: cName[0],
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
@@ -2115,7 +2129,7 @@ router.get('/report/summary/disbursement/:startDate/:endDate', wrap(async (req, 
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate);
-  if(rs[0].length == 0){res.render('error404');}
+  if (rs[0].length == 0) { res.render('error404'); }
   let summary = rs[0]
   let warehouse_id = []
   let summary_list = []
@@ -2143,6 +2157,30 @@ router.get('/report/summary/disbursement/:startDate/:endDate', wrap(async (req, 
     summary: summary,
     summary_list: summary_list,
     month: month
+  });
+}));
+
+router.get('/report/product-remain/:warehouseId/:genericTypeId', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.params.warehouseId
+  let genericTypeId = req.params.genericTypeId
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  moment.locale('th');
+  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  let rs = await inventoryReportModel.productRemain(db, warehouseId, genericTypeId);
+  if (rs[0].length == 0) {
+    res.render('error404')
+  }
+  let productRemain: any = rs[0];
+  productRemain.forEach(e => {
+    e.expired_date = moment(e.expired_date).isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year') + 543) : '-';
+  });
+  res.render('productRemain', {
+    today: today,
+    hospitalName: hospitalName,
+    productRemain: productRemain,
+    printDate: printDate
   });
 }));
 

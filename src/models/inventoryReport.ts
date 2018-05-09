@@ -243,13 +243,16 @@ mgt.generic_type_id `
         vscw.balance_amount,
         vscw.warehouse_id,
         wr.delivery_code,
-        wro.delivery_code AS delivery_code_other
+        wro.delivery_code AS delivery_code_other,
+        wrt.receive_type_name,
+        wr.receive_type_id
    FROM
        view_stock_card_warehouse AS vscw
    LEFT JOIN wm_receives AS wr ON wr.receive_id = vscw.document_ref_id
    AND vscw.transaction_type = 'REV'
    LEFT JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
    AND vscw.transaction_type = 'REV_OTHER'
+   LEFT JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id
    WHERE 
    vscw.warehouse_id = '${warehouseId}'
    AND
@@ -1583,6 +1586,7 @@ OR sc.ref_src like ?
         wr.delivery_date,
         ppo.purchase_order_book_number,
         ppo.purchase_order_number,
+        ppo.chief_id,
         (
             SELECT
                 COUNT( mg.generic_id )
@@ -1663,7 +1667,7 @@ OR sc.ref_src like ?
     }
     getChief(knex: Knex, typeCode: any) {
         //ดึงหัวหน้าเจ้าหน้าที่พัสดุ ส่ง 4 เข้ามา
-        return knex.select('t.title_name as title', 'p.fname', 'p.lname', 'upos.position_name', 'upot.type_name as position')
+        return knex.select('upo.people_id','t.title_name as title', 'p.fname', 'p.lname', 'upos.position_name', 'upot.type_name as position')
             .from('um_purchasing_officer as upo')
             .join('um_people as p', 'upo.people_id', 'p.people_id')
             .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
@@ -2140,6 +2144,40 @@ OR sc.ref_src like ?
          mgt.generic_type_id,
          mga.account_id
        ) AS a ON a.generic_type_id = mgt.generic_type_id`
+        return knex.raw(sql);
+    }
+
+    productRemain(knex: Knex, warehouseId: any, genericTypeId: any) {
+        let sql = `SELECT
+        wp.product_id,
+        mp.working_code,
+        mp.product_name,
+        sum(wp.qty) AS qty,
+        mu1.unit_name AS large_unit,
+        mu2.unit_name AS small_unit,
+        mug.qty AS conversion,
+        wp.lot_no,
+        wp.expired_date,
+        mg.generic_type_id,
+        mgt.generic_type_name
+    FROM
+        wm_products AS wp
+    INNER JOIN mm_products AS mp ON mp.product_id = wp.product_id
+    LEFT JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wp.unit_generic_id
+    LEFT JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id
+    LEFT JOIN mm_units AS mu2 ON mu2.unit_id = mug.to_unit_id
+    LEFT JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
+    LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+    WHERE
+        wp.warehouse_id = '${warehouseId}'`
+        if (genericTypeId != 0) {
+    sql += `AND mg.generic_type_id = '${genericTypeId}'`
+        }
+    sql += `AND wp.qty != 0
+    GROUP BY
+        wp.product_id,
+        wp.unit_generic_id,
+        wp.lot_no`
         return knex.raw(sql);
     }
 

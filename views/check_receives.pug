@@ -98,18 +98,32 @@ html
             td.right(width="5%") (ลงชื่อ)
             td.center(width="50%") ...........................................................
             td.left 
-          tr
-            td
-            td.center (#{chief.title}#{chief.fname}  #{chief.lname})
-            td
-          tr
-            td
-            td.center #{chief.position_name}
-            td
-          tr
-            td
-            td.center #{chief.position}
-            td
+          if(!chief)
+            tr
+              td
+              td.center 
+              td
+            tr
+              td
+              td.center 
+              td
+            tr
+              td
+              td.center 
+              td
+          else
+            tr
+              td
+              td.center (#{chief.title}#{chief.fname}  #{chief.lname})
+              td
+            tr
+              td
+              td.center #{chief.position_name}
+              td
+            tr
+              td
+              td.center #{chief.position}
+              td
           tr
             td
             td(style="height:20px;")
