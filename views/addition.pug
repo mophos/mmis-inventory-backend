@@ -15,7 +15,7 @@ html
         tr 
           td.center(colspan='9') วันที่เติม #{create_date}
         tr 
-          td.left(colspan='9') ใบเบิกเลขที่ #{rs[0].transaction_code}
+          td.left(colspan='9') ใบเบิกเลขที่ #{rs[0].addition_code}
         tr 
           td.left(colspan='9') ณ วันที่ #{today}
       tbody
@@ -36,7 +36,7 @@ html
           td(align="right") รูปแบบ
           td(colspan='2')  : #{a.small_unit}
           td จำนวนเติม
-          td #{a.transfer_qty}
+          td #{a.addition_qty}
         tr
           td
           td.left(colspan='3') ชื่อทางการค้า 
@@ -47,8 +47,8 @@ html
           td คงเหลือ
         tr.dash-bottom
           td(colspan='4').left #{a.product_name}
-          td #{a.transfer_qty}
+          td #{a.addition_qty}
           td #{a.expired_date}
           td #{a.warehouse_name}
           td 
-          td #{a.total_transfer_qty}
+          td #{a.total_addition_qty}
