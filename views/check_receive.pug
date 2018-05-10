@@ -29,7 +29,10 @@ html
             th(style="width:25%; border:0px")
             th(style="width:25%; border:0px")
           tr
-            td.center(colspan='2') ตามบันทึกที่ #{check_receive[c].purchase_order_number}
+            if(check_receive[c].purchase_order_book_number !== null)
+              td.center(colspan='2') ตามบันทึกที่ #{check_receive[c].purchase_order_book_number}
+            else
+              td.center(colspan='2') ตามบันทึกที่ #{check_receive[c].purchase_order_number}
             td.center(colspan='2') ลงวันที่ #{check_receive[c].podate}
           tr
             td.left(colspan='2') ได้แต่งตั้งคณะกรรมการตรวจรับพัสดุนั้น
@@ -109,18 +112,32 @@ html
             td.right(width="5%")
             td.center(width="50%") ...........................................................
             td.left 
-          tr
-            td
-            td.center (#{chief.title}#{chief.fname}  #{chief.lname})
-            td
-          tr
-            td
-            td.center(style='white-space: nowrap;') #{chief.position_name}
-            td
-          tr
-            td
-            td.center #{chief.position}
-            td
+          if(!chief)
+            tr
+              td
+              td.center 
+              td
+            tr
+              td
+              td.center 
+              td
+            tr
+              td
+              td.center 
+              td
+          else
+            tr
+              td
+              td.center (#{chief.title}#{chief.fname}  #{chief.lname})
+              td
+            tr
+              td
+              td.center #{chief.position_name}
+              td
+            tr
+              td
+              td.center #{chief.position}
+              td
           tr
             td
             td(style="height:20px;")
