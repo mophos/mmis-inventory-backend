@@ -87,7 +87,7 @@ import temperatureRoute from './routes/temperature';
 import unitsRoute from './routes/units';
 import issueRoute from './routes/issue';
 import hisTransactionRoute from './routes/hisTransaction';
-import transferDashboardRoute from './routes/transferDashboard';
+import additionRoute from './routes/addition';
 
 import staffRoute from './routes/staff';
 import settingRoute from './routes/setting';
@@ -227,7 +227,7 @@ app.use('/warehouse-types', checkAuth, adminAuth, warehouseTypesRoute);
 app.use('/locations', checkAuth, adminAuth, locationRoute);
 app.use('/receives', checkAuth, adminAuth, receiveRoute);
 app.use('/requisitiontype', checkAuth, adminAuth, requisitionType);
-app.use('/transfer-dashboard', checkAuth, adminAuth, transferDashboardRoute);
+app.use('/addition', checkAuth, adminAuth, additionRoute);
 
 app.use('/alert-expired', checkAuth, adminAuth, alertExpiredRoute);
 app.use('/productlots', checkAuth, adminAuth, productLots);
