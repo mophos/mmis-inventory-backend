@@ -321,13 +321,15 @@ router.post('/open', co(async (req, res, next) => {
   let db = req.db;
   let transactionIds = req.body.transactionIds;
   try {
-    const _additionCode = await serialModel.getSerial(db, 'AD');
-    let _data = {
-      'addition_code': _additionCode,
-      'status': 'OPEN',
-      'update_by': req.decoded.people_user_id
-    };
-    await additionModel.openTransactions(db, transactionIds, _data);
+    for (let t of transactionIds) {
+      const _additionCode = await serialModel.getSerial(db, 'AD');
+      let _data = {
+        'addition_code': _additionCode,
+        'status': 'OPEN',
+        'update_by': req.decoded.people_user_id
+      };
+      await additionModel.openTransactions(db, t, _data);
+    }
     res.send({ ok: true });
   } catch (error) {
     console.log(error)

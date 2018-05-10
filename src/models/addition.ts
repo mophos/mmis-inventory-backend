@@ -9,7 +9,7 @@ export class Addition {
         , 'adg.generic_id'
         , knex.raw('sum(adg.addition_qty) as addition_qty'))
       .join('wm_addition_generic as adg', 'adg.addition_id', 'adg.addition_id')
-      .where('adh.status', 'OPEN')
+      .whereIn('adh.status', ['NEW', 'OPEN'])
       .andWhereNot('adh.dst_warehouse_id', srcWareHouseId)
       .groupByRaw('adh.dst_warehouse_id, adg.generic_id');
 
@@ -32,16 +32,15 @@ export class Addition {
         , 'adg.generic_id'
         , knex.raw('sum(adg.addition_qty) as addition_qty'))
       .join('wm_addition_generic as adg', 'adg.addition_id', 'adg.addition_id')
-      .where('adh.status', 'OPEN')
+      .whereIn('adh.status', ['NEW', 'OPEN'])
       .andWhere('adh.dst_warehouse_id', dstWareHouseId)
       .groupByRaw('adh.dst_warehouse_id, adg.generic_id');
 
-    let subSrcWarehouse = knex('wm_products as wp')
-      .select('mp.generic_id'
-        , knex.raw('sum(qty) as src_remain_qty'))
-      .join('mm_products as mp', 'mp.product_id', 'wp.product_id')
-      .where('wp.warehouse_id', srcWarehouseId)
-      .groupBy('mp.generic_id');
+    let subSrcWarehouse = knex('view_product_reserve as vpr')
+      .select('vpr.generic_id'
+        , knex.raw('sum(vpr.remain_qty) as src_remain_qty'))
+      .where('vpr.warehouse_id', srcWarehouseId)
+      .groupBy('vpr.generic_id');
 
     return knex('wm_products as wp')
       .select('wp.warehouse_id as dst_warehouse_id',
@@ -76,7 +75,7 @@ export class Addition {
         , 'adg.generic_id'
         , knex.raw('sum(adg.addition_qty) as addition_qty'))
       .join('wm_addition_generic as adg', 'adg.addition_id', 'adg.addition_id')
-      .where('adh.status', 'OPEN')
+      .whereIn('adh.status', ['NEW', 'OPEN'])
       .andWhereNot('adh.dst_warehouse_id', srcWareHouseId)
       .groupByRaw('adh.dst_warehouse_id, adg.generic_id');
 
@@ -98,16 +97,15 @@ export class Addition {
         , 'adg.generic_id'
         , knex.raw('sum(adg.addition_qty) as addition_qty'))
       .join('wm_addition_generic as adg', 'adg.addition_id', 'adg.addition_id')
-      .where('adh.status', 'OPEN')
+      .whereIn('adh.status', ['NEW', 'OPEN'])
       .andWhereNot('adh.dst_warehouse_id', srcWarehouseId)
       .groupByRaw('adh.dst_warehouse_id, adg.generic_id');
 
-    let subSrcWarehouse = knex('wm_products as wp')
-      .select('mp.generic_id'
-        , knex.raw('sum(qty) as src_remain_qty'))
-      .join('mm_products as mp', 'mp.product_id', 'wp.product_id')
-      .where('wp.warehouse_id', srcWarehouseId)
-      .groupBy('mp.generic_id');
+    let subSrcWarehouse = knex('view_product_reserve as vpr')
+      .select('vpr.generic_id'
+        , knex.raw('sum(vpr.remain_qty) as src_remain_qty'))
+      .where('vpr.warehouse_id', srcWarehouseId)
+      .groupBy('vpr.generic_id');
 
     return knex('wm_products as wp')
       .select('ww.short_code as dst_short_code'
@@ -177,12 +175,11 @@ export class Addition {
   }
 
   getTransactionInfo(knex: Knex, transactionId: any, srcWarehouseId: any) { //รายการ generic ที่อยู่ในใบเติมแล้ว
-    let subSrcWarehouse = knex('wm_products as wp')
-      .select('mp.generic_id'
-        , knex.raw('sum(qty) as src_remain_qty'))
-      .join('mm_products as mp', 'mp.product_id', 'wp.product_id')
-      .where('wp.warehouse_id', srcWarehouseId)
-      .groupBy('mp.generic_id');
+    let subSrcWarehouse = knex('view_product_reserve as vpr')
+      .select('vpr.generic_id'
+        , knex.raw('sum(vpr.remain_qty) as src_remain_qty'))
+      .where('vpr.warehouse_id', srcWarehouseId)
+      .groupBy('vpr.generic_id');
 
     return knex('wm_addition_header as adh')
       .select('adh.addition_id'
@@ -285,9 +282,9 @@ export class Addition {
       .update(data);
   }
 
-  openTransactions(knex: Knex, transactionIds: any[], data: any) {
+  openTransactions(knex: Knex, transactionId: any, data: any) {
     return knex('wm_addition_header')
-      .whereIn('addition_id', transactionIds)
+      .where('addition_id', transactionId)
       .update(data);
   }
 
