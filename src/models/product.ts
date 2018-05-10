@@ -457,6 +457,17 @@ export class ProductModel {
       .limit(10);
   }
 
+  searchProductTMT(knex: Knex, query: any) {
+    let _query = `%${query}%`
+    return knex('tmt_tpu as tpu')
+      .select('tpu.TMTID', 'tpu.FSN')
+      .where(w => {
+        w.where('tpu.TMTID', 'like', _query)
+          .orWhere('tpu.FSN', 'like', _query)
+      })
+      .limit(10);
+  }
+
   adminSearchAllProductsWarehouse(knex: Knex, query: any, warehouseId: any) {
     let _query = `%${query}%`;
     let sql = `
@@ -791,5 +802,19 @@ group by mpp.product_id
 
   getAllProduct(db: Knex) {
     return db('mm_products as mp')
+      .select('mp.working_code', 'mp.product_name', 'tpu.TMTID', 'tpu.FSN', 'mp.product_id')
+      .leftJoin('tmt_tpu as tpu', 'tpu.TMTID', 'mp.tmt_id')
+  }
+
+  updateTMT(db: Knex, productUpdate: any) {
+    let sqls = [];
+    productUpdate.forEach(p => {
+      let sql = db('mm_products')
+        .where('product_id', p.product_id)
+        .update(p);
+      sqls.push(sql);
+    });
+    let queries = sqls.join(';');
+    return db.raw(queries);
   }
 }

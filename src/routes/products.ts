@@ -33,12 +33,12 @@ router.get('/search-autocomplete', co(async (req, res, next) => {
 
   try {
     let rs: any;
-    if(labelerId){
+    if (labelerId) {
       rs = await productModel.adminSearchAllProductsLabeler(db, query, labelerId);
     } else {
       rs = await productModel.adminSearchAllProducts(db, query);
     }
-    
+
     if (rs[0].length) {
       res.send(rs[0]);
     } else {
@@ -59,6 +59,26 @@ router.get('/search-generic-autocomplete', co(async (req, res, next) => {
 
   try {
     let rs: any = await productModel.adminSearchGenerics(db, query);
+    if (rs.length) {
+      res.send(rs);
+    } else {
+      res.send([]);
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/search-product-tmt', co(async (req, res, next) => {
+
+  let db = req.db;
+  const query = req.query.q;
+
+  try {
+    let rs: any = await productModel.searchProductTMT(db, query);
     if (rs.length) {
       res.send(rs);
     } else {
@@ -141,22 +161,22 @@ router.post('/remain/warehouse', co(async (req, res, next) => {
 }));
 
 router.get('/remain/warehouse', co(async (req, res, next) => {
-  
-    let db = req.db;
-    let productId = req.query.productId;
-    let warehouseId = req.decoded.warehouseId;
-  
-    try {
-      let rs = await productModel.getProductRemainByWarehouseNoLot(db, productId, warehouseId);
-      let remain = rs.length ? rs[0].qty : 0;
-      res.send({ ok: true, rows: remain });
-    } catch (error) {
-      res.send({ ok: false, error: error.message });
-    } finally {
-      db.destroy();
-    }
-  
-  }));
+
+  let db = req.db;
+  let productId = req.query.productId;
+  let warehouseId = req.decoded.warehouseId;
+
+  try {
+    let rs = await productModel.getProductRemainByWarehouseNoLot(db, productId, warehouseId);
+    let remain = rs.length ? rs[0].qty : 0;
+    res.send({ ok: true, rows: remain });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
 
 router.get('/listall', co(async (req, res, next) => {
 
@@ -332,8 +352,8 @@ router.post('/stock/products/all', co(async (req, res, next) => {
   let limit = req.body.limit || 10;
   let offset = req.body.offset || 0;
   let genericType = req.body.genericType;
-  
-  if(genericType){
+
+  if (genericType) {
     try {
       let rsTotal = await productModel.adminGetAllProductTotal(db, genericType);
       let rs = await productModel.adminGetAllProducts(db, genericType, limit, offset);
@@ -366,7 +386,7 @@ router.post('/stock/products/search', co(async (req, res, next) => {
     });
     try {
       let rsTotal = await productModel.adminSearchProductsTotal(db, query, _pgs, genericType);
-      let rs = await productModel.adminSearchProducts(db, query, _pgs , genericType, limit, offset);
+      let rs = await productModel.adminSearchProducts(db, query, _pgs, genericType, limit, offset);
       res.send({ ok: true, rows: rs[0], total: rsTotal[0].length });
     } catch (error) {
       res.send({ ok: false, error: error.message });
@@ -512,5 +532,22 @@ router.get('/getallproduct', co(async (req, res, next) => {
     db.destroy();
   }
 }));
+
+router.put('/update/tmt', (req, res, next) => {
+  let productUpdate = req.body.productUpdate;
+  console.log(productUpdate);
+  let db = req.db;
+
+  productModel.updateTMT(db, productUpdate)
+    .then((results: any) => {
+      res.send({ ok: true })
+    })
+    .catch(error => {
+      res.send({ ok: false, error: error })
+    })
+    .finally(() => {
+      db.destroy();
+    });
+});
 
 export default router;
