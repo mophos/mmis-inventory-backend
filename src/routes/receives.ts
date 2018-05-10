@@ -433,14 +433,14 @@ router.put('/:receiveId', co(async (req, res, next) => {
 
 }));
 
-
-router.get('/other/expired/list', co(async (req, res, next) => {
+router.post('/other/expired/list', co(async (req, res, next) => {
   let db = req.db;
-  let limit = req.query.limit;
-  let offset = req.query.offset;
+  let limit = req.body.limit;
+  let offset = req.body.offset;
+  let sort = req.body.sort;
 
   try {
-    let rs = await receiveModel.getOtherExpired(db, limit, offset);
+    let rs = await receiveModel.getOtherExpired(db, limit, offset, sort);
     let rsTotal = await receiveModel.getOtherExpiredTotal(db);
     res.send({ ok: true, rows: rs[0], total: rsTotal[0][0].total });
   } catch (error) {
@@ -464,13 +464,14 @@ router.get('/other/expired/search', co(async (req, res, next) => {
   }
 }));
 
-router.get('/expired/list', co(async (req, res, next) => {
+router.post('/expired/list', co(async (req, res, next) => {
   let db = req.db;
-  let limit = req.query.limit;
-  let offset = req.query.offset;
+  let limit = req.body.limit;
+  let offset = req.body.offset;
+  let sort = req.body.sort;
 
   try {
-    let rs = await receiveModel.getExpired(db, limit, offset);
+    let rs = await receiveModel.getExpired(db, limit, offset, sort);
     let rsTotal = await receiveModel.getExpiredTotal(db);
     res.send({ ok: true, rows: rs[0], total: rsTotal[0][0].total });
   } catch (error) {
@@ -1299,10 +1300,12 @@ router.post('/other/status', co(async (req, res, next) => {
   let offset = +req.body.offset;
   let warehouseId = req.decoded.warehouseId;
   let status = req.body.status;
+  let sort = req.body.sort;
+
   try {
     let rsTotal = await receiveModel.getReceiveOtherStatusTotal(db, warehouseId, status);
     let total = +rsTotal[0][0].total;
-    const results = await receiveModel.getReceiveOtherStatus(db, limit, offset, warehouseId, status);
+    const results = await receiveModel.getReceiveOtherStatus(db, limit, offset, warehouseId, status, sort);
     res.send({ ok: true, rows: results[0], total: total });
   } catch (error) {
     console.log(error);
@@ -1319,10 +1322,12 @@ router.post('/other/status/search', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let status = req.body.status;
   let query = req.body.query;
+  let sort = req.body.sort;
+
   try {
     let rsTotal = await receiveModel.getReceiveOtherStatusTotalSearch(db, query, warehouseId, status);
     let total = +rsTotal[0][0].total;
-    const results = await receiveModel.getReceiveOtherStatusSearch(db, limit, offset, query, warehouseId, status);
+    const results = await receiveModel.getReceiveOtherStatusSearch(db, limit, offset, query, warehouseId, status, sort);
     res.send({ ok: true, rows: results[0], total: total });
   } catch (error) {
     console.log(error);
@@ -1338,10 +1343,12 @@ router.post('/status', co(async (req, res, next) => {
   let offset = +req.body.offset;
   let warehouseId = req.decoded.warehouseId;
   let status = req.body.status;
+  let sort = req.body.sort;
+
   try {
     let rsTotal = await receiveModel.getReceiveStatusTotal(db, warehouseId, status);
     let total = +rsTotal[0][0].total;
-    const results = await receiveModel.getReceiveStatus(db, limit, offset, warehouseId, status);
+    const results = await receiveModel.getReceiveStatus(db, limit, offset, warehouseId, status, sort);
     res.send({ ok: true, rows: results[0], total: total });
   } catch (error) {
     console.log(error);
@@ -1358,6 +1365,8 @@ router.post('/status/search', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let status = req.body.status;
   let query = req.body.query;
+  let sort = req.body.sort;
+
   try {
     let rsTotal = await receiveModel.getReceiveStatusSearchTotal(db, warehouseId, status, query);
     let total = +rsTotal[0][0].total;
