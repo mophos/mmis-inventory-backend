@@ -183,15 +183,15 @@ export class ProductModel {
   adminGetAllProducts(knex: Knex, genericType: any, limit: number, offset: number) {
     let query = knex('wm_products as p')
       .select('p.wm_product_id', 'p.product_id', 'mp.working_code', knex.raw('sum(p.qty) as qty'), knex.raw('ifnull(sum(v.reserve_qty),0) as reserve_qty'), knex.raw('sum(p.qty * p.cost) as total_cost'),
-      'mp.product_name', 'g.generic_name', 'g.working_code as generic_working_code', 'mp.primary_unit_id', 'u.unit_name as primary_unit_name',
-      'g.min_qty', 'g.max_qty')
+        'mp.product_name', 'g.generic_name', 'g.working_code as generic_working_code', 'mp.primary_unit_id', 'u.unit_name as primary_unit_name',
+        'g.min_qty', 'g.max_qty')
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
       .leftJoin('mm_generics as g', 'g.generic_id', 'mp.generic_id')
       .leftJoin('mm_units as u', 'u.unit_id', 'mp.primary_unit_id')
-      .leftJoin('view_product_reserve as v','v.wm_product_id','p.wm_product_id')
+      .leftJoin('view_product_reserve as v', 'v.wm_product_id', 'p.wm_product_id')
       .where('mp.mark_deleted', 'N')
       .whereIn('g.generic_type_id', genericType);
-    
+
     return query.groupBy('p.product_id')
       .orderBy('mp.product_name')
       .limit(limit)
@@ -495,14 +495,14 @@ export class ProductModel {
 
   getProductRemainByWarehouseNoLot(knex: Knex, productId: any, warehouseId: any) {
     return knex('wm_products')
-    .sum('qty').as('qty')
+      .sum('qty').as('qty')
       .where({
         warehouse_id: warehouseId,
         product_id: productId,
       })
       .groupBy('product_id')
   }
-  
+
   getProductUnitConversion(knex: Knex, genericId: any) {
     return knex('mm_unit_generics as up')
       .select('up.unit_generic_id', 'up.from_unit_id as unit_id', 'u.unit_name as from_unit_name', 'u.unit_name', 'u2.unit_name as primary_unit_name', 'up.qty')
@@ -579,8 +579,8 @@ group by mpp.product_id
   getProductsDetail(knex: Knex, productNewId: any) {
     return knex('mm_products as p')
       .select('p.*', 'wp.qty', 'wp.cost', 'wp.lot_no',
-      'wp.expired_date', 'wp.wm_product_id as product_new_id',
-      'g.generic_name', 'u.unit_name as base_unit_name', 'mug.qty as conversion', 'uu.unit_name as large_unit'
+        'wp.expired_date', 'wp.wm_product_id as product_new_id',
+        'g.generic_name', 'u.unit_name as base_unit_name', 'mug.qty as conversion', 'uu.unit_name as large_unit'
       )
       .innerJoin('wm_products as wp', 'wp.product_id', 'p.product_id')
       // .innerJoin('mm_generic_product as gp', 'gp.product_id', 'p.product_id')
@@ -787,5 +787,9 @@ group by mpp.product_id
   and mg.generic_type_id in (${genericTypes})
   ORDER BY mg.generic_id`
     return knex.raw(sql)
+  }
+
+  getAllProduct(db: Knex) {
+    return db('mm_products as mp')
   }
 }

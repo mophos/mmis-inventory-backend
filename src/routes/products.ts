@@ -500,4 +500,17 @@ router.get('/getwarehouseproductremain/:warehouseId/:productId', co(async (req, 
   }
 }));
 
+router.get('/getallproduct', co(async (req, res, next) => {
+  let db = req.db;
+
+  try {
+    let result = await productModel.getAllProduct(db);
+    res.send({ ok: true, rows: result });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
 export default router;
