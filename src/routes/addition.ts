@@ -74,23 +74,6 @@ router.get('/warehouse/generic/:dstWarehouseId', async (req, res, next) => {
   }
 });
 
-router.get('/generic/detail/:genericId', async (req, res, next) => {
-
-  let db = req.db;
-  let genericId = req.params.genericId;
-  let warehouseId = req.decoded.warehouseId;
-
-  try {
-    let rs: any = await additionModel.getGenericDetail(db, genericId, warehouseId);
-    res.send({ ok: true, detail: rs[0] });
-  } catch (error) {
-    console.log(error)
-    res.send({ ok: false, error: error.messgae });
-  } finally {
-    db.destroy();
-  }
-});
-
 router.get('/generic/warehouse/:genericId', async (req, res, next) => {
 
   let db = req.db;
@@ -325,62 +308,6 @@ router.post('/warehouse', co(async (req, res, next) => {
       } else {
         res.send({ ok: false, error: error.message });
       }
-    } finally {
-      db.destroy();
-    }
-  } else {
-    res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
-  }
-
-}));
-
-router.put('/', co(async (req, res, next) => {
-
-  let db = req.db;
-  let _header = req.body.header;
-  let _data = req.body.data;
-
-  if (_header.transactionId && _data.length) {
-    try {
-      let transactionId = _header.transactionId;
-      await Promise.all(_data.map(async (v) => {
-        // const header: any = {
-        // src_warehouse_id: _header.srcWarehouseId,
-        // generic_id: v.generic_id,
-        // src_min_qty: _header.srcMinQty,
-        // src_remain_qty: _header.srcRemainQty,
-        // total_transfer_qty: v.total_transfer_qty || 0,
-        // primary_unit_id: v.primary_unit_id,
-        // dst_warehouse_id: v.dst_warehouse_id,
-        // dst_min_qty: v.dst_min_qty,
-        // dst_remain_qty: v.dst_remain_qty,
-        // dst_max_qty: v.dst_max_qty,
-        // status: _header.status,
-        // transaction_date: moment(_header.transactionDate).format('YYYY-MM-DD'),
-        // transaction_code: v.transaction_code
-        // }
-        // await additionModel.updateTransaction(db, transactionId, header);
-
-        v.detail.forEach(async (p: any) => {
-          let transactionDetailId = p.transaction_detail_id;
-          let detail: any = {
-            // transaction_id: transactionId,
-            // product_id: p.product_id,
-            // lot_no: p.lot_no,
-            // expired_date: moment(p.expired_date).format('YYYY-MM-DD'),
-            // remain_qty: +p.remain_qty,
-            // unit_generic_id: +p.unit_generic_id,
-            // conversion_qty: +p.conversion_qty,
-            transfer_qty: +p.transfer_qty * +p.conversion_qty,
-            total_transfer_qty: v.total_transfer_qty
-          }
-          // await additionModel.updateTransactionDetail(db, transactionDetailId, detail);
-        });
-      }));
-      res.send({ ok: true });
-    } catch (error) {
-      console.log(error)
-      res.send({ ok: false, error: error.message });
     } finally {
       db.destroy();
     }

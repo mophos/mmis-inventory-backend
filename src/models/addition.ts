@@ -135,63 +135,6 @@ export class Addition {
       .havingRaw('sum(wp.qty) + IFNULL(pt.addition_qty, 0) <= mgp.min_qty');
   }
 
-  getGenericDetail(knex: Knex, genericId: any, warehouseId: any) { //not used now
-    return knex('wm_products as wp')
-      .select('mg.generic_id', 'mg.generic_name', knex.raw('sum(wp.qty) as src_remain_qty'),
-        'mgp.min_qty as src_min_qty', 'mg.primary_unit_id', 'mu.unit_name', 'mg.working_code')
-      .leftJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
-      .leftJoin('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
-      .joinRaw('left join mm_generic_planning as mgp on mgp.warehouse_id = wp.warehouse_id and mgp.generic_id = mg.generic_id')
-      .leftJoin('mm_units as mu', 'mu.unit_id', 'mg.primary_unit_id')
-      .where('mg.generic_id', genericId)
-      .andWhere('wp.warehouse_id', warehouseId)
-      .groupByRaw('mg.generic_id');
-  }
-
-  getDashboardGeneric(knex: Knex, genericId: any, warehouseId: any) { //not use now
-    let subSrcWarehouse = knex('wm_products as wp')
-      .select('mp.generic_id'
-        , knex.raw('sum(qty) as src_remain_qty'))
-      .join('mm_products as mp', 'mp.product_id', 'wp.product_id')
-      .where('wp.warehouse_id', warehouseId)
-      .groupBy('mp.generic_id');
-
-    return knex('wm_products as wp')
-      .select('ww.short_code as dst_short_code', 'wp.warehouse_id as dst_warehouse_id', 'ww.warehouse_name as dst_warehouse_name',
-        'mg.generic_id', 'mg.working_code', 'mg.generic_name', knex.raw('sum(wp.qty) as dst_remain_qty'),
-        'mgp.max_qty as dst_max_qty', 'mgp.min_qty as dst_min_qty',
-        'mg.primary_unit_id', 'mu.unit_name')
-      .leftJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
-      .leftJoin('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
-      .joinRaw('left join mm_generic_planning as mgp on mgp.warehouse_id = wp.warehouse_id and mgp.generic_id = mg.generic_id')
-      .leftJoin('wm_warehouses as ww', 'ww.warehouse_id', 'wp.warehouse_id')
-      .leftJoin('mm_units as mu', 'mu.unit_id', 'mg.primary_unit_id')
-      .whereRaw('mgp.min_qty >= wp.qty')
-      .andWhere('mg.generic_id', genericId)
-      .whereNot('wp.warehouse_id', warehouseId)
-      .groupByRaw('wp.warehouse_id, mg.generic_id');
-  }
-
-  getDashboardWarehouse(knex: Knex, warehouseId: any) { //not use now
-    return knex('wm_products as wp')
-      .select('wp.warehouse_id as dst_warehouse_id',
-        'ww.warehouse_name as dst_warehouse_name',
-        'mg.generic_name',
-        'mg.generic_id',
-        'mgp.min_qty as dst_min_qty',
-        'mgp.max_qty as dst_max_qty',
-        'mu.unit_name')
-      .sum('wp.qty as dst_remain_qty')
-      .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
-      .innerJoin('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
-      .innerJoin('mm_generic_planning as mgp', 'mgp.generic_id', 'mp.generic_id')
-      .innerJoin('wm_warehouses as ww', 'ww.warehouse_id', 'wp.warehouse_id')
-      .innerJoin('mm_units as mu', 'mu.unit_id', 'mg.primary_unit_id')
-      .whereRaw('mgp.min_qty >= wp.qty')
-      .where('wp.warehouse_id', warehouseId)
-      .groupBy('mg.generic_id');
-  }
-
   getDashboardProduct(knex: Knex, genericId: any, warehouseId: any) { //src product ที่จะใช้ในการเติม
     return knex('wm_products as wp')
       .select(
@@ -314,18 +257,6 @@ export class Addition {
       .insert(data, 'addition_id');
   }
 
-  // saveAdditionHeader(knex: Knex, data: any) {
-  //   let sql = `
-  //         INSERT INTO wm_addition_header
-  //         (addition_date, src_warehouse_id, dst_warehouse_id, status, create_by)
-  //         VALUES('${data.addition_date}', ${data.src_warehouse_id}, ${data.dst_warehouse_id}, '${data.status}', '${data.create_by}')
-  //         ON DUPLICATE KEY UPDATE
-  //         update_by = '${data.update_by}'
-  //         RETURNING last_insert_id(addition_id)
-  //       `;
-  //       return knex.raw(sql);
-  // }
-
   saveAdditionGeneric(knex: Knex, data) {
     return knex('wm_addition_generic')
       .insert(data, 'addition_generic_id');
@@ -428,21 +359,6 @@ export class Addition {
       .delete();
   }
 
-  getProductBookingQty(knex: Knex, transactionId, productId, lotNo, expiredDate) {
-    let query = knex('wm_transfer_dashboard_detail as trd')
-      .sum('trd.transfer_qty as booking_qty')
-      .join('wm_transfer_dashboard as trx', 'trx.transaction_id', 'trd.transaction_id')
-      .where('trx.status', 'OPEN')
-    if (transactionId) {
-      query.whereNot('trd.transaction_id', transactionId)
-    }
-    query.andWhere('trd.product_id', productId)
-      .andWhere('trd.lot_no', lotNo)
-      .andWhere('trd.expired_date', expiredDate)
-      .groupByRaw('trd.product_id, trd.lot_no, trd.expired_date');
-    return query;
-  }
-
   getTransactionHistory(knex: Knex, srcWarehouseId: any) { //รายการใบเติมที่อนุมัติแล้ว
     return knex('wm_addition_header as adh')
       .select('adh.addition_id', 'adh.addition_date', 'adh.addition_code'
@@ -451,19 +367,6 @@ export class Addition {
       .where('adh.status', 'APPROVE')
       .andWhere('adh.src_warehouse_id', srcWarehouseId)
       .orderBy('adh.addition_code', 'desc');
-  }
-
-  getProductsRemain(knex: Knex, genericId: any, warehouseId: any) {
-    return knex('wm_products as wp')
-      .select('mp.product_id', 'mp.product_name', 'wp.lot_no', 'wp.qty as remain_qty', 'wp.expired_date',
-        knex.raw('0 as transfer_qty'), 'mg.generic_id')
-      .leftJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
-      .leftJoin('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
-      .leftJoin('mm_generic_planning as mgp', 'mgp.generic_id', 'mp.generic_id')
-      .where('mp.generic_id', genericId)
-      .andWhere('wp.warehouse_id', warehouseId)
-      .groupBy('wp.product_id')
-      .orderBy('wp.expired_date');
   }
 
   saveDstProducts(knex: Knex, data: any[]) {
