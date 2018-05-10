@@ -33,12 +33,12 @@ router.get('/search-autocomplete', co(async (req, res, next) => {
 
   try {
     let rs: any;
-    if(labelerId){
+    if (labelerId) {
       rs = await productModel.adminSearchAllProductsLabeler(db, query, labelerId);
     } else {
       rs = await productModel.adminSearchAllProducts(db, query);
     }
-    
+
     if (rs[0].length) {
       res.send(rs[0]);
     } else {
@@ -141,22 +141,22 @@ router.post('/remain/warehouse', co(async (req, res, next) => {
 }));
 
 router.get('/remain/warehouse', co(async (req, res, next) => {
-  
-    let db = req.db;
-    let productId = req.query.productId;
-    let warehouseId = req.decoded.warehouseId;
-  
-    try {
-      let rs = await productModel.getProductRemainByWarehouseNoLot(db, productId, warehouseId);
-      let remain = rs.length ? rs[0].qty : 0;
-      res.send({ ok: true, rows: remain });
-    } catch (error) {
-      res.send({ ok: false, error: error.message });
-    } finally {
-      db.destroy();
-    }
-  
-  }));
+
+  let db = req.db;
+  let productId = req.query.productId;
+  let warehouseId = req.decoded.warehouseId;
+
+  try {
+    let rs = await productModel.getProductRemainByWarehouseNoLot(db, productId, warehouseId);
+    let remain = rs.length ? rs[0].qty : 0;
+    res.send({ ok: true, rows: remain });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
 
 router.get('/listall', co(async (req, res, next) => {
 
@@ -332,11 +332,12 @@ router.post('/stock/products/all', co(async (req, res, next) => {
   let limit = req.body.limit || 10;
   let offset = req.body.offset || 0;
   let genericType = req.body.genericType;
-  
-  if(genericType){
+  let sort = req.body.sort;
+
+  if (genericType) {
     try {
       let rsTotal = await productModel.adminGetAllProductTotal(db, genericType);
-      let rs = await productModel.adminGetAllProducts(db, genericType, limit, offset);
+      let rs = await productModel.adminGetAllProducts(db, genericType, limit, offset, sort);
       res.send({ ok: true, rows: rs, total: rsTotal[0].total });
     } catch (error) {
       res.send({ ok: false, error: error.message });
@@ -355,6 +356,7 @@ router.post('/stock/products/search', co(async (req, res, next) => {
   let offset = req.body.offset || 0;
   let query = req.body.query;
   let genericType = req.body.genericType;
+  let sort = req.body.sort;
 
   let productGroups = req.decoded.generic_type_id;
   let _pgs = [];
@@ -366,7 +368,7 @@ router.post('/stock/products/search', co(async (req, res, next) => {
     });
     try {
       let rsTotal = await productModel.adminSearchProductsTotal(db, query, _pgs, genericType);
-      let rs = await productModel.adminSearchProducts(db, query, _pgs , genericType, limit, offset);
+      let rs = await productModel.adminSearchProducts(db, query, _pgs, genericType, limit, offset, sort);
       res.send({ ok: true, rows: rs[0], total: rsTotal[0].length });
     } catch (error) {
       res.send({ ok: false, error: error.message });

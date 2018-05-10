@@ -655,12 +655,12 @@ export class ReceiveModel {
 
   // receive with purchase
 
-  getPurchaseList(knex: Knex, limit: number, offset: number) {
+  getPurchaseList(knex: Knex, limit: number, offset: number, sort: any = {}) {
 
     let sql = `
       select pc.purchase_order_book_number, pc.purchase_order_id, 
       IF(pc.purchase_order_book_number is null,pc.purchase_order_number,pc.purchase_order_book_number) as purchase_order_number,
-      pc.order_date, 
+      pc.order_date, cm.contract_no,
       (
         select sum(pci.qty*pci.unit_price)
         from pc_purchasing_order_item as pci 
@@ -695,19 +695,40 @@ export class ReceiveModel {
       from pc_purchasing_order as pc
       left join mm_labelers as ml on ml.labeler_id=pc.labeler_id
       left join l_bid_process as cmp on cmp.id=pc.purchase_method_id
+      left join cm_contracts as cm on cm.contract_id=pc.contract_id
       where pc.purchase_order_status='APPROVED'
       and pc.purchase_order_status != 'COMPLETED'
-      and pc.is_cancel != 'Y'
-      order by pc.purchase_order_number DESC
-      limit ${limit}
-      offset ${offset}
-    `;
+      and pc.is_cancel != 'Y'`;
+
+    if (sort.by) {
+      let reverse = sort.reverse ? 'DESC' : 'ASC';
+      if (sort.by === 'purchase_order_number') {
+        sql += ` order by pc.purchase_order_number ${reverse}`;
+      }
+
+      if (sort.by === 'order_date') {
+        sql += ` order by pc.order_date ${reverse}`;
+      }
+
+      if (sort.by === 'purchase_method_name') {
+        sql += ` order by cmp.name ${reverse}`;
+      }
+
+      if (sort.by === 'labeler_name') {
+        sql += ` order by ml.labeler_name ${reverse}`;
+      }
+
+    } else {
+      sql += `order by pc.purchase_order_number DESC `;
+    }
+
+    sql += ` limit ${limit} offset ${offset}`;
 
     return knex.raw(sql);
 
   }
 
-  getPurchaseListSearch(knex: Knex, limit: number, offset: number, query) {
+  getPurchaseListSearch(knex: Knex, limit: number, offset: number, query, sort: any = {}) {
     let _query = `%${query}%`;
     let sql = `
       select pc.purchase_order_book_number, pc.purchase_order_id, pc.purchase_order_number,
@@ -766,11 +787,31 @@ export class ReceiveModel {
           OR mp.working_code = '${query}'
           OR mg.working_code = '${query}'
         )
-      )
-      order by pc.purchase_order_number DESC
-      limit ${limit}
-      offset ${offset}
-    `;
+      )`;
+
+    if (sort.by) {
+      let reverse = sort.reverse ? 'DESC' : 'ASC';
+      if (sort.by === 'purchase_order_number') {
+        sql += ` order by pc.purchase_order_number ${reverse}`;
+      }
+
+      if (sort.by === 'order_date') {
+        sql += ` order by pc.order_date ${reverse}`;
+      }
+
+      if (sort.by === 'purchase_method_name') {
+        sql += ` order by cmp.name ${reverse}`;
+      }
+
+      if (sort.by === 'labeler_name') {
+        sql += ` order by ml.labeler_name ${reverse}`;
+      }
+
+    } else {
+      sql += `order by pc.purchase_order_number DESC `;
+    }
+
+    sql += ` limit ${limit} offset ${offset}`;
 
     return knex.raw(sql);
 

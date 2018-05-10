@@ -192,7 +192,7 @@ router.post('/', co(async (req, res, next) => {
 
     // get total price
     products.forEach((v: any) => {
-      if(v.is_free === 'N'){
+      if (v.is_free === 'N') {
         totalPriceReceive += (v.receive_qty * v.cost);
       }
     });
@@ -224,7 +224,7 @@ router.post('/', co(async (req, res, next) => {
           }
           console.log(+totalPrice);
           console.log(+totalPo);
-          
+
           if (+totalPrice > +totalPo) {
             res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
           } else {
@@ -783,7 +783,7 @@ router.post('/approve', co(async (req, res, next) => {
       //ปรับราคาต่อแพค
       obj_adjust.unit_generic_id = v.unit_generic_id;
       obj_adjust.cost = v.cost;
-      if(v.cost > 0){
+      if (v.cost > 0) {
         adjust_price.push(obj_adjust);
       }
     });
@@ -1095,12 +1095,14 @@ router.delete('/remove', co(async (req, res, next) => {
   }
 }));
 
-router.get('/purchases/list', co(async (req, res, nex) => {
-  let limit = req.query.limit;
-  let offset = req.query.offset;
+router.post('/purchases/list', co(async (req, res, nex) => {
+  let limit = req.body.limit;
+  let offset = req.body.offset;
+  let sort = req.body.sort;
+
   let db = req.db;
   try {
-    const rows = await receiveModel.getPurchaseList(db, limit, offset);
+    const rows = await receiveModel.getPurchaseList(db, limit, offset, sort);
     const rstotal = await receiveModel.getPurchaseListTotal(db);
     let total = +rstotal[0][0].total
     res.send({ ok: true, rows: rows[0], total: total });
@@ -1112,13 +1114,15 @@ router.get('/purchases/list', co(async (req, res, nex) => {
 
 }));
 
-router.get('/purchases/list/search', co(async (req, res, nex) => {
-  let limit = req.query.limit;
-  let offset = req.query.offset;
-  let query = req.query.query;
+router.post('/purchases/list/search', co(async (req, res, nex) => {
+  let limit = req.body.limit;
+  let offset = req.body.offset;
+  let query = req.body.query;
+  let sort = req.body.sort;
+
   let db = req.db;
   try {
-    const rows = await receiveModel.getPurchaseListSearch(db, limit, offset, query);
+    const rows = await receiveModel.getPurchaseListSearch(db, limit, offset, query, sort);
     const rstotal = await receiveModel.getPurchaseListTotalSearch(db, query);
     let total = +rstotal[0][0].total
     res.send({ ok: true, rows: rows[0], total: total });
