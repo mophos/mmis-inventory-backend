@@ -145,7 +145,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
       header = header[0];
       if (header[0] === undefined) { res.render('error404'); }
       let objHead: any = {};
-      objHead.requisition_date = header[0].requisition_date;
+      header[0].updated_at ? objHead.requisition_date = header[0].updated_at : objHead.requisition_date = header[0].created_at;
       objHead.requisition_code = header[0].requisition_code;
       header[0].updated_at ? objHead.confirm_date = header[0].updated_at : objHead.confirm_date = header[0].created_at;
       objHead.warehouse_name = header[0].warehouse_name;
