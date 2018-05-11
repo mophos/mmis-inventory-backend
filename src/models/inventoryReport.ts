@@ -1998,6 +1998,8 @@ OR sc.ref_src like ?
         let sql = `SELECT
         r.requisition_date,
         r.requisition_code,
+        r.created_at,
+        r.updated_at,
         r.requisition_order_id,
         rc.confirm_date,
         wh.warehouse_name,

@@ -147,7 +147,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
       let objHead: any = {};
       objHead.requisition_date = header[0].requisition_date;
       objHead.requisition_code = header[0].requisition_code;
-      objHead.confirm_date = header[0].confirm_date;
+      header[0].updated_at ? objHead.confirm_date = header[0].updated_at : objHead.confirm_date = header[0].created_at;
       objHead.warehouse_name = header[0].warehouse_name;
       objHead.withdraw_warehouse_name = header[0].withdraw_warehouse_name;
       let title = await inventoryReportModel.list_requiAll(db, header[0].requisition_order_id);
