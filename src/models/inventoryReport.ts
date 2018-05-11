@@ -45,6 +45,7 @@ export class InventoryReportModel {
     approve_requis(knex: Knex, requisId) {
         let sql = `SELECT
             ro.requisition_code,
+            ro.requisition_date,
             ro.updated_at,
             ro.created_at,
             ro.requisition_order_id,
