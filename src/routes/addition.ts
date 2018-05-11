@@ -254,49 +254,51 @@ router.post('/warehouse', co(async (req, res, next) => {
 
       let additionGenericId = null;
       for (const v of _data) {
-        let generic: any = {
-          addition_id: additionId,
-          generic_id: v.generic_id,
-          src_remain_qty: v.src_remain_qty,
-          primary_unit_id: v.primary_unit_id,
-          dst_min_qty: v.dst_min_qty,
-          dst_max_qty: v.dst_max_qty,
-          dst_remain_qty: v.dst_remain_qty,
-          addition_qty: v.addition_qty,
-          create_by: peopleUserId
-        }
-        let rsGeneric = await additionModel.checkAdditionGeneric(db, generic);
-
-        if (rsGeneric[0]) {
-          additionGenericId = rsGeneric[0].addition_generic_id;
-          delete generic.create_by;
-          generic.update_by = peopleUserId;
-          await additionModel.updateAdditionGeneric(db, additionGenericId, generic);
-        } else {
-          additionGenericId = await additionModel.saveAdditionGeneric(db, generic);
-        }
-
-        let _detail = v.detail;
-
-        for (const d of _detail) {
-          let additionProductId = null;
-          let product: any = {
+        if (v.addition_qty) {
+          let generic: any = {
             addition_id: additionId,
-            addition_generic_id: additionGenericId,
-            wm_product_id: d.wm_product_id,
-            src_remain_qty: +d.src_remain_qty,
-            addition_qty: +d.addition_qty * +d.conversion_qty,
+            generic_id: v.generic_id,
+            src_remain_qty: v.src_remain_qty,
+            primary_unit_id: v.primary_unit_id,
+            dst_min_qty: v.dst_min_qty,
+            dst_max_qty: v.dst_max_qty,
+            dst_remain_qty: v.dst_remain_qty,
+            addition_qty: v.addition_qty,
             create_by: peopleUserId
           }
-          let rsProduct = await additionModel.checkAdditionProduct(db, product);
+          let rsGeneric = await additionModel.checkAdditionGeneric(db, generic);
 
-          if (rsProduct[0]) {
-            additionProductId = rsProduct[0].addition_product_id;
-            delete product.create_by;
-            product.update_by = peopleUserId;
-            await additionModel.updateAdditionProduct(db, additionProductId, product);
+          if (rsGeneric[0]) {
+            additionGenericId = rsGeneric[0].addition_generic_id;
+            delete generic.create_by;
+            generic.update_by = peopleUserId;
+            await additionModel.updateAdditionGeneric(db, additionGenericId, generic);
           } else {
-            await additionModel.saveAdditionProduct(db, product);
+            additionGenericId = await additionModel.saveAdditionGeneric(db, generic);
+          }
+
+          let _detail = v.detail;
+
+          for (const d of _detail) {
+            let additionProductId = null;
+            let product: any = {
+              addition_id: additionId,
+              addition_generic_id: additionGenericId,
+              wm_product_id: d.wm_product_id,
+              src_remain_qty: +d.src_remain_qty,
+              addition_qty: +d.addition_qty * +d.conversion_qty,
+              create_by: peopleUserId
+            }
+            let rsProduct = await additionModel.checkAdditionProduct(db, product);
+
+            if (rsProduct[0]) {
+              additionProductId = rsProduct[0].addition_product_id;
+              delete product.create_by;
+              product.update_by = peopleUserId;
+              await additionModel.updateAdditionProduct(db, additionProductId, product);
+            } else {
+              await additionModel.saveAdditionProduct(db, product);
+            }
           }
         }
       }
@@ -652,69 +654,71 @@ router.post('/generic', co(async (req, res, next) => {
   if (_data.length) {
     try {
       for (const d of _data) {
-        let additionId = null;
-        let header: any = {
-          src_warehouse_id: srcWarehouseId,
-          dst_warehouse_id: d.dst_warehouse_id,
-          status: 'NEW',
-          addition_date: moment().format('YYYY-MM-DD'),
-          create_by: req.decoded.people_user_id
-        }
-        let rsHeader = await additionModel.checkAdditionHeader(db, header);
+        if (d.addition_qty) {
+          let additionId = null;
+          let header: any = {
+            src_warehouse_id: srcWarehouseId,
+            dst_warehouse_id: d.dst_warehouse_id,
+            status: 'NEW',
+            addition_date: moment().format('YYYY-MM-DD'),
+            create_by: req.decoded.people_user_id
+          }
+          let rsHeader = await additionModel.checkAdditionHeader(db, header);
 
-        if (rsHeader[0]) {
-          additionId = rsHeader[0].addition_id;
-          delete header.create_by;
-          header.update_by = peopleUserId;
-          await additionModel.updateAdditionHeader(db, additionId, header);
-        } else {
-          additionId = await additionModel.saveAdditionHeader(db, header);
-        }
+          if (rsHeader[0]) {
+            additionId = rsHeader[0].addition_id;
+            delete header.create_by;
+            header.update_by = peopleUserId;
+            await additionModel.updateAdditionHeader(db, additionId, header);
+          } else {
+            additionId = await additionModel.saveAdditionHeader(db, header);
+          }
 
-        let additionGenericId = null;
-        let generic: any = {
-          addition_id: additionId,
-          generic_id: d.generic_id,
-          primary_unit_id: d.primary_unit_id,
-          src_remain_qty: d.src_remain_qty,
-          dst_min_qty: d.dst_min_qty,
-          dst_max_qty: d.dst_max_qty,
-          dst_remain_qty: d.dst_remain_qty,
-          addition_qty: d.addition_qty,
-          create_by: peopleUserId
-        }
-        let rsGeneric = await additionModel.checkAdditionGeneric(db, generic);
-
-        if (rsGeneric[0]) {
-          additionGenericId = rsGeneric[0].addition_generic_id;
-          delete generic.create_by;
-          generic.update_by = peopleUserId;
-          await additionModel.updateAdditionGeneric(db, additionGenericId, generic);
-        } else {
-          additionGenericId = await additionModel.saveAdditionGeneric(db, generic);
-        }
-
-        let _detail = d.detail;
-
-        for (const i of _detail) {
-          let additionProductId = null;
-          let product: any = {
+          let additionGenericId = null;
+          let generic: any = {
             addition_id: additionId,
-            addition_generic_id: additionGenericId,
-            wm_product_id: i.wm_product_id,
-            src_remain_qty: i.src_remain_qty,
-            addition_qty: i.addition_qty * i.conversion_qty,
+            generic_id: d.generic_id,
+            primary_unit_id: d.primary_unit_id,
+            src_remain_qty: d.src_remain_qty,
+            dst_min_qty: d.dst_min_qty,
+            dst_max_qty: d.dst_max_qty,
+            dst_remain_qty: d.dst_remain_qty,
+            addition_qty: d.addition_qty,
             create_by: peopleUserId
           }
-          let rsProduct = await additionModel.checkAdditionProduct(db, product);
+          let rsGeneric = await additionModel.checkAdditionGeneric(db, generic);
 
-          if (rsProduct[0]) {
-            additionProductId = rsProduct[0].addition_product_id;
-            delete product.create_by;
-            product.update_by = peopleUserId;
-            await additionModel.updateAdditionProduct(db, additionProductId, product);
+          if (rsGeneric[0]) {
+            additionGenericId = rsGeneric[0].addition_generic_id;
+            delete generic.create_by;
+            generic.update_by = peopleUserId;
+            await additionModel.updateAdditionGeneric(db, additionGenericId, generic);
           } else {
-            await additionModel.saveAdditionProduct(db, product);
+            additionGenericId = await additionModel.saveAdditionGeneric(db, generic);
+          }
+
+          let _detail = d.detail;
+
+          for (const i of _detail) {
+            let additionProductId = null;
+            let product: any = {
+              addition_id: additionId,
+              addition_generic_id: additionGenericId,
+              wm_product_id: i.wm_product_id,
+              src_remain_qty: i.src_remain_qty,
+              addition_qty: i.addition_qty * i.conversion_qty,
+              create_by: peopleUserId
+            }
+            let rsProduct = await additionModel.checkAdditionProduct(db, product);
+
+            if (rsProduct[0]) {
+              additionProductId = rsProduct[0].addition_product_id;
+              delete product.create_by;
+              product.update_by = peopleUserId;
+              await additionModel.updateAdditionProduct(db, additionProductId, product);
+            } else {
+              await additionModel.saveAdditionProduct(db, product);
+            }
           }
         }
       }
