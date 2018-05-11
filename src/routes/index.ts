@@ -66,7 +66,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
         sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
         _.forEach(values, value => {
           value.total_cost = inventoryReportModel.comma(value.total_cost);
-          value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
+          value.updated_at ? value.confirm_date = moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) : value.confirm_date = moment(value.created_at).format('D MMMM ') + (moment(value.created_at).get('year') + 543)
           value.cost = inventoryReportModel.comma(value.cost);
           value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.conversion_qty);
           value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
