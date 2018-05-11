@@ -45,6 +45,8 @@ export class InventoryReportModel {
     approve_requis(knex: Knex, requisId) {
         let sql = `SELECT
             ro.requisition_code,
+            ro.updated_at,
+            ro.created_at,
             ro.requisition_order_id,
             mp.product_id,
             mp.product_name,
@@ -1998,6 +2000,8 @@ OR sc.ref_src like ?
         let sql = `SELECT
         r.requisition_date,
         r.requisition_code,
+        r.created_at,
+        r.updated_at,
         r.requisition_order_id,
         rc.confirm_date,
         wh.warehouse_name,
