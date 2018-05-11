@@ -66,7 +66,8 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
         sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
         _.forEach(values, value => {
           value.total_cost = inventoryReportModel.comma(value.total_cost);
-          value.updated_at ? value.confirm_date = moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) : value.confirm_date = moment(value.created_at).format('D MMMM ') + (moment(value.created_at).get('year') + 543)
+          value.confirm_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
+          // value.updated_at ? value.confirm_date = moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) : value.confirm_date = moment(value.created_at).format('D MMMM ') + (moment(value.created_at).get('year') + 543)
           value.cost = inventoryReportModel.comma(value.cost);
           value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.conversion_qty);
           value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
@@ -145,9 +146,11 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
       header = header[0];
       if (header[0] === undefined) { res.render('error404'); }
       let objHead: any = {};
-      header[0].updated_at ? objHead.requisition_date = header[0].updated_at : objHead.requisition_date = header[0].created_at;
+      objHead.requisition_date = header[0].requisition_date;
+      // header[0].updated_at ? objHead.requisition_date = header[0].updated_at : objHead.requisition_date = header[0].created_at;
       objHead.requisition_code = header[0].requisition_code;
-      header[0].updated_at ? objHead.confirm_date = header[0].updated_at : objHead.confirm_date = header[0].created_at;
+      objHead.confirm_date = header[0].requisition_date;
+      // header[0].updated_at ? objHead.confirm_date = header[0].updated_at : objHead.confirm_date = header[0].created_at;
       objHead.warehouse_name = header[0].warehouse_name;
       objHead.withdraw_warehouse_name = header[0].withdraw_warehouse_name;
       let title = await inventoryReportModel.list_requiAll(db, header[0].requisition_order_id);
