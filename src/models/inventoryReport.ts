@@ -1670,7 +1670,7 @@ OR sc.ref_src like ?
     }
     getChief(knex: Knex, typeCode: any) {
         //ดึงหัวหน้าเจ้าหน้าที่พัสดุ ส่ง 4 เข้ามา
-        return knex.select('upo.people_id','t.title_name as title', 'p.fname', 'p.lname', 'upos.position_name', 'upot.type_name as position')
+        return knex.select('upo.people_id', 't.title_name as title', 'p.fname', 'p.lname', 'upos.position_name', 'upot.type_name as position')
             .from('um_purchasing_officer as upo')
             .join('um_people as p', 'upo.people_id', 'p.people_id')
             .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
@@ -2176,13 +2176,40 @@ OR sc.ref_src like ?
     WHERE
         wp.warehouse_id = '${warehouseId}'`
         if (genericTypeId != 0) {
-    sql += `AND mg.generic_type_id = '${genericTypeId}'`
+            sql += `AND mg.generic_type_id = '${genericTypeId}'`
         }
-    sql += `AND wp.qty != 0
+        sql += `AND wp.qty != 0
     GROUP BY
         wp.product_id,
         wp.unit_generic_id,
         wp.lot_no`
+        return knex.raw(sql);
+    }
+
+    genericsNomovement(knex: Knex, warehouseId: any, startdate: any, enddate: any) {
+        let sql = `SELECT
+        mg.generic_id,
+        mg.generic_name,
+        mg.working_code,
+        mgt.generic_type_name
+    FROM
+        mm_generics AS mg
+    LEFT JOIN (
+        SELECT
+            vscw.generic_id,
+            vscw.generic_name
+        FROM
+            view_stock_card_warehouse AS vscw
+        WHERE
+            vscw.warehouse_id = '${warehouseId}'
+        AND vscw.stock_date BETWEEN '${startdate} 00:00:00'
+        AND '${enddate} 23:59:59'
+        GROUP BY
+            vscw.generic_id
+    ) AS v ON v.generic_id = mg.generic_id
+    JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+    WHERE
+        v.generic_id IS NULL`
         return knex.raw(sql);
     }
 
