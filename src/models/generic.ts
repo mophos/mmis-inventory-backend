@@ -192,4 +192,22 @@ export class GenericModel {
       .groupBy('wp.wm_product_id');
   }
 
+  updateGeneric(knex: Knex, generics: any[]) {
+    let sqls = [];
+    for (const g of generics) {
+      let sql = `
+      UPDATE mm_generics
+      SET min_qty = ${g.min_qty},
+      max_qty = ${g.max_qty},
+      ordering_cost = ${g.ordering_cost},
+      carrying_cost = ${g.carrying_cost},
+      eoq_qty = ${g.eoq_qty}
+      WHERE generic_id = ${g.generic_id}
+      `;
+      sqls.push(sql);
+    }
+    let queries = sqls.join(';');
+    return knex.raw(queries);
+  }
+
 }
