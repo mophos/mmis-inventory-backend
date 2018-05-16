@@ -71,28 +71,34 @@ router.post('/calculate', co(async (req, res, next) => {
   let fromDate = req.body.fromDate;
   let toDate = req.body.toDate;
   let warehouseId = req.decoded.warehouseId;
+  let genericGroups = req.decoded.generic_type_id;
 
   try {
-    if (fromDate && toDate) {
-      let results: any = await model.calculateMinMax(db, warehouseId, fromDate, toDate);
-      let rs = results[0];
-      for (let r of rs) {
-        r.min_qty = r.qty + (r.use_per_day * r.safty_stock_day);
-        if (r.use_total > r.qty) {
-          r.max_qty = r.use_total + (r.use_per_day * r.safty_stock_day);
-        } else {
-          r.max_qty = r.min_qty + (r.use_per_day * r.safty_stock_day);
+    if (genericGroups) {
+      let _ggs = [];
+      let ggs = genericGroups.split(',');
+      ggs.forEach(v => {
+        _ggs.push(v);
+      });
+      if (fromDate && toDate) {
+        let results: any = await model.calculateMinMax(db, warehouseId, fromDate, toDate, _ggs);
+        let rs = results[0];
+        for (let r of rs) {
+          r.min_qty = r.use_per_day * r.safety_min_day;
+          r.max_qty = r.use_per_day * r.safety_max_day;
+          r.rop_qty = r.use_per_day * r.lead_time_day;
+          if (r.carrying_cost) {
+            r.eoq_qty = Math.round(Math.sqrt((2 * r.use_total * r.ordering_cost) / r.carrying_cost));
+          } else {
+            r.eoq_qty = 0;
+          }
         }
-        r.rop_qty = r.use_per_day * r.lead_time_day;
-        if (r.carrying_cost) {
-          r.eoq_qty = Math.round(Math.sqrt((2 * r.use_total * r.ordering_cost) / r.carrying_cost));
-        } else {
-          r.eoq_qty = 0;
-        }
+        res.send({ ok: true, rows: rs });
+      } else {
+        res.send({ ok: false, error: 'กรุณาระบุช่วงวันที่สำหรับการคำนวณ' });
       }
-      res.send({ ok: true, rows: rs });
     } else {
-      res.send({ ok: false, error: 'กรุณาระบุช่วงวันที่สำหรับการคำนวณ' });
+      res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
     }
   } catch (error) {
     throw error;
@@ -122,7 +128,8 @@ router.post('/save', co(async (req, res, next) => {
         obj.min_qty = +v.min_qty;
         obj.max_qty = +v.max_qty;
         obj.use_per_day = +v.use_per_day;
-        obj.safty_stock_day = +v.safty_stock_day;
+        obj.safety_min_day = +v.safety_min_day;
+        obj.safety_max_day = +v.safety_max_day;
         obj.use_total = +v.use_total;
         obj.from_stock_date = moment(_fromDate).format('YYYY-MM-DD');
         obj.to_stock_date = moment(_toDate).format('YYYY-MM-DD');
@@ -153,6 +160,34 @@ router.post('/save', co(async (req, res, next) => {
     db.destroy();
   }
 
+}));
+
+router.post('/search', co(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let query = req.body.query;
+  let genericType = req.body.genericType;
+  let db = req.db;
+
+  let genericGroups = req.decoded.generic_type_id;
+  let _ggs = [];
+
+  if (genericGroups) {
+    let pgs = genericGroups.split(',');
+    pgs.forEach(v => {
+      _ggs.push(v);
+    });
+    try {
+      let rows = await warehouseModel.searchGenericWarehouse(db, warehouseId, _ggs, query, genericType);
+      res.send({ ok: true, rows: rows });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  }
 }));
 
 export default router;
