@@ -137,7 +137,7 @@ router.post('/save', co(async (req, res, next) => {
       try {
         await warehouseModel.removeGenericPlanningMinMax(db, warehouseId);
         await warehouseModel.saveGenericPlanningMinMax(db, generics);
-        // await genericModel.updateGeneric(db, generics);
+        await genericModel.updateGeneric(db, generics);
         res.send({ ok: true });
       } catch (error) {
         throw error;
