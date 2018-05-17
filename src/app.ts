@@ -1,8 +1,9 @@
 'use strict';
-require('dotenv').config();
+import * as path from 'path';
+let envPath = path.join(__dirname, '../../mmis-config');
+require('dotenv').config(({ path: envPath }));
 
 import * as express from 'express';
-import * as path from 'path';
 import * as favicon from 'serve-favicon';
 import * as logger from 'morgan';
 import * as cookieParser from 'cookie-parser';
@@ -13,17 +14,17 @@ import * as _ from 'lodash';
 
 const protect = require('@risingstack/protect');
 // path for export report
-const pugPath = process.env.PUG_PATH;
-const htmlPath = process.env.HTML_PATH;
-const pdfPath = process.env.PDF_PATH;
-const xlsPath = process.env.XLS_PATH;
-// create path
-fse.ensureDirSync(pugPath);
-fse.ensureDirSync(htmlPath);
-fse.ensureDirSync(pdfPath);
-fse.ensureDirSync(xlsPath);
+// const pugPath = process.env.PUG_PATH;
+// const htmlPath = process.env.HTML_PATH;
+// const pdfPath = process.env.PDF_PATH;
+// const xlsPath = process.env.XLS_PATH;
+// // create path
+// fse.ensureDirSync(pugPath);
+// fse.ensureDirSync(htmlPath);
+// fse.ensureDirSync(pdfPath);
+// fse.ensureDirSync(xlsPath);
 
-import Knex = require('knex');
+import * as Knex from 'knex';
 import { MySqlConnectionConfig } from 'knex';
 
 import { Jwt } from './models/jwt';
