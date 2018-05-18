@@ -62,10 +62,10 @@ html
               else
                 | #{g.out_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
             td.right(style="border:1px solid; padding:0.2em;") 
-              if(g.in_qty != 0)
-                | #{g.conversion_qty * g.in_qty} 
+              if(g.in_qty_base != 0)
+                | #{g.in_qty_base} 
               else
-                | #{g.conversion_qty * g.out_qty}
+                | #{g.out_qty_base}
             td.right(style="border:1px solid; padding:0.2em;") #{g.balance_generic_qty}
             td.right(style="border:1px solid; padding:0.2em;") #{g.balance_unit_cost}
             td.right(style="border:1px solid; padding:0.2em;")
@@ -100,10 +100,10 @@ html
               else
                 | #{a.out_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
             td.right(style="border:1px solid; padding:0.2em;") 
-              if(a.in_qty != 0)
-                | #{a.conversion_qty * a.in_qty}
+              if(a.in_qty_base != 0)
+                | #{a.in_qty_base}
               else
-                | #{a.conversion_qty * a.out_qty}
+                | #{a.out_qty_base}
             td.right(style="border:1px solid; padding:0.2em;") #{a.balance_generic_qty}
             td.right(style="border:1px solid; padding:0.2em;") #{a.balance_unit_cost}
             td.right(style="border:1px solid; padding:0.2em;")
