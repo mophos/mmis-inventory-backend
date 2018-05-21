@@ -1656,11 +1656,11 @@ OR sc.ref_src like ?
         up.position_name AS position2
     FROM
         wm_receives wr
-    JOIN pc_committee pc ON wr.committee_id = pc.committee_id
-    JOIN pc_committee_people pcp ON pc.committee_id = pcp.committee_id
-    JOIN um_people p ON p.people_id = pcp.people_id
-    JOIN um_titles ut ON ut.title_id = p.title_id
-    JOIN um_positions as upp on upp.position_id = p.position_id
+    LEFT JOIN pc_committee pc ON wr.committee_id = pc.committee_id
+    LEFT JOIN pc_committee_people pcp ON pc.committee_id = pcp.committee_id
+    LEFT JOIN um_people p ON p.people_id = pcp.people_id
+    LEFT JOIN um_titles ut ON ut.title_id = p.title_id
+    LEFT JOIN um_positions as upp on upp.position_id = p.position_id
     LEFT JOIN um_positions up ON up.position_id = p.position_id
     WHERE
         wr.receive_id = ?
@@ -1691,10 +1691,10 @@ OR sc.ref_src like ?
     staffReceive(knex: Knex) {
         return knex('um_people as u')
             .select('*', 'p.position_name as pname')
-            .join('um_positions as p', 'p.position_id', 'u.position_id')
-            .join('um_titles as t', 't.title_id', 'u.title_id')
-            .join('um_purchasing_officer as up', 'up.people_id', 'u.people_id')
-            .join('um_purchasing_officer_type as upt', 'upt.type_id', 'up.type_id')
+            .leftJoin('um_positions as p', 'p.position_id', 'u.position_id')
+            .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
+            .leftJoin('um_purchasing_officer as up', 'up.people_id', 'u.people_id')
+            .leftJoin('um_purchasing_officer_type as upt', 'upt.type_id', 'up.type_id')
             .where('upt.type_code', 'STAFF_RECEIVE');
     }
 
