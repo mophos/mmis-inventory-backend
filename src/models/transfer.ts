@@ -330,8 +330,6 @@ export class TransferModel {
   getProductsInfo(knex: Knex, transferId: any, transferGenericId: any) {
     let sql = `
     select tp.*
-    , FLOOR(tp.product_qty/ug.qty) as product_qty
-    , FLOOR(wp.qty/ug.qty) as pack_remain_qty
     , wp.qty as small_remain_qty, wp.lot_no, wp.expired_date
     , mp.product_name
     , fu.unit_name as from_unit_name, ug.qty as conversion_qty, tu.unit_name as to_unit_name
@@ -350,10 +348,12 @@ export class TransferModel {
   getGenericInfo(knex: Knex, transferId: any, srcWarehouseId: any) {
     let sql = `
     select tg.*
+    , FLOOR(tg.transfer_qty/ug.qty) as transfer_qty
     , mg.working_code, mg.generic_name
     , sg.remain_qty
     , mg.primary_unit_id, mu.unit_name as primary_unit_name
     from wm_transfer_generic as tg
+    join mm_unit_generics as ug on ug.unit_generic_id = tg.unit_generic_id
     join mm_generics as mg on mg.generic_id = tg.generic_id
     join mm_units as mu on mu.unit_id = mg.primary_unit_id
     join (
