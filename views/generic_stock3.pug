@@ -11,21 +11,21 @@ html
       table.table
         thead
           tr 
-            td.center.bold(colspan='10') #{hospitalName}
+            td.center.bold(colspan='12') #{hospitalName}
           tr 
-            td.center.bold(colspan='10') บัญชีคุมคลังเวชภัณฑ์
+            td.center.bold(colspan='12') บัญชีคุมคลังเวชภัณฑ์
           tr 
-            td.center(colspan='10') ตั้งแต่วันที่ #{startDate} ถึง #{endDate}
+            td.center(colspan='12') ตั้งแต่วันที่ #{startDate} ถึง #{endDate}
           tr 
-            td.left(colspan='5') รหัสเวชภัณฑ์ #{genericId[i]}
+            td.left(colspan='6') รหัสเวชภัณฑ์ #{genericId[i]}
             //- td.right(colspan='5') หน่วย #{unit[i]}
           tr 
-            td.left(colspan='5') ชื่อสามัญ #{generic_name[i]}
-            td.right(colspan='5') 
+            td.left(colspan='6') ชื่อสามัญ #{generic_name[i]}
+            td.right(colspan='6') 
               if(dosage_name[i])
                 | รูปแบบ #{dosage_name[i]}
           tr 
-            td.left(colspan='10') #{printDate}
+            td.left(colspan='12') #{printDate}
           tr
             th(style="border-style: solid;border-width: 2px 1px 2px 1px;") วัน/เดือน/ปี
             th(style="border-style: solid;border-width: 2px 1px 2px 1px;") เลขที่เอกสาร
@@ -57,8 +57,8 @@ html
                 br
                 | #{g.receive_type_name}
             td(style="border:1px solid; padding:0.2em;") #{g.warehouse_name}
-            td.right(style="border:1px solid; padding:0.2em;") #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
-            td.right(style="border:1px solid; padding:0.2em;") #{g.out_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
+            td.right(style="border:1px solid; padding:0.2em;") #{g.in_qty_show}
+            td.right(style="border:1px solid; padding:0.2em;") #{g.out_qty_show}
             td.right(style="border:1px solid; padding:0.2em;") 
               if(g.in_qty_base != 0)
                 | #{g.in_qty_base} 
@@ -92,8 +92,8 @@ html
               else
                 | 
             td(style="border:1px solid; padding:0.2em;") #{a.warehouse_name}
-            td.right(style="border:1px solid; padding:0.2em;") #{a.in_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
-            td.right(style="border:1px solid; padding:0.2em;") #{a.out_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
+            td.right(style="border:1px solid; padding:0.2em;") #{a.in_qty_show}
+            td.right(style="border:1px solid; padding:0.2em;") #{a.out_qty_show}
             td.right(style="border:1px solid; padding:0.2em;") 
               if(a.in_qty_base != 0)
                 | #{a.in_qty_base}
@@ -109,12 +109,12 @@ html
             td.right(style="border:1px solid; padding:0.2em;") #{a.lot_no}
             td(style="border:1px solid; padding:0.2em;") #{a.expired_date}
         tr
-          td(colspan='11') &nbsp;
+          td(colspan='12') &nbsp;
         tr
-          td(colspan='11') คงคลัง ณ วันที่ #{endDate}
+          td(colspan='12') คงคลัง ณ วันที่ #{endDate}
         for s in _inventory_stock[i]
           tr
-            td(colspan='11') #{s.in_qty} #{s.large_unit} (#{s.conversion_qty} #{s.small_unit})
+            td(colspan='12') #{s.in_qty} #{s.large_unit} (#{s.conversion_qty} #{s.small_unit})
         //- tfoot 
         //-   tr.tbfooter
         //-     td(colspan='10')
