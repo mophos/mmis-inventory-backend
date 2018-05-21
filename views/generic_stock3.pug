@@ -31,8 +31,9 @@ html
             th(style="border-style: solid;border-width: 2px 1px 2px 1px;") เลขที่เอกสาร
             th(style="border-style: solid;border-width: 2px 1px 2px 1px;") รับ/จ่าย
             th(style="border-style: solid;border-width: 2px 1px 2px 1px;") หน่วยงาน
-            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") รับ / จ่าย
-            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") รับ / จ่าย
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") รับ
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") จ่าย
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") base unit
             th(style="border-style: solid;border-width: 2px 1px 2px 1px; solid;") คงคลัง
             th(style="border-style: solid;border-width: 2px 1px 2px 1px;") ราคา
             th(style="border-style: solid;border-width: 2px 1px 2px 1px;") มูลค่า
@@ -56,11 +57,8 @@ html
                 br
                 | #{g.receive_type_name}
             td(style="border:1px solid; padding:0.2em;") #{g.warehouse_name}
-            td.right(style="border:1px solid; padding:0.2em;") 
-              if(g.in_qty != 0)
-                | #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
-              else
-                | #{g.out_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
+            td.right(style="border:1px solid; padding:0.2em;") #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
+            td.right(style="border:1px solid; padding:0.2em;") #{g.out_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
             td.right(style="border:1px solid; padding:0.2em;") 
               if(g.in_qty_base != 0)
                 | #{g.in_qty_base} 
@@ -94,11 +92,8 @@ html
               else
                 | 
             td(style="border:1px solid; padding:0.2em;") #{a.warehouse_name}
-            td.right(style="border:1px solid; padding:0.2em;") 
-              if(a.in_qty != 0)
-                | #{a.in_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
-              else
-                | #{a.out_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
+            td.right(style="border:1px solid; padding:0.2em;") #{a.in_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
+            td.right(style="border:1px solid; padding:0.2em;") #{a.out_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
             td.right(style="border:1px solid; padding:0.2em;") 
               if(a.in_qty_base != 0)
                 | #{a.in_qty_base}
