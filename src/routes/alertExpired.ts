@@ -79,35 +79,35 @@ router.get('/genericSelec', async (req, res, next) => {
 //   };
 // });
 
-router.get('/get-status', (req, res, next) => {
-  let db = req.db;
+// router.get('/get-status', (req, res, next) => {
+//   let db = req.db;
 
-  settingModel.getValue(db, process.env.ACTION_ALERT_EXPIRE)
-    .then((results: any) => {
-      let status = results[0].value;
-      res.send({ ok: true, status: status });
-    })
-    .catch(error => {
-      res.send({ ok: false, error: error.message })
-    })
-    .finally(() => {
-      db.destroy();
-    });
-});
+//   settingModel.getValue(db, process.env.ACTION_ALERT_EXPIRE)
+//     .then((results: any) => {
+//       let status = results[0].value;
+//       res.send({ ok: true, status: status });
+//     })
+//     .catch(error => {
+//       res.send({ ok: false, error: error.message })
+//     })
+//     .finally(() => {
+//       db.destroy();
+//     });
+// });
 
-router.post('/save-status', wrap(async (req, res, next) => {
-  let db = req.db;
-  let value = req.body.status;
-  try {
-    await settingModel.save(db, process.env.ACTION_ALERT_EXPIRE, value);
-    res.send({ ok: true });
-  } catch (error) {
-    res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
-  }
+// router.post('/save-status', wrap(async (req, res, next) => {
+//   let db = req.db;
+//   let value = req.body.status;
+//   try {
+//     await settingModel.save(db, process.env.ACTION_ALERT_EXPIRE, value);
+//     res.send({ ok: true });
+//   } catch (error) {
+//     res.send({ ok: false, error: error.message });
+//   } finally {
+//     db.destroy();
+//   }
 
-}));
+// }));
 
 router.get('/products/unset', (req, res, next) => {
   let db = req.db;

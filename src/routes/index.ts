@@ -2187,4 +2187,25 @@ router.get('/report/product-remain/:warehouseId/:genericTypeId', wrap(async (req
   });
 }));
 
+router.get('/report/generics-no-movement/:warehouseId/:startdate/:enddate', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.params.warehouseId
+  let startdate = req.params.startdate
+  let enddate = req.params.enddate
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  moment.locale('th');
+  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  let rs = await inventoryReportModel.genericsNomovement(db, warehouseId, startdate, enddate);
+  let generics = rs[0];
+  console.log(generics);
+
+  res.render('genericsNomovement', {
+    today: today,
+    hospitalName: hospitalName,
+    printDate: printDate,
+    generics: generics
+  });
+}));
+
 export default router;
