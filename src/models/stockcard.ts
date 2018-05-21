@@ -87,6 +87,15 @@ export class StockCard {
     wp.cost as in_unit_cost, 
     (
       SELECT
+	      sum( wp2.qty ) 
+      FROM
+        wm_products wp2 
+    WHERE
+      wp2.product_id IN ( SELECT product_id FROM mm_products WHERE generic_id IN ( SELECT generic_id FROM mm_products WHERE product_id = wp.product_id ) ) 
+      AND wp2.warehouse_id = wp.warehouse_id
+    ) as balance_generic_qty,
+    (
+      SELECT
         sum(wp2.qty)
       FROM
         wm_products wp2
@@ -126,6 +135,15 @@ export class StockCard {
     adj.id as document_ref_id, 
     ${adjQty} as out_qty, 
     wp.cost as out_unit_cost, 
+    (
+      SELECT
+	      sum( wp2.qty ) 
+      FROM
+        wm_products wp2 
+    WHERE
+      wp2.product_id IN ( SELECT product_id FROM mm_products WHERE generic_id IN ( SELECT generic_id FROM mm_products WHERE product_id = wp.product_id ) ) 
+      AND wp2.warehouse_id = wp.warehouse_id
+    ) as balance_generic_qty,
     (
       SELECT
         sum(wp2.qty)
