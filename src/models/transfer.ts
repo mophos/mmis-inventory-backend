@@ -263,7 +263,7 @@ export class TransferModel {
       .where('transfer_id', transferId)
       .update({
         mark_deleted: 'Y'
-      })
+      });
   }
 
   changeApproveStatus(knex: Knex, transferId: any) {

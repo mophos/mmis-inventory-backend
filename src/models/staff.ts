@@ -305,7 +305,7 @@ export class StaffModel {
   transferDetail(knex: Knex, transferId: string) {
     let sql = `
     select tp.*
-    , FLOOR(tp.product_qty/ug.qty) as transfer_qty
+    , FLOOR(tp.product_qty/ug.qty) as product_pack_qty
     , mp.product_name, mg.generic_name, wp.lot_no, wp.expired_date
     , fu.unit_name as from_unit_name, ug.qty as conversion_qty, tu.unit_name as to_unit_name
     from wm_transfer_product as tp

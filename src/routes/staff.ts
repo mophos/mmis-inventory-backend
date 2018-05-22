@@ -534,7 +534,6 @@ const transferApprove = (async (db: Knex, transferIds: any[], peopleUserId: any)
       data.push(objOut);
     }
   });
-
   await transferModel.saveDstProducts(db, dstProducts);
   await transferModel.decreaseQty(db, dstProducts);
   await transferModel.changeApproveStatusIds(db, transferIds, peopleUserId);
@@ -696,7 +695,7 @@ router.delete('/transfer/:transferId', co(async (req, res, next) => {
   try {
     const rs = await transferModel.checkStatus(db, transferId);
     const status = rs[0];
-    if (status.confirmed === 'Y' || status.approved === 'Y') {
+    if (status.approved === 'Y') {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
     } else {
       let rows = await transferModel.removeTransfer(db, transferId);
