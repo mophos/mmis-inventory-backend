@@ -95,6 +95,8 @@ import settingRoute from './routes/setting';
 import versionRoute from './routes/version';
 import borrowNoteRoute from './routes/borrowNote';
 
+import toolsRoute from './routes/tools';
+
 const app: express.Express = express();
 
 //view engine setup
@@ -210,7 +212,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/api-test', testRoute);
-app.use('/version',versionRoute);
+app.use('/version', versionRoute);
 app.use('/generics', checkAuth, genericRoute);
 app.use('/generics-medical-supplies', checkAuth, adminAuth, genericMedicalSuppliesRoute);
 app.use('/labelers', checkAuth, adminAuth, labelerRoute);
@@ -257,7 +259,7 @@ app.use('/reports/products', checkAuth, reportProductRoute);
 app.use('/reports/requisition', reportRequisitionRoute);
 app.use('/reports/inventory', reportInventoryRoute);
 app.use('/reports/internalissue', reportInternalissueRoute);
-app.use('/staff/borrow-notes', checkAuth,staffAuth, borrowNoteRoute);
+app.use('/staff/borrow-notes', checkAuth, staffAuth, borrowNoteRoute);
 app.use('/borrow-notes', checkAuth, adminAuth, borrowNoteRoute);
 // staff
 app.use('/staff', checkAuth, staffAuth, staffRoute);
@@ -267,8 +269,9 @@ app.use('/users', checkAuth, userRoute);
 app.use('/units', checkAuth, unitsRoute);
 app.use('/min-max', checkAuth, minMaxRoute)
 // setting
-
 app.use('/setting', checkAuth, settingRoute);
+// tools
+app.use('/tools', checkAuth, adminAuth, toolsRoute);
 
 app.use('/', checkAuth, indexRoute);
 //temperature
