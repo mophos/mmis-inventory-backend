@@ -11,9 +11,9 @@ html
         tr 
           td.center.bold(colspan='9') #{hospitalName} 
         tr 
-          td.center.bold(colspan='9') ใบจัดเวชภัณฑ์ตามใบเติม
+          td.center.bold(colspan='9') ใบจัดเวชภัณฑ์ตามใบเบิก
         tr 
-          td.center(colspan='9') วันที่เติม #{create_date}
+          td.center(colspan='9') วันที่เบิก #{create_date}
         tr 
           td.left(colspan='9') ใบเบิกเลขที่ #{rs[0].addition_code}
         tr 
@@ -35,12 +35,12 @@ html
           td
           td(align="right") รูปแบบ
           td(colspan='2')  : #{a.small_unit}
-          td จำนวนเติม
+          td จำนวนเบิก
           td #{a.addition_qty}
         tr
           td
           td.left(colspan='3') ชื่อทางการค้า 
-          td จำนวนเติม
+          td จำนวนเบิก
           td วันหมดอายุ
           td ที่เก็บ
           td เลขทะเบียน
