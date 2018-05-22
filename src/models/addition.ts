@@ -439,48 +439,56 @@ export class Addition {
     return knex.raw(sql, [transactionId])
   }
   printAdditionReportDetail(knex: Knex, additionId: any, productId: any) {
-    let sql = `SELECT
-    IF( sq1.addition_qty > 0, sq1.product_name, 'คงคลัง' ) AS product_name,
-	wp1.wm_product_id,
-	wp1.lot_no,
-	sq1.addition_qty,
-	wp1.expired_date,
-	wl.location_name,
-	(
-SELECT
-	sum( wp2.qty ) 
-FROM
-	wm_products AS wp2 
-WHERE
-	wp2.lot_no = wp1.lot_no 
-	AND wp2.product_id = wp1.product_id 
-	AND wp2.warehouse_id = 505 
-	) AS remainQty 
-FROM
-	wm_products AS wp1
-	LEFT JOIN (
-SELECT
-	wp.wm_product_id,
-	mp.product_id,
-	mp.product_name,
-	adp.addition_qty AS addition_qty 
-FROM
-	wm_addition_product adp
-	JOIN wm_products wp ON wp.wm_product_id = adp.wm_product_id
-	JOIN mm_products mp ON mp.product_id = wp.product_id 
-WHERE
-	adp.addition_id = ${additionId} 
-	AND wp.product_id = ${productId}  
-	) AS sq1 ON sq1.wm_product_id = wp1.wm_product_id 
-	LEFT JOIN wm_locations as wl on wl.location_id = wp1.location_id
-WHERE
-	wp1.product_id = ${productId}   
-	AND wp1.warehouse_id = 505 
-GROUP BY
-	wp1.product_id,
-	wp1.unit_generic_id,
-  wp1.lot_no
-  order by sq1.addition_qty desc`
+    let sql = `SELECT * from (
+      SELECT
+          IF( sq1.addition_qty > 0, sq1.product_name, 'คงคลัง' ) AS product_name,
+        wp1.wm_product_id,
+        wp1.lot_no,
+        sq1.addition_qty,
+        wp1.expired_date,
+        wl.location_name,
+        mug.qty as unit_qty,
+        mu1.unit_name as small_unit,
+        mu2.unit_name as large_unit,
+        (
+      SELECT
+        sum( wp2.qty ) 
+      FROM
+        wm_products AS wp2 
+      WHERE
+        wp2.lot_no = wp1.lot_no 
+        AND wp2.product_id = wp1.product_id 
+        AND wp2.warehouse_id = 505 
+        ) AS remainQty 
+      FROM
+        wm_products AS wp1
+        LEFT JOIN (
+      SELECT
+        wp.wm_product_id,
+        mp.product_id,
+        mp.product_name,
+        adp.addition_qty AS addition_qty 
+      FROM
+        wm_addition_product adp
+        JOIN wm_products wp ON wp.wm_product_id = adp.wm_product_id
+        JOIN mm_products mp ON mp.product_id = wp.product_id 
+      WHERE
+        adp.addition_id = ${additionId}
+        AND wp.product_id = ${productId}  
+        ) AS sq1 ON sq1.wm_product_id = wp1.wm_product_id 
+        LEFT JOIN wm_locations as wl on wl.location_id = wp1.location_id
+        left join mm_unit_generics as mug on mug.unit_generic_id = wp1.unit_generic_id
+        left join mm_units as mu1 on mu1.unit_id = mug.to_unit_id
+        left join mm_units as mu2 on mu2.unit_id = mug.from_unit_id
+      WHERE
+        wp1.product_id = ${productId}   
+        AND wp1.warehouse_id = 505 
+      GROUP BY
+        wp1.product_id,
+        wp1.unit_generic_id,
+        wp1.lot_no
+        order by sq1.addition_qty desc ) as lq
+        where  (lq.product_name = 'คงคลัง ' and 	lq.remainQty > 0) or lq.product_name != 'คงคลัง'	`
   return knex.raw(sql)
 }
   printAdditionReports(knex: Knex, addition: any) {
@@ -489,10 +497,8 @@ GROUP BY
         mg.working_code,
         mg.generic_name,
         mp.product_id,
-        mug.qty as unit_qty,
         mgd.dosage_name,
         adg.dst_max_qty - adg.dst_remain_qty as to_refill,
-        mu.unit_name as large_unit,
         muu.unit_name as small_unit,
         adg.addition_qty as total_addition_qty
         FROM wm_addition_header adh
@@ -502,11 +508,9 @@ GROUP BY
         left join mm_generic_dosages as mgd on mgd.dosage_id = mg.dosage_id
         JOIN wm_products wp on wp.wm_product_id = adp.wm_product_id
         JOIN mm_products mp on mp.product_id = wp.product_id
-        JOIN mm_unit_generics mug on mug.unit_generic_id = wp.unit_generic_id
-        JOIN mm_units mu on mu.unit_id = mug.from_unit_id
-        JOIN mm_units muu on muu.unit_id = mug.to_unit_id
+        JOIN mm_units muu on muu.unit_id = adg.primary_unit_id
         AND adh.addition_id = ${addition}
-        GROUP BY wp.product_id, adh.addition_id,wp.unit_generic_id`
+        GROUP BY wp.product_id, adh.addition_id`
     return knex.raw(sql)
   }
   printAdditionHeadTransaction(knex: Knex, addition_id: any) {

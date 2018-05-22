@@ -35,17 +35,17 @@ html
                     td รหัสยา 
                     td(width="55%") : #{g.working_code}
                     td จำนวนขอเบิก
-                    td : #{g.to_refill} #{g.large_unit} (#{g.unit_qty} #{g.small_unit})
+                    td : #{g.to_refill}  #{g.small_unit}
                   tr
                     td ชื่อสามัญ
                     td(width="55%") : #{g.generic_name}
                     td จำนวนเบิก
-                    td : #{g.total_addition_qty} #{g.large_unit} (#{g.unit_qty} #{g.small_unit})
+                    td : #{g.total_addition_qty} #{g.small_unit}
                   tr
-                    td หน่วยบรรจุ
-                    td : #{g.large_unit}
                     td รูปแบบ
                     td : #{g.dosage_name}
+                    td
+                    td
             tr
               td
                 table.table
@@ -59,12 +59,12 @@ html
                     tr
                       td #{p.product_name}
                       if (p.product_name != 'คงคลัง')
-                        td #{p.addition_qty} #{g.large_unit} (#{g.unit_qty} #{g.small_unit})
+                        td #{p.addition_qty} #{p.large_unit} (#{p.unit_qty} #{p.small_unit})
                       else
                         td -
                       td #{p.expired_date}
                       td #{p.lot_no}
-                      td #{p.remainQty} #{g.large_unit} (#{g.unit_qty} #{g.small_unit})
+                      td #{p.remainQty} #{p.large_unit} (#{p.unit_qty} #{p.small_unit})
                   tr.dash-bottom
                     td(colspan='10')
       .pagebreak

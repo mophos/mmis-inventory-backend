@@ -238,13 +238,13 @@ router.get('/print/transactions', async (req, res, next) => {
       obj.header.update_date =  moment(obj.header.update_date).format('D MMMM ') + (moment(obj.header.update_date).get('year') + 543);
       _.forEach(obj.generic,(g)=>{
         g.dosage_name = g.dosage_name ? g.dosage_name: '-';
-        g.to_refill = inventoryReportModel.commaQty(g.to_refill / g.unit_qty)
-        g.total_addition_qty = inventoryReportModel.commaQty(g.total_addition_qty / g.unit_qty)
+        g.to_refill = inventoryReportModel.commaQty(Math.round(g.to_refill))
+        g.total_addition_qty = inventoryReportModel.commaQty(Math.round(g.total_addition_qty))
         _.forEach(g.product,(p)=>{
-          p.addition_qty = inventoryReportModel.commaQty(p.addition_qty / g.unit_qty)
-          p.expired_date = p.expired_date ? moment(p.expired_date).format('D MMMM ') + (moment(p.expired_date).get('year') + 543) : '-'; 
-          p.location_name = p.location_name ? moment(p.location_name).format('D MMMM ') + (moment(p.location_name).get('year') + 543) : '-'; 
-          p.remainQty = inventoryReportModel.commaQty(p.remainQty / g.unit_qty)
+          p.addition_qty = inventoryReportModel.commaQty(Math.round(p.addition_qty / p.unit_qty))
+          p.expired_date = moment(p.expired_date).isValid() ? moment(p.expired_date).format('D MMMM ') + (moment(p.expired_date).get('year') + 543) : '-'; 
+          p.location_name = p.location_name ? p.location_name : '-'; 
+          p.remainQty = inventoryReportModel.commaQty(Math.round(p.remainQty / p.unit_qty))
         })
       })
     })
