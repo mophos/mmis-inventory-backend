@@ -14,7 +14,7 @@ router.post('/stockcard/search/receives', async (req, res, next) => {
 
   try {
     let rs: any = await toolModel.searchReceives(db, query);
-    res.send({ ok: true, rows: rs[0][0] });
+    res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     console.log(error);
     res.send({ ok: false, error: error.message });
