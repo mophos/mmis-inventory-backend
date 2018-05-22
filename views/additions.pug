@@ -1,0 +1,70 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    - for(var h of detail)
+      .page
+      table.table
+        thead
+          tr 
+            td.center.bold #{hospitalName} 
+          tr 
+            td.center.bold ใบจัดเวชภัณฑ์ตามใบเบิก
+          tr 
+            td.center วันที่เบิก #{h.header.addition_date}
+          tr 
+            td.left ใบเบิกเลขที่ #{h.header.addition_code}
+          tr 
+            td.left วันที่อนุมัติเบิก #{h.header.update_date}
+          tr 
+            td.left หน่วยงานที่เบิก #{h.header.warehouse_name}
+          tr 
+            td.left หน่วยงานที่จ่าย #{h.header.withdraw_warehouse_name}
+          tr 
+            td.left #{printDate}
+        - for(var g of h.generic)
+          tbody
+            tr.dash-top
+              td
+                table.table
+                  tr
+                    td รหัสยา 
+                    td(width="55%") : #{g.working_code}
+                    td จำนวนขอเบิก
+                    td : #{g.to_refill}  #{g.small_unit}
+                  tr
+                    td ชื่อสามัญ
+                    td(width="55%") : #{g.generic_name}
+                    td จำนวนเบิก
+                    td : #{g.total_addition_qty} #{g.small_unit}
+                  tr
+                    td รูปแบบ
+                    td : #{g.dosage_name}
+                    td
+                    td
+            tr
+              td
+                table.table
+                  tr
+                    td.center(width="40%") ชื่อทางการค้า 
+                    td จำนวนเบิก
+                    td วันหมดอายุ
+                    td lot no.
+                    td คงเหลือ
+                  - for(var p of g.product)
+                    tr
+                      td #{p.product_name}
+                      if (p.product_name != 'คงคลัง')
+                        td #{p.addition_qty} #{p.large_unit} (#{p.unit_qty} #{p.small_unit})
+                      else
+                        td -
+                      td #{p.expired_date}
+                      td #{p.lot_no}
+                      td #{p.remainQty} #{p.large_unit} (#{p.unit_qty} #{p.small_unit})
+                  tr.dash-bottom
+                    td(colspan='10')
+      .pagebreak
