@@ -438,4 +438,142 @@ export class Addition {
     ORDER BY adh.addition_code`
     return knex.raw(sql, [transactionId])
   }
+  printAdditionReportDetail(knex: Knex, additionId: any, productId: any) {
+    let sql = `SELECT * from (
+      SELECT
+          IF( sq1.addition_qty > 0, sq1.product_name, 'คงคลัง' ) AS product_name,
+        wp1.wm_product_id,
+        wp1.lot_no,
+        sq1.addition_qty,
+        wp1.expired_date,
+        wl.location_name,
+        mug.qty as unit_qty,
+        mu1.unit_name as small_unit,
+        mu2.unit_name as large_unit,
+        (
+      SELECT
+        sum( wp2.qty ) 
+      FROM
+        wm_products AS wp2 
+      WHERE
+        wp2.lot_no = wp1.lot_no 
+        AND wp2.product_id = wp1.product_id 
+        AND wp2.warehouse_id = 505 
+        ) AS remainQty 
+      FROM
+        wm_products AS wp1
+        LEFT JOIN (
+      SELECT
+        wp.wm_product_id,
+        mp.product_id,
+        mp.product_name,
+        adp.addition_qty AS addition_qty 
+      FROM
+        wm_addition_product adp
+        JOIN wm_products wp ON wp.wm_product_id = adp.wm_product_id
+        JOIN mm_products mp ON mp.product_id = wp.product_id 
+      WHERE
+        adp.addition_id = ${additionId}
+        AND wp.product_id = ${productId}  
+        ) AS sq1 ON sq1.wm_product_id = wp1.wm_product_id 
+        LEFT JOIN wm_locations as wl on wl.location_id = wp1.location_id
+        left join mm_unit_generics as mug on mug.unit_generic_id = wp1.unit_generic_id
+        left join mm_units as mu1 on mu1.unit_id = mug.to_unit_id
+        left join mm_units as mu2 on mu2.unit_id = mug.from_unit_id
+      WHERE
+        wp1.product_id = ${productId}   
+        AND wp1.warehouse_id = 505 
+      GROUP BY
+        wp1.product_id,
+        wp1.unit_generic_id,
+        wp1.lot_no
+        order by sq1.addition_qty desc ) as lq
+        where  (lq.product_name = 'คงคลัง ' and 	lq.remainQty > 0) or lq.product_name != 'คงคลัง'	`
+  return knex.raw(sql)
+}
+  printAdditionReports(knex: Knex, addition: any) {
+    let sql = `
+    SELECT 
+        mg.working_code,
+        mg.generic_name,
+        mp.product_id,
+        mgd.dosage_name,
+        adg.dst_max_qty - adg.dst_remain_qty as to_refill,
+        muu.unit_name as small_unit,
+        adg.addition_qty as total_addition_qty
+        FROM wm_addition_header adh
+        JOIN wm_addition_generic adg on adg.addition_id = adh.addition_id
+        JOIN wm_addition_product adp on adp.addition_generic_id = adg.addition_generic_id
+        JOIN mm_generics mg on mg.generic_id = adg.generic_id
+        left join mm_generic_dosages as mgd on mgd.dosage_id = mg.dosage_id
+        JOIN wm_products wp on wp.wm_product_id = adp.wm_product_id
+        JOIN mm_products mp on mp.product_id = wp.product_id
+        JOIN mm_units muu on muu.unit_id = adg.primary_unit_id
+        AND adh.addition_id = ${addition}
+        GROUP BY wp.product_id, adh.addition_id`
+    return knex.raw(sql)
+  }
+  printAdditionHeadTransaction(knex: Knex, addition_id: any) {
+    let sql = `
+    SELECT
+        r.addition_id,
+        r.addition_date,
+        r.addition_code,
+        r.create_date,
+        r.update_date,
+        whs.warehouse_name,
+        whs.warehouse_id,
+        wh.warehouse_name AS withdraw_warehouse_name
+    FROM
+        wm_addition_header r
+    LEFT JOIN wm_warehouses wh ON wh.warehouse_id = r.src_warehouse_id
+    LEFT JOIN wm_warehouses whs ON whs.warehouse_id = r.dst_warehouse_id
+    WHERE
+        r.addition_id = ${addition_id}
+    ORDER BY
+        r.addition_id`
+    return knex.raw(sql)
+  }
+  printAdditionApprove(knex: Knex, addition_id: any) {
+    let sql = `select * from wm_addition_header where addition_id = ${addition_id}`
+    return knex.raw(sql)
+  }
+  printAdditionApproveDetail(knex: Knex, addition_id: any){
+    let sql = `SELECT
+    mp.product_id,
+    mp.product_name,
+    mg.generic_name,
+    mu1.unit_name as large_unit,
+    mu2.unit_name as small_unit,
+    FLOOR( ag.dst_max_qty - ag.dst_remain_qty /ug.qty) as remain_qty,
+    ug.cost as cost,
+    wp.lot_no,
+    ah.addition_code,
+    wp.expired_date,
+    dg.dosage_name,
+    ap.addition_qty / ug.qty as addition_qty,
+    ug.qty as conversion_qty,
+    ug.cost * (ap.addition_qty / ug.qty) as total_cost,
+    wwd.warehouse_name,
+    ah.create_date,
+    ah.addition_code,
+    ah.status
+      
+    FROM
+      wm_addition_header as ah
+      inner join wm_addition_generic as ag on ag.addition_id = ah.addition_id
+      inner join wm_addition_product as ap on ap.addition_generic_id = ag.addition_generic_id
+      LEFT JOIN wm_products as wp on wp.wm_product_id = ap.wm_product_id
+      left JOIN mm_unit_generics ug on ug.unit_generic_id = wp.unit_generic_id
+      LEFT JOIN mm_units mu1 on mu1.unit_id = ug.from_unit_id
+      LEFT JOIN mm_units mu2 on mu2.unit_id = ug.to_unit_id
+      LEFT JOIN mm_products as mp on mp.product_id = wp.product_id
+      LEFT JOIN mm_generics as mg on mg.generic_id = mp.generic_id
+      LEFT JOIN mm_generic_dosages as dg on dg.dosage_id = mg.dosage_id
+      LEFT JOIN wm_warehouses as wwd on wwd.warehouse_id = ah.dst_warehouse_id
+    WHERE
+      ah.addition_id = ${addition_id} `
+    return knex.raw(sql)
+  }
+
 }

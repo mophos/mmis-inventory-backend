@@ -11,6 +11,7 @@ import { StockCard } from '../models/stockcard';
 import { SerialModel } from '../models/serial';
 
 const router = express.Router();
+const printDate = 'วันที่พิมพ์ ' + moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(', HH:mm:ss น.');
 
 const additionModel = new Addition();
 const inventoryReportModel = new InventoryReportModel();
@@ -195,6 +196,126 @@ router.get('/print/transaction/:transactionId', async (req, res, next) => {
       hospitalName: hospitalName,
       create_date: create_date,
       today: today
+    });
+
+  } catch (error) {
+    console.log(error)
+    res.send({ ok: false, error: error.messgae });
+  } finally {
+    db.destroy();
+  }
+});
+router.get('/print/transactions', async (req, res, next) => {
+
+  let db = req.db;
+  let addition_id = req.query.addition_id;
+  let rs: any = []
+  let header: any = []
+  let detail:any = []
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    moment.locale('th')
+    let today = moment(new Date()).format('DD MMMM ') + (moment(new Date()).get('year') + 543);
+    addition_id = Array.isArray(addition_id) ? addition_id : [addition_id];
+    for (let h of addition_id) {
+      let _detail:any = []
+      let _d:any = {}
+      const rsh: any = await additionModel.printAdditionHeadTransaction(db, h);
+      _d.header = rsh[0][0]
+      let rsg: any = await additionModel.printAdditionReports(db, h);
+      _d.generic = rsg[0]
+       
+      for(let d of _d.generic){
+        let _detail_:any =[] 
+        let rsp: any = await additionModel.printAdditionReportDetail(db,h,d.product_id)
+        d.product = rsp[0]
+      }
+      detail.push(_d)
+    }
+    _.forEach(detail,(obj)=>{
+      obj.header.addition_date =  moment(obj.header.addition_date).format('D MMMM ') + (moment(obj.header.addition_date).get('year') + 543);
+      obj.header.update_date =  moment(obj.header.update_date).format('D MMMM ') + (moment(obj.header.update_date).get('year') + 543);
+      _.forEach(obj.generic,(g)=>{
+        g.dosage_name = g.dosage_name ? g.dosage_name: '-';
+        g.to_refill = inventoryReportModel.commaQty(Math.round(g.to_refill))
+        g.total_addition_qty = inventoryReportModel.commaQty(Math.round(g.total_addition_qty))
+        _.forEach(g.product,(p)=>{
+          p.addition_qty = inventoryReportModel.commaQty(Math.round(p.addition_qty / p.unit_qty))
+          p.expired_date = moment(p.expired_date).isValid() ? moment(p.expired_date).format('D MMMM ') + (moment(p.expired_date).get('year') + 543) : '-'; 
+          p.location_name = p.location_name ? p.location_name : '-'; 
+          p.remainQty = inventoryReportModel.commaQty(Math.round(p.remainQty / p.unit_qty))
+        })
+      })
+    })
+    // res.send(detail)
+    res.render('additions', {
+      detail: detail,
+        hospitalName: hospitalName,
+        today: today
+      });
+
+  } catch (error) {
+    console.log(error)
+    res.send({ ok: false, error: error.messgae });
+  } finally {
+    db.destroy();
+  }
+});
+router.get('/print/approve', async (req, res, next) => {
+
+  let db = req.db;
+  let addition_id = req.query.addition_id;
+  let page_re: any = req.decoded.WM_TRANSFER_REPORT_APPROVE;
+
+  try {
+    addition_id = Array.isArray(addition_id) ? addition_id : [addition_id];
+    const hosdetail = await inventoryReportModel.hospital(db);
+    const hospitalName = hosdetail[0].hospname;
+    moment.locale('th')
+    const today = moment(new Date()).format('DD MMMM ') + (moment(new Date()).get('year') + 543);
+    let header: any = []
+    let detail: any = []
+    let sum: any = []
+    for (let i in addition_id) {
+      try {
+        const rs: any = await additionModel.printAdditionApprove(db, addition_id[i]);
+        header.push(rs[0][0])
+        const rsd: any = await additionModel.printAdditionApproveDetail(db, addition_id[i]);
+        detail.push(rsd[0])
+        console.log(page_re);
+
+        detail[i] = _.chunk(detail[i], page_re)
+        _.forEach(detail[i], values => {
+          sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
+          _.forEach(values, value => {
+            value.total_cost = inventoryReportModel.comma(value.total_cost);
+            value.confirm_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
+            // value.updated_at ? value.confirm_date = moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) : value.confirm_date = moment(value.created_at).format('D MMMM ') + (moment(value.created_at).get('year') + 543)
+            value.cost = inventoryReportModel.comma(value.cost);
+            value.addition_qty = inventoryReportModel.commaQty(value.addition_qty);
+            value.remain_qty = inventoryReportModel.commaQty(value.remain_qty);
+            value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
+            value.expired_date = value.expired_date ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
+            header[i].today = printDate;
+            header[i].today += (value.updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) + moment(value.updated_at).format(', HH:mm') + ' น.' : ''
+          })
+        })
+      } catch (error) {
+        res.send({ ok: false, error: error.messgae });
+      }
+    };
+
+    console.log(JSON.stringify(detail));
+
+
+    res.render('approve_addition', {
+      header: header,
+      hospitalName: hospitalName,
+      detail: detail,
+      printDate: printDate,
+      today: today,
+      sum: sum
     });
 
   } catch (error) {

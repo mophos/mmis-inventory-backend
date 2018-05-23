@@ -835,8 +835,9 @@ export class ReceiveModel {
       	select ifnull(sum(rdx.receive_qty), 0)
       	from wm_receive_detail as rdx
       	inner join wm_receives as r on r.receive_id=rdx.receive_id
-      	where rdx.product_id=pi.product_id
-        and rdx.receive_id and r.purchase_order_id=pi.purchase_order_id
+        where rdx.product_id=pi.product_id
+        and rdx.is_free = pi.giveaway
+        and r.purchase_order_id=pi.purchase_order_id
         and r.is_cancel='N'
       ) as total_received_qty
     from pc_purchasing_order_item as pi

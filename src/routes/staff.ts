@@ -534,7 +534,6 @@ const transferApprove = (async (db: Knex, transferIds: any[], peopleUserId: any)
       data.push(objOut);
     }
   });
-
   await transferModel.saveDstProducts(db, dstProducts);
   await transferModel.decreaseQty(db, dstProducts);
   await transferModel.changeApproveStatusIds(db, transferIds, peopleUserId);
@@ -647,8 +646,9 @@ router.post('/transfer/save', co(async (req, res, next) => {
           let generics = {
             transfer_id: transferId,
             generic_id: g.generic_id,
-            transfer_qty: g.transfer_qty,
+            transfer_qty: g.transfer_qty * g.conversion_qty,
             primary_unit_id: g.primary_unit_id,
+            unit_generic_id: g.unit_generic_id,
             location_id: g.location_id,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
@@ -661,7 +661,7 @@ router.post('/transfer/save', co(async (req, res, next) => {
               transfer_id: transferId,
               transfer_generic_id: rsTransferGeneric[0],
               wm_product_id: p.wm_product_id,
-              product_qty: p.product_qty * p.conversion_qty,
+              product_qty: p.product_qty,
               create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
               create_by: req.decoded.people_user_id
             });
@@ -695,7 +695,7 @@ router.delete('/transfer/:transferId', co(async (req, res, next) => {
   try {
     const rs = await transferModel.checkStatus(db, transferId);
     const status = rs[0];
-    if (status.confirmed === 'Y' || status.approved === 'Y') {
+    if (status.approved === 'Y') {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
     } else {
       let rows = await transferModel.removeTransfer(db, transferId);
@@ -791,8 +791,9 @@ router.put('/transfer/save/:transferId', co(async (req, res, next) => {
           let generics = {
             transfer_id: transferId,
             generic_id: g.generic_id,
-            transfer_qty: g.transfer_qty,
+            transfer_qty: g.transfer_qty * g.conversion_qty,
             primary_unit_id: g.primary_unit_id,
+            unit_generic_id: g.unit_generic_id,
             location_id: g.location_id,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
@@ -805,7 +806,7 @@ router.put('/transfer/save/:transferId', co(async (req, res, next) => {
               transfer_id: transferId,
               transfer_generic_id: rsTransferGeneric[0],
               wm_product_id: p.wm_product_id,
-              product_qty: p.product_qty * p.conversion_qty,
+              product_qty: p.product_qty,
               create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
               create_by: req.decoded.people_user_id
             });
