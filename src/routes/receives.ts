@@ -1003,6 +1003,20 @@ router.put('/purchase/completed', co(async (req, res, next) => {
   }
 }));
 
+router.put('/purchase/approved', co(async (req, res, next) => {
+  let db = req.db;
+  let receiveId = req.body.receiveId;
+
+  try {
+    const result = await receiveModel.updatePurchaseApprovedStatus(db, receiveId);
+    res.send({ ok: true });
+  } catch (error) {
+    res.send({ ok: false, errror: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
 router.get('/committee', co(async (req, res, next) => {
   let db = req.db;
   try {
