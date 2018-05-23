@@ -1316,6 +1316,7 @@ export class ReceiveModel {
       ra.approve_id,
       pc.purchase_order_id,
       pc.purchase_order_number,
+      pc.purchase_order_book_number,
       ra.approve_id,
       ra.approve_date
     FROM
@@ -1393,6 +1394,7 @@ export class ReceiveModel {
       ra.approve_id,
       pc.purchase_order_id,
       pc.purchase_order_number,
+      pc.purchase_order_book_number,
       ra.approve_id,
       ra.approve_date
     FROM
