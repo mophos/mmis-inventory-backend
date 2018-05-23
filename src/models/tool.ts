@@ -25,4 +25,20 @@ export class ToolModel {
     return db.raw(sql, [_query, _query]);
   }
 
+  getReceivesItems(db: Knex, receiveId: any) {
+    let sql = `
+      select rd.receive_id, rd.product_id, rd.lot_no, rd.expired_date, rd.receive_qty, rd.unit_generic_id, rd.warehouse_id,
+      p.product_name, p.generic_id, p.working_code,
+      ug.qty as conversion_qty, ut.unit_name as to_unit_name, uf.unit_name as from_unit_name, ug.qty*rd.receive_qty as total_small_qty
+      from wm_receive_detail as rd
+      inner join mm_unit_generics as ug on ug.unit_generic_id=rd.unit_generic_id
+      inner join mm_products as p on p.product_id=rd.product_id
+      left join mm_units as ut on ut.unit_id=ug.to_unit_id
+      left join mm_units as uf on uf.unit_id=ug.from_unit_id
+      where rd.receive_id=?
+    `;
+
+    return db.raw(sql, [receiveId]);
+  }
+
 }
