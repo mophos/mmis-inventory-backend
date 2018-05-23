@@ -46,7 +46,7 @@ const hisTransactionModel = new HisTransactionModel();
 const requisitionTypeModel = new RequisitionTypeModel();
 const periodModel = new PeriodModel();
 
-let uploadDir = './uploads';
+let uploadDir = path.join(process.env.MMIS_DATA, 'uploaded');
 
 fse.ensureDirSync(uploadDir);
 
