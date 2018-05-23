@@ -1,16 +1,20 @@
-'use strict';
+
+const json2xls = require('json2xls');
 
 import * as express from 'express';
 import * as moment from 'moment';
-import { unitOfTime } from 'moment';
-import * as co from 'co-express';
+import * as fs from 'fs';
+import * as fse from 'fs-extra';
+import * as path from 'path';
 
-import { ProductModel } from '../models/product';
+import { unitOfTime } from 'moment';
+
 const router = express.Router();
 
+import { ProductModel } from '../models/product';
 const productModel = new ProductModel();
 
-router.get('/', co(async (req, res, next) => {
+router.get('/', async (req, res, next) => {
 
   let db = req.db;
 
@@ -23,9 +27,9 @@ router.get('/', co(async (req, res, next) => {
     db.destroy();
   }
 
-}));
+});
 
-router.get('/search-autocomplete', co(async (req, res, next) => {
+router.get('/search-autocomplete', async (req, res, next) => {
 
   let db = req.db;
   const query = req.query.q;
@@ -50,9 +54,9 @@ router.get('/search-autocomplete', co(async (req, res, next) => {
     db.destroy();
   }
 
-}));
+});
 
-router.get('/search-generic-autocomplete', co(async (req, res, next) => {
+router.get('/search-generic-autocomplete', async (req, res, next) => {
 
   let db = req.db;
   const query = req.query.query;
@@ -70,29 +74,9 @@ router.get('/search-generic-autocomplete', co(async (req, res, next) => {
     db.destroy();
   }
 
-}));
+});
 
-router.get('/search-product-tmt', co(async (req, res, next) => {
-
-  let db = req.db;
-  const query = req.query.q;
-
-  try {
-    let rs: any = await productModel.searchProductTMT(db, query);
-    if (rs.length) {
-      res.send(rs);
-    } else {
-      res.send([]);
-    }
-  } catch (error) {
-    res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
-  }
-
-}));
-
-router.get('/search-warehouse-autocomplete', co(async (req, res, next) => {
+router.get('/search-warehouse-autocomplete', async (req, res, next) => {
 
   let db = req.db;
   let query = req.query.q;
@@ -107,9 +91,9 @@ router.get('/search-warehouse-autocomplete', co(async (req, res, next) => {
     db.destroy();
   }
 
-}));
+});
 
-router.get('/unit-conversion/:genericId', co(async (req, res, next) => {
+router.get('/unit-conversion/:genericId', async (req, res, next) => {
 
   let db = req.db;
   const genericId = req.params.genericId;
@@ -123,9 +107,9 @@ router.get('/unit-conversion/:genericId', co(async (req, res, next) => {
     db.destroy();
   }
 
-}));
+});
 
-router.post('/remain', co(async (req, res, next) => {
+router.post('/remain', async (req, res, next) => {
 
   let db = req.db;
   let productId = req.body.productId;
@@ -139,9 +123,9 @@ router.post('/remain', co(async (req, res, next) => {
     db.destroy();
   }
 
-}));
+});
 
-router.post('/remain/warehouse', co(async (req, res, next) => {
+router.post('/remain/warehouse', async (req, res, next) => {
 
   let db = req.db;
   let productId = req.body.productId;
@@ -158,9 +142,9 @@ router.post('/remain/warehouse', co(async (req, res, next) => {
     db.destroy();
   }
 
-}));
+});
 
-router.get('/remain/warehouse', co(async (req, res, next) => {
+router.get('/remain/warehouse', async (req, res, next) => {
 
   let db = req.db;
   let productId = req.query.productId;
@@ -176,9 +160,9 @@ router.get('/remain/warehouse', co(async (req, res, next) => {
     db.destroy();
   }
 
-}));
+});
 
-router.get('/listall', co(async (req, res, next) => {
+router.get('/listall', async (req, res, next) => {
 
   let db = req.db;
 
@@ -191,7 +175,7 @@ router.get('/listall', co(async (req, res, next) => {
     db.destroy();
   }
 
-}));
+});
 
 router.post('/', async (req, res, next) => {
   let products = req.body.products;
@@ -255,7 +239,7 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-router.put('/:productId', co(async (req, res, next) => {
+router.put('/:productId', async (req, res, next) => {
   let products = req.body.products;
   let productId = req.params.productId;
 
@@ -312,10 +296,10 @@ router.put('/:productId', co(async (req, res, next) => {
   } else {
     res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' }) ;
   }
-}));
+});
 
 
-router.get('/detail/:productId', co(async (req, res, next) => {
+router.get('/detail/:productId', async (req, res, next) => {
   let productId = req.params.productId;
   let db = req.db;
 
@@ -328,9 +312,9 @@ router.get('/detail/:productId', co(async (req, res, next) => {
     db.destroy();
   }
 
-}));
+});
 
-router.delete('/:productId', co(async (req, res, next) => {
+router.delete('/:productId', async (req, res, next) => {
   let productId = req.params.productId;
   let db = req.db;
 
@@ -345,9 +329,9 @@ router.delete('/:productId', co(async (req, res, next) => {
     db.destroy();
   }
 
-}));
+});
 
-router.post('/stock/products/all', co(async (req, res, next) => {
+router.post('/stock/products/all', async (req, res, next) => {
   let db = req.db;
   let limit = req.body.limit || 10;
   let offset = req.body.offset || 0;
@@ -367,9 +351,9 @@ router.post('/stock/products/all', co(async (req, res, next) => {
     res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
   }
 
-}));
+});
 
-router.post('/stock/products/search', co(async (req, res, next) => {
+router.post('/stock/products/search', async (req, res, next) => {
   let db = req.db;
   let limit = req.body.limit || 10;
   let offset = req.body.offset || 0;
@@ -396,9 +380,9 @@ router.post('/stock/products/search', co(async (req, res, next) => {
   } else {
     res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
   }
-}));
+});
 
-router.post('/stock/products/total', co(async (req, res, next) => {
+router.post('/stock/products/total', async (req, res, next) => {
   let db = req.db;
   let genericType = req.body.genericType;
 
@@ -416,10 +400,10 @@ router.post('/stock/products/total', co(async (req, res, next) => {
   } finally {
     db.destroy();
   }
-}));
+});
 
 // รายการสินค้าคงเหลือแยกตามคลัง และ lot
-router.get('/stock/remain/:productId', co(async (req, res, next) => {
+router.get('/stock/remain/:productId', async (req, res, next) => {
   let db = req.db;
   let productId = req.params.productId;
 
@@ -431,10 +415,10 @@ router.get('/stock/remain/:productId', co(async (req, res, next) => {
   } finally {
     db.destroy();
   }
-}));
+});
 
 //ค้นหารายการสินค้าจากคลัง
-router.get('/getallproductinwarehouse/:srcwarehouseId/:dstwarehouseId', co(async (req, res, next) => {
+router.get('/getallproductinwarehouse/:srcwarehouseId/:dstwarehouseId', async (req, res, next) => {
   let db = req.db;
   let srcwarehouseId = req.params.srcwarehouseId;
   let dstwarehouseId = req.params.dstwarehouseId;
@@ -446,9 +430,9 @@ router.get('/getallproductinwarehouse/:srcwarehouseId/:dstwarehouseId', co(async
   } finally {
     db.destroy();
   }
-}));
+});
 
-router.post('/template/search-product-warehouse/:srcWarehouseId/:dstwarehouseId', co(async (req, res, next) => {
+router.post('/template/search-product-warehouse/:srcWarehouseId/:dstwarehouseId', async (req, res, next) => {
   let db = req.db;
   let srcWarehouseId = req.params.srcWarehouseId;
   let dstwarehouseId = req.params.dstwarehouseId;
@@ -462,10 +446,10 @@ router.post('/template/search-product-warehouse/:srcWarehouseId/:dstwarehouseId'
   } finally {
     db.destroy();
   }
-}));
+});
 
 //ค้นหารายการสินค้าจาก Template
-router.get('/getallproductintemplate/:templateId', co(async (req, res, next) => {
+router.get('/getallproductintemplate/:templateId', async (req, res, next) => {
   let db = req.db;
   let templateId = req.params.templateId;
   try {
@@ -476,9 +460,9 @@ router.get('/getallproductintemplate/:templateId', co(async (req, res, next) => 
   } finally {
     db.destroy();
   }
-}));
+});
 
-router.get('/searchallproduct/:query', co(async (req, res, next) => {
+router.get('/searchallproduct/:query', async (req, res, next) => {
   let db = req.db;
   let query = req.params.query;
   try {
@@ -489,9 +473,9 @@ router.get('/searchallproduct/:query', co(async (req, res, next) => {
   } finally {
     db.destroy();
   }
-}));
+});
 
-router.get('/full-detail/:productNewId', co(async (req, res, next) => {
+router.get('/full-detail/:productNewId', async (req, res, next) => {
   let db = req.db;
   let productNewId = req.params.productNewId;
 
@@ -503,9 +487,9 @@ router.get('/full-detail/:productNewId', co(async (req, res, next) => {
   } finally {
     db.destroy();
   }
-}));
+});
 
-router.get('/getwarehouseproductremain/:warehouseId/:productId', co(async (req, res, next) => {
+router.get('/getwarehouseproductremain/:warehouseId/:productId', async (req, res, next) => {
   let db = req.db;
   let warehouseId = req.params.warehouseId;
   let productId = req.params.productId;
@@ -518,9 +502,32 @@ router.get('/getwarehouseproductremain/:warehouseId/:productId', co(async (req, 
   } finally {
     db.destroy();
   }
-}));
+});
 
-router.get('/getallproduct', co(async (req, res, next) => {
+// ============================== MAPPING ======================================
+
+router.get('/mapping/search-product-tmt', async (req, res, next) => {
+
+  let db = req.db;
+  const query = req.query.q;
+
+  try {
+    let rs: any = await productModel.searchProductTMT(db, query);
+    if (rs.length) {
+      res.send(rs);
+    } else {
+      res.send([]);
+    }
+  } catch (error) {
+    console.log(error);
+    res.send([]);
+  } finally {
+    db.destroy();
+  }
+
+});
+
+router.get('/mapping/all-product', async (req, res, next) => {
   let db = req.db;
 
   try {
@@ -531,11 +538,11 @@ router.get('/getallproduct', co(async (req, res, next) => {
   } finally {
     db.destroy();
   }
-}));
+});
 
-router.put('/update/tmt', (req, res, next) => {
+router.put('/mapping/update/tmt', (req, res, next) => {
   let productUpdate = req.body.productUpdate;
-  console.log(productUpdate);
+
   let db = req.db;
 
   productModel.updateTMT(db, productUpdate)
@@ -548,6 +555,26 @@ router.put('/update/tmt', (req, res, next) => {
     .finally(() => {
       db.destroy();
     });
+});
+
+router.get('/mapping/export-excel', (req, res, next) => {
+
+  const db = req.db;
+
+  let json = {
+    foo: 'bar',
+    qux: 'moo',
+    poo: 123,
+    stux: new Date()
+  }
+
+  const xls = json2xls(json);
+  const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+  // create directory
+  fse.ensureDirSync(exportDirectory);
+  const filePath = path.join(exportDirectory, 'tmt.xlsx');
+  fs.writeFileSync(filePath, xls, 'binary');
+
 });
 
 export default router;
