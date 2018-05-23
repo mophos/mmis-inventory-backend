@@ -13,7 +13,7 @@ export class WarehouseModel {
         ) as his_warehouse
       from wm_warehouses as w
       left join wm_types as t on t.type_id=w.type_id
-      order by w.short_code
+      order by w.is_actived desc,w.short_code asc
     `;
 
     return knex.raw(sql, []);
@@ -24,8 +24,7 @@ export class WarehouseModel {
       .select('w.warehouse_id', 'w.warehouse_name')
       // .innerJoin('wm_warehouse_types as wt', 'wt.warehouse_id', 'w.warehouse_id')
       .innerJoin('wm_types as t', 't.type_id', 'w.type_id')
-      .where('w.is_enable', 'Y')
-      .where('w.is_receive', 'Y')
+      .where('w.is_actived', 'Y')
       .where('t.is_main', 'Y')
       .orderBy('w.warehouse_name');
   }
@@ -81,11 +80,11 @@ export class WarehouseModel {
       .update(datas);
   }
 
-  updateWarehouseType(knex: Knex, warehouseId: string, typeId: any) {
-    return knex('wm_warehouse_types')
-      .where('warehouse_id', warehouseId)
-      .update({ type_id: typeId });
-  }
+  // updateWarehouseType(knex: Knex, warehouseId: string, typeId: any) {
+  //   return knex('wm_warehouse_types')
+  //     .where('warehouse_id', warehouseId)
+  //     .update({ type_id: typeId });
+  // }
 
   detail(knex: Knex, warehouseId: string) {
     let sql = `
@@ -379,21 +378,21 @@ export class WarehouseModel {
 
   getReqShipingNetwork(knex: Knex, warehouseId: any) {
     let sql = `
-    select sn.*, dst.warehouse_name, dst.warehouse_id,dst.short_code, dst.location, dst.is_receive, dst.is_minmax_planning
+    select sn.*, dst.warehouse_name, dst.warehouse_id,dst.short_code, dst.location, dst.is_minmax_planning
     from mm_shipping_networks as sn
     left join wm_warehouses as dst on dst.warehouse_id=sn.source_warehouse_id
     where sn.source_warehouse_id = ?
-    and sn.transfer_type = 'REQ' and dst.is_enable='Y'`;
+    and sn.transfer_type = 'REQ' and dst.is_actived='Y'`;
     return knex.raw(sql, [warehouseId]);
   }
 
   getShipingNetwork(knex: Knex, warehouseId: any, type: any) {
     let sql = `
-    select sn.*, dst.warehouse_name, dst.warehouse_id,dst.short_code, dst.location, dst.is_receive, dst.is_minmax_planning
+    select sn.*, dst.warehouse_name, dst.warehouse_id,dst.short_code, dst.location, dst.is_minmax_planning
     from mm_shipping_networks as sn
     left join wm_warehouses as dst on dst.warehouse_id=sn.destination_warehouse_id
     where sn.source_warehouse_id = ?
-    and sn.transfer_type = ? and dst.is_enable='Y'
+    and sn.transfer_type = ? and dst.is_actived='Y'
     order by dst.short_code
     `;
     return knex.raw(sql, [warehouseId, type]);
