@@ -557,16 +557,22 @@ router.put('/mapping/update/tmt', (req, res, next) => {
     });
 });
 
-router.get('/mapping/export-excel', (req, res, next) => {
+router.get('/mapping/tmt/export', async (req, res, next) => {
 
   const db = req.db;
 
-  let json = {
-    foo: 'bar',
-    qux: 'moo',
-    poo: 123,
-    stux: new Date()
-  }
+  // get tmt data
+  let rs: any = await productModel.getAllProduct(db);
+
+  let json = [];
+  rs.forEach(v => {
+    let obj: any = {};
+    obj.WORKING_CODE = v.working_code;
+    obj.PRODUCT_NAME = v.product_name;
+    obj.TPU = v.TMTID;
+    obj.FSN = v.FSN;
+    json.push(obj);
+  });
 
   const xls = json2xls(json);
   const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
@@ -574,7 +580,8 @@ router.get('/mapping/export-excel', (req, res, next) => {
   fse.ensureDirSync(exportDirectory);
   const filePath = path.join(exportDirectory, 'tmt.xlsx');
   fs.writeFileSync(filePath, xls, 'binary');
-
+  // force download
+  res.download(filePath, 'tmt.xlsx');
 });
 
 export default router;
