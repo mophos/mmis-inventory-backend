@@ -939,6 +939,78 @@ router.get('/export/excel', wrap(async (req, res, next) => {
   }
 }));
 
+router.put('/products/lot-expired', wrap(async (req, res, next) => {
+  let data = req.body.data;
+  let peopleId = req.decoded.people_user_id;
+  let db = req.db;
 
+  if (data.product_id && data.reason) {
+    try {
+      let oldData: any = {
+        lot_no: data.old_lot_no,
+        expired_date: moment(data.old_expired_date, 'DD/MM/YYYY').isValid() ? moment(data.old_expired_date, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
+      }
+
+      let newData: any = {
+        lot_no: data.new_lot_no,
+        expired_date: moment(data.new_expired_date, 'DD/MM/YYYY').isValid() ? moment(data.new_expired_date, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
+      }
+
+      let history: any = {
+        product_id: data.product_id,
+        old_lot_no: data.old_lot_no,
+        new_lot_no: data.new_lot_no,
+        old_expired_date: moment(data.old_expired_date, 'DD/MM/YYYY').isValid() ? moment(data.old_expired_date, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
+        new_expired_date: moment(data.new_expired_date, 'DD/MM/YYYY').isValid() ? moment(data.new_expired_date, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
+        reason: data.reason,
+        history_date: moment().format('YYYY-MM-DD'),
+        history_time: moment().format('HH:mm:ss'),
+        create_by: peopleId
+      }
+      
+      await warehouseModel.insertProductHistory(db, history);
+
+      await warehouseModel.updateProduct(db, data.product_id, oldData, newData);
+      await warehouseModel.updateReceiveDetail(db, data.product_id, oldData, newData);
+      await warehouseModel.updateReceiveOtherDetail(db, data.product_id, oldData, newData);
+      await warehouseModel.updateStockCard(db, data.product_id, oldData, newData);
+
+      res.send({ ok: true });
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'กรุณากรอกข้อมูลให้ครบถ้วน' })
+  }
+}));
+
+router.get('/products/history/:productId', wrap(async (req, res, next) => {
+  let productId = req.params.productId;
+  let db = req.db;
+
+  try {
+    let rs = await warehouseModel.getProductHistory(db, productId);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/expired/setting', wrap(async (req, res, next) => {
+  let db = req.db;
+
+  try {
+    let rs = await warehouseModel.getExpiredSetting(db);
+    res.send({ ok: true, value: rs[0].value });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
 
 export default router;
