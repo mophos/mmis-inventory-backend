@@ -1269,12 +1269,16 @@ GROUP BY
     FROM
         pc_purchasing_order AS pc
         JOIN pc_purchasing_order_item AS pci ON pci.purchase_order_id = pc.purchase_order_id
+        JOIN wm_receive_detail AS wrd ON wrd.product_id = pci.product_id
         JOIN mm_labelers AS ml ON ml.labeler_id = pc.labeler_id
         JOIN l_bid_process AS cmp ON cmp.id = pc.purchase_method_id 
     WHERE
         pc.purchase_order_status = 'APPROVED' 
-        AND pc.purchase_order_status != 'COMPLETED' 
         AND pc.is_cancel != 'Y' 
+        AND pci.qty - wrd.receive_qty > 0 
+    GROUP BY
+        pci.product_id,
+        pc.purchase_order_number 
     ORDER BY
         pc.purchase_order_number DESC`;
         return knex.raw(sql);
