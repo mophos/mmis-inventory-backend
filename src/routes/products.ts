@@ -6,6 +6,11 @@ import * as moment from 'moment';
 import * as fs from 'fs';
 import * as fse from 'fs-extra';
 import * as path from 'path';
+import * as rimraf from 'rimraf';
+import * as multer from 'multer';
+import * as _ from 'lodash';
+
+import xlsx from 'node-xlsx';
 
 import { unitOfTime } from 'moment';
 
@@ -13,6 +18,21 @@ const router = express.Router();
 
 import { ProductModel } from '../models/product';
 const productModel = new ProductModel();
+
+let uploadDir = path.join(process.env.MMIS_DATA, 'uploaded');
+fse.ensureDirSync(uploadDir);
+
+var storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir)
+  },
+  filename: function (req, file, cb) {
+    let _ext = path.extname(file.originalname);
+    cb(null, Date.now() + _ext)
+  }
+})
+
+let upload = multer({ storage: storage });
 
 router.get('/', async (req, res, next) => {
 
@@ -514,7 +534,14 @@ router.get('/mapping/search-product-tmt', async (req, res, next) => {
   try {
     let rs: any = await productModel.searchProductTMT(db, query);
     if (rs.length) {
-      res.send(rs);
+      let items = [];
+      rs.forEach(v => {
+        let obj: any = {};
+        obj.fsn = v.FSN;
+        obj.tmtid = v.TMTID;
+        items.push(obj);
+      });
+      res.send(items);
     } else {
       res.send([]);
     }
@@ -531,8 +558,19 @@ router.get('/mapping/all-product', async (req, res, next) => {
   let db = req.db;
 
   try {
-    let result = await productModel.getAllProduct(db);
-    res.send({ ok: true, rows: result });
+    let rs: any = await productModel.getAllProduct(db);
+
+    let mappings = [];
+    rs.forEach(v => {
+      let obj: any = {};
+      obj.working_code = v.working_code;
+      obj.product_name = v.product_name;
+      obj.product_id = v.product_id;
+      obj.tmtid = v.TMTID;
+      // obj.fsn = v.FSN;
+      mappings.push(obj);
+    });
+    res.send({ ok: true, rows: mappings });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -540,21 +578,19 @@ router.get('/mapping/all-product', async (req, res, next) => {
   }
 });
 
-router.put('/mapping/update/tmt', (req, res, next) => {
+router.put('/mapping/update/tmt', async (req, res, next) => {
   let productUpdate = req.body.productUpdate;
-
   let db = req.db;
 
-  productModel.updateTMT(db, productUpdate)
-    .then((results: any) => {
-      res.send({ ok: true })
-    })
-    .catch(error => {
-      res.send({ ok: false, error: error })
-    })
-    .finally(() => {
-      db.destroy();
-    });
+  try {
+    await productModel.updateTMT(db, productUpdate);
+    res.send({ ok: true });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
 });
 
 router.get('/mapping/tmt/export', async (req, res, next) => {
@@ -569,8 +605,8 @@ router.get('/mapping/tmt/export', async (req, res, next) => {
     let obj: any = {};
     obj.WORKING_CODE = v.working_code;
     obj.PRODUCT_NAME = v.product_name;
-    obj.TPU = v.TMTID;
-    obj.FSN = v.FSN;
+    obj.TMTID = v.TMTID;
+    // obj.FSN = v.FSN;
     json.push(obj);
   });
 
@@ -582,6 +618,71 @@ router.get('/mapping/tmt/export', async (req, res, next) => {
   fs.writeFileSync(filePath, xls, 'binary');
   // force download
   res.download(filePath, 'tmt.xlsx');
+});
+
+router.post('/mapping/tmt/upload', upload.single('file'), async (req, res, next) => {
+  let db = req.db;
+  let filePath = req.file.path;
+  // get warehouse mapping
+  const workSheetsFromFile = xlsx.parse(`${filePath}`);
+
+  let excelData = workSheetsFromFile[0].data;
+  let maxRecord = excelData.length;
+
+  let header = excelData[0];
+
+  // check headers 
+  if (header[0].toUpperCase() === 'WORKING_CODE' &&
+    header[1].toUpperCase() === 'PRODUCT_NAME' &&
+    header[2].toUpperCase() === 'TMTID') {
+
+    let rs: any = await productModel.getAllProduct(db);
+
+    let drugs: any = [];
+    let mappings: any = [];
+
+    rs.forEach(v => {
+      let obj: any = {};
+      obj.working_code = v.working_code;
+      obj.product_name = v.product_name;
+      obj.product_id = v.product_id;
+      obj.tmtid = v.TMTID;
+      // obj.FSN = v.FSN;
+      drugs.push(obj);
+    });
+
+    // x = 0 = header      
+    for (let x = 1; x < maxRecord; x++) {
+
+      if (excelData[x][2]) {
+        // console.log(excelData[x][2]);
+        let workingCode = excelData[x][0].toString();
+        let tmtid = excelData[x][2] ? excelData[x][2].toString() : ''; // TPU
+
+        let obj: any = {};
+        obj.tmtid = tmtid;
+        obj.working_code = workingCode;
+
+        mappings.push(obj);
+      }
+
+    }
+
+    drugs.forEach((v, i) => {
+      let idx = _.findIndex(mappings, { working_code: v.working_code });
+      if (idx > -1) {
+        // console.log(idx, mappings[idx].tmtid);
+        drugs[i].tmtid = mappings[idx].tmtid;
+        // console.log(drugs[i]);
+      }
+    });
+
+    res.send({ ok: true, rows: drugs });
+
+  } else {
+    res.send({ ok: false, error: 'Header ไม่ถูกต้อง' })
+  }
+
 });
 
 export default router;

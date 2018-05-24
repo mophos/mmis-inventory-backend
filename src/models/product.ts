@@ -804,17 +804,22 @@ group by mpp.product_id
     return db('mm_products as mp')
       .select('mp.working_code', 'mp.product_name', 'tpu.TMTID', 'tpu.FSN', 'mp.product_id')
       .leftJoin('tmt_tpu as tpu', 'tpu.TMTID', 'mp.tmt_id')
+      .orderBy('mp.product_name', 'DESC');
   }
 
   updateTMT(db: Knex, productUpdate: any) {
     let sqls = [];
     productUpdate.forEach(p => {
+      let obj: any = { tmt_id: p.tmt_id };
       let sql = db('mm_products')
         .where('product_id', p.product_id)
-        .update(p);
+        .update(obj)
+        .toString();
       sqls.push(sql);
     });
+
     let queries = sqls.join(';');
+
     return db.raw(queries);
   }
 }
