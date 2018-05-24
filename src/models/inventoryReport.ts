@@ -1258,7 +1258,7 @@ GROUP BY
         ( SELECT mp.product_name FROM mm_products AS mp WHERE mp.product_id = pci.product_id ) AS product_name,
         (
     SELECT
-        CONCAT( pci.qty, ' ', uu.unit_name, '( ', mug.qty, ' ', u.unit_name, ' )' ) 
+        CONCAT( pci.qty - wrd.receive_qty, ' ', uu.unit_name, '( ', mug.qty, ' ', u.unit_name, ' )' ) 
     FROM
         mm_unit_generics AS mug
         JOIN mm_units AS u ON mug.to_unit_id = u.unit_id
