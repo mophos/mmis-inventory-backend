@@ -10,8 +10,8 @@ import * as fse from 'fs-extra';
 import * as rimraf from 'rimraf';
 import * as multer from 'multer';
 import xlsx from 'node-xlsx';
-let uploadDir = './uploads';
 
+let uploadDir = path.join(process.env.MMIS_DATA, 'uploaded');
 fse.ensureDirSync(uploadDir);
 
 var storage = multer.diskStorage({
@@ -164,7 +164,7 @@ router.post('/list', co(async (req, res, next) => {
   let hospcode = req.decoded.his_hospcode;
 
   try {
-    let rs = await hisTransactionModel.getHisTransaction(db, hospcode,genericType);
+    let rs = await hisTransactionModel.getHisTransaction(db, hospcode, genericType);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -295,7 +295,7 @@ router.post('/import', co(async (req, res, next) => {
         }
       }));
 
- 
+
       // save transaction status
       let peopleUserId = req.decoded.people_user_id;
       let cutStockDate = moment().format('YYYY-MM-DD HH:mm:ss');
