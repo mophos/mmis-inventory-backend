@@ -1,0 +1,74 @@
+include css.pug
+style(media='print').
+style(type='text/css').
+  body{
+  font-size: 12pt;
+  }
+  @page{
+    margin-top: 2cm;
+    margin-left: 0.5cm;
+    margin-right: 0.5cm;
+ }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table
+      thead
+        tr
+          td.center.bold.head(colspan='10' style="font-size: 13pt;") #{hospitalName}
+        tr
+          td.center.bold.head(colspan='10' style="font-size: 13pt;") รายงานเวชภัณฑ์ที่รับอื่นๆ (บริจาค)
+        //- tr
+        //-   td.center.bold.head(colspan='10' style="font-size: 13pt;") วันที่ #{startdate} ถึง #{enddate}
+        tr
+          td.left(colspan='10' style="font-size: 13pt;") #{printDate}
+        tr.dash-top(style="font-size: 13pt;")
+          td.left เลขที่รับ
+          td.left วันรับของ
+          td.left 
+          td.left 
+          td.left 
+          td(colspan='2').right 
+          td.right 
+          td.right 
+        tr.dash-bottom(style="font-size: 13pt;")
+          td 
+          td.left รหัสยา
+          td
+          td(colspan='2').left รายการยา
+          td
+          td.right จำนวนที่รับ
+          td.right มูลค่า
+          td.right วันหมดอายุ
+      tbody
+        - var y = 0
+          for b in productReceive
+            - y++
+              tr(style="font-size: 12pt;")
+                td.left #{b.receive_code}
+                td.left #{b.receive_date}
+                td.left 
+                td.left 
+                td.left 
+                td
+                td.right(style='font-size: 10pt;') 
+                td.right &nbsp;
+                td.right 
+              tr(style="font-size: 13pt;")
+                td
+                td #{b.generic_id}
+                td.left(colspan='3')  #{b.generic_name}
+                td
+                td.right #{b.receive_qty} x #{b.qty} (#{b.unit_name})
+                td.right #{b.total_cost}
+                td.right #{b.expired_date}
+      tfooter
+        tr
+          td.tbfooter(colspan="4")
+          td.tbfooter.right(colspan="2") รวม #{productReceive.length} รายการ
+          td.tbfooter.right(colspan="2") มูลค่ารวม #{allcost} 
+          td.tbfooter.left &nbsp;บาท

@@ -1756,6 +1756,7 @@ OR sc.ref_src like ?
         ORDER BY r.receive_code`
         return knex.raw(sql, [startdate, enddate]);
     }
+
     productReceive2(knex: Knex, receiveID) {
         let sql = `SELECT
         r.receive_id,
@@ -1800,6 +1801,35 @@ OR sc.ref_src like ?
         r.receive_id IN ( ${receiveID} )`
         return knex.raw(sql);
     }
+
+    productReceiveOther(knex: Knex, receiveID) {
+        let sql = `SELECT
+        ro.receive_other_id,
+        ro.receive_code,
+        ro.receive_date,
+        wro.receive_qty,
+        mug.qty,
+        mu.unit_name,
+        muu.unit_name AS large_unit,
+        wro.cost,
+        mg.generic_id,
+        mg.generic_name,
+        wro.expired_date,
+        wro.cost * wro.receive_qty AS total_cost 
+    FROM
+        wm_receive_other AS ro
+        LEFT JOIN wm_receive_other_detail wro ON ro.receive_other_id = wro.receive_other_id
+        LEFT JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wro.unit_generic_id
+        LEFT JOIN mm_products AS p ON wro.product_id = p.product_id
+        LEFT JOIN mm_generics AS mg ON p.generic_id = mg.generic_id
+        LEFT JOIN mm_units mu ON mug.to_unit_id = mu.unit_id
+        LEFT JOIN mm_units muu ON mug.from_unit_id = muu.unit_id
+        LEFT JOIN wm_warehouses AS wh ON wro.warehouse_id = wh.warehouse_id 
+    WHERE
+        ro.receive_other_id IN ( ${receiveID} )`
+        return knex.raw(sql);
+    }
+
     productBalance(knex: Knex, productId) {
         return knex('wm_products as wp')
             .select('wp.expired_date', 'wp.lot_no', 'wh.warehouse_name', 'wp.warehouse_id', 'wp.product_id', 'wp.unit_generic_id', 'mg.generic_name', 'mp.product_name')
