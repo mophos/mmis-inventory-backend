@@ -142,6 +142,76 @@ router.get('/warehouse/products/:genericType?', co(async (req, res, next) => {
     res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
   }
 }));
+
+router.get('/products/stock/remain/:productId', co(async (req, res, next) => {
+  let db = req.db;
+  let productId = req.params.productId;
+  let warehouseId = req.decoded.warehouseId;
+  try {
+    let rs = await staffModel.adminGetAllProductsDetailList(db, productId, warehouseId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/warehouse/generics', co(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let db = req.db;
+  let genericType = req.query.genericType;
+
+  let productGroups = req.decoded.generic_type_id;
+  let _pgs = [];
+
+  if (productGroups) {
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+    try {
+      let rows = await warehouseModel.getGenericsWarehouse(db, warehouseId, _pgs, genericType);
+      res.send({ ok: true, rows: rows });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  }
+}));
+
+router.get('/warehouse/generics/search', co(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let db = req.db;
+  let genericType = req.query.genericType;
+  let query = req.query.query;
+
+  let productGroups = req.decoded.generic_type_id;
+  let _pgs = [];
+
+  if (productGroups) {
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+    try {
+      let rows = await warehouseModel.getGenericsWarehouseSearch(db, warehouseId, _pgs, genericType, query);
+      res.send({ ok: true, rows: rows });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  }
+}));
+
 router.post('/warehouse/products/search/', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let db = req.db;

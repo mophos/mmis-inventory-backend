@@ -66,8 +66,7 @@ router.post('/', wrap(async (req, res, next) => {
   let warehouseName = req.body.warehouseName;
   let shortCode = req.body.shortCode;
   let location = req.body.location;
-  let typeId = req.body.typeId;
-  let isEnable = req.body.isUpdate;
+  let isActived = req.body.isActived;
   let isReceive = req.body.isReceive;
   let isUnitIssue = req.body.isUnitIssue;
   let hospcode = req.body.hospcode;
@@ -80,12 +79,10 @@ router.post('/', wrap(async (req, res, next) => {
       warehouse_name: warehouseName,
       short_code: shortCode,
       location: location,
-      is_enable: isEnable,
-      is_receive: isReceive,
+      is_actived: isActived,
       is_unit_issue: isUnitIssue,
       his_hospcode: hospcode,
       // his_dep_code: depCode,
-      type_id: typeId,
       created_at: moment().format('YYYY-MM-DD HH:mm:ss')
     };
 
@@ -124,8 +121,7 @@ router.put('/:warehouseId', wrap(async (req, res, next) => {
   let warehouseName = req.body.warehouseName;
   let shortCode = req.body.shortCode;
   let location = req.body.location;
-  let typeId = req.body.typeId;
-  let isEnable = req.body.isEnable;
+  let isActived = req.body.isActived;
   let isReceive = req.body.isReceive;
   let isUnitIssue = req.body.isUnitIssue;
   let hospcode = req.body.hospcode;
@@ -137,12 +133,10 @@ router.put('/:warehouseId', wrap(async (req, res, next) => {
     warehouse_name: warehouseName,
     short_code: shortCode,
     location: location,
-    is_enable: isEnable,
-    is_receive: isReceive,
+    is_actived: isActived,
     is_unit_issue: isUnitIssue,
     his_hospcode: hospcode,
     // his_dep_code: depCode,
-    type_id: typeId
   }
 
   let dataWarehouse = [];

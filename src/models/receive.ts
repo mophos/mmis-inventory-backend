@@ -952,6 +952,15 @@ export class ReceiveModel {
       });
   }
 
+  updatePurchaseApprovedStatus(knex: Knex, receiveId: any) {
+    return knex('pc_purchasing_order as pc')
+    .join('wm_receives as r','r.purchase_order_id','pc.purchase_order_id')
+      .where('r.receive_id', receiveId)
+      .update({
+        'pc.purchase_order_status': 'APPROVED'
+      });
+  }
+
   checkDeliveryCode(knex: Knex, deliveryCode: any, supplierId: any) {
     return knex('wm_receives')
       .where('delivery_code', deliveryCode)
@@ -1317,6 +1326,7 @@ export class ReceiveModel {
       ra.approve_id,
       pc.purchase_order_id,
       pc.purchase_order_number,
+      pc.purchase_order_book_number,
       ra.approve_id,
       ra.approve_date
     FROM
@@ -1394,6 +1404,7 @@ export class ReceiveModel {
       ra.approve_id,
       pc.purchase_order_id,
       pc.purchase_order_number,
+      pc.purchase_order_book_number,
       ra.approve_id,
       ra.approve_date
     FROM
