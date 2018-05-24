@@ -46,7 +46,7 @@ const hisTransactionModel = new HisTransactionModel();
 const requisitionTypeModel = new RequisitionTypeModel();
 const periodModel = new PeriodModel();
 
-let uploadDir = './uploads';
+let uploadDir = path.join(process.env.MMIS_DATA, 'uploaded');
 
 fse.ensureDirSync(uploadDir);
 
@@ -142,6 +142,76 @@ router.get('/warehouse/products/:genericType?', co(async (req, res, next) => {
     res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
   }
 }));
+
+router.get('/products/stock/remain/:productId', co(async (req, res, next) => {
+  let db = req.db;
+  let productId = req.params.productId;
+  let warehouseId = req.decoded.warehouseId;
+  try {
+    let rs = await staffModel.adminGetAllProductsDetailList(db, productId, warehouseId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/warehouse/generics', co(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let db = req.db;
+  let genericType = req.query.genericType;
+
+  let productGroups = req.decoded.generic_type_id;
+  let _pgs = [];
+
+  if (productGroups) {
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+    try {
+      let rows = await warehouseModel.getGenericsWarehouse(db, warehouseId, _pgs, genericType);
+      res.send({ ok: true, rows: rows });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  }
+}));
+
+router.get('/warehouse/generics/search', co(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let db = req.db;
+  let genericType = req.query.genericType;
+  let query = req.query.query;
+
+  let productGroups = req.decoded.generic_type_id;
+  let _pgs = [];
+
+  if (productGroups) {
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+    try {
+      let rows = await warehouseModel.getGenericsWarehouseSearch(db, warehouseId, _pgs, genericType, query);
+      res.send({ ok: true, rows: rows });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  }
+}));
+
 router.post('/warehouse/products/search/', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let db = req.db;
@@ -241,7 +311,8 @@ router.post('/warehouse/save-minmax', co(async (req, res, next) => {
       obj.min_qty = +v.min_qty;
       obj.max_qty = +v.max_qty;
       obj.use_per_day = +v.use_per_day;
-      obj.safty_stock_day = +v.safty_stock_day;
+      obj.safety_min_day = +v.safety_min_day;
+      obj.safety_max_day = +v.safety_max_day;
       obj.use_total = +v.use_total;
       obj.from_stock_date = moment(_fromDate).format('YYYY-MM-DD');
       obj.to_stock_date = moment(_toDate).format('YYYY-MM-DD');
@@ -533,7 +604,6 @@ const transferApprove = (async (db: Knex, transferIds: any[], peopleUserId: any)
       data.push(objOut);
     }
   });
-
   await transferModel.saveDstProducts(db, dstProducts);
   await transferModel.decreaseQty(db, dstProducts);
   await transferModel.changeApproveStatusIds(db, transferIds, peopleUserId);
@@ -646,8 +716,9 @@ router.post('/transfer/save', co(async (req, res, next) => {
           let generics = {
             transfer_id: transferId,
             generic_id: g.generic_id,
-            transfer_qty: g.transfer_qty,
+            transfer_qty: g.transfer_qty * g.conversion_qty,
             primary_unit_id: g.primary_unit_id,
+            unit_generic_id: g.unit_generic_id,
             location_id: g.location_id,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
@@ -660,7 +731,7 @@ router.post('/transfer/save', co(async (req, res, next) => {
               transfer_id: transferId,
               transfer_generic_id: rsTransferGeneric[0],
               wm_product_id: p.wm_product_id,
-              product_qty: p.product_qty * p.conversion_qty,
+              product_qty: p.product_qty,
               create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
               create_by: req.decoded.people_user_id
             });
@@ -694,7 +765,7 @@ router.delete('/transfer/:transferId', co(async (req, res, next) => {
   try {
     const rs = await transferModel.checkStatus(db, transferId);
     const status = rs[0];
-    if (status.confirmed === 'Y' || status.approved === 'Y') {
+    if (status.approved === 'Y') {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
     } else {
       let rows = await transferModel.removeTransfer(db, transferId);
@@ -790,8 +861,9 @@ router.put('/transfer/save/:transferId', co(async (req, res, next) => {
           let generics = {
             transfer_id: transferId,
             generic_id: g.generic_id,
-            transfer_qty: g.transfer_qty,
+            transfer_qty: g.transfer_qty * g.conversion_qty,
             primary_unit_id: g.primary_unit_id,
+            unit_generic_id: g.unit_generic_id,
             location_id: g.location_id,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
@@ -804,7 +876,7 @@ router.put('/transfer/save/:transferId', co(async (req, res, next) => {
               transfer_id: transferId,
               transfer_generic_id: rsTransferGeneric[0],
               wm_product_id: p.wm_product_id,
-              product_qty: p.product_qty * p.conversion_qty,
+              product_qty: p.product_qty,
               create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
               create_by: req.decoded.people_user_id
             });

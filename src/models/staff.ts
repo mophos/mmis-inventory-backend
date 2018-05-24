@@ -20,6 +20,27 @@ export class StaffModel {
       .orderBy('wb.borrow_date', 'DESC');
   }
 
+  adminGetAllProductsDetailList(knex: Knex, productId: any, warehouseId) {
+    let sql = `
+    select p.wm_product_id, p.product_id, sum(p.qty) as qty, floor(sum(p.qty)/ug.qty) as pack_qty, sum(p.cost*p.qty) as total_cost, p.cost, p.warehouse_id,
+    w.warehouse_name, p.lot_no, p.expired_date, mpp.max_qty, mpp.min_qty, u1.unit_name as from_unit_name, ug.qty as conversion_qty,
+    u2.unit_name as to_unit_name,v.reserve_qty
+    from wm_products as p
+    left join wm_warehouses as w on w.warehouse_id=p.warehouse_id
+    inner join mm_products as mp on mp.product_id=p.product_id
+    left join mm_generic_planning as mpp on mpp.generic_id=mp.generic_id and mpp.warehouse_id=p.warehouse_id
+    inner join mm_unit_generics as ug on ug.unit_generic_id=p.unit_generic_id
+    left join mm_units as u1 on u1.unit_id=ug.from_unit_id
+    left join mm_units as u2 on u2.unit_id=ug.to_unit_id
+    left join view_product_reserve v on v.wm_product_id = p.wm_product_id
+    where p.product_id='${productId}' and p.warehouse_id = '${warehouseId}'
+    group by p.lot_no, p.expired_date, p.warehouse_id
+    HAVING sum(p.qty) != 0
+    order by w.warehouse_name
+    `;
+    return knex.raw(sql);
+  }
+
   getBorrowRequest(knex: Knex, warehouseId) {
     let subQuery = knex('wm_borrow_check').select('borrow_id');
     let queryTotal = knex('wm_borrow_detail as d')
@@ -305,7 +326,7 @@ export class StaffModel {
   transferDetail(knex: Knex, transferId: string) {
     let sql = `
     select tp.*
-    , FLOOR(tp.product_qty/ug.qty) as transfer_qty
+    , FLOOR(tp.product_qty/ug.qty) as product_pack_qty
     , mp.product_name, mg.generic_name, wp.lot_no, wp.expired_date
     , fu.unit_name as from_unit_name, ug.qty as conversion_qty, tu.unit_name as to_unit_name
     from wm_transfer_product as tp

@@ -10,4 +10,5 @@ uploads/*
 app/*
 .DS_Store
 views/css.pug
+data/*
 .idea

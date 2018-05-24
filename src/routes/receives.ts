@@ -183,6 +183,7 @@ router.post('/', co(async (req, res, next) => {
   let db = req.db;
   let summary = req.body.summary;
   let products = req.body.products;
+  let closePurchase = req.body.closePurchase;
 
   if (summary.deliveryCode && summary.deliveryDate &&
     summary.supplierId && summary.receiveDate && products.length) {
@@ -222,8 +223,6 @@ router.post('/', co(async (req, res, next) => {
             totalPrice = Math.round(+rsReceived[0].total + totalPriceReceive);
             totalPo = Math.round(+rsPo[0].total);
           }
-          console.log(+totalPrice);
-          console.log(+totalPo);
 
           if (+totalPrice > +totalPo) {
             res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
@@ -288,6 +287,11 @@ router.post('/', co(async (req, res, next) => {
             });
 
             await receiveModel.saveReceiveDetail(db, productsData);
+
+            if (closePurchase === 'Y') {
+              await receiveModel.updatePurchaseCompletedStatus(db, summary.purchaseOrderId);
+            }
+
             res.send({ ok: true });
           }
         }
@@ -314,6 +318,8 @@ router.put('/:receiveId', co(async (req, res, next) => {
   let db = req.db;
   let receiveId = req.params.receiveId;
   let summary = req.body.summary;
+  let closePurchase = req.body.closePurchase;
+
   let products: any = [];
   products = req.body.products;
 
@@ -404,6 +410,10 @@ router.put('/:receiveId', co(async (req, res, next) => {
               await receiveModel.removeReceiveDetail(db, receiveId);
               // insert new data
               await receiveModel.saveReceiveDetail(db, productsData);
+
+              if (closePurchase === 'Y') {
+                await receiveModel.updatePurchaseCompletedStatus(db, summary.purchaseOrderId);
+              }
               res.send({ ok: true });
             } else {
               res.send({ ok: false, error: 'มีรายการสินค้าบางรายการไม่ได้อยู่ในใบสั่งซื้อ' })
@@ -414,6 +424,10 @@ router.put('/:receiveId', co(async (req, res, next) => {
             await receiveModel.removeReceiveDetail(db, receiveId);
             // insert new data
             await receiveModel.saveReceiveDetail(db, productsData);
+
+            if (closePurchase === 'Y') {
+              await receiveModel.updatePurchaseCompletedStatus(db, summary.purchaseOrderId);
+            }
             res.send({ ok: true });
           }
 
@@ -982,6 +996,20 @@ router.put('/purchase/completed', co(async (req, res, next) => {
 
   try {
     const result = await receiveModel.updatePurchaseCompletedStatus(db, purchaseOrderId);
+    res.send({ ok: true });
+  } catch (error) {
+    res.send({ ok: false, errror: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.put('/purchase/approved', co(async (req, res, next) => {
+  let db = req.db;
+  let receiveId = req.body.receiveId;
+
+  try {
+    const result = await receiveModel.updatePurchaseApprovedStatus(db, receiveId);
     res.send({ ok: true });
   } catch (error) {
     res.send({ ok: false, errror: error.message });

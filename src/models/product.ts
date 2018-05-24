@@ -466,6 +466,17 @@ export class ProductModel {
       .limit(10);
   }
 
+  searchProductTMT(knex: Knex, query: any) {
+    let _query = `%${query}%`
+    return knex('tmt_tpu as tpu')
+      .select('tpu.TMTID', 'tpu.FSN')
+      .where(w => {
+        w.where('tpu.TMTID', 'like', _query)
+          .orWhere('tpu.FSN', 'like', _query)
+      })
+      .limit(10);
+  }
+
   adminSearchAllProductsWarehouse(knex: Knex, query: any, warehouseId: any) {
     let _query = `%${query}%`;
     let sql = `
@@ -805,5 +816,28 @@ group by mpp.product_id
   and mg.generic_type_id in (${genericTypes})
   ORDER BY mg.generic_id`
     return knex.raw(sql)
+  }
+
+  getAllProduct(db: Knex) {
+    return db('mm_products as mp')
+      .select('mp.working_code', 'mp.product_name', 'tpu.TMTID', 'tpu.FSN', 'mp.product_id')
+      .leftJoin('tmt_tpu as tpu', 'tpu.TMTID', 'mp.tmt_id')
+      .orderBy('mp.product_name', 'DESC');
+  }
+
+  updateTMT(db: Knex, productUpdate: any) {
+    let sqls = [];
+    productUpdate.forEach(p => {
+      let obj: any = { tmt_id: p.tmt_id };
+      let sql = db('mm_products')
+        .where('product_id', p.product_id)
+        .update(obj)
+        .toString();
+      sqls.push(sql);
+    });
+
+    let queries = sqls.join(';');
+
+    return db.raw(queries);
   }
 }

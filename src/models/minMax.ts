@@ -14,8 +14,9 @@ export class MinMaxModel {
     return knex.raw(sql, [warehouseId]);
   }
 
-  getMinMax(knex: Knex, warehouseId: string, genericGroups: any[], genericType: any) {
-    let query = knex('mm_generics as g')
+  getMinMax(knex: Knex, warehouseId: string, genericGroups: any[], genericType: any, query: any) {
+    let _query = '%' + query + '%';
+    let sql = knex('mm_generics as g')
       .select('wp.warehouse_id', 'g.generic_id', 'g.generic_name', 'g.working_code', 'g.primary_unit_id'
         , knex.raw('ifnull(gp.min_qty, 0) as min_qty')
         , knex.raw('ifnull(gp.max_qty, 0) as max_qty')
@@ -24,35 +25,44 @@ export class MinMaxModel {
         , knex.raw('ifnull(gp.ordering_cost, 0) as ordering_cost')
         , knex.raw('ifnull(gp.carrying_cost, 0) as carrying_cost')
         , knex.raw('ifnull(gp.eoq_qty, 0) as eoq_qty')
-        , 'u.unit_name', 'gp.use_per_day', 'gp.safty_stock_day', 'gp.use_total', knex.raw('sum(wp.qty) as qty'))
+        , 'u.unit_name', 'gp.use_per_day', 'gp.safety_min_day', 'gp.safety_max_day', 'gp.use_total', knex.raw('sum(wp.qty) as qty'))
       .innerJoin('mm_products as mp', 'mp.generic_id', 'g.generic_id')
       .innerJoin('wm_products as wp', 'wp.product_id', 'mp.product_id')
       .join('mm_units as u', 'u.unit_id', 'g.primary_unit_id')
       .joinRaw('left join mm_generic_planning as gp on gp.generic_id=g.generic_id and gp.warehouse_id = wp.warehouse_id')
-      .where('wp.warehouse_id', warehouseId);
+      .where('wp.warehouse_id', warehouseId)
+      .where(w => {
+        w.where('mp.product_name', 'like', _query)
+          .orWhere('g.generic_name', 'like', _query)
+          .orWhere('g.working_code', query)
+          .orWhere('mp.working_code', query)
+          .orWhere('mp.keywords', 'like', _query)
+      });
 
     if (genericType) {
-      query.where('g.generic_type_id', genericType);
+      sql.where('g.generic_type_id', genericType);
     } else {
-      query.whereIn('g.generic_type_id', genericGroups)
+      sql.whereIn('g.generic_type_id', genericGroups)
     }
 
-    query.groupBy('g.generic_id')
+    sql.groupBy('g.generic_id')
       .orderBy('g.generic_name');
 
-    return query;
+    return sql;
   }
 
-  calculateMinMax(knex: Knex, warehouseId: any, fromDate: any, toDate: any) {
+  calculateMinMax(knex: Knex, warehouseId: any, fromDate: any, toDate: any, genericGroups: any[]) {
     let sql = `
       select mp.generic_id, mg.working_code, mg.generic_name, sum(wp.qty) qty, mu.unit_name 
       , IFNULL(sc.use_total, 0) use_total, IFNULL(CEIL(sc.use_per_day), 0) use_per_day
-      , IFNULL(gp.safty_stock_day, 0) safty_stock_day, mg.primary_unit_id
+      , IFNULL(gp.safety_min_day, 0) safety_min_day
+      , IFNULL(gp.safety_max_day, 0) safety_max_day
       , IFNULL(gp.lead_time_day, 0) lead_time_day
       , IFNULL(gp.rop_qty, 0) rop_qty
       , IFNULL(gp.ordering_cost, 0) ordering_cost
       , IFNULL(gp.carrying_cost, 0) carrying_cost
       , IFNULL(gp.eoq_qty, 0) eoq_qty
+      , mg.primary_unit_id
       from wm_products wp
       join mm_products mp on mp.product_id = wp.product_id
       join mm_generics mg on mg.generic_id = mp.generic_id
@@ -70,10 +80,11 @@ export class MinMaxModel {
         group by ws.generic_id
       ) sc on sc.generic_id = mp.generic_id
       where wp.warehouse_id = ?
+      and mg.generic_type_id in (?)
       group by mp.generic_id
       order by mg.generic_name
     `;
-    return knex.raw(sql, [toDate, fromDate, warehouseId, fromDate, toDate, warehouseId]);
+    return knex.raw(sql, [toDate, fromDate, warehouseId, fromDate, toDate, warehouseId, genericGroups]);
   }
 
   saveGenericPlanning(knex: Knex, generics: any, warehouseId: any, fromDate: any, toDate: any) {
@@ -82,18 +93,19 @@ export class MinMaxModel {
       let sql = `
           INSERT INTO mm_generic_planning (
             warehouse_id, generic_id, primary_unit_id, min_qty, max_qty
-            , use_per_day, safty_stock_day, from_stock_date, to_stock_date, use_total
+            , use_per_day, safety_min_day, safety_max_day, from_stock_date, to_stock_date, use_total
           )
           VALUES (
             ${warehouseId}, '${g.generic_id}', ${g.primary_unit_id}, ${g.min_qty}, ${g.max_qty}, 
-            ${g.use_per_day}, ${g.safty_stock_day}, '${fromDate}', '${toDate}', ${g.use_total}
+            ${g.use_per_day}, ${g.safety_min_day}, ${g.safety_max_day}, '${fromDate}', '${toDate}', ${g.use_total}
           )
           ON DUPLICATE KEY UPDATE
           primary_unit_id = ${g.primary_unit_id}
           , min_qty = ${g.min_qty}
           , max_qty = ${g.max_qty}
           , use_per_day = ${g.use_per_day}
-          , safty_stock_day = ${g.safty_stock_day}
+          , safety_min_day = ${g.safety_min_day}
+          , safety_max_day = ${g.safety_max_day}
           , from_stock_date = '${fromDate}'
           , to_stock_date = '${toDate}'
           , use_total = '${g.use_total}'

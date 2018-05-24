@@ -66,13 +66,14 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
         sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
         _.forEach(values, value => {
           value.total_cost = inventoryReportModel.comma(value.total_cost);
-          value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
+          value.confirm_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
+          // value.updated_at ? value.confirm_date = moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) : value.confirm_date = moment(value.created_at).format('D MMMM ') + (moment(value.created_at).get('year') + 543)
           value.cost = inventoryReportModel.comma(value.cost);
           value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.conversion_qty);
           value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
           value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
           value.expired_date = value.expired_date ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
-          value.today = printDate
+          value.today = printDate;
           value.today += (value.updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) + moment(value.updated_at).format(', HH:mm') + ' น.' : ''
         })
       })
@@ -146,8 +147,10 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
       if (header[0] === undefined) { res.render('error404'); }
       let objHead: any = {};
       objHead.requisition_date = header[0].requisition_date;
+      // header[0].updated_at ? objHead.requisition_date = header[0].updated_at : objHead.requisition_date = header[0].created_at;
       objHead.requisition_code = header[0].requisition_code;
-      objHead.confirm_date = header[0].confirm_date;
+      objHead.confirm_date = header[0].requisition_date;
+      // header[0].updated_at ? objHead.confirm_date = header[0].updated_at : objHead.confirm_date = header[0].created_at;
       objHead.warehouse_name = header[0].warehouse_name;
       objHead.withdraw_warehouse_name = header[0].withdraw_warehouse_name;
       let title = await inventoryReportModel.list_requiAll(db, header[0].requisition_order_id);
@@ -602,37 +605,63 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
       }
 
       summit[0].forEach(e => {
+        const _in_qty = +e.in_qty;
+        const _out_qty = +e.out_qty;
+        const _conversion_qty = +e.conversion_qty;
         e.stock_date = moment(e.stock_date).format('DD/MM/') + (moment(e.stock_date).get('year') + 543);
         e.expired_date = moment(e.expired_date, 'YYYY-MM-DD').isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year')) : '-';
         e.balance_generic_qty = inventoryReportModel.commaQty(e.balance_generic_qty);
-        e.in_cost = inventoryReportModel.comma(+e.in_qty * +e.balance_unit_cost);
-        e.out_cost = inventoryReportModel.comma(+e.out_qty * +e.balance_unit_cost);
-        if (e.conversion_qty) {
-          e.balance_unit_cost = inventoryReportModel.comma(e.balance_unit_cost * e.conversion_qty);
-          e.in_qty = inventoryReportModel.commaQty(e.in_qty / e.conversion_qty);
-          e.out_qty = inventoryReportModel.commaQty(e.out_qty / e.conversion_qty);
+        e.in_cost = inventoryReportModel.comma(_in_qty * +e.balance_unit_cost);
+        e.out_cost = inventoryReportModel.comma(_out_qty * +e.balance_unit_cost);
+        e.balance_unit_cost = inventoryReportModel.comma(e.balance_unit_cost * _conversion_qty);
+        e.in_qty = inventoryReportModel.commaQty(_in_qty / _conversion_qty);
+        e.out_qty = inventoryReportModel.commaQty(_out_qty / _conversion_qty);
+        e.conversion_qty = inventoryReportModel.commaQty( _conversion_qty);
+        if (e.in_qty != 0) {
+          e.in_qty_show = e.in_qty + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')';
         } else {
-          e.balance_unit_cost = inventoryReportModel.comma(e.balance_unit_cost);
-          e.in_qty = inventoryReportModel.commaQty(e.in_qty);
-          e.out_qty = inventoryReportModel.commaQty(e.out_qty);
+          e.in_qty_show = '-';
         }
+        if (e.out_qty != 0) {
+          e.out_qty_show = e.out_qty + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')';
+        } else {
+          e.out_qty_show = '-';
+        }
+
+        e.in_qty_base = inventoryReportModel.commaQty(_in_qty);
+        e.out_qty_base = inventoryReportModel.commaQty(_out_qty);
       });
 
       generic_stock[0].forEach(v => {
+        const _in_qty = +v.in_qty;
+        const _out_qty = +v.out_qty;
+        const _conversion_qty = +v.conversion_qty;
+
         v.stock_date = moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543);
         v.expired_date = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('DD/MM/') + (moment(v.expired_date).get('year')) : '-';
         v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
-        v.in_cost = inventoryReportModel.comma(+v.in_qty * +v.balance_unit_cost);
-        v.out_cost = inventoryReportModel.comma(+v.out_qty * +v.balance_unit_cost);
-        if (v.conversion_qty) {
-          v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost * v.conversion_qty);
-          v.in_qty = inventoryReportModel.commaQty(v.in_qty / v.conversion_qty);
-          v.out_qty = inventoryReportModel.commaQty(v.out_qty / v.conversion_qty);
+        v.in_cost = inventoryReportModel.comma(_in_qty * +v.balance_unit_cost);
+        v.out_cost = inventoryReportModel.comma(_out_qty * +v.balance_unit_cost);
+
+        // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
+        v.in_qty = inventoryReportModel.commaQty(_in_qty / _conversion_qty);
+        v.out_qty = inventoryReportModel.commaQty(_out_qty / _conversion_qty);
+        v.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
+        if (v.in_qty != 0) {
+          v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
         } else {
-          v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost);
-          v.in_qty = inventoryReportModel.commaQty(v.in_qty);
-          v.out_qty = inventoryReportModel.commaQty(v.out_qty);
+          v.in_qty_show = '-';
         }
+        if (v.out_qty != 0) {
+          v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+        } else {
+          v.out_qty_show = '-';
+        }
+
+        v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost * _conversion_qty);
+
+        v.in_qty_base = inventoryReportModel.commaQty(_in_qty);
+        v.out_qty_base = inventoryReportModel.commaQty(_out_qty);
       });
 
       inventory_stock[0].forEach(e => {
@@ -2181,6 +2210,27 @@ router.get('/report/product-remain/:warehouseId/:genericTypeId', wrap(async (req
     hospitalName: hospitalName,
     productRemain: productRemain,
     printDate: printDate
+  });
+}));
+
+router.get('/report/generics-no-movement/:warehouseId/:startdate/:enddate', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.params.warehouseId
+  let startdate = req.params.startdate
+  let enddate = req.params.enddate
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  moment.locale('th');
+  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  let rs = await inventoryReportModel.genericsNomovement(db, warehouseId, startdate, enddate);
+  let generics = rs[0];
+  console.log(generics);
+
+  res.render('genericsNomovement', {
+    today: today,
+    hospitalName: hospitalName,
+    printDate: printDate,
+    generics: generics
   });
 }));
 

@@ -1,0 +1,111 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    - var l=0
+    for h in header
+      span.page
+      table.table(style="font-size: 13pt;")
+        thead
+          tr 
+            td.center.bold(colspan='9')(style="font-size: 15pt;") #{hospitalName} 
+          tr 
+            td.center.bold(colspan='9')(style="font-size: 15pt;") ใบอนุมัติเบิก
+          tr 
+            td.left(colspan='4')(style="font-size: 15pt;") เลขที่ใบเบิก #{h.addition_code}
+            td.right(colspan='5')(style="font-size: 15pt;") วันที่อนุมัติ #{h.confirm_date}
+          tr 
+            td.left(colspan='9')(style="font-size: 15pt;") หน่วยงานที่เบิก #{h.warehouse_name}
+          tr 
+            td.left(colspan='9')(style="font-size: 15pt;") #{h.today}
+          tr 
+            td.left(colspan='9')(style="font-size: 15pt; padding-bottom: 10px;") อนุมัติให้เบิกเวชภัณฑ์ตามรายการนี้
+          tr 
+            th.left(style="width: 1%;") #
+            th.left(style="width: 32%;") ชื่อเวชภัณฑ์
+            th.left(style="width: 3%;") รูปแบบ
+            th.right(style="width: 14%;") จำนวนขอเบิก
+            th.right(style="width: 14%;") จำนวนอนุมัติ
+            th.right(style="width: 10%;") มูลค่า/แพ็ค
+            th.left(style="width: 8%;") &nbsp;lot
+            th.right(style="width: 8%;") วันหมดอายุ
+            th.right(style="width: 10%;") รวมมูลค่า
+        tbody
+        - var y=0
+        - var s=0
+        for c in detail[l]
+          for a in c
+            tr
+              if ( (y) === 0)
+                td #{s+1}.
+                td(style="font-size: 12pt;") &nbsp;#{a.product_name}
+                  br
+                  | &nbsp;(#{a.generic_name})
+                td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
+                td.right(style="font-size: 12pt;") &nbsp;#{a.addition_qty } #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
+                - s++
+              else
+                if ( c[y-1].product_id !== a.product_id )  
+                  td #{s+1}.
+                  td(style="font-size: 12pt;") &nbsp;#{a.product_name}
+                    br
+                    | &nbsp;(#{a.generic_name})
+                  td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
+                  td.right(style="font-size: 12pt;") &nbsp;#{a.remain_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
+                  - s++
+                else 
+                  td 
+                  td 
+                  td 
+                  td.right 
+              td.right(style="font-size: 12pt;") &nbsp;#{a.addition_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
+              td.right(style="font-size: 12pt;") &nbsp;#{a.cost}
+              td(style="font-size: 12pt; word-break:break-all;") &nbsp;#{a.lot_no}
+              td.right(style="font-size: 12pt;") &nbsp;#{a.expired_date}
+              td.right(style="font-size: 12pt;") &nbsp;#{a.total_cost}
+            - y++
+            .pagebreak
+        tfoot
+          tr.dash-top
+            td(colspan='9' height='10px;')
+          tr
+            td.right(colspan='9') รวมทั้งหมด #{s} รายการ | คิดเป็นมูลค่า #{sum[l]} บาท
+          tr 
+            td(colspan='9') &nbsp; 
+          tr 
+            td(colspan='9') &nbsp; 
+          tr 
+            td(colspan='9') &nbsp; 
+          tr 
+            td.center(colspan='4' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้เบิก)
+              br
+              br
+              | (.....................................................................)
+            td.center(colspan='5' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้จ่าย)
+              br
+              br
+              | (.....................................................................)
+          tr 
+            td(colspan='9') &nbsp; 
+          tr 
+            td(colspan='9') &nbsp; 
+          tr 
+            td(colspan='9') &nbsp; 
+          tr 
+            td.center(colspan='4' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้อนุมัติ)
+              br
+              br
+              | (.....................................................................)
+            td.center(colspan='5' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้รับ)
+              br
+              br
+              | (.....................................................................)      
+      - l++
+        //- div(content)
+        //-   div(pageFooter)
+      .pagebreak
+      

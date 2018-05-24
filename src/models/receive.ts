@@ -903,12 +903,13 @@ export class ReceiveModel {
       mu.from_unit_id, mu.to_unit_id as base_unit_id, mu.qty as conversion_qty,
       u1.unit_name as to_unit_name, u2.unit_name as from_unit_name, pi.giveaway, p.is_lot_control,
       (
-        select ifnull(sum(rdx.receive_qty), 0)
-    from wm_receive_detail as rdx
-    inner join wm_receives as r on r.receive_id = rdx.receive_id
-    where rdx.product_id = pi.product_id
-    and rdx.receive_id and r.purchase_order_id = pi.purchase_order_id
-    and r.is_cancel = 'N'
+      	select ifnull(sum(rdx.receive_qty), 0)
+      	from wm_receive_detail as rdx
+      	inner join wm_receives as r on r.receive_id=rdx.receive_id
+        where rdx.product_id=pi.product_id
+        and rdx.is_free = pi.giveaway
+        and r.purchase_order_id=pi.purchase_order_id
+        and r.is_cancel='N'
       ) as total_received_qty
     from pc_purchasing_order_item as pi
     inner join mm_products as p on p.product_id = pi.product_id
@@ -1019,6 +1020,15 @@ export class ReceiveModel {
       .where('purchase_order_id', purchaseOrderId)
       .update({
         purchase_order_status: 'COMPLETED'
+      });
+  }
+
+  updatePurchaseApprovedStatus(knex: Knex, receiveId: any) {
+    return knex('pc_purchasing_order as pc')
+      .join('wm_receives as r', 'r.purchase_order_id', 'pc.purchase_order_id')
+      .where('r.receive_id', receiveId)
+      .update({
+        'pc.purchase_order_status': 'APPROVED'
       });
   }
 
@@ -1425,6 +1435,7 @@ export class ReceiveModel {
       ra.approve_id,
       pc.purchase_order_id,
       pc.purchase_order_number,
+      pc.purchase_order_book_number,
       ra.approve_id,
       ra.approve_date
     FROM
@@ -1525,6 +1536,7 @@ export class ReceiveModel {
       ra.approve_id,
       pc.purchase_order_id,
       pc.purchase_order_number,
+      pc.purchase_order_book_number,
       ra.approve_id,
       ra.approve_date
     FROM

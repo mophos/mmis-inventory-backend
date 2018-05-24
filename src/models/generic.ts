@@ -34,6 +34,7 @@ export class GenericModel {
               mm_generics
             WHERE
               working_code = '${q}'
+              and mark_deleted = 'N'
           ) AS s
         UNION ALL
           SELECT
@@ -46,6 +47,7 @@ export class GenericModel {
                 mm_generics
               WHERE
                 generic_name LIKE '${q_}'
+                and mark_deleted = 'N'
               LIMIT 5
             ) AS s
           UNION ALL
@@ -59,7 +61,9 @@ export class GenericModel {
                   mm_generics
                 WHERE
                   generic_name LIKE '${_q_}'
+                  and mark_deleted = 'N'
                 OR keywords LIKE '${_q_}'
+                and mark_deleted = 'N'
                 ORDER BY
                   generic_name
                 LIMIT 10
@@ -190,6 +194,24 @@ export class GenericModel {
       .whereRaw('wp.qty > 0')
       .orderBy('wp.expired_date', 'asc')
       .groupBy('wp.wm_product_id');
+  }
+
+  updateGeneric(knex: Knex, generics: any[]) {
+    let sqls = [];
+    for (const g of generics) {
+      let sql = `
+      UPDATE mm_generics
+      SET min_qty = ${g.min_qty},
+      max_qty = ${g.max_qty},
+      ordering_cost = ${g.ordering_cost},
+      carrying_cost = ${g.carrying_cost},
+      eoq_qty = ${g.eoq_qty}
+      WHERE generic_id = ${g.generic_id}
+      `;
+      sqls.push(sql);
+    }
+    let queries = sqls.join(';');
+    return knex.raw(queries);
   }
 
 }

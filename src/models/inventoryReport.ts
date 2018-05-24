@@ -45,6 +45,9 @@ export class InventoryReportModel {
     approve_requis(knex: Knex, requisId) {
         let sql = `SELECT
             ro.requisition_code,
+            ro.requisition_date,
+            ro.updated_at,
+            ro.created_at,
             ro.requisition_order_id,
             mp.product_id,
             mp.product_name,
@@ -1266,12 +1269,16 @@ GROUP BY
     FROM
         pc_purchasing_order AS pc
         JOIN pc_purchasing_order_item AS pci ON pci.purchase_order_id = pc.purchase_order_id
+        JOIN wm_receive_detail AS wrd ON wrd.product_id = pci.product_id
         JOIN mm_labelers AS ml ON ml.labeler_id = pc.labeler_id
         JOIN l_bid_process AS cmp ON cmp.id = pc.purchase_method_id 
     WHERE
         pc.purchase_order_status = 'APPROVED' 
-        AND pc.purchase_order_status != 'COMPLETED' 
         AND pc.is_cancel != 'Y' 
+        AND pci.qty - wrd.receive_qty > 0 
+    GROUP BY
+        pci.product_id,
+        pc.purchase_order_number 
     ORDER BY
         pc.purchase_order_number DESC`;
         return knex.raw(sql);
@@ -1653,11 +1660,11 @@ OR sc.ref_src like ?
         up.position_name AS position2
     FROM
         wm_receives wr
-    JOIN pc_committee pc ON wr.committee_id = pc.committee_id
-    JOIN pc_committee_people pcp ON pc.committee_id = pcp.committee_id
-    JOIN um_people p ON p.people_id = pcp.people_id
-    JOIN um_titles ut ON ut.title_id = p.title_id
-    JOIN um_positions as upp on upp.position_id = p.position_id
+    LEFT JOIN pc_committee pc ON wr.committee_id = pc.committee_id
+    LEFT JOIN pc_committee_people pcp ON pc.committee_id = pcp.committee_id
+    LEFT JOIN um_people p ON p.people_id = pcp.people_id
+    LEFT JOIN um_titles ut ON ut.title_id = p.title_id
+    LEFT JOIN um_positions as upp on upp.position_id = p.position_id
     LEFT JOIN um_positions up ON up.position_id = p.position_id
     WHERE
         wr.receive_id = ?
@@ -1667,7 +1674,7 @@ OR sc.ref_src like ?
     }
     getChief(knex: Knex, typeCode: any) {
         //ดึงหัวหน้าเจ้าหน้าที่พัสดุ ส่ง 4 เข้ามา
-        return knex.select('upo.people_id','t.title_name as title', 'p.fname', 'p.lname', 'upos.position_name', 'upot.type_name as position')
+        return knex.select('upo.people_id', 't.title_name as title', 'p.fname', 'p.lname', 'upos.position_name', 'upot.type_name as position')
             .from('um_purchasing_officer as upo')
             .join('um_people as p', 'upo.people_id', 'p.people_id')
             .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
@@ -1688,10 +1695,10 @@ OR sc.ref_src like ?
     staffReceive(knex: Knex) {
         return knex('um_people as u')
             .select('*', 'p.position_name as pname')
-            .join('um_positions as p', 'p.position_id', 'u.position_id')
-            .join('um_titles as t', 't.title_id', 'u.title_id')
-            .join('um_purchasing_officer as up', 'up.people_id', 'u.people_id')
-            .join('um_purchasing_officer_type as upt', 'upt.type_id', 'up.type_id')
+            .leftJoin('um_positions as p', 'p.position_id', 'u.position_id')
+            .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
+            .leftJoin('um_purchasing_officer as up', 'up.people_id', 'u.people_id')
+            .leftJoin('um_purchasing_officer_type as upt', 'upt.type_id', 'up.type_id')
             .where('upt.type_code', 'STAFF_RECEIVE');
     }
 
@@ -1998,6 +2005,8 @@ OR sc.ref_src like ?
         let sql = `SELECT
         r.requisition_date,
         r.requisition_code,
+        r.created_at,
+        r.updated_at,
         r.requisition_order_id,
         rc.confirm_date,
         wh.warehouse_name,
@@ -2171,13 +2180,40 @@ OR sc.ref_src like ?
     WHERE
         wp.warehouse_id = '${warehouseId}'`
         if (genericTypeId != 0) {
-    sql += `AND mg.generic_type_id = '${genericTypeId}'`
+            sql += `AND mg.generic_type_id = '${genericTypeId}'`
         }
-    sql += `AND wp.qty != 0
+        sql += `AND wp.qty != 0
     GROUP BY
         wp.product_id,
         wp.unit_generic_id,
         wp.lot_no`
+        return knex.raw(sql);
+    }
+
+    genericsNomovement(knex: Knex, warehouseId: any, startdate: any, enddate: any) {
+        let sql = `SELECT
+        mg.generic_id,
+        mg.generic_name,
+        mg.working_code,
+        mgt.generic_type_name
+    FROM
+        mm_generics AS mg
+    LEFT JOIN (
+        SELECT
+            vscw.generic_id,
+            vscw.generic_name
+        FROM
+            view_stock_card_warehouse AS vscw
+        WHERE
+            vscw.warehouse_id = '${warehouseId}'
+        AND vscw.stock_date BETWEEN '${startdate} 00:00:00'
+        AND '${enddate} 23:59:59'
+        GROUP BY
+            vscw.generic_id
+    ) AS v ON v.generic_id = mg.generic_id
+    JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+    WHERE
+        v.generic_id IS NULL`
         return knex.raw(sql);
     }
 

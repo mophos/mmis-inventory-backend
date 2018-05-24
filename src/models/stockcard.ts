@@ -87,6 +87,15 @@ export class StockCard {
     wp.cost as in_unit_cost, 
     (
       SELECT
+	      sum( wp2.qty ) 
+      FROM
+        wm_products wp2 
+    WHERE
+      wp2.product_id IN ( SELECT product_id FROM mm_products WHERE generic_id IN ( SELECT generic_id FROM mm_products WHERE product_id = wp.product_id ) ) 
+      AND wp2.warehouse_id = wp.warehouse_id
+    ) as balance_generic_qty,
+    (
+      SELECT
         sum(wp2.qty)
       FROM
         wm_products wp2
@@ -126,6 +135,15 @@ export class StockCard {
     adj.id as document_ref_id, 
     ${adjQty} as out_qty, 
     wp.cost as out_unit_cost, 
+    (
+      SELECT
+	      sum( wp2.qty ) 
+      FROM
+        wm_products wp2 
+    WHERE
+      wp2.product_id IN ( SELECT product_id FROM mm_products WHERE generic_id IN ( SELECT generic_id FROM mm_products WHERE product_id = wp.product_id ) ) 
+      AND wp2.warehouse_id = wp.warehouse_id
+    ) as balance_generic_qty,
     (
       SELECT
         sum(wp2.qty)
@@ -353,30 +371,45 @@ export class StockCard {
 
   saveStockAdditionIn(db: Knex, transactionIds: any[]) {
     let sql = `
-    insert into wm_stock_card(stock_date, product_id, generic_id, unit_generic_id, transaction_type, document_ref_id, in_qty, in_unit_cost, balance_qty, balance_unit_cost, ref_src, ref_dst, comment)
-
-    select current_timestamp() as stock_date
-    , trd.product_id
-    , trd.generic_id
-    , trd.unit_generic_id
-    , ? as transaction_type
-    , trx.transaction_id as document_ref_id
-    , sum(trd.transfer_qty) as in_qty
-    , wp.cost as in_unit_cost
-    , wp.qty as balance_qty
-    , wp.cost as balance_unit_cost
-    , trx.src_warehouse_id as ref_src
-    , trx.dst_warehouse_id as ref_dst
-    , 'รับเติม' as comment
-    from wm_transfer_dashboard trx
-    join wm_transfer_dashboard_detail trd on trd.transaction_id = trx.transaction_id
-    left join (
-      select warehouse_id, product_id, avg(cost) as cost, sum(qty) as qty
-      from wm_products
-      group by warehouse_id, product_id
-    ) as wp on wp.warehouse_id = trx.dst_warehouse_id and wp.product_id = trd.product_id
-    where trx.transaction_id in (?)
-    group by trx.dst_warehouse_id, trd.product_id
+    insert into wm_stock_card(
+      stock_date, product_id, generic_id, unit_generic_id, transaction_type,
+      document_ref_id, document_ref, in_qty, in_unit_cost, balance_generic_qty,
+      balance_qty, balance_unit_cost, ref_src, ref_dst, comment, 
+      lot_no, expired_date)
+      select current_timestamp() as stock_date
+      , wp.product_id
+      , adg.generic_id
+      , wp.unit_generic_id
+      , ? as transaction_type
+      , adh.addition_id as document_ref_id
+      , adh.addition_code as document_ref
+      , sum(adp.addition_qty) as in_qty
+      , wp.cost as in_unit_cost
+      , gbq.balance_generic_qty
+      , pbq.balance_qty
+      , wp.cost as balance_unit_cost
+      , adh.src_warehouse_id as ref_src
+      , adh.dst_warehouse_id as ref_dst
+      , 'รับเติม' as comment
+      , wp.lot_no
+      , wp.expired_date
+      from wm_addition_header adh
+      join wm_addition_generic adg on adg.addition_id = adh.addition_id
+      join wm_addition_product adp on adp.addition_generic_id = adg.addition_generic_id
+      join wm_products wp on wp.wm_product_id = adp.wm_product_id
+      left join (
+        select mp.generic_id, wp.warehouse_id, sum(wp.qty) balance_generic_qty
+        from wm_products wp
+        join mm_products mp on mp.product_id = wp.product_id
+        group by warehouse_id, generic_id
+      ) gbq on gbq.generic_id = adg.generic_id and gbq.warehouse_id = adh.dst_warehouse_id
+      left join (
+        select wp.product_id, wp.lot_no, wp.expired_date, wp.warehouse_id, sum(wp.qty) balance_qty
+        from wm_products wp
+        group by wp.product_id, wp.lot_no, wp.expired_date, wp.warehouse_id
+      ) pbq on pbq.product_id = wp.product_id and pbq.lot_no <=> wp.lot_no and pbq.expired_date <=> wp.expired_date and pbq.warehouse_id = adh.dst_warehouse_id
+      where adh.addition_id in (?)
+      group by adh.dst_warehouse_id, adp.wm_product_id
     `;
 
     return db.raw(sql, [TransactionType.ADDITION_IN, transactionIds]);
@@ -385,30 +418,45 @@ export class StockCard {
 
   saveStockAdditionOut(db: Knex, transactionIds: any[]) {
     let sql = `
-    insert into wm_stock_card(stock_date, product_id, generic_id, unit_generic_id, transaction_type, document_ref_id, out_qty, out_unit_cost, balance_qty, balance_unit_cost, ref_src, ref_dst, comment)
-
-    select current_timestamp() as stock_date
-    , trd.product_id
-    , trd.generic_id
-    , trd.unit_generic_id
-    , ? as transaction_type
-    , trx.transaction_id as document_ref_id
-    , sum(trd.transfer_qty) as out_qty
-    , wp.cost as out_unit_cost
-    , wp.qty as balance_qty
-    , wp.cost as balance_unit_cost
-    , trx.src_warehouse_id as ref_src
-    , trx.dst_warehouse_id as ref_dst
-    , 'เติม' as comment
-    from wm_transfer_dashboard trx
-    join wm_transfer_dashboard_detail trd on trd.transaction_id = trx.transaction_id
-    left join (
-      select warehouse_id, product_id, avg(cost) as cost, sum(qty) as qty
-      from wm_products
-      group by warehouse_id, product_id
-    ) as wp on wp.warehouse_id = trx.src_warehouse_id and wp.product_id = trd.product_id
-    where trx.transaction_id in (?)
-    group by trx.src_warehouse_id, trd.product_id
+    insert into wm_stock_card(
+      stock_date, product_id, generic_id, unit_generic_id, transaction_type,
+      document_ref_id, document_ref, out_qty, out_unit_cost, balance_generic_qty,
+      balance_qty, balance_unit_cost, ref_src, ref_dst, comment,
+      lot_no, expired_date)
+      select current_timestamp() as stock_date
+      , wp.product_id
+      , adg.generic_id
+      , wp.unit_generic_id
+      , ? as transaction_type
+      , adh.addition_id as document_ref_id
+      , adh.addition_code as document_ref
+      , sum(adp.addition_qty) as out_qty
+      , wp.cost as out_unit_cost
+      , gbq.balance_generic_qty
+      , pbq.balance_qty
+      , wp.cost as balance_unit_cost
+      , adh.src_warehouse_id as ref_src
+      , adh.dst_warehouse_id as ref_dst
+      , 'เติม' as comment
+      , wp.lot_no
+      , wp.expired_date
+      from wm_addition_header adh
+      join wm_addition_generic adg on adg.addition_id = adh.addition_id
+      join wm_addition_product adp on adp.addition_generic_id = adg.addition_generic_id
+      join wm_products wp on wp.wm_product_id = adp.wm_product_id
+      left join (
+        select mp.generic_id, wp.warehouse_id, sum(wp.qty) balance_generic_qty
+        from wm_products wp
+        join mm_products mp on mp.product_id = wp.product_id
+        group by warehouse_id, generic_id
+      ) gbq on gbq.generic_id = adg.generic_id and gbq.warehouse_id = adh.src_warehouse_id
+      left join (
+        select wp.product_id, wp.lot_no, wp.expired_date, wp.warehouse_id, sum(wp.qty) balance_qty
+        from wm_products wp
+        group by wp.product_id, wp.lot_no, wp.expired_date, wp.warehouse_id
+      ) pbq on pbq.product_id = wp.product_id and pbq.lot_no <=> wp.lot_no and pbq.expired_date <=> wp.expired_date and pbq.warehouse_id = adh.src_warehouse_id
+      where adh.addition_id in (?)
+      group by adh.dst_warehouse_id, adp.wm_product_id
     `;
 
     return db.raw(sql, [TransactionType.ADDITION_OUT, transactionIds]);
