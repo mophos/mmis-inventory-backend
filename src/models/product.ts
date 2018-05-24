@@ -180,7 +180,7 @@ export class ProductModel {
 
   // admin/products
 
-  adminGetAllProducts(knex: Knex, genericType: any, limit: number, offset: number) {
+  adminGetAllProducts(knex: Knex, genericType: any, limit: number, offset: number, sort: any = {}) {
     let query = knex('wm_products as p')
       .select('p.wm_product_id', 'p.product_id', 'mp.working_code', knex.raw('sum(p.qty) as qty'), knex.raw('ifnull(sum(v.reserve_qty),0) as reserve_qty'), knex.raw('sum(p.qty * p.cost) as total_cost'),
         'mp.product_name', 'g.generic_name', 'g.working_code as generic_working_code', 'mp.primary_unit_id', 'u.unit_name as primary_unit_name',
@@ -192,8 +192,17 @@ export class ProductModel {
       .where('mp.mark_deleted', 'N')
       .whereIn('g.generic_type_id', genericType);
 
+    if (sort.by) {
+      let reverse = sort.reverse ? 'DESC' : 'ASC';
+
+      if (sort.by === 'generic_name') {
+        query.orderBy('g.generic_name', reverse);
+      }
+    } else {
+      query.orderBy('g.generic_name')
+    }
+
     return query.groupBy('p.product_id')
-      .orderBy('mp.product_name')
       .limit(limit)
       .offset(offset);
   }
@@ -645,30 +654,40 @@ group by mpp.product_id
   }
 
   // search product
-  adminSearchProducts(knex: Knex, query: any, productGroups: any = [], genericType: any, limit: number, offset: number) {
+  adminSearchProducts(knex: Knex, query: any, productGroups: any = [], genericType: any, limit: number, offset: number, sort: any = {}) {
     let _query = `%${query}%`;
     if (genericType) {
       let sql = `
-    select p.wm_product_id, p.product_id, sum(p.qty) as qty, sum(p.qty * p.cost) as total_cost,
-    mp.product_name, mp.working_code, g.generic_name, g.working_code as generic_working_code, mp.primary_unit_id, u.unit_name as primary_unit_name,
-    g.min_qty, g.max_qty,ifnull(sum(v.reserve_qty),0) as reserve_qty
-    from wm_products as p
-    inner join mm_products as mp on mp.product_id=p.product_id
-    left join mm_generics as g on g.generic_id=mp.generic_id
-    left join mm_units as u on u.unit_id=mp.primary_unit_id
-    left join view_product_reserve v on v.wm_product_id = p.wm_product_id
-    where mp.mark_deleted='N'
-    and (
-      mp.product_name like ? or 
-      g.generic_name like ? or 
-      g.working_code=? or 
-      mp.working_code=? or 
-      mp.keywords like ?)
-    and g.generic_type_id in (?)
-    group by p.product_id
-    order by mp.product_name
-    limit ? offset ?
-    `;
+      select p.wm_product_id, p.product_id, sum(p.qty) as qty, sum(p.qty * p.cost) as total_cost,
+      mp.product_name, mp.working_code, g.generic_name, g.working_code as generic_working_code, mp.primary_unit_id, u.unit_name as primary_unit_name,
+      g.min_qty, g.max_qty,ifnull(sum(v.reserve_qty),0) as reserve_qty
+      from wm_products as p
+      inner join mm_products as mp on mp.product_id=p.product_id
+      left join mm_generics as g on g.generic_id=mp.generic_id
+      left join mm_units as u on u.unit_id=mp.primary_unit_id
+      left join view_product_reserve v on v.wm_product_id = p.wm_product_id
+      where mp.mark_deleted='N'
+      and (
+        mp.product_name like ? or 
+        g.generic_name like ? or 
+        g.working_code=? or 
+        mp.working_code=? or 
+        mp.keywords like ?)
+      and g.generic_type_id in (?)
+      group by p.product_id`;
+
+      if (sort.by) {
+        let reverse = sort.reverse ? 'DESC' : 'ASC';
+
+        if (sort.by === 'generic_name') {
+          sql += ` order by g.generic_name ${reverse}`;
+        }
+      } else {
+        sql += ` order by g.generic_name`;
+      }
+
+      sql += ` limit ? offset ?`;
+
       return knex.raw(sql, [_query, _query, query, query, _query, genericType, limit, offset]);
     } else {
       let sql = `
@@ -694,18 +713,17 @@ group by mpp.product_id
     let _query = `%${query}%`;
     if (genericType) {
       let sql = `
-    select p.wm_product_id, p.product_id, sum(p.qty) as qty, sum(p.qty * p.cost) as total_cost,
-    mp.product_name, g.generic_name, mp.primary_unit_id, u.unit_name as primary_unit_name
-    from wm_products as p
-    inner join mm_products as mp on mp.product_id=p.product_id
-    left join mm_generics as g on g.generic_id=mp.generic_id
-    left join mm_units as u on u.unit_id=mp.primary_unit_id
-    where mp.mark_deleted='N'
-    and (mp.product_name like ? or g.generic_name like ? or mp.working_code=? or mp.keywords=?)
-    and g.generic_type_id in (?)
-    group by p.product_id
-    order by mp.product_name
-    `;
+      select p.wm_product_id, p.product_id, sum(p.qty) as qty, sum(p.qty * p.cost) as total_cost,
+      mp.product_name, g.generic_name, mp.primary_unit_id, u.unit_name as primary_unit_name
+      from wm_products as p
+      inner join mm_products as mp on mp.product_id=p.product_id
+      left join mm_generics as g on g.generic_id=mp.generic_id
+      left join mm_units as u on u.unit_id=mp.primary_unit_id
+      where mp.mark_deleted='N'
+      and (mp.product_name like ? or g.generic_name like ? or mp.working_code=? or mp.keywords=?)
+      and g.generic_type_id in (?)
+      group by p.product_id `;
+
       return knex.raw(sql, [_query, _query, _query, _query, genericType]);
     } else {
       let sql = `

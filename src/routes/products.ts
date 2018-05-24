@@ -356,11 +356,12 @@ router.post('/stock/products/all', async (req, res, next) => {
   let limit = req.body.limit || 10;
   let offset = req.body.offset || 0;
   let genericType = req.body.genericType;
+  let sort = req.body.sort;
 
   if (genericType) {
     try {
       let rsTotal = await productModel.adminGetAllProductTotal(db, genericType);
-      let rs = await productModel.adminGetAllProducts(db, genericType, limit, offset);
+      let rs = await productModel.adminGetAllProducts(db, genericType, limit, offset, sort);
       res.send({ ok: true, rows: rs, total: rsTotal[0].total });
     } catch (error) {
       res.send({ ok: false, error: error.message });
@@ -379,6 +380,7 @@ router.post('/stock/products/search', async (req, res, next) => {
   let offset = req.body.offset || 0;
   let query = req.body.query;
   let genericType = req.body.genericType;
+  let sort = req.body.sort;
 
   let productGroups = req.decoded.generic_type_id;
   let _pgs = [];
@@ -390,7 +392,7 @@ router.post('/stock/products/search', async (req, res, next) => {
     });
     try {
       let rsTotal = await productModel.adminSearchProductsTotal(db, query, _pgs, genericType);
-      let rs = await productModel.adminSearchProducts(db, query, _pgs, genericType, limit, offset);
+      let rs = await productModel.adminSearchProducts(db, query, _pgs, genericType, limit, offset, sort);
       res.send({ ok: true, rows: rs[0], total: rsTotal[0].length });
     } catch (error) {
       res.send({ ok: false, error: error.message });
