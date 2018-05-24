@@ -1258,7 +1258,7 @@ GROUP BY
         ( SELECT mp.product_name FROM mm_products AS mp WHERE mp.product_id = pci.product_id ) AS product_name,
         (
     SELECT
-        CONCAT( pci.qty, ' ', uu.unit_name, '( ', mug.qty, ' ', u.unit_name, ' )' ) 
+        CONCAT( pci.qty - wrd.receive_qty, ' ', uu.unit_name, '( ', mug.qty, ' ', u.unit_name, ' )' ) 
     FROM
         mm_unit_generics AS mug
         JOIN mm_units AS u ON mug.to_unit_id = u.unit_id
@@ -1269,12 +1269,16 @@ GROUP BY
     FROM
         pc_purchasing_order AS pc
         JOIN pc_purchasing_order_item AS pci ON pci.purchase_order_id = pc.purchase_order_id
+        JOIN wm_receive_detail AS wrd ON wrd.product_id = pci.product_id
         JOIN mm_labelers AS ml ON ml.labeler_id = pc.labeler_id
         JOIN l_bid_process AS cmp ON cmp.id = pc.purchase_method_id 
     WHERE
         pc.purchase_order_status = 'APPROVED' 
-        AND pc.purchase_order_status != 'COMPLETED' 
         AND pc.is_cancel != 'Y' 
+        AND pci.qty - wrd.receive_qty > 0 
+    GROUP BY
+        pci.product_id,
+        pc.purchase_order_number 
     ORDER BY
         pc.purchase_order_number DESC`;
         return knex.raw(sql);
@@ -1752,6 +1756,7 @@ OR sc.ref_src like ?
         ORDER BY r.receive_code`
         return knex.raw(sql, [startdate, enddate]);
     }
+
     productReceive2(knex: Knex, receiveID) {
         let sql = `SELECT
         r.receive_id,
@@ -1796,6 +1801,35 @@ OR sc.ref_src like ?
         r.receive_id IN ( ${receiveID} )`
         return knex.raw(sql);
     }
+
+    productReceiveOther(knex: Knex, receiveID) {
+        let sql = `SELECT
+        ro.receive_other_id,
+        ro.receive_code,
+        ro.receive_date,
+        wro.receive_qty,
+        mug.qty,
+        mu.unit_name,
+        muu.unit_name AS large_unit,
+        wro.cost,
+        mg.generic_id,
+        mg.generic_name,
+        wro.expired_date,
+        wro.cost * wro.receive_qty AS total_cost 
+    FROM
+        wm_receive_other AS ro
+        LEFT JOIN wm_receive_other_detail wro ON ro.receive_other_id = wro.receive_other_id
+        LEFT JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wro.unit_generic_id
+        LEFT JOIN mm_products AS p ON wro.product_id = p.product_id
+        LEFT JOIN mm_generics AS mg ON p.generic_id = mg.generic_id
+        LEFT JOIN mm_units mu ON mug.to_unit_id = mu.unit_id
+        LEFT JOIN mm_units muu ON mug.from_unit_id = muu.unit_id
+        LEFT JOIN wm_warehouses AS wh ON wro.warehouse_id = wh.warehouse_id 
+    WHERE
+        ro.receive_other_id IN ( ${receiveID} )`
+        return knex.raw(sql);
+    }
+
     productBalance(knex: Knex, productId) {
         return knex('wm_products as wp')
             .select('wp.expired_date', 'wp.lot_no', 'wh.warehouse_name', 'wp.warehouse_id', 'wp.product_id', 'wp.unit_generic_id', 'mg.generic_name', 'mp.product_name')

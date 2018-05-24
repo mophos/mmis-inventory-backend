@@ -616,7 +616,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
         e.balance_unit_cost = inventoryReportModel.comma(e.balance_unit_cost * _conversion_qty);
         e.in_qty = inventoryReportModel.commaQty(_in_qty / _conversion_qty);
         e.out_qty = inventoryReportModel.commaQty(_out_qty / _conversion_qty);
-        e.conversion_qty = inventoryReportModel.commaQty( _conversion_qty);
+        e.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
         if (e.in_qty != 0) {
           e.in_qty_show = e.in_qty + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')';
         } else {
@@ -1900,24 +1900,66 @@ router.get('/report/product/receive', wrap(async (req, res, next) => {
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
 
+  let allcost: any = 0;
   moment.locale('th');
   productReceive = productReceive[0];
   productReceive.forEach(value => {
+    allcost += value.total_cost;
     value.receive_date = moment(value.receive_date).format('D/MM/YYYY');
     value.expired_date = moment(value.expired_date, 'YYYY-MM-DD').isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : '-';
+    value.total_cost = inventoryReportModel.comma(value.total_cost);
     if (value.discount_percent == null) value.discount_percent = '0.00%';
     else { value.discount_percent = (value.discount_percent.toFixed(2)) + '%' }
     if (value.discount_cash == null) value.discount_cash = '0.00';
     else { value.discount_cash = (value.discount_cash.toFixed(2)) + 'บาท' }
   });
+  allcost = inventoryReportModel.comma(allcost);
 
   res.render('productReceive2', {
+    allcost: allcost,
     hospitalName: hospitalName,
     printDate: printDate,
     productReceive: productReceive
     // ,startdate:startdate,enddate:enddate
   });
 }));
+
+router.get('/report/product/receive/other', wrap(async (req, res, next) => {
+  let db = req.db;
+  let receiveOtherID = req.query.receiveOtherID
+
+  if (typeof receiveOtherID === 'string') receiveOtherID = [receiveOtherID];
+
+  let productReceive = await inventoryReportModel.productReceiveOther(db, receiveOtherID);
+
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let province = hosdetail[0].province;
+
+  let allcost: any = 0;
+  moment.locale('th');
+  productReceive = productReceive[0];
+  productReceive.forEach(value => {
+    allcost += value.total_cost;
+    value.receive_date = moment(value.receive_date).format('D/MM/YYYY');
+    value.expired_date = moment(value.expired_date, 'YYYY-MM-DD').isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : '-';
+    value.total_cost = inventoryReportModel.comma(value.total_cost);
+    // if (value.discount_percent == null) value.discount_percent = '0.00%';
+    // else { value.discount_percent = (value.discount_percent.toFixed(2)) + '%' }
+    // if (value.discount_cash == null) value.discount_cash = '0.00';
+    // else { value.discount_cash = (value.discount_cash.toFixed(2)) + 'บาท' }
+  });
+  allcost = inventoryReportModel.comma(allcost);
+
+  res.render('productReceiveOther', {
+    allcost: allcost,
+    hospitalName: hospitalName,
+    printDate: printDate,
+    productReceive: productReceive
+    // ,startdate:startdate,enddate:enddate
+  });
+}));
+
 router.get('/report/product/balance/:productId', wrap(async (req, res, next) => {
   let db = req.db;
   let productId = req.params.productId;
