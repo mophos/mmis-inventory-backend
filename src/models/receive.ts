@@ -207,7 +207,7 @@ export class ReceiveModel {
   //     .count('* as total');
   // }
 
-  getOtherExpired(knex: Knex, limit, offset) {
+  getOtherExpired(knex: Knex, limit, offset, sort: any = {}) {
     let sql = `
     select rt.*, (select count(*) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as total,
     (select sum(rtd.cost * rtd.receive_qty) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as cost,
@@ -216,11 +216,27 @@ export class ReceiveModel {
     left join wm_receive_types as rtt on rtt.receive_type_id=rt.receive_type_id
     left join wm_donators as d on d.donator_id=rt.donator_id
     left join wm_receive_approve as a on a.receive_other_id=rt.receive_other_id
-    where rt.is_expired = 'Y'
-    order by rt.receive_other_id desc
-    limit ${limit}
-    offset ${offset}
-    `;
+    where rt.is_expired = 'Y'`;
+
+    if (sort.by) {
+      let reverse = sort.reverse ? 'DESC' : 'ASC';
+      if (sort.by === 'donator_name') {
+        sql += ` order by d.donator_name ${reverse}`;
+      }
+      if (sort.by === 'receive_date') {
+        sql += ` order by rt.receive_date ${reverse}`;
+      }
+      if (sort.by === 'receive_code') {
+        sql += ` order by rt.receive_code ${reverse}`;
+      }
+      if (sort.by === 'receive_type_name') {
+        sql += ` order by rtt.receive_type_name ${reverse}`;
+      }
+    } else {
+      sql += ` order by rt.receive_code desc`;
+    }
+
+    sql += ` limit ${limit} offset ${offset}`;
     return knex.raw(sql);
   }
 
@@ -228,31 +244,31 @@ export class ReceiveModel {
     let sql = `
     select count(*) as total
     from wm_receive_other as rt
-    left join wm_receive_types as rtt on rtt.receive_type_id=rt.receive_type_id
-    left join wm_donators as d on d.donator_id=rt.donator_id
-    left join wm_receive_approve as a on a.receive_other_id=rt.receive_other_id
+    left join wm_receive_types as rtt on rtt.receive_type_id = rt.receive_type_id
+    left join wm_donators as d on d.donator_id = rt.donator_id
+    left join wm_receive_approve as a on a.receive_other_id = rt.receive_other_id
     where rt.is_expired = 'Y'
-    `;
+      `;
     return knex.raw(sql);
   }
   getOtherExpiredSearch(knex: Knex, q) {
     let sql = `
-    select rt.*, (select count(*) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as total,
-    (select sum(rtd.cost * rtd.receive_qty) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as cost,
-    rtt.receive_type_name, d.donator_name, a.approve_id
+    select rt.*, (select count(*) from wm_receive_other_detail as rtd where rtd.receive_other_id = rt.receive_other_id) as total,
+      (select sum(rtd.cost * rtd.receive_qty) from wm_receive_other_detail as rtd where rtd.receive_other_id = rt.receive_other_id) as cost,
+        rtt.receive_type_name, d.donator_name, a.approve_id
     from wm_receive_other as rt
-    left join wm_receive_types as rtt on rtt.receive_type_id=rt.receive_type_id
-    left join wm_donators as d on d.donator_id=rt.donator_id
-    left join wm_receive_approve as a on a.receive_other_id=rt.receive_other_id
-    where rt.is_expired = 'Y' and (rt.receive_code like ? or d.donator_name like ?)
+    left join wm_receive_types as rtt on rtt.receive_type_id = rt.receive_type_id
+    left join wm_donators as d on d.donator_id = rt.donator_id
+    left join wm_receive_approve as a on a.receive_other_id = rt.receive_other_id
+    where rt.is_expired = 'Y' and(rt.receive_code like ? or d.donator_name like ?)
     order by rt.receive_other_id desc
-    `;
+      `;
     return knex.raw(sql, [q, q]);
   }
-  getExpired(knex: Knex, limit, offset) {
+  getExpired(knex: Knex, limit, offset, sort: any = {}) {
     let sql = `
-      SELECT
-      r.receive_id,
+    SELECT
+    r.receive_id,
       r.receive_date,
       r.receive_code,
       r.receive_type_id,
@@ -266,47 +282,61 @@ export class ReceiveModel {
       (
         SELECT
           sum(
-            rd.cost * rd.receive_qty
-          )
-        FROM
-          wm_receive_detail AS rd
-        join mm_unit_generics mug on rd.unit_generic_id = mug.unit_generic_id
-        WHERE
-          rd.receive_id = r.receive_id
+      rd.cost * rd.receive_qty
+    )
+    FROM
+    wm_receive_detail AS rd
+    join mm_unit_generics mug on rd.unit_generic_id = mug.unit_generic_id
+    WHERE
+    rd.receive_id = r.receive_id
       ) AS cost
-      FROM
-        wm_receives AS r
-      LEFT JOIN mm_labelers AS l ON l.labeler_id = r.vendor_labeler_id
-      LEFT JOIN pc_purchasing_order AS pp ON pp.purchase_order_id = r.purchase_order_id
-      LEFT JOIN wm_receive_approve AS ra ON ra.receive_id = r.receive_id
-      WHERE
-        r.is_expired = 'Y'
-      ORDER BY
-      r.receive_date DESC
-      limit ${limit}
-      offset ${offset}
-      `;
+    FROM
+    wm_receives AS r
+    LEFT JOIN mm_labelers AS l ON l.labeler_id = r.vendor_labeler_id
+    LEFT JOIN pc_purchasing_order AS pp ON pp.purchase_order_id = r.purchase_order_id
+    LEFT JOIN wm_receive_approve AS ra ON ra.receive_id = r.receive_id
+    WHERE
+    r.is_expired = 'Y'`;
+
+    if (sort.by) {
+      let reverse = sort.reverse ? 'DESC' : 'ASC';
+      if (sort.by === 'receive_code') {
+        sql += ` order by r.receive_code ${reverse} `;
+      }
+      if (sort.by === 'receive_date') {
+        sql += ` order by r.receive_date ${reverse} `;
+      }
+      if (sort.by === 'purchase_order_number') {
+        sql += ` order by pp.purchase_order_number ${reverse} `;
+      }
+      if (sort.by === 'labeler_name') {
+        sql += ` order by l.labeler_name ${reverse} `;
+      }
+    } else {
+      sql += ` order by r.receive_date DESC`;
+    }
+    sql += ` limit ${limit} offset ${offset} `;
     return knex.raw(sql);
 
   }
   getExpiredTotal(knex: Knex) {
     let sql = `
-      SELECT
-        count(*) as total
-      FROM
-        wm_receives AS r
-      LEFT JOIN mm_labelers AS l ON l.labeler_id = r.vendor_labeler_id
-      LEFT JOIN pc_purchasing_order AS pp ON pp.purchase_order_id = r.purchase_order_id
-      LEFT JOIN wm_receive_approve AS ra ON ra.receive_id = r.receive_id
-      WHERE
-        r.is_expired = 'Y'`;
+    SELECT
+    count(*) as total
+    FROM
+    wm_receives AS r
+    LEFT JOIN mm_labelers AS l ON l.labeler_id = r.vendor_labeler_id
+    LEFT JOIN pc_purchasing_order AS pp ON pp.purchase_order_id = r.purchase_order_id
+    LEFT JOIN wm_receive_approve AS ra ON ra.receive_id = r.receive_id
+    WHERE
+    r.is_expired = 'Y'`;
     return knex.raw(sql);
 
   }
   getExpiredSearch(knex: Knex, q) {
     let sql = `
-      SELECT
-      r.receive_id,
+    SELECT
+    r.receive_id,
       r.receive_date,
       r.receive_code,
       r.receive_type_id,
@@ -320,23 +350,23 @@ export class ReceiveModel {
       (
         SELECT
           sum(
-            rd.cost * rd.receive_qty
-          )
-        FROM
-          wm_receive_detail AS rd
-        join mm_unit_generics mug on rd.unit_generic_id = mug.unit_generic_id
-        WHERE
-          rd.receive_id = r.receive_id
+      rd.cost * rd.receive_qty
+    )
+    FROM
+    wm_receive_detail AS rd
+    join mm_unit_generics mug on rd.unit_generic_id = mug.unit_generic_id
+    WHERE
+    rd.receive_id = r.receive_id
       ) AS cost
-      FROM
-        wm_receives AS r
-      LEFT JOIN mm_labelers AS l ON l.labeler_id = r.vendor_labeler_id
-      LEFT JOIN pc_purchasing_order AS pp ON pp.purchase_order_id = r.purchase_order_id
-      LEFT JOIN wm_receive_approve AS ra ON ra.receive_id = r.receive_id
-      WHERE
-        r.is_expired = 'Y' and (r.receive_code like ? or pp.purchase_order_number like ?)
-      ORDER BY
-      r.receive_date DESC
+    FROM
+    wm_receives AS r
+    LEFT JOIN mm_labelers AS l ON l.labeler_id = r.vendor_labeler_id
+    LEFT JOIN pc_purchasing_order AS pp ON pp.purchase_order_id = r.purchase_order_id
+    LEFT JOIN wm_receive_approve AS ra ON ra.receive_id = r.receive_id
+    WHERE
+    r.is_expired = 'Y' and(r.receive_code like ? or pp.purchase_order_number like ?)
+    ORDER BY
+    r.receive_date DESC
       `;
     return knex.raw(sql, [q, q]);
 
@@ -363,18 +393,18 @@ export class ReceiveModel {
 
   getReceiveOtherProductList(knex: Knex, receiveOtherId: any) {
     let sql = `
-    select rotd.*, up.qty as conversion_qty, p.product_name, g.generic_name, rotd.lot_no, rotd.expired_date, w.warehouse_name, 
-    lc.location_name, lc.location_desc, u1.unit_name as from_unit_name, u2.unit_name as to_unit_name
+    select rotd.*, up.qty as conversion_qty, p.product_name, g.generic_name, rotd.lot_no, rotd.expired_date, w.warehouse_name,
+      lc.location_name, lc.location_desc, u1.unit_name as from_unit_name, u2.unit_name as to_unit_name
     from wm_receive_other_detail as rotd
-    inner join mm_products as p on p.product_id=rotd.product_id
-    left join mm_generics as g on g.generic_id=p.generic_id
-    left join wm_warehouses as w on w.warehouse_id=rotd.warehouse_id
-    left join wm_locations as lc on lc.location_id=rotd.location_id
-    left join mm_unit_generics as up on up.unit_generic_id=rotd.unit_generic_id
-    left join mm_units as u1 on u1.unit_id=up.from_unit_id
-    left join mm_units as u2 on u2.unit_id=up.to_unit_id
-    where rotd.receive_other_id=?
-    `;
+    inner join mm_products as p on p.product_id = rotd.product_id
+    left join mm_generics as g on g.generic_id = p.generic_id
+    left join wm_warehouses as w on w.warehouse_id = rotd.warehouse_id
+    left join wm_locations as lc on lc.location_id = rotd.location_id
+    left join mm_unit_generics as up on up.unit_generic_id = rotd.unit_generic_id
+    left join mm_units as u1 on u1.unit_id = up.from_unit_id
+    left join mm_units as u2 on u2.unit_id = up.to_unit_id
+    where rotd.receive_other_id =?
+      `;
     return knex.raw(sql, [receiveOtherId]);
 
   }
@@ -382,7 +412,7 @@ export class ReceiveModel {
   getReceiveOtherEditProductList(knex: Knex, receiveOtherId: any) {
     let sql = `
       SELECT
-      rd.cost,
+    rd.cost,
       rd.product_id,
       rd.receive_qty,
       rd.lot_no,
@@ -393,27 +423,27 @@ export class ReceiveModel {
       mg.generic_id,
       mg.generic_name,
       mu.unit_name AS primary_unit_name,
-      pd.primary_unit_id,
-      ge.num_days AS expire_num_days,
-      mug.qty AS conversion_qty,
-      l.donator_name,
-      l.donator_id,
-      rd.unit_generic_id,
-      r.delivery_code,
-      r.receive_code,
-      r.receive_date
-      FROM
-        wm_receive_other_detail AS rd
-      JOIN wm_receive_other AS r ON rd.receive_other_id = r.receive_other_id
-      JOIN mm_products AS pd ON pd.product_id = rd.product_id
-      JOIN mm_generics AS mg ON mg.generic_id = pd.generic_id
-      JOIN mm_unit_generics AS mug ON rd.unit_generic_id = mug.unit_generic_id
-      LEFT JOIN mm_units AS mu ON mu.unit_id = pd.primary_unit_id
-      LEFT JOIN wm_donators AS l ON l.donator_id = r.donator_id
-      LEFT JOIN wm_generic_expired_alert AS ge ON ge.generic_id = pd.generic_id
-      WHERE
-      rd.receive_other_id =?
-    `;
+        pd.primary_unit_id,
+        ge.num_days AS expire_num_days,
+          mug.qty AS conversion_qty,
+            l.donator_name,
+            l.donator_id,
+            rd.unit_generic_id,
+            r.delivery_code,
+            r.receive_code,
+            r.receive_date
+    FROM
+    wm_receive_other_detail AS rd
+    JOIN wm_receive_other AS r ON rd.receive_other_id = r.receive_other_id
+    JOIN mm_products AS pd ON pd.product_id = rd.product_id
+    JOIN mm_generics AS mg ON mg.generic_id = pd.generic_id
+    JOIN mm_unit_generics AS mug ON rd.unit_generic_id = mug.unit_generic_id
+    LEFT JOIN mm_units AS mu ON mu.unit_id = pd.primary_unit_id
+    LEFT JOIN wm_donators AS l ON l.donator_id = r.donator_id
+    LEFT JOIN wm_generic_expired_alert AS ge ON ge.generic_id = pd.generic_id
+    WHERE
+    rd.receive_other_id =?
+      `;
     return knex.raw(sql, [receiveOtherId]);
 
   }
@@ -610,17 +640,17 @@ export class ReceiveModel {
     data.forEach(v => {
       let totalCost = v.cost * v.qty;
       let sql = `
-        INSERT INTO wm_products(wm_product_id, warehouse_id, product_id, qty, 
-        cost, price, lot_no, expired_date, location_id, unit_generic_id, people_user_id, created_at)
-        VALUES('${v.wm_product_id}', '${v.warehouse_id}', '${v.product_id}', ${v.qty}, ${v.cost}, 
-        ${v.price}, '${v.lot_no}', '${v.expired_date}', ${v.location_id}, 
-        ${v.unit_generic_id}, ${v.people_user_id}, '${v.created_at}')
-        ON DUPLICATE KEY UPDATE qty=qty+${v.qty}, cost=(
-        select (sum(w.qty*w.cost)+${totalCost})/(sum(w.qty)+${v.qty})
-        from wm_products as w
-        where w.product_id='${v.product_id}' and w.lot_no='${v.lot_no}'
-        group by w.product_id)
-        `;
+        INSERT INTO wm_products(wm_product_id, warehouse_id, product_id, qty,
+      cost, price, lot_no, expired_date, location_id, unit_generic_id, people_user_id, created_at)
+    VALUES('${v.wm_product_id}', '${v.warehouse_id}', '${v.product_id}', ${v.qty}, ${v.cost},
+      ${ v.price}, '${v.lot_no}', '${v.expired_date}', ${v.location_id},
+      ${ v.unit_generic_id}, ${v.people_user_id}, '${v.created_at}')
+    ON DUPLICATE KEY UPDATE qty = qty + ${ v.qty}, cost = (
+      select(sum(w.qty * w.cost) + ${ totalCost}) / (sum(w.qty) + ${v.qty})
+    from wm_products as w
+    where w.product_id = '${v.product_id}' and w.lot_no = '${v.lot_no}'
+    group by w.product_id)
+    `;
       sqls.push(sql);
     });
 
@@ -632,7 +662,7 @@ export class ReceiveModel {
     let sqls = [];
     data.forEach(v => {
       let sql = `
-          UPDATE mm_unit_generics set cost = ${v.cost} where unit_generic_id = ${v.unit_generic_id}`;
+    UPDATE mm_unit_generics set cost = ${ v.cost} where unit_generic_id = ${v.unit_generic_id} `;
       sqls.push(sql);
     });
     let queries = sqls.join(';');
@@ -655,106 +685,127 @@ export class ReceiveModel {
 
   // receive with purchase
 
-  getPurchaseList(knex: Knex, limit: number, offset: number) {
+  getPurchaseList(knex: Knex, limit: number, offset: number, sort: any = {}) {
 
     let sql = `
-      select pc.purchase_order_book_number, pc.purchase_order_id, 
-      IF(pc.purchase_order_book_number is null,pc.purchase_order_number,pc.purchase_order_book_number) as purchase_order_number,
-      pc.order_date, 
+    select pc.purchase_order_book_number, pc.purchase_order_id,
+      IF(pc.purchase_order_book_number is null, pc.purchase_order_number, pc.purchase_order_book_number) as purchase_order_number,
+      pc.order_date, cm.contract_no,
       (
-        select sum(pci.qty*pci.unit_price)
-        from pc_purchasing_order_item as pci 
-        where pci.purchase_order_id=pc.purchase_order_id
-        and pci.giveaway='N'
-        and pc.is_cancel = 'N'
-      ) as purchase_price, 
+        select sum(pci.qty * pci.unit_price)
+    from pc_purchasing_order_item as pci
+    where pci.purchase_order_id = pc.purchase_order_id
+    and pci.giveaway = 'N'
+    and pc.is_cancel = 'N'
+      ) as purchase_price,
       pc.labeler_id as vendor_id, pc.contract_id,
       cmp.name as purchase_method_name, ml.labeler_name,
       (
         select sum(pi.qty)
-        from pc_purchasing_order_item as pi
-        where pi.purchase_order_id=pc.purchase_order_id
-        and pc.is_cancel = 'N'
+    from pc_purchasing_order_item as pi
+    where pi.purchase_order_id = pc.purchase_order_id
+    and pc.is_cancel = 'N'
       ) as purchase_qty,
       (
-        select sum(rd.receive_qty) 
-        from wm_receive_detail as rd
-        inner join wm_receives as r on r.receive_id=rd.receive_id
-        where r.purchase_order_id=pc.purchase_order_id
-        and r.is_cancel ='N'
+        select sum(rd.receive_qty)
+    from wm_receive_detail as rd
+    inner join wm_receives as r on r.receive_id = rd.receive_id
+    where r.purchase_order_id = pc.purchase_order_id
+    and r.is_cancel = 'N'
       ) as receive_qty,
       (
-        select sum(rd.receive_qty*rd.cost) 
-        from wm_receive_detail as rd
-        inner join wm_receives as r on r.receive_id=rd.receive_id
-        where rd.is_free='N'
-        and r.purchase_order_id=pc.purchase_order_id
-        and r.is_cancel ='N'
+        select sum(rd.receive_qty * rd.cost)
+    from wm_receive_detail as rd
+    inner join wm_receives as r on r.receive_id = rd.receive_id
+    where rd.is_free = 'N'
+    and r.purchase_order_id = pc.purchase_order_id
+    and r.is_cancel = 'N'
         
       ) as receive_price
-      from pc_purchasing_order as pc
-      left join mm_labelers as ml on ml.labeler_id=pc.labeler_id
-      left join l_bid_process as cmp on cmp.id=pc.purchase_method_id
-      where pc.purchase_order_status='APPROVED'
-      and pc.purchase_order_status != 'COMPLETED'
-      and pc.is_cancel != 'Y'
-      order by pc.purchase_order_number DESC
-      limit ${limit}
-      offset ${offset}
-    `;
+    from pc_purchasing_order as pc
+    left join mm_labelers as ml on ml.labeler_id = pc.labeler_id
+    left join l_bid_process as cmp on cmp.id = pc.purchase_method_id
+    left join cm_contracts as cm on cm.contract_id = pc.contract_id
+    where pc.purchase_order_status = 'APPROVED'
+    and pc.purchase_order_status != 'COMPLETED'
+    and pc.is_cancel != 'Y'`;
+
+    if (sort.by) {
+      let reverse = sort.reverse ? 'DESC' : 'ASC';
+      if (sort.by === 'purchase_order_number') {
+        sql += ` order by pc.purchase_order_number ${reverse} `;
+      }
+
+      if (sort.by === 'order_date') {
+        sql += ` order by pc.order_date ${reverse} `;
+      }
+
+      if (sort.by === 'purchase_method_name') {
+        sql += ` order by cmp.name ${reverse} `;
+      }
+
+      if (sort.by === 'labeler_name') {
+        sql += ` order by ml.labeler_name ${reverse} `;
+      }
+
+    } else {
+      sql += `order by pc.purchase_order_number DESC`;
+    }
+
+    sql += ` limit ${limit} offset ${offset} `;
 
     return knex.raw(sql);
 
   }
 
-  getPurchaseListSearch(knex: Knex, limit: number, offset: number, query) {
-    let _query = `%${query}%`;
+  getPurchaseListSearch(knex: Knex, limit: number, offset: number, query, sort: any = {}) {
+    let _query = `% ${query}% `;
     let sql = `
-      select pc.purchase_order_book_number, pc.purchase_order_id, pc.purchase_order_number,
-      pc.order_date, 
+    select pc.purchase_order_book_number, pc.purchase_order_id, pc.purchase_order_number,
+      pc.order_date,
       (
-        select sum(pci.qty*pci.unit_price)
-        from pc_purchasing_order_item as pci 
-        where pci.purchase_order_id=pc.purchase_order_id
-        and pci.giveaway='N'
-        and pc.is_cancel = 'N'
-      ) as purchase_price, 
+        select sum(pci.qty * pci.unit_price)
+    from pc_purchasing_order_item as pci
+    where pci.purchase_order_id = pc.purchase_order_id
+    and pci.giveaway = 'N'
+    and pc.is_cancel = 'N'
+      ) as purchase_price,
       pc.labeler_id as vendor_id, pc.contract_id,
       cmp.name as purchase_method_name, ml.labeler_name,
       (
         select sum(pi.qty)
-        from pc_purchasing_order_item as pi
-        where pi.purchase_order_id=pc.purchase_order_id
-        and pc.is_cancel = 'N'
+    from pc_purchasing_order_item as pi
+    where pi.purchase_order_id = pc.purchase_order_id
+    and pc.is_cancel = 'N'
       ) as purchase_qty,
       (
-        select sum(rd.receive_qty) 
-        from wm_receive_detail as rd
-        inner join wm_receives as r on r.receive_id=rd.receive_id
-        where r.purchase_order_id=pc.purchase_order_id
-        and r.is_cancel ='N'
+        select sum(rd.receive_qty)
+    from wm_receive_detail as rd
+    inner join wm_receives as r on r.receive_id = rd.receive_id
+    where r.purchase_order_id = pc.purchase_order_id
+    and r.is_cancel = 'N'
       ) as receive_qty,
       (
-        select sum(rd.receive_qty*rd.cost) 
-        from wm_receive_detail as rd
-        inner join wm_receives as r on r.receive_id=rd.receive_id
-        where rd.is_free='N'
-        and r.purchase_order_id=pc.purchase_order_id
-        and r.is_cancel ='N'
+        select sum(rd.receive_qty * rd.cost)
+    from wm_receive_detail as rd
+    inner join wm_receives as r on r.receive_id = rd.receive_id
+    where rd.is_free = 'N'
+    and r.purchase_order_id = pc.purchase_order_id
+    and r.is_cancel = 'N'
         
       ) as receive_price
-      from pc_purchasing_order as pc
-      left join mm_labelers as ml on ml.labeler_id=pc.labeler_id
-      left join l_bid_process as cmp on cmp.id=pc.purchase_method_id
-      where pc.purchase_order_status='APPROVED'
-      and pc.purchase_order_status != 'COMPLETED'
-      and pc.is_cancel != 'Y'
-      and (
-        pc.purchase_order_book_number LIKE '${_query}'
+    from pc_purchasing_order as pc
+    left join mm_labelers as ml on ml.labeler_id = pc.labeler_id
+    left join l_bid_process as cmp on cmp.id = pc.purchase_method_id
+    where pc.purchase_order_status = 'APPROVED'
+    and pc.purchase_order_status != 'COMPLETED'
+    and pc.is_cancel != 'Y'
+    and(
+      pc.purchase_order_book_number LIKE '${_query}'
         OR pc.purchase_order_number LIKE '${_query}'
         OR ml.labeler_name like '${_query}'
-        OR pc.purchase_order_id IN (
-          SELECT
+        OR pc.purchase_order_id IN(
+        SELECT
             poi.purchase_order_id
           FROM
             pc_purchasing_order_item poi
@@ -765,12 +816,32 @@ export class ReceiveModel {
           OR mg.generic_name LIKE '${_query}'
           OR mp.working_code = '${query}'
           OR mg.working_code = '${query}'
-        )
       )
-      order by pc.purchase_order_number DESC
-      limit ${limit}
-      offset ${offset}
-    `;
+    ) `;
+
+    if (sort.by) {
+      let reverse = sort.reverse ? 'DESC' : 'ASC';
+      if (sort.by === 'purchase_order_number') {
+        sql += ` order by pc.purchase_order_number ${reverse} `;
+      }
+
+      if (sort.by === 'order_date') {
+        sql += ` order by pc.order_date ${reverse} `;
+      }
+
+      if (sort.by === 'purchase_method_name') {
+        sql += ` order by cmp.name ${reverse} `;
+      }
+
+      if (sort.by === 'labeler_name') {
+        sql += ` order by ml.labeler_name ${reverse} `;
+      }
+
+    } else {
+      sql += `order by pc.purchase_order_number DESC`;
+    }
+
+    sql += ` limit ${limit} offset ${offset} `;
 
     return knex.raw(sql);
 
@@ -778,34 +849,34 @@ export class ReceiveModel {
   getPurchaseListTotal(knex: Knex) {
 
     let sql = `
-      select count(*) as total
-      from pc_purchasing_order as pc
-      left join mm_labelers as ml on ml.labeler_id=pc.labeler_id
-      left join l_bid_process as cmp on cmp.id=pc.purchase_method_id
-      where pc.purchase_order_status='APPROVED'
-      and pc.purchase_order_status != 'COMPLETED'
-      and pc.is_cancel != 'Y'
-    `;
+    select count(*) as total
+    from pc_purchasing_order as pc
+    left join mm_labelers as ml on ml.labeler_id = pc.labeler_id
+    left join l_bid_process as cmp on cmp.id = pc.purchase_method_id
+    where pc.purchase_order_status = 'APPROVED'
+    and pc.purchase_order_status != 'COMPLETED'
+    and pc.is_cancel != 'Y'
+      `;
 
     return knex.raw(sql, []);
 
   }
   getPurchaseListTotalSearch(knex: Knex, query) {
-    let _query = `%${query}%`;
+    let _query = `% ${query}% `;
     let sql = `
-      select count(*) as total
-      from pc_purchasing_order as pc
-      left join mm_labelers as ml on ml.labeler_id=pc.labeler_id
-      left join l_bid_process as cmp on cmp.id=pc.purchase_method_id
-      where pc.purchase_order_status='APPROVED'
-      and pc.purchase_order_status != 'COMPLETED'
-      and pc.is_cancel != 'Y'
-      and (
-        pc.purchase_order_book_number LIKE '${_query}'
+    select count(*) as total
+    from pc_purchasing_order as pc
+    left join mm_labelers as ml on ml.labeler_id = pc.labeler_id
+    left join l_bid_process as cmp on cmp.id = pc.purchase_method_id
+    where pc.purchase_order_status = 'APPROVED'
+    and pc.purchase_order_status != 'COMPLETED'
+    and pc.is_cancel != 'Y'
+    and(
+      pc.purchase_order_book_number LIKE '${_query}'
         OR pc.purchase_order_number LIKE '${_query}'
         OR ml.labeler_name like '${_query}'
-        OR pc.purchase_order_id IN (
-          SELECT
+        OR pc.purchase_order_id IN(
+        SELECT
             poi.purchase_order_id
           FROM
             pc_purchasing_order_item poi
@@ -816,9 +887,9 @@ export class ReceiveModel {
           OR mg.generic_name LIKE '${_query}'
           OR mp.working_code = '${query}'
           OR mg.working_code = '${query}'
-        )
       )
-    `;
+    )
+      `;
 
     return knex.raw(sql);
 
@@ -827,10 +898,10 @@ export class ReceiveModel {
     let sql = `
     select pi.product_id, p.product_name, pi.unit_generic_id,
       p.m_labeler_id, p.v_labeler_id, g.generic_name, g.generic_id, g.working_code as generic_working_code,
-      pi.qty as purchase_qty, pi.unit_price as cost, lm.labeler_name as m_labeler_name, 
+      pi.qty as purchase_qty, pi.unit_price as cost, lm.labeler_name as m_labeler_name,
       lv.labeler_name as v_labeler_name, p.working_code,
       mu.from_unit_id, mu.to_unit_id as base_unit_id, mu.qty as conversion_qty,
-      u1.unit_name as to_unit_name, u2.unit_name as from_unit_name, pi.giveaway,p.is_lot_control,
+      u1.unit_name as to_unit_name, u2.unit_name as from_unit_name, pi.giveaway, p.is_lot_control,
       (
       	select ifnull(sum(rdx.receive_qty), 0)
       	from wm_receive_detail as rdx
@@ -841,16 +912,16 @@ export class ReceiveModel {
         and r.is_cancel='N'
       ) as total_received_qty
     from pc_purchasing_order_item as pi
-    inner join mm_products as p on p.product_id=pi.product_id
-    left join mm_generics as g on g.generic_id=p.generic_id
-    left join mm_unit_generics as mu on mu.unit_generic_id=pi.unit_generic_id
-    left join mm_units as u1 on u1.unit_id=mu.to_unit_id
-    left join mm_units as u2 on u2.unit_id=mu.from_unit_id
-    left join mm_labelers as lm on lm.labeler_id=p.m_labeler_id
-    left join mm_labelers as lv on lv.labeler_id=p.v_labeler_id
-    where pi.purchase_order_id=?
-    group by pi.product_id, pi.giveaway
-    `;
+    inner join mm_products as p on p.product_id = pi.product_id
+    left join mm_generics as g on g.generic_id = p.generic_id
+    left join mm_unit_generics as mu on mu.unit_generic_id = pi.unit_generic_id
+    left join mm_units as u1 on u1.unit_id = mu.to_unit_id
+    left join mm_units as u2 on u2.unit_id = mu.from_unit_id
+    left join mm_labelers as lm on lm.labeler_id = p.m_labeler_id
+    left join mm_labelers as lv on lv.labeler_id = p.v_labeler_id
+    where pi.purchase_order_id =?
+      group by pi.product_id, pi.giveaway
+        `;
 
     return knex.raw(sql, [purchaseOrderId]);
   }
@@ -907,11 +978,11 @@ export class ReceiveModel {
   }
 
   getCommittee(knex: Knex) {
-    let sql = `select * from pc_committee where committee_status='T'`;
+    let sql = `select * from pc_committee where committee_status = 'T'`;
     return knex.raw(sql, []);
   }
   getCommitteePO(knex: Knex, id: any) {
-    let sql = `select * from pc_purchasing_order where purchase_order_id=` + id;
+    let sql = `select * from pc_purchasing_order where purchase_order_id = ` + id;
     return knex.raw(sql, []);
   }
 
@@ -927,10 +998,10 @@ export class ReceiveModel {
     let sql = `
     select cp.committee_id, cp.position_name, po.fname, po.lname, t.title_name
     from pc_committee_people as cp
-    left join um_people as po on po.people_id=cp.people_id
-    left join um_titles as t on t.title_id=po.title_id
-    where cp.committee_id=?
-    `;
+    left join um_people as po on po.people_id = cp.people_id
+    left join um_titles as t on t.title_id = po.title_id
+    where cp.committee_id =?
+      `;
     return knex.raw(sql, [committeeId]);
   }
 
@@ -953,7 +1024,7 @@ export class ReceiveModel {
 
   updatePurchaseApprovedStatus(knex: Knex, receiveId: any) {
     return knex('pc_purchasing_order as pc')
-    .join('wm_receives as r','r.purchase_order_id','pc.purchase_order_id')
+      .join('wm_receives as r', 'r.purchase_order_id', 'pc.purchase_order_id')
       .where('r.receive_id', receiveId)
       .update({
         'pc.purchase_order_status': 'APPROVED'
@@ -1188,7 +1259,7 @@ export class ReceiveModel {
     return knex.raw(sql);
   }
 
-  getReceiveOtherStatus(knex: Knex, limit: number, offset: number, warehouseId, status) {
+  getReceiveOtherStatus(knex: Knex, limit: number, offset: number, warehouseId, status, sort: any = {}) {
     let sql = `
     select rt.*, rt.is_cancel, (select count(*) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as total,
   (select sum(rtd.cost * rtd.receive_qty) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as cost,
@@ -1211,8 +1282,27 @@ export class ReceiveModel {
     } else if (status == 'Napprove') {
       sql += ` and ra.receive_other_id is null`
     }
-    sql += ` order by rt.receive_code desc
-  limit ${limit} offset ${offset}`;
+
+    if (sort.by) {
+      let reverse = sort.reverse ? 'DESC' : 'ASC';
+      if (sort.by === 'receive_date') {
+        sql += ` order by rt.receive_date ${reverse}`;
+      }
+
+      if (sort.by === 'receive_code') {
+        sql += ` order by rt.receive_code ${reverse}`;
+      }
+
+      if (sort.by === 'donator_name') {
+        sql += ` order by d.donator_name ${reverse}`;
+      }
+
+    } else {
+      sql += ` order by rt.receive_code desc`;
+    }
+
+    sql += ` limit ${limit} offset ${offset}`;
+
     return knex.raw(sql);
   }
 
@@ -1237,7 +1327,7 @@ export class ReceiveModel {
     return knex.raw(sql);
   }
 
-  getReceiveOtherStatusSearch(knex: Knex, limit: number, offset: number, query: string, warehouseId, status) {
+  getReceiveOtherStatusSearch(knex: Knex, limit: number, offset: number, query: string, warehouseId, status, sort: any = {}) {
     let _query = `%${query}%`;
     let sql = `
     select rt.*, rt.is_cancel, (select count(*) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as total,
@@ -1267,8 +1357,27 @@ export class ReceiveModel {
     } else if (status == 'Napprove') {
       sql += ` and ra.receive_other_id is null`
     }
-    sql += ` order by rt.receive_code desc
-  limit ${limit} offset ${offset}`;
+
+    if (sort.by) {
+      let reverse = sort.reverse ? 'DESC' : 'ASC';
+      if (sort.by === 'receive_date') {
+        sql += ` order by rt.receive_date ${reverse}`;
+      }
+
+      if (sort.by === 'receive_code') {
+        sql += ` order by rt.receive_code ${reverse}`;
+      }
+
+      if (sort.by === 'donator_name') {
+        sql += ` order by d.donator_name ${reverse}`;
+      }
+
+    } else {
+      sql += ` order by rt.receive_code desc`;
+    }
+
+    sql += ` limit ${limit} offset ${offset}`;
+
     return knex.raw(sql);
   }
 
@@ -1301,7 +1410,7 @@ export class ReceiveModel {
     return knex.raw(sql);
   }
 
-  getReceiveStatus(knex: Knex, limit: number, offset: number, warehouseId, status) {
+  getReceiveStatus(knex: Knex, limit: number, offset: number, warehouseId, status, sort: any = {}) {
     let sql = `
       SELECT
       r.*, r.is_cancel,
@@ -1348,8 +1457,31 @@ export class ReceiveModel {
     } else if (status == 'Napprove') {
       sql += ` and ra.receive_id is null`
     }
-    sql += ` order by r.receive_code desc
-  limit ${limit} offset ${offset}`;
+
+    if (sort.by) {
+      let reverse = sort.reverse ? 'DESC' : 'ASC';
+      if (sort.by === 'receive_date') {
+        sql += ` order by r.receive_date ${reverse}`;
+      }
+
+      if (sort.by === 'receive_code') {
+        sql += ` order by r.receive_code ${reverse}`;
+      }
+
+      if (sort.by === 'purchase_order_number') {
+        sql += ` order by pc.purchase_order_number ${reverse}`;
+      }
+
+      if (sort.by === 'labeler_name') {
+        sql += ` order by l.labeler_name ${reverse}`;
+      }
+
+    } else {
+      sql += ` order by r.receive_code desc`;
+    }
+
+    sql += ` limit ${limit} offset ${offset}`;
+
     return knex.raw(sql);
   }
 
@@ -1378,7 +1510,7 @@ export class ReceiveModel {
     return knex.raw(sql);
   }
 
-  getReceiveStatusSearch(knex: Knex, limit: number, offset: number, warehouseId, status, query) {
+  getReceiveStatusSearch(knex: Knex, limit: number, offset: number, warehouseId, status, query, sort: any = {}) {
     let _query = `%${query}%`;
     let sql = `
       SELECT
@@ -1431,8 +1563,31 @@ export class ReceiveModel {
     } else if (status == 'Napprove') {
       sql += ` and ra.receive_id is null`
     }
-    sql += ` order by r.receive_code desc
-    limit ${limit} offset ${offset}`;
+
+    if (sort.by) {
+      let reverse = sort.reverse ? 'DESC' : 'ASC';
+      if (sort.by === 'receive_date') {
+        sql += ` order by r.receive_date ${reverse}`;
+      }
+
+      if (sort.by === 'receive_code') {
+        sql += ` order by r.receive_code ${reverse}`;
+      }
+
+      if (sort.by === 'purchase_order_number') {
+        sql += ` order by pc.purchase_order_number ${reverse}`;
+      }
+
+      if (sort.by === 'labeler_name') {
+        sql += ` order by l.labeler_name ${reverse}`;
+      }
+
+    } else {
+      sql += ` order by r.receive_code desc`;
+    }
+
+    sql += ` limit ${limit} offset ${offset}`;
+
     return knex.raw(sql);
   }
 

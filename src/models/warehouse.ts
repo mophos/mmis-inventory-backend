@@ -138,7 +138,7 @@ export class WarehouseModel {
   getProductsWarehouse(knex: Knex, warehouseId: string, productGroups: any[], genericType: any) {
     let query = knex('wm_products as wp')
       .select('wp.*', 'mug.cost as packcost', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', 'mg.working_code', 'mg.generic_id', 'mg.generic_name',
-        'l.location_name', 'l.location_desc', 'u.unit_name as base_unit_name', 'mug.qty as conversion', 'uu.unit_name as large_unit')
+        'l.location_name', 'l.location_desc', 'u.unit_name as base_unit_name', 'mug.qty as conversion', 'uu.unit_name as large_unit', 'mp.is_lot_control')
       .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
       .leftJoin('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
       // .leftJoin('wm_product_lots as wl', 'wl.lot_id', 'wp.lot_id')
@@ -577,5 +577,73 @@ export class WarehouseModel {
   getProductImport(knex: Knex, working: any) {
     return knex('mm_products')
       .where('working_code', working)
+  }
+
+  updateProduct(knex: Knex, productId: any, _old: any, _new: any) {
+    let sql = `
+    update wm_products
+    set lot_no = ?,
+        expired_date = ?
+    where product_id = ?
+      and lot_no = ?
+      and expired_date <=> ?
+    `;
+    return knex.raw(sql, [_new.lot_no, _new.expired_date, productId, _old.lot_no, _old.expired_date]);
+  }
+
+  updateReceiveDetail(knex: Knex, productId: any, _old: any, _new: any) {
+    let sql = `
+    update wm_receive_detail
+    set lot_no = ?,
+        expired_date = ?
+    where product_id = ?
+      and lot_no = ?
+      and expired_date <=> ?
+    `;
+    return knex.raw(sql, [_new.lot_no, _new.expired_date, productId, _old.lot_no, _old.expired_date]);
+  }
+
+  updateReceiveOtherDetail(knex: Knex, productId: any, _old: any, _new: any) {
+    let sql = `
+    update wm_receive_other_detail
+    set lot_no = ?,
+        expired_date = ?
+    where product_id = ?
+      and lot_no = ?
+      and expired_date <=> ?
+    `;
+    return knex.raw(sql, [_new.lot_no, _new.expired_date, productId, _old.lot_no, _old.expired_date]);
+  }
+
+  updateStockCard(knex: Knex, productId: any, _old: any, _new: any) {
+    let sql = `
+    update wm_stock_card
+    set lot_no = ?,
+        expired_date = ?
+    where product_id = ?
+      and lot_no = ?
+      and expired_date <=> ?
+    `;
+    return knex.raw(sql, [_new.lot_no, _new.expired_date, productId, _old.lot_no, _old.expired_date]);
+  }
+
+  insertProductHistory(knex: Knex, data: any) {
+    return knex('wm_product_history')
+      .insert(data);
+  }
+
+  getProductHistory(knex: Knex, productId: any) {
+    return knex('wm_product_history as h')
+    .select('h.*',  knex.raw(`concat(p.title_name, p.fname, ' ' , p.lname) as create_name`))
+      .join('um_people_users as u', 'u.people_user_id', 'h.create_by')
+      .join('view_peoples as p', 'p.people_id', 'u.people_id')
+      .where('h.product_id', productId)
+      .orderByRaw('h.history_date, h.history_time desc');
+  }
+
+  getExpiredSetting(knex: Knex) {
+    return knex('sys_settings as s')
+      .select(knex.raw('IFNULL(s.value, s.default) as value'))
+      .where('s.action_name', 'WM_RECEIVE_EXPIRED');
   }
 }
