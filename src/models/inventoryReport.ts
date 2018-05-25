@@ -1986,21 +1986,31 @@ OR sc.ref_src like ?
         GROUP BY
           wp.product_id,wp.lot_no
         UNION ALL
-          SELECT
+        select 
             '0',
             'คงคลัง',
-            mp.generic_id,
-            mp.product_id,
-            mul.unit_name,
-            mug.qty,
-            mus.unit_name,
+            generic_id,
+            product_id,
+            lunit_name,
+            qty,
+            unit_name,
             '',
-            sum(wp.qty),
-            wp.lot_no,
-            wp.expired_date,
+            remain,
+            lot_no,
+            expired_date,
             '',
             'Y',
             'คงคลัง'
+        from (
+          SELECT
+            mp.generic_id,
+            mp.product_id,
+            mul.unit_name as lunit_name,
+            mug.qty,
+            mus.unit_name,
+            sum(wp.qty) as remain,
+            wp.lot_no,
+            wp.expired_date
           FROM
             wm_products wp
           JOIN mm_products mp ON wp.product_id = mp.product_id
@@ -2021,11 +2031,13 @@ OR sc.ref_src like ?
                 r.requisition_order_id = '${requisId}' and wp.product_id='${productId}'
               GROUP BY
                 wp.product_id
+           
             )
           AND wp.warehouse_id = '${warehouseId}'
           GROUP BY
             wp.product_id,
             wp.lot_no
+        ) as sq1 where sq1.remain > 0
         ) as a
         group by a.product_id,a.lot_no
         ORDER BY a.generic_code desc`
