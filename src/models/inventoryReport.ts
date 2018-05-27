@@ -464,6 +464,7 @@ mgt.generic_type_id `
         wp.lot_no,
         wp.expired_date,
         ml.labeler_name,
+        ml.labeler_name_po,
         sum(wp.qty) AS qty,
         mu.unit_name as small_unit,
         wh.warehouse_name,
@@ -815,6 +816,7 @@ GROUP BY
         wr.delivery_code,
         wr.vendor_labeler_id,
         ml.labeler_name,
+        ml.labeler_name_po,
         vap.generic_id,
         vap.generic_name,
         wrd.receive_qty,
@@ -823,6 +825,7 @@ GROUP BY
         wp.expired_date,
         wl.location_name,
         ml2.labeler_name as labeler_name_m
+        ml2.labeler_name_po as labeler_name_po_m
         FROM
             wm_receives wr
         JOIN wm_receive_detail wrd on wr.receive_id=wrd.receive_id
@@ -845,6 +848,7 @@ GROUP BY
         wr.delivery_code,
         wr.vendor_labeler_id,
         ml.labeler_name,
+        ml.labeler_name_po,
         vap.generic_id,
         vap.generic_name,
         wrd.receive_qty,
@@ -855,6 +859,7 @@ GROUP BY
         wrd.lot_no,
         wl.location_name,
         ml2.labeler_name AS labeler_name_m,
+        ml2.labeler_name_po AS labeler_name_po_m,
         wrd.cost,
         ppoi.unit_price
         FROM
@@ -950,6 +955,7 @@ GROUP BY
         wr.delivery_code,
         wr.vendor_labeler_id,
         ml.labeler_name,
+        ml.labeler_name_po,
         vap.generic_id,
         vap.generic_name,
         wrd.receive_qty,
@@ -959,6 +965,7 @@ GROUP BY
         wp.lot_no,
         wl.location_name,
         ml2.labeler_name AS labeler_name_m
+        ml2.labeler_name_po AS labeler_name_po_m
         FROM
             wm_receives wr
         JOIN wm_receive_detail wrd ON wr.receive_id = wrd.receive_id
@@ -1223,7 +1230,7 @@ GROUP BY
     }
     receive(knex: Knex, receiveId) {
         return knex.select('wm_receives.receive_id', 'wm_receives.receive_date', 'wm_receives.receive_code',
-            'wm_receives.delivery_code', 'wm_receives.delivery_date', 'mm_labelers.labeler_name', 'pc_purchasing_order.purchase_order_book_number', 'pc_purchasing_order.order_date')
+            'wm_receives.delivery_code', 'wm_receives.delivery_date', 'mm_labelers.labeler_name', 'mm_labelers.labeler_name_po', 'pc_purchasing_order.purchase_order_book_number', 'pc_purchasing_order.order_date')
             .from('wm_receives')
             .join('mm_labelers', 'wm_receives.vendor_labeler_id', 'mm_labelers.labeler_id')
             .join('pc_purchasing_order', 'wm_receives.purchase_order_id', 'pc_purchasing_order.purchase_order_id')
@@ -1290,6 +1297,7 @@ GROUP BY
         pc.purchase_order_number,
         pc.order_date,
         ml.labeler_name,
+        ml.labeler_name_po,
         ( SELECT mp.product_name FROM mm_products AS mp WHERE mp.product_id = pci.product_id ) AS product_name,
         (
     SELECT
@@ -1508,7 +1516,7 @@ GROUP BY
         
         IF (
             sc.transaction_type = 'REV',
-            ml.labeler_name,
+            ml.labeler_name_po,
             wh2.warehouse_name
         ) AS warehouse_src,
         mu.unit_name,      
@@ -1561,7 +1569,7 @@ GROUP BY
     
     IF (
         sc.transaction_type = 'REV',
-        ml.labeler_name,
+        ml.labeler_name_po,
         wh2.warehouse_name
     ) AS warehouse_src,
      mu.unit_name,
@@ -1625,6 +1633,7 @@ OR sc.ref_src like ?
         wrt.receive_type_name,
         wr.purchase_order_id,
         ml.labeler_name,
+        ml.labeler_name_po,
         wr.delivery_date,
         ppo.purchase_order_book_number,
         ppo.purchase_order_number,
@@ -1666,6 +1675,7 @@ OR sc.ref_src like ?
         wrt.receive_type_name,
         wr.purchase_order_id,
         ml.labeler_name,
+        ml.labeler_name_po,
         wr.delivery_date,
         ppo.purchase_order_book_number,
         ppo.purchase_order_number,
@@ -1755,6 +1765,7 @@ OR sc.ref_src like ?
         r.purchase_order_id,
         r.delivery_code,
         l.labeler_name,
+        l.labeler_name_po,
         wrd.discount,
         sum(wrd.receive_qty) as receive_qty,
         mug.qty,
@@ -1800,6 +1811,7 @@ OR sc.ref_src like ?
         ppo.purchase_order_number,
         r.delivery_code,
         l.labeler_name,
+        l.labeler_name_po,
         wrd.discount,
         wrd.receive_qty,
         mug.qty,
@@ -1959,7 +1971,9 @@ OR sc.ref_src like ?
         mg.working_code AS generic_code,
         mp.v_labeler_id,
         ml.labeler_name AS v_labeler_name,
+        ml.labeler_name_po AS v_labeler_name_po,
         ml2.labeler_name AS m_labeler_name,
+        ml2.labeler_name_po AS m_labeler_name_po,
         mp.primary_unit_id AS base_unit_id,
         u.unit_name AS base_unit_name,
         mgt.generic_type_id,
