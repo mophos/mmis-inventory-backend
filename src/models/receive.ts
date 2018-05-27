@@ -919,7 +919,6 @@ export class ReceiveModel {
     left join mm_units as u2 on u2.unit_id = mu.from_unit_id
     left join mm_labelers as lm on lm.labeler_id = p.m_labeler_id
     left join mm_labelers as lv on lv.labeler_id = p.v_labeler_id
-    --left join wm_receives as r on r.purchase_order_id = pi.purchase_order_id
     where pi.purchase_order_id =?
       group by pi.product_id, pi.giveaway
         `;
