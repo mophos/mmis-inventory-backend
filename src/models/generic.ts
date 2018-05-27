@@ -6,7 +6,7 @@ export class GenericModel {
   getGenericTypes(knex: Knex, _pgs: any[]) {
     return knex('mm_generic_types')
       .whereIn('generic_type_id', _pgs)
-      .andWhere('isactive', 1);
+      .andWhere('is_actived', 'Y');
   }
 
   getRemainQtyInWarehouse(knex: Knex, warehouseId: any, genericId: any) {
