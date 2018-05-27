@@ -4,7 +4,42 @@ import { SettingModel } from './settings';
 const settingModel = new SettingModel();
 
 export class InventoryReportModel {
-
+    receiveNotMatchPO(knex:Knex,startDate:any,endDate:any){
+        let sql =`SELECT
+        *
+        FROM
+            wm_receives AS wr
+        WHERE
+            wr.purchase_order_id IS NULL 
+           and wr.receive_date between '${startDate}' and '${endDate}' `
+        return knex.raw(sql)
+    }
+    receiveNotMatchPoDetail(knex: Knex,receiveId:any) {
+        let sql =`SELECT
+        mp.working_code,
+            mp.product_name,
+            sum( wrd.receive_qty ) AS receive_qty,
+            ml.labeler_name,
+            mul.unit_name as large_unit,
+            mus.unit_name as small_unit,
+            mug.qty
+        FROM
+            wm_receives AS wr
+            LEFT JOIN wm_receive_detail AS wrd ON wrd.receive_id = wr.receive_id
+            LEFT JOIN mm_products AS mp ON mp.product_id = wrd.product_id
+            LEFT JOIN mm_unit_generics as mug on mug.unit_generic_id = wrd.unit_generic_id
+            LEFT JOIN mm_units  as mul on mul.unit_id = mug.from_unit_id
+            LEFT JOIN mm_units  as mus on mus.unit_id = mug.to_unit_id
+            LEFT JOIN mm_labelers as ml on ml.labeler_id = wrd.vendor_labeler_id
+        WHERE
+            wr.receive_id = ${receiveId} 
+            and
+            wr.purchase_order_id IS NULL 
+        GROUP BY
+            mp.product_id,wrd.unit_generic_id`
+        return knex.raw(sql)
+    }
+ 
     productDisbursement(knex: Knex, internalissueId) {
         let sql = `SELECT
         id.product_id,

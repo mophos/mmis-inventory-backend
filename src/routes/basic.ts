@@ -3,11 +3,12 @@
 import * as express from 'express';
 import * as moment from 'moment';
 import * as co from 'co-express';
-
+import * as crypto from 'crypto';
 import { BasicModel } from '../models/basic';
 import { GenericModel } from '../models/generic';
 import { RequisitionModel } from '../models/staff/requisition';
 import { ProductModel } from '../models/product';
+import _ = require('lodash');
 
 const router = express.Router();
 
@@ -374,5 +375,26 @@ router.get('/get-generic-warehouse-remain/:warehouseId/:genericId', async (req, 
   }
 });
 
+router.post('/checkApprove', async (req, res, next) => {
+  let db = req.db;
+  try {
+    let username = req.body.username;
+    let password = req.body.password;
+    let action = req.body.action;
+    password = crypto.createHash('md5').update(password).digest('hex');
+    const isCheck = await basicModel.checkApprove(db, username, password);
+    console.log(isCheck[0]);
+    let rights = isCheck.split(',');
+
+    if (_.indexOf(rights, action) > -1) {
+      res.send({ ok: true })
+    } else {
+      res.send({ ok: false });
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error });
+  }
+
+});
 
 export default router;

@@ -4,7 +4,7 @@ import * as express from 'express';
 import * as moment from 'moment';
 import * as co from 'co-express';
 import * as _ from 'lodash';
-
+import * as crypto from 'crypto'
 import { IssueModel } from '../models/issue';
 import { ProductModel } from '../models/product';
 import { SerialModel } from '../models/serial';
@@ -465,19 +465,6 @@ router.get('/getproduct/:issue_id', co(async (req, res, next) => {
     db.destroy();
   }
 }));
-router.post('/checkApprove', async (req, res, next) => {
-  let db = req.db;
-  let username = req.body.username;
-  let password = req.body.password;
-  let action = req.body.action;
-  const isCheck = await issueModel.checkApprove(db, username, password, action);
-  console.log(isCheck[0]);
 
-  if (isCheck[0]) {
-    res.send({ ok: true })
-  } else {
-    res.send({ ok: false });
-  }
-});
 
 export default router;

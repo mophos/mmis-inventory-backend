@@ -1,0 +1,47 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    
+    .page
+    table.table
+      thead
+        tr 
+          td.center.bold #{hospitalName} 
+        tr 
+          td.center.bold ใบรายการยาที่รับแบบยังไม่ได้ผูกกับใบสั่งซื้อ
+        tr 
+          td.left ระหว่างวันที่ #{startDate} ถึง วันที่ #{endDate}
+        tr 
+          td.left #{printDate}
+      - for(var list of receives)
+        tbody
+          tr.dash-top
+            td
+              table.table
+                tr
+                  td(width="10%") เลขที่ใบรับ 
+                  td(width="20%") : #{list.receive_code}
+                  td(width="10%") วันที่รับ
+                  td(width="20%") : #{list.receive_date}
+                  td(width="10%") หมายเหตุ
+                  td : #{list.comment}
+          tr
+            td
+              table.table
+                tr
+                  td.left(width="40%") ชื่อทางการค้า 
+                  td จำนวนเบิก
+                  td ชื่อบริษัท
+                - for(var item of list.items)
+                  tr
+                    td #{item.product_name}
+                    td #{item.receive_qty} #{item.large_unit} (#{item.qty} #{item.small_unit})
+                    td #{item.labeler_name}
+          tr.dash-bottom
+            td(colspan='6')
+      .pagebreak

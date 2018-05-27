@@ -11,6 +11,7 @@ import { IssueModel } from '../models/issue'
 import { TIMEOUT } from 'dns';
 import { awaitExpression } from 'babel-types';
 import { Z_VERSION_ERROR } from 'zlib';
+import { ReceiveModel } from '../models/receive';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const serialModel = new SerialModel();
@@ -35,6 +36,54 @@ router.get('/', (req, res, next) => {
 //   let sr = await serialModel.getSerial(db, srType);
 //   res.send(sr);
 // }));
+
+router.get('/report/receiveNotMatchPO/:startDate/:endDate', wrap(async (req, res, next) => {
+
+  const db = req.db;
+  let receives: any = []
+  let receiveDetail: any = []
+  let startDate = req.params.startDate;
+  let endDate = req.params.endDate;
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    moment.locale('th');
+    let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+
+    const rs: any = await inventoryReportModel.receiveNotMatchPO(db, startDate, endDate)
+    if (rs) {
+      receives = rs[0]
+      for (let list of receives) {
+        const rss: any = await inventoryReportModel.receiveNotMatchPoDetail(db, list.receive_id)
+        list.items = rss[0]
+      }
+    }
+    startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
+    endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+    _.forEach(receives, (l) => {
+      l.receive_date = moment(l.receive_date).isValid() ? moment(l.receive_date).format('D MMMM ') + (moment(l.receive_date).get('year') + 543) : '-'
+      _.forEach(l.items, (v: any) => {
+        v.receive_qty = v.receive_qty ? inventoryReportModel.commaQty(v.receive_qty) : '-'
+        v.qty = v.qty ? inventoryReportModel.commaQty(v.qty) : '-'
+        v.comment = v.comment ? v.comment : '-'
+      });
+    })
+    // res.send(receiveDetail)
+    res.render('receive_not_match_po', {
+      hospitalName: hospitalName,
+      today: today,
+      printDate: printDate,
+      receives: receives,
+      startDate: startDate,
+      endDate: endDate
+
+    });
+  } catch (error) {
+    res.render('error404')
+  } finally {
+    db.destroy();
+  }
+}));
 
 router.get('/test-stockcard', wrap(async (req, res, next) => {
   const db = req.db;
