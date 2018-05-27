@@ -384,7 +384,7 @@ router.post('/checkApprove', async (req, res, next) => {
     password = crypto.createHash('md5').update(password).digest('hex');
     const isCheck = await basicModel.checkApprove(db, username, password);
     console.log(isCheck[0]);
-    let rights = isCheck[0].split(',');
+    let rights = isCheck[0].access_right.split(',');
 
     if (_.indexOf(rights, action) > -1) {
       res.send({ ok: true })
