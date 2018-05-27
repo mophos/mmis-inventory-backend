@@ -20,7 +20,7 @@ html
             td.right(style="padding-right: 50px;") วันที่ #{check_receive[s][0].receive_date}
         .fontspace
         | ตามกรรมการผู้มีรายนามและตำแหน่งข้างท้าย ได้พร้อมกันตรวจรับ #{generic_name[s]}
-        | ซึ่ง #{check_receive[s][0].labeler_name} ผู้ขายได้นำส่งตามใบสั่งซื้อของ#{hospitalName}
+        | ซึ่ง #{check_receive[s][0].labeler_name_po} ผู้ขายได้นำส่งตามใบสั่งซื้อของ#{hospitalName}
         | เลขที่ #{check_receive[s][0].purchase_order_number} ลงวันที่ #{check_receive[s][0].podate} 
         | เพื่อใช้ในงานการรักษาของ#{hospitalName}
         - if(length[s] <= 5)
