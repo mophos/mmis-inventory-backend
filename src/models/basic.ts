@@ -137,7 +137,7 @@ export class BasicModel {
 
   getGenericGroups(knex: Knex) {
     return knex('mm_generic_types')
-      .where('isactive', '1');
+      .where('is_actived', 'Y');
   }
 
   getGenericInGroups(knex: Knex, groupId: any) {
