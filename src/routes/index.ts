@@ -257,7 +257,10 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
           if (_list_requis[page][head].title.items[detail].confirm_qty != 0) {
             let old_confirm_qty = _list_requis[page][head].title.items[detail].confirm_qty;
             let confirm_qty = inventoryReportModel.commaQty(+_list_requis[page][head].title.items[detail].confirm_qty / +_list_requis[page][head].title.items[detail].conversion_qty);
-            _list_requis[page][head].title.items[detail].confirm_qty = +confirm_qty + ' ' + _list_requis[page][head].title.items[detail].large_unit + ' (' + _list_requis[page][head].title.items[detail].conversion_qty + ' ' + _list_requis[page][head].title.items[detail].small_unit + ' )'
+            // console.log(confirm_qty);
+            // console.log(+_list_requis[page][head].title.items[detail].confirm_qty);
+            _list_requis[page][head].title.items[detail].confirm_qty = confirm_qty + ' ' + _list_requis[page][head].title.items[detail].large_unit + ' (' + _list_requis[page][head].title.items[detail].conversion_qty + ' ' + _list_requis[page][head].title.items[detail].small_unit + ' )'
+            // console.log(_list_requis[page][head].title.items[detail].confirm_qty);
             if (_list_requis[page][head].title.items[detail].is_approve == "N") {
               _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round((+_list_requis[page][head].title.items[detail].remain - +old_confirm_qty) / +_list_requis[page][head].title.items[detail].conversion_qty));
             } else {
@@ -271,6 +274,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         }
       }
     }
+    // res.send(_list_requis)
     res.render('list_requis', {
       hospitalName: hospitalName,
       printDate: printDate,
