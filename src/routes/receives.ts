@@ -1143,6 +1143,24 @@ router.post('/purchases/list', co(async (req, res, nex) => {
 
 }));
 
+router.post('/s-purchases/list', co(async (req, res, nex) => {
+  let query = req.body.query;
+  let limit = req.body.limit;
+  let offset = req.body.offset;
+  let sort = req.body.sort;
+
+  let db = req.db;
+  try {
+    const rows = await receiveModel.searchPurchaseList(db, query, limit, offset, sort);
+    res.send({ ok: true, rows: rows[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
 router.post('/purchases/list/search', co(async (req, res, nex) => {
   let limit = req.body.limit;
   let offset = req.body.offset;
