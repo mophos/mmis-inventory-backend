@@ -257,7 +257,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
           if (_list_requis[page][head].title.items[detail].confirm_qty != 0) {
             let old_confirm_qty = _list_requis[page][head].title.items[detail].confirm_qty;
             let confirm_qty = inventoryReportModel.commaQty(+_list_requis[page][head].title.items[detail].confirm_qty / +_list_requis[page][head].title.items[detail].conversion_qty);
-            _list_requis[page][head].title.items[detail].confirm_qty = +confirm_qty + ' ' + _list_requis[page][head].title.items[detail].large_unit + ' (' + _list_requis[page][head].title.items[detail].conversion_qty + ' ' + _list_requis[page][head].title.items[detail].small_unit + ' )'
+            _list_requis[page][head].title.items[detail].confirm_qty = confirm_qty + ' ' + _list_requis[page][head].title.items[detail].large_unit + ' (' + _list_requis[page][head].title.items[detail].conversion_qty + ' ' + _list_requis[page][head].title.items[detail].small_unit + ' )'
             if (_list_requis[page][head].title.items[detail].is_approve == "N") {
               _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round((+_list_requis[page][head].title.items[detail].remain - +old_confirm_qty) / +_list_requis[page][head].title.items[detail].conversion_qty));
             } else {
