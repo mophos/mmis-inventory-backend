@@ -1109,10 +1109,17 @@ router.get('/products', co(async (req, res, next) => {
 router.delete('/remove', co(async (req, res, next) => {
   let db = req.db;
   let receiveId = req.query.receiveId;
+  let purchaseOrderId = req.query.purchaseOrderId;
+
   if (receiveId) {
     try {
       let peopleUserId: any = req.decoded.people_user_id;
-      await receiveModel.removeReceive(db, receiveId, peopleUserId)
+      await receiveModel.removeReceive(db, receiveId, peopleUserId);
+
+      if (purchaseOrderId) {
+        await receiveModel.updatePurchaseApproveStatus(db, purchaseOrderId);
+      }
+
       res.send({ ok: true })
     } catch (error) {
       res.send({ ok: false, error: error.message });
