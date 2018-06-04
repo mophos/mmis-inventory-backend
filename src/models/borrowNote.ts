@@ -39,10 +39,11 @@ export class BorrowNoteModel {
   getNotesItemsList(db: Knex, borrowNoteId: any) {
     return db('wm_borrow_note_detail as d')
       .select('d.generic_id', 'd.qty', 'd.unit_generic_id', 'g.generic_name',
-        'ug.qty as conversion_qty', 'u.unit_name as to_unit_name')
-      .innerJoin('mm_generics as g', 'g.generic_id', 'd.generic_id')
-      .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'd.unit_generic_id')
-      .innerJoin('mm_units as u', 'u.unit_id', 'ug.to_unit_id')
+        'ug.qty as conversion_qty', 'u.unit_name as to_unit_name', 'u1.unit_name as from_unit_name')
+      .leftJoin('mm_generics as g', 'g.generic_id', 'd.generic_id')
+      .leftJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'd.unit_generic_id')
+      .leftJoin('mm_units as u', 'u.unit_id', 'ug.to_unit_id')
+      .leftJoin('mm_units as u1', 'u1.unit_id', 'ug.from_unit_id')
       .where('d.borrow_note_id', borrowNoteId)
       .orderBy('g.generic_name')
   }
@@ -79,7 +80,18 @@ export class BorrowNoteModel {
 
     return sql.orderBy('bn.borrow_date', 'DESC');
   }
+  getListReport(db: Knex, query: any) {
+    let sql = db('wm_borrow_notes as bn')
+      .select('bn.*', 't.title_name', 'p.fname', 'p.lname', 'w.warehouse_name as wm_borrow_name','w1.warehouse_name as wm_withdarw_name')
+      .leftJoin('um_people as p', 'p.people_id', 'bn.people_id')
+      .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
+      .innerJoin('wm_warehouses as w', 'w.warehouse_id', 'bn.wm_borrow')
+      .innerJoin('wm_warehouses as w1', 'w1.warehouse_id', 'bn.wm_withdarw')
+      .whereIn('bn.borrow_note_id',query)
+    
 
+    return sql.orderBy('bn.borrow_date', 'DESC');
+  }
   getListAdmin(db: Knex, query: any, warehouse: any, limit: number = 20, offset: number = 0) {
     let sql = db('wm_borrow_notes as bn')
       .select('bn.*', 't.title_name', 'p.fname', 'p.lname', 'w.warehouse_name')
