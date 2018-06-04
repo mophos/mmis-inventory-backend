@@ -1096,6 +1096,14 @@ export class ReceiveModel {
       });
   }
 
+  updatePurchaseApproveStatus(knex: Knex, purchaseOrderId: any) {
+    return knex('pc_purchasing_order')
+      .where('purchase_order_id', purchaseOrderId)
+      .update({
+        purchase_order_status: 'APPROVED'
+      });
+  }
+
   updatePurchaseApprovedStatus(knex: Knex, receiveId: any) {
     return knex('pc_purchasing_order as pc')
       .join('wm_receives as r', 'r.purchase_order_id', 'pc.purchase_order_id')
