@@ -1855,6 +1855,7 @@ OR sc.ref_src like ?
         ro.receive_code,
         ro.receive_date,
         wro.receive_qty,
+        ro.delivery_code,
         mug.qty,
         mu.unit_name,
         muu.unit_name AS large_unit,
@@ -1866,6 +1867,7 @@ OR sc.ref_src like ?
     FROM
         wm_receive_other AS ro
         LEFT JOIN wm_receive_other_detail wro ON ro.receive_other_id = wro.receive_other_id
+
         LEFT JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wro.unit_generic_id
         LEFT JOIN mm_products AS p ON wro.product_id = p.product_id
         LEFT JOIN mm_generics AS mg ON p.generic_id = mg.generic_id

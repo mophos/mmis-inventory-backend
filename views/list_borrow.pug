@@ -1,0 +1,59 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    - for(var list of rs)
+      .page
+      table.table
+        thead
+          tr 
+            td.center.bold #{hospitalName} 
+          tr 
+            td.center.bold ใบรายการยืมยา
+          tr
+            td หน่วยที่ขอยืม : #{list.wm_borrow_name}
+          tr
+            td หน่วยที่จ่าย : #{list.wm_withdarw_name}
+          tr 
+            td หมายเหตุ : #{list.remark}
+          tr
+            td วันที่ยืม : #{list.borrow_date}
+          tr 
+            td.left #{printDate}
+        tbody
+          tr.dash-top
+            td
+              table.table
+                tr
+                  td.left(width="50%") ชื่อสามัญ 
+                  td จำนวนเบิก
+                - for(var item of list.item)
+                  tr
+                    td #{item.generic_name}
+                    td #{item.qty} #{item.from_unit_name} (#{item.conversion_qty} #{item.to_unit_name})
+          tr.dash-bottom
+            td(colspan='2')
+        table.table
+          tr 
+            td(colspan='9') &nbsp; 
+          tr 
+            td(colspan='9') &nbsp; 
+          tr 
+            td(colspan='9') &nbsp; 
+          tr 
+            td.center(colspan='4' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้ยืม)
+              br
+              br
+              if(list.fullname)
+                | ( #{list.fullname} )
+              else
+                | (.....................................................................)
+            td.center(colspan='5' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้จ่าย)
+              br
+              br
+              | (.....................................................................)
+      .pagebreak
