@@ -21,6 +21,7 @@ const serialModel = new SerialModel();
 router.get('/warehouse', async (req, res, next) => {
 
   let db = req.db;
+  let query = req.query.query == 'undefined' ? null : req.query.query;
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
@@ -33,7 +34,7 @@ router.get('/warehouse', async (req, res, next) => {
         _types.push(v);
       });
 
-      let rs: any = await additionModel.getWarehouse(db, srcWarehouseId, _types);
+      let rs: any = await additionModel.getWarehouse(db, srcWarehouseId, _types, query);
       res.send({ ok: true, rows: rs });
     } else {
       res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
@@ -95,6 +96,7 @@ router.get('/generic/warehouse/:genericId', async (req, res, next) => {
 router.get('/generic', async (req, res, next) => {
 
   let db = req.db;
+  let query = req.query.query == 'undefined' ? null : req.query.query;
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
@@ -107,7 +109,7 @@ router.get('/generic', async (req, res, next) => {
         _types.push(v);
       });
 
-      let rs: any = await additionModel.getGeneric(db, srcWarehouseId, _types);
+      let rs: any = await additionModel.getGeneric(db, srcWarehouseId, _types, query);
       res.send({ ok: true, rows: rs });
     } else {
       res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
@@ -123,10 +125,11 @@ router.get('/generic', async (req, res, next) => {
 router.get('/history', async (req, res, next) => {
 
   let db = req.db;
+  let query = req.query.query == 'undefined' ? null : req.query.query;
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
-    let rs: any = await additionModel.getTransactionHistory(db, srcWarehouseId);
+    let rs: any = await additionModel.getTransactionHistory(db, srcWarehouseId, query);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     console.log(error)
@@ -140,10 +143,11 @@ router.get('/list/:status', async (req, res, next) => {
 
   let db = req.db;
   let status = req.params.status;
+  let query = req.query.query == 'undefined' ? null : req.query.query;
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
-    let rs: any = await additionModel.getTransaction(db, srcWarehouseId, status);
+    let rs: any = await additionModel.getTransaction(db, srcWarehouseId, status, query);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     console.log(error)
