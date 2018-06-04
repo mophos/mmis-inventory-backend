@@ -4,7 +4,42 @@ import { SettingModel } from './settings';
 const settingModel = new SettingModel();
 
 export class InventoryReportModel {
-
+    receiveNotMatchPO(knex:Knex,startDate:any,endDate:any){
+        let sql =`SELECT
+        *
+        FROM
+            wm_receives AS wr
+        WHERE
+            wr.purchase_order_id IS NULL 
+           and wr.receive_date between '${startDate}' and '${endDate}' `
+        return knex.raw(sql)
+    }
+    receiveNotMatchPoDetail(knex: Knex,receiveId:any) {
+        let sql =`SELECT
+        mp.working_code,
+            mp.product_name,
+            sum( wrd.receive_qty ) AS receive_qty,
+            ml.labeler_name,
+            mul.unit_name as large_unit,
+            mus.unit_name as small_unit,
+            mug.qty
+        FROM
+            wm_receives AS wr
+            LEFT JOIN wm_receive_detail AS wrd ON wrd.receive_id = wr.receive_id
+            LEFT JOIN mm_products AS mp ON mp.product_id = wrd.product_id
+            LEFT JOIN mm_unit_generics as mug on mug.unit_generic_id = wrd.unit_generic_id
+            LEFT JOIN mm_units  as mul on mul.unit_id = mug.from_unit_id
+            LEFT JOIN mm_units  as mus on mus.unit_id = mug.to_unit_id
+            LEFT JOIN mm_labelers as ml on ml.labeler_id = wrd.vendor_labeler_id
+        WHERE
+            wr.receive_id = ${receiveId} 
+            and
+            wr.purchase_order_id IS NULL 
+        GROUP BY
+            mp.product_id,wrd.unit_generic_id`
+        return knex.raw(sql)
+    }
+ 
     productDisbursement(knex: Knex, internalissueId) {
         let sql = `SELECT
         id.product_id,
@@ -2000,21 +2035,31 @@ OR sc.ref_src like ?
         GROUP BY
           wp.product_id,wp.lot_no
         UNION ALL
-          SELECT
+        select 
             '0',
             'คงคลัง',
-            mp.generic_id,
-            mp.product_id,
-            mul.unit_name,
-            mug.qty,
-            mus.unit_name,
+            generic_id,
+            product_id,
+            lunit_name,
+            qty,
+            unit_name,
             '',
-            sum(wp.qty),
-            wp.lot_no,
-            wp.expired_date,
+            remain,
+            lot_no,
+            expired_date,
             '',
             'Y',
             'คงคลัง'
+        from (
+          SELECT
+            mp.generic_id,
+            mp.product_id,
+            mul.unit_name as lunit_name,
+            mug.qty,
+            mus.unit_name,
+            sum(wp.qty) as remain,
+            wp.lot_no,
+            wp.expired_date
           FROM
             wm_products wp
           JOIN mm_products mp ON wp.product_id = mp.product_id
@@ -2035,11 +2080,13 @@ OR sc.ref_src like ?
                 r.requisition_order_id = '${requisId}' and wp.product_id='${productId}'
               GROUP BY
                 wp.product_id
+           
             )
           AND wp.warehouse_id = '${warehouseId}'
           GROUP BY
             wp.product_id,
             wp.lot_no
+        ) as sq1 where sq1.remain > 0
         ) as a
         group by a.product_id,a.lot_no
         ORDER BY a.generic_code desc`
