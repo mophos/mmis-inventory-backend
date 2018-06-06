@@ -171,7 +171,7 @@ router.get('/warehouse/generics', co(async (req, res, next) => {
       _pgs.push(v);
     });
     try {
-      let rows = await warehouseModel.getGenericsWarehouse(db, warehouseId, _pgs, genericType);
+      let rows = await warehouseModel.getGenericsWarehouseStaff(db, warehouseId, _pgs, genericType);
       res.send({ ok: true, rows: rows });
     } catch (error) {
       console.log(error);

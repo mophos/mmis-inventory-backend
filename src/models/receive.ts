@@ -833,7 +833,7 @@ export class ReceiveModel {
   }
 
   getPurchaseListSearch(knex: Knex, limit: number, offset: number, query, sort: any = {}) {
-    let _query = `%${query}% `;
+    let _query = `%${query}%`;
     let sql = `
     select pc.purchase_order_book_number, pc.purchase_order_id, pc.purchase_order_number,
       pc.order_date,
@@ -936,7 +936,7 @@ export class ReceiveModel {
 
   }
   getPurchaseListTotalSearch(knex: Knex, query) {
-    let _query = `% ${query}% `;
+    let _query = `%${query}%`;
     let sql = `
     select count(*) as total
     from pc_purchasing_order as pc
@@ -962,9 +962,7 @@ export class ReceiveModel {
           OR mp.working_code = '${query}'
           OR mg.working_code = '${query}'
       )
-    )
-      `;
-
+    ) `;
     return knex.raw(sql);
 
   }
