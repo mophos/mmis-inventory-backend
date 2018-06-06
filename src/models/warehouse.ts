@@ -162,6 +162,28 @@ export class WarehouseModel {
     let query = knex('wm_products as p')
       .select('p.wm_product_id', 'p.product_id', 'mp.working_code', knex.raw('sum(p.qty) as qty'), knex.raw('ifnull(sum(v.reserve_qty),0) as reserve_qty'), knex.raw('sum(p.qty * p.cost) as total_cost'),
         'mp.product_name', 'g.generic_name', 'g.working_code as generic_working_code', 'mp.primary_unit_id', 'u.unit_name as primary_unit_name',
+        'g.min_qty', 'g.max_qty')
+      .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
+      .leftJoin('mm_generics as g', 'g.generic_id', 'mp.generic_id')
+      .leftJoin('mm_units as u', 'u.unit_id', 'mp.primary_unit_id')
+      .leftJoin('view_product_reserve as v', 'v.wm_product_id', 'p.wm_product_id')
+      .where('mp.mark_deleted', 'N')
+      .where('p.warehouse_id', warehouseId)
+      .whereRaw('p.qty > 0')
+      .whereIn('g.generic_type_id', productGroups)
+    if (genericType) {
+      query.andWhere('g.generic_type_id', genericType);
+    }
+    query.groupBy('p.product_id')
+      .orderBy('mp.product_name')
+    return query;
+  }
+
+  getGenericsWarehouseStaff(knex: Knex, warehouseId: string, productGroups: any[], genericType: any) {
+
+    let query = knex('wm_products as p')
+      .select('p.wm_product_id', 'p.product_id', 'mp.working_code', knex.raw('sum(p.qty) as qty'), knex.raw('ifnull(sum(v.reserve_qty),0) as reserve_qty'), knex.raw('sum(p.qty * p.cost) as total_cost'),
+        'mp.product_name', 'g.generic_name', 'g.working_code as generic_working_code', 'mp.primary_unit_id', 'u.unit_name as primary_unit_name',
         'mgp.min_qty', 'mgp.max_qty')
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
       .leftJoin('mm_generics as g', 'g.generic_id', 'mp.generic_id')
@@ -635,7 +657,7 @@ export class WarehouseModel {
 
   getProductHistory(knex: Knex, productId: any) {
     return knex('wm_product_history as h')
-      .select('h.*', knex.raw(`concat(p.title_name, p.fname, ' ' , p.lname) as create_name`))
+    .select('h.*',  knex.raw(`concat(p.title_name, p.fname, ' ' , p.lname) as create_name`))
       .join('um_people_users as u', 'u.people_user_id', 'h.create_by')
       .join('view_peoples as p', 'p.people_id', 'u.people_id')
       .where('h.product_id', productId)
