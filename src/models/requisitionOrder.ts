@@ -759,7 +759,7 @@ export class RequisitionOrderModel {
     return db('wm_requisition_orders as ro')
       .select('ro.*')
       .innerJoin('wm_requisition_confirms as rc', 'rc.requisition_order_id', 'ro.requisition_order_id')
-      .whereIn('rc.confirm_id', confirmId);
+      .where('rc.confirm_id', confirmId);
   }
 
   getRequisitionConfirmItems(db: Knex, confirmId: any) {
