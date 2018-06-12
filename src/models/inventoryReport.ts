@@ -124,7 +124,7 @@ export class InventoryReportModel {
             GROUP BY
                 rci.wm_product_id
             ORDER BY
-            mp.product_name`
+            mg.generic_name`
         return knex.raw(sql, requisId)
     }
 
