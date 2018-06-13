@@ -56,8 +56,10 @@ router.get('/warehouse/search/autocomplete', async (req, res, next) => {
 
   let db = req.db;
   let q = req.query.q;
-  let warehouseId = req.decoded.warehouseId;
-
+  let warehouseId = req.query.warehouseId;
+  if(warehouseId == undefined || warehouseId == null || warehouseId == ''){
+    warehouseId = req.decoded.warehouseId;
+  }
   try {
     let rs: any = await genericModel.warehouseSearchAutocomplete(db, warehouseId, q);
     res.send(rs[0]);
