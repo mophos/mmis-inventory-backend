@@ -124,7 +124,7 @@ export class InventoryReportModel {
             GROUP BY
                 rci.wm_product_id
             ORDER BY
-            mp.product_name`
+            mg.generic_name`
         return knex.raw(sql, requisId)
     }
 
@@ -1066,7 +1066,7 @@ GROUP BY
     receiveByPoId(knex: Knex, ID: any) {
         return knex('wm_receives as wr')
             .select('wr.receive_id')
-            .whereIn('wr.purchase_order_id', ID)
+            .where('wr.purchase_order_id', ID)
             .andWhere('wr.is_cancel', 'N')
             .orderBy('wr.receive_date', 'DESC')
     }
