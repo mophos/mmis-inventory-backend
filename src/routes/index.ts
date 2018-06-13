@@ -1802,6 +1802,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
   let province = hosdetail[0].province;
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  if (typeof rc_ID === 'string') rc_ID = [rc_ID];
   const receive = await inventoryReportModel.receiveSelect(db, rc_ID)
 
   for (let i in receive) {
