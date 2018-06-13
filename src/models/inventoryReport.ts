@@ -1066,7 +1066,7 @@ GROUP BY
     receiveByPoId(knex: Knex, ID: any) {
         return knex('wm_receives as wr')
             .select('wr.receive_id')
-            .whereIn('wr.purchase_order_id', ID)
+            .where('wr.purchase_order_id', ID)
             .andWhere('wr.is_cancel', 'N')
             .orderBy('wr.receive_date', 'DESC')
     }
