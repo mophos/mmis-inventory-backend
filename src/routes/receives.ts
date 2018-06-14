@@ -1109,10 +1109,17 @@ router.get('/products', co(async (req, res, next) => {
 router.delete('/remove', co(async (req, res, next) => {
   let db = req.db;
   let receiveId = req.query.receiveId;
+  let purchaseOrderId = req.query.purchaseOrderId;
+
   if (receiveId) {
     try {
       let peopleUserId: any = req.decoded.people_user_id;
-      await receiveModel.removeReceive(db, receiveId, peopleUserId)
+      await receiveModel.removeReceive(db, receiveId, peopleUserId);
+
+      if (purchaseOrderId) {
+        await receiveModel.updatePurchaseApproveStatus(db, purchaseOrderId);
+      }
+
       res.send({ ok: true })
     } catch (error) {
       res.send({ ok: false, error: error.message });
@@ -1135,6 +1142,24 @@ router.post('/purchases/list', co(async (req, res, nex) => {
     const rstotal = await receiveModel.getPurchaseListTotal(db);
     let total = +rstotal[0][0].total
     res.send({ ok: true, rows: rows[0], total: total });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.post('/s-purchases/list', co(async (req, res, nex) => {
+  let query = req.body.query;
+  let limit = req.body.limit;
+  let offset = req.body.offset;
+  let sort = req.body.sort;
+
+  let db = req.db;
+  try {
+    const rows = await receiveModel.searchPurchaseList(db, query, limit, offset, sort);
+    res.send({ ok: true, rows: rows[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {

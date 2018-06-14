@@ -164,11 +164,15 @@ export class ProductModel {
           (wm_product_id, warehouse_id, product_id, qty,
           cost, price, lot_no, location_id,expired_date, unit_generic_id)
           VALUES('${v.wm_product_id}', '${v.warehouse_id}', '${v.product_id}',
-          ${v.qty}, ${v.cost}, ${v.price}, '${v.lot_no}','${v.location_id}','${v.expired_date}','${v.unit_generic_id}')
-          ON DUPLICATE KEY UPDATE
-          qty=qty+${+v.qty}
-        `;
-
+          ${v.qty}, ${v.cost}, ${v.price}, '${v.lot_no}','${v.location_id}',`;
+      if (v.expired_date == null) {
+        sql += `null,`;
+      } else {
+        sql += `'${v.expired_date}',`
+      }
+      sql += `'${v.unit_generic_id}')
+      ON DUPLICATE KEY UPDATE
+      qty=qty+${+v.qty}`;
       sqls.push(sql);
 
       // console.log(sql);
@@ -218,7 +222,7 @@ export class ProductModel {
 
   adminGetAllProductsDetailList(knex: Knex, productId: any) {
     let sql = `
-    select p.wm_product_id, p.product_id, sum(p.qty) as qty, floor(sum(p.qty)/ug.qty) as pack_qty, sum(p.cost*p.qty) as total_cost, p.cost, p.warehouse_id,
+    select mp.product_name,mp.working_code,p.wm_product_id, p.product_id, sum(p.qty) as qty, floor(sum(p.qty)/ug.qty) as pack_qty, sum(p.cost*p.qty) as total_cost, p.cost, p.warehouse_id,
     w.warehouse_name, p.lot_no, p.expired_date, mpp.max_qty, mpp.min_qty, u1.unit_name as from_unit_name, ug.qty as conversion_qty,
     u2.unit_name as to_unit_name,v.reserve_qty
     from wm_products as p

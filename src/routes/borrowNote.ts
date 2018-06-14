@@ -4,12 +4,13 @@ import * as moment from 'moment';
 import { BorrowNoteModel } from '../models/borrowNote';
 import { RequisitionOrderModel } from '../models/requisitionOrder';
 import _ = require('lodash');
+import { InventoryReportModel } from '../models/inventoryReport';
 
 const router = express.Router();
-
+const printDate = 'วันที่พิมพ์ ' + moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(', HH:mm:ss น.');
 const borrowModel = new BorrowNoteModel();
 const reqModel = new RequisitionOrderModel();
-
+const inventoryReportModel = new InventoryReportModel()
 router.post('/', async (req, res, next) => {
   let db = req.db;
   let notes = req.body.notes;
@@ -41,7 +42,7 @@ router.post('/', async (req, res, next) => {
   } finally {
     db.destroy();
   }
-  
+
 });
 
 router.put('/:borrowNoteId/edit', async (req, res, next) => {
@@ -120,6 +121,48 @@ router.get('/:borrowNoteId/detail-edit', async (req, res, next) => {
     let rsDetail: any = await borrowModel.getNotesDetail(db, borrowNoteId);
     let rsItems: any = await borrowModel.getNotesItemsList(db, borrowNoteId);
     res.send({ ok: true, detail: rsDetail[0], items: rsItems });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+});
+
+router.get('/report', async (req, res, next) => {
+  let db = req.db;
+  let id = req.query.id;
+  let warehouse = req.decoded.warehouseId;
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let today = moment(new Date()).format('DD MMMM ') + (moment(new Date()).get('year') + 543);
+  warehouse = '%' + warehouse + '%';
+  id = Array.isArray(id) ? id : [id]
+  let borrow: any
+  moment.locale('th')
+  try {
+    let rs: any = await borrowModel.getListReport(db, id);
+
+    for (let items of rs) {
+      let rsd: any = await borrowModel.getNotesItemsList(db, items.borrow_note_id)
+
+      items.item = rsd
+    }
+    _.forEach(rs, (v: any) => {
+      v.borrow_date = moment(v.borrow_date).isValid() ? moment(v.borrow_date).format('DD MMMM ') + (moment(v.borrow_date).get('year') + 543) : '-'
+      v.remark = v.remark ? v.remark : '-'
+      v.fullname = v.title_name || v.fname || v.lname ? v.title_name + ' ' + v.fname + ' ' + v.lname : ''
+      _.forEach(v.item, (i: any) => {
+        i.qty = i.qty ? inventoryReportModel.commaQty(i.qty) : '-';
+        i.conversion_qty = i.conversion_qty ? inventoryReportModel.commaQty(i.conversion_qty) : '-';
+
+      })
+    });
+    res.render('list_borrow', {
+      rs: rs,
+      hospitalName: hospitalName,
+      printDate: printDate
+    });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -208,7 +251,7 @@ router.put('/update-requisition/:requisitionOrderId', async (req, res, next) => 
       objBorrow.requisition_order_id = requisitionOrderId;
       borrowItems.push(objBorrow);
     });
-    
+
     // remove requisition items
     await reqModel.removeRequisitionQtyForBorrowNote(db, requisitionOrderId, generics);
     // save new data

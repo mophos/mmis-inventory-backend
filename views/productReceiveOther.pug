@@ -28,8 +28,8 @@ html
           td.left(colspan='10' style="font-size: 13pt;") #{printDate}
         tr.dash-top(style="font-size: 13pt;")
           td.left เลขที่รับ
+          td.left เลขที่ส่ง
           td.left วันรับของ
-          td.left 
           td.left 
           td.left 
           td(colspan='2').right 
@@ -37,8 +37,8 @@ html
           td.right 
         tr.dash-bottom(style="font-size: 13pt;")
           td 
-          td.left รหัสยา
           td
+          td.left รหัสยา
           td(colspan='2').left รายการยา
           td
           td.right จำนวนที่รับ
@@ -50,8 +50,8 @@ html
             - y++
               tr(style="font-size: 12pt;")
                 td.left #{b.receive_code}
+                td.left #{b.delivery_code}
                 td.left #{b.receive_date}
-                td.left 
                 td.left 
                 td.left 
                 td
@@ -60,9 +60,9 @@ html
                 td.right 
               tr(style="font-size: 13pt;")
                 td
+                td
                 td #{b.generic_id}
                 td.left(colspan='3')  #{b.generic_name}
-                td
                 td.right #{b.receive_qty} x #{b.qty} (#{b.unit_name})
                 td.right #{b.total_cost}
                 td.right #{b.expired_date}

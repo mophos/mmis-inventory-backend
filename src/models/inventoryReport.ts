@@ -4,7 +4,42 @@ import { SettingModel } from './settings';
 const settingModel = new SettingModel();
 
 export class InventoryReportModel {
-
+    receiveNotMatchPO(knex:Knex,startDate:any,endDate:any){
+        let sql =`SELECT
+        *
+        FROM
+            wm_receives AS wr
+        WHERE
+            wr.purchase_order_id IS NULL 
+           and wr.receive_date between '${startDate}' and '${endDate}' `
+        return knex.raw(sql)
+    }
+    receiveNotMatchPoDetail(knex: Knex,receiveId:any) {
+        let sql =`SELECT
+        mp.working_code,
+            mp.product_name,
+            sum( wrd.receive_qty ) AS receive_qty,
+            ml.labeler_name,
+            mul.unit_name as large_unit,
+            mus.unit_name as small_unit,
+            mug.qty
+        FROM
+            wm_receives AS wr
+            LEFT JOIN wm_receive_detail AS wrd ON wrd.receive_id = wr.receive_id
+            LEFT JOIN mm_products AS mp ON mp.product_id = wrd.product_id
+            LEFT JOIN mm_unit_generics as mug on mug.unit_generic_id = wrd.unit_generic_id
+            LEFT JOIN mm_units  as mul on mul.unit_id = mug.from_unit_id
+            LEFT JOIN mm_units  as mus on mus.unit_id = mug.to_unit_id
+            LEFT JOIN mm_labelers as ml on ml.labeler_id = wrd.vendor_labeler_id
+        WHERE
+            wr.receive_id = ${receiveId} 
+            and
+            wr.purchase_order_id IS NULL 
+        GROUP BY
+            mp.product_id,wrd.unit_generic_id`
+        return knex.raw(sql)
+    }
+ 
     productDisbursement(knex: Knex, internalissueId) {
         let sql = `SELECT
         id.product_id,
@@ -89,7 +124,7 @@ export class InventoryReportModel {
             GROUP BY
                 rci.wm_product_id
             ORDER BY
-            mp.product_name`
+            mg.generic_name`
         return knex.raw(sql, requisId)
     }
 
@@ -429,6 +464,7 @@ mgt.generic_type_id `
         wp.lot_no,
         wp.expired_date,
         ml.labeler_name,
+        ml.labeler_name_po,
         sum(wp.qty) AS qty,
         mu.unit_name as small_unit,
         wh.warehouse_name,
@@ -780,6 +816,7 @@ GROUP BY
         wr.delivery_code,
         wr.vendor_labeler_id,
         ml.labeler_name,
+        ml.labeler_name_po,
         vap.generic_id,
         vap.generic_name,
         wrd.receive_qty,
@@ -788,6 +825,7 @@ GROUP BY
         wp.expired_date,
         wl.location_name,
         ml2.labeler_name as labeler_name_m
+        ml2.labeler_name_po as labeler_name_po_m
         FROM
             wm_receives wr
         JOIN wm_receive_detail wrd on wr.receive_id=wrd.receive_id
@@ -810,6 +848,7 @@ GROUP BY
         wr.delivery_code,
         wr.vendor_labeler_id,
         ml.labeler_name,
+        ml.labeler_name_po,
         vap.generic_id,
         vap.generic_name,
         wrd.receive_qty,
@@ -820,6 +859,7 @@ GROUP BY
         wrd.lot_no,
         wl.location_name,
         ml2.labeler_name AS labeler_name_m,
+        ml2.labeler_name_po AS labeler_name_po_m,
         wrd.cost,
         ppoi.unit_price
         FROM
@@ -915,6 +955,7 @@ GROUP BY
         wr.delivery_code,
         wr.vendor_labeler_id,
         ml.labeler_name,
+        ml.labeler_name_po,
         vap.generic_id,
         vap.generic_name,
         wrd.receive_qty,
@@ -924,6 +965,7 @@ GROUP BY
         wp.lot_no,
         wl.location_name,
         ml2.labeler_name AS labeler_name_m
+        ml2.labeler_name_po AS labeler_name_po_m
         FROM
             wm_receives wr
         JOIN wm_receive_detail wrd ON wr.receive_id = wrd.receive_id
@@ -1024,7 +1066,7 @@ GROUP BY
     receiveByPoId(knex: Knex, ID: any) {
         return knex('wm_receives as wr')
             .select('wr.receive_id')
-            .whereIn('wr.purchase_order_id', ID)
+            .where('wr.purchase_order_id', ID)
             .andWhere('wr.is_cancel', 'N')
             .orderBy('wr.receive_date', 'DESC')
     }
@@ -1188,7 +1230,7 @@ GROUP BY
     }
     receive(knex: Knex, receiveId) {
         return knex.select('wm_receives.receive_id', 'wm_receives.receive_date', 'wm_receives.receive_code',
-            'wm_receives.delivery_code', 'wm_receives.delivery_date', 'mm_labelers.labeler_name', 'pc_purchasing_order.purchase_order_book_number', 'pc_purchasing_order.order_date')
+            'wm_receives.delivery_code', 'wm_receives.delivery_date', 'mm_labelers.labeler_name', 'mm_labelers.labeler_name_po', 'pc_purchasing_order.purchase_order_book_number', 'pc_purchasing_order.order_date')
             .from('wm_receives')
             .join('mm_labelers', 'wm_receives.vendor_labeler_id', 'mm_labelers.labeler_id')
             .join('pc_purchasing_order', 'wm_receives.purchase_order_id', 'pc_purchasing_order.purchase_order_id')
@@ -1255,6 +1297,7 @@ GROUP BY
         pc.purchase_order_number,
         pc.order_date,
         ml.labeler_name,
+        ml.labeler_name_po,
         ( SELECT mp.product_name FROM mm_products AS mp WHERE mp.product_id = pci.product_id ) AS product_name,
         (
     SELECT
@@ -1473,7 +1516,7 @@ GROUP BY
         
         IF (
             sc.transaction_type = 'REV',
-            ml.labeler_name,
+            ml.labeler_name_po,
             wh2.warehouse_name
         ) AS warehouse_src,
         mu.unit_name,      
@@ -1526,7 +1569,7 @@ GROUP BY
     
     IF (
         sc.transaction_type = 'REV',
-        ml.labeler_name,
+        ml.labeler_name_po,
         wh2.warehouse_name
     ) AS warehouse_src,
      mu.unit_name,
@@ -1590,6 +1633,7 @@ OR sc.ref_src like ?
         wrt.receive_type_name,
         wr.purchase_order_id,
         ml.labeler_name,
+        ml.labeler_name_po,
         wr.delivery_date,
         ppo.purchase_order_book_number,
         ppo.purchase_order_number,
@@ -1631,6 +1675,7 @@ OR sc.ref_src like ?
         wrt.receive_type_name,
         wr.purchase_order_id,
         ml.labeler_name,
+        ml.labeler_name_po,
         wr.delivery_date,
         ppo.purchase_order_book_number,
         ppo.purchase_order_number,
@@ -1720,6 +1765,7 @@ OR sc.ref_src like ?
         r.purchase_order_id,
         r.delivery_code,
         l.labeler_name,
+        l.labeler_name_po,
         wrd.discount,
         sum(wrd.receive_qty) as receive_qty,
         mug.qty,
@@ -1765,6 +1811,7 @@ OR sc.ref_src like ?
         ppo.purchase_order_number,
         r.delivery_code,
         l.labeler_name,
+        l.labeler_name_po,
         wrd.discount,
         wrd.receive_qty,
         mug.qty,
@@ -1808,6 +1855,7 @@ OR sc.ref_src like ?
         ro.receive_code,
         ro.receive_date,
         wro.receive_qty,
+        ro.delivery_code,
         mug.qty,
         mu.unit_name,
         muu.unit_name AS large_unit,
@@ -1819,6 +1867,7 @@ OR sc.ref_src like ?
     FROM
         wm_receive_other AS ro
         LEFT JOIN wm_receive_other_detail wro ON ro.receive_other_id = wro.receive_other_id
+
         LEFT JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wro.unit_generic_id
         LEFT JOIN mm_products AS p ON wro.product_id = p.product_id
         LEFT JOIN mm_generics AS mg ON p.generic_id = mg.generic_id
@@ -1924,7 +1973,9 @@ OR sc.ref_src like ?
         mg.working_code AS generic_code,
         mp.v_labeler_id,
         ml.labeler_name AS v_labeler_name,
+        ml.labeler_name_po AS v_labeler_name_po,
         ml2.labeler_name AS m_labeler_name,
+        ml2.labeler_name_po AS m_labeler_name_po,
         mp.primary_unit_id AS base_unit_id,
         u.unit_name AS base_unit_name,
         mgt.generic_type_id,
@@ -1986,21 +2037,31 @@ OR sc.ref_src like ?
         GROUP BY
           wp.product_id,wp.lot_no
         UNION ALL
-          SELECT
+        select 
             '0',
             'คงคลัง',
-            mp.generic_id,
-            mp.product_id,
-            mul.unit_name,
-            mug.qty,
-            mus.unit_name,
+            generic_id,
+            product_id,
+            lunit_name,
+            qty,
+            unit_name,
             '',
-            sum(wp.qty),
-            wp.lot_no,
-            wp.expired_date,
+            remain,
+            lot_no,
+            expired_date,
             '',
             'Y',
             'คงคลัง'
+        from (
+          SELECT
+            mp.generic_id,
+            mp.product_id,
+            mul.unit_name as lunit_name,
+            mug.qty,
+            mus.unit_name,
+            sum(wp.qty) as remain,
+            wp.lot_no,
+            wp.expired_date
           FROM
             wm_products wp
           JOIN mm_products mp ON wp.product_id = mp.product_id
@@ -2021,11 +2082,13 @@ OR sc.ref_src like ?
                 r.requisition_order_id = '${requisId}' and wp.product_id='${productId}'
               GROUP BY
                 wp.product_id
+           
             )
           AND wp.warehouse_id = '${warehouseId}'
           GROUP BY
             wp.product_id,
             wp.lot_no
+        ) as sq1 where sq1.remain > 0
         ) as a
         group by a.product_id,a.lot_no
         ORDER BY a.generic_code desc`

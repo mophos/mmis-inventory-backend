@@ -73,7 +73,7 @@ export class StockCard {
     let sql = `
     insert into wm_stock_card(stock_date, product_id, generic_id, 
       unit_generic_id, transaction_type, document_ref_id, in_qty, 
-      in_unit_cost, balance_qty, balance_unit_cost, ref_src, ref_dst, 
+      in_unit_cost,balance_generic_qty, balance_qty, balance_unit_cost, ref_src, ref_dst, 
       comment, lot_no, expired_date)
     
     select 
@@ -123,7 +123,7 @@ export class StockCard {
     let sql = `
     insert into wm_stock_card(stock_date, product_id, generic_id, 
       unit_generic_id, transaction_type, document_ref_id, out_qty, 
-      out_unit_cost, balance_qty, balance_unit_cost, ref_src, ref_dst, 
+      out_unit_cost,balance_generic_qty, balance_qty, balance_unit_cost, ref_src, ref_dst, 
       comment, lot_no, expired_date)
     
     select 

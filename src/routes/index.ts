@@ -11,6 +11,7 @@ import { IssueModel } from '../models/issue'
 import { TIMEOUT } from 'dns';
 import { awaitExpression } from 'babel-types';
 import { Z_VERSION_ERROR } from 'zlib';
+import { ReceiveModel } from '../models/receive';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const serialModel = new SerialModel();
@@ -23,7 +24,7 @@ const fse = require('fs-extra');
 const fs = require('fs');
 const json2xls = require('json2xls');
 moment.locale('th');
-const printDate = 'วันที่พิมพ์ ' + moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(', HH:mm:ss น.');
+const printDate = 'วันที่พิมพ์ ' + moment().format('D MMMM ') + (moment().get('year') + 543) + moment().format(', HH:mm:ss น.');
 
 router.get('/', (req, res, next) => {
   res.send({ ok: true, message: 'Welcome to Inventory API server' });
@@ -35,6 +36,54 @@ router.get('/', (req, res, next) => {
 //   let sr = await serialModel.getSerial(db, srType);
 //   res.send(sr);
 // }));
+
+router.get('/report/receiveNotMatchPO/:startDate/:endDate', wrap(async (req, res, next) => {
+
+  const db = req.db;
+  let receives: any = []
+  let receiveDetail: any = []
+  let startDate = req.params.startDate;
+  let endDate = req.params.endDate;
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    moment.locale('th');
+    let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+
+    const rs: any = await inventoryReportModel.receiveNotMatchPO(db, startDate, endDate)
+    if (rs) {
+      receives = rs[0]
+      for (let list of receives) {
+        const rss: any = await inventoryReportModel.receiveNotMatchPoDetail(db, list.receive_id)
+        list.items = rss[0]
+      }
+    }
+    startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
+    endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+    _.forEach(receives, (l) => {
+      l.receive_date = moment(l.receive_date).isValid() ? moment(l.receive_date).format('D MMMM ') + (moment(l.receive_date).get('year') + 543) : '-'
+      _.forEach(l.items, (v: any) => {
+        v.receive_qty = v.receive_qty ? inventoryReportModel.commaQty(v.receive_qty) : '-'
+        v.qty = v.qty ? inventoryReportModel.commaQty(v.qty) : '-'
+        v.comment = v.comment ? v.comment : '-'
+      });
+    })
+    // res.send(receiveDetail)
+    res.render('receive_not_match_po', {
+      hospitalName: hospitalName,
+      today: today,
+      printDate: printDate,
+      receives: receives,
+      startDate: startDate,
+      endDate: endDate
+
+    });
+  } catch (error) {
+    res.render('error404')
+  } finally {
+    db.destroy();
+  }
+}));
 
 router.get('/test-stockcard', wrap(async (req, res, next) => {
   const db = req.db;
@@ -208,7 +257,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
           if (_list_requis[page][head].title.items[detail].confirm_qty != 0) {
             let old_confirm_qty = _list_requis[page][head].title.items[detail].confirm_qty;
             let confirm_qty = inventoryReportModel.commaQty(+_list_requis[page][head].title.items[detail].confirm_qty / +_list_requis[page][head].title.items[detail].conversion_qty);
-            _list_requis[page][head].title.items[detail].confirm_qty = +confirm_qty + ' ' + _list_requis[page][head].title.items[detail].large_unit + ' (' + _list_requis[page][head].title.items[detail].conversion_qty + ' ' + _list_requis[page][head].title.items[detail].small_unit + ' )'
+            _list_requis[page][head].title.items[detail].confirm_qty = confirm_qty + ' ' + _list_requis[page][head].title.items[detail].large_unit + ' (' + _list_requis[page][head].title.items[detail].conversion_qty + ' ' + _list_requis[page][head].title.items[detail].small_unit + ' )'
             if (_list_requis[page][head].title.items[detail].is_approve == "N") {
               _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round((+_list_requis[page][head].title.items[detail].remain - +old_confirm_qty) / +_list_requis[page][head].title.items[detail].conversion_qty));
             } else {
@@ -1753,6 +1802,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
   let province = hosdetail[0].province;
   moment.locale('th');
   let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  if (typeof rc_ID === 'string') rc_ID = [rc_ID];
   const receive = await inventoryReportModel.receiveSelect(db, rc_ID)
 
   for (let i in receive) {

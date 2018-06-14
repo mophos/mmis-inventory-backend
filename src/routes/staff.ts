@@ -116,10 +116,10 @@ router.get('/getproduct/:issue_id', co(async (req, res, next) => {
   }
 }));
 
-router.get('/warehouse/products/:genericType?', co(async (req, res, next) => {
+router.get('/warehouse/products', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let db = req.db;
-  let genericType = req.params.genericType;
+  let genericType = req.query.genericType;
 
   let productGroups = req.decoded.generic_type_id;
   let _pgs = [];
@@ -130,7 +130,35 @@ router.get('/warehouse/products/:genericType?', co(async (req, res, next) => {
       _pgs.push(v);
     });
     try {
-      let rows = await warehouseModel.getProductsWarehouse(db, warehouseId, _pgs, genericType);
+      let rows = await warehouseModel.getProductsWarehouseStaff(db, warehouseId, _pgs, genericType);
+      res.send({ ok: true, rows: rows });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  }
+}));
+
+router.get('/warehouse/products/search', co(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let db = req.db;
+  let genericType = req.query.genericType;
+  let query = req.query.query;
+
+  let productGroups = req.decoded.generic_type_id;
+  let _pgs = [];
+
+  if (productGroups) {
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+    try {
+      let rows = await warehouseModel.getProductsWarehouseSearchStaff(db, warehouseId, _pgs, genericType, query);
       res.send({ ok: true, rows: rows });
     } catch (error) {
       console.log(error);
@@ -157,6 +185,39 @@ router.get('/products/stock/remain/:productId', co(async (req, res, next) => {
   }
 }));
 
+router.get('/warehouse/generics/requisition', co(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let db = req.db;
+  let genericType = req.query.genericType;
+  if (typeof genericType === 'string') { genericType = [genericType]; }
+  try {
+    let rows = await warehouseModel.getGenericsWarehouseRequisitionStaff(db, warehouseId, genericType);
+    res.send({ ok: true, rows: rows });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/warehouse/generics/requisition/search', co(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let db = req.db;
+  let genericType = req.query.genericType;
+  let query = req.query.query;
+  if (typeof genericType === 'string') { genericType = [genericType]; }
+  try {
+    let rows = await warehouseModel.getGenericsWarehouseRequisitionSearchStaff(db, warehouseId, genericType, query);
+    res.send({ ok: true, rows: rows });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
 router.get('/warehouse/generics', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let db = req.db;
@@ -171,7 +232,7 @@ router.get('/warehouse/generics', co(async (req, res, next) => {
       _pgs.push(v);
     });
     try {
-      let rows = await warehouseModel.getGenericsWarehouse(db, warehouseId, _pgs, genericType);
+      let rows = await warehouseModel.getGenericsWarehouseStaff(db, warehouseId, _pgs, genericType);
       res.send({ ok: true, rows: rows });
     } catch (error) {
       console.log(error);
