@@ -179,7 +179,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
-  
+
     let _list_requis = [];
     for (let i in requisId) {
       let _list: any = [];
@@ -282,10 +282,7 @@ router.get('/report/list/refill/:requisId', wrap(async (req, res, next) => {
     let requisId = req.params.requisId;
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
-  
-    let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(', HH:mm') + ' น.';
-
-
+    let today = printDate;
     let list_requis = await inventoryReportModel.list_requis(db, requisId);
     list_requis = list_requis[0];
     if (list_requis[0] === undefined) { res.render('error404'); }
@@ -331,8 +328,8 @@ router.get('/report/totalcost/warehouse/:sDate/:eDate/:wareHouse/:wareHouseName'
     if (wareHouse == '%%') { wareHouseName = 'ทุกคลังสินค้า'; }
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
-  
-    let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+
+
     let totalcost_warehouse = await inventoryReportModel.totalcost_warehouse(db, sDate, eDate, wareHouse);
     totalcost_warehouse = totalcost_warehouse[0];
     // let no = totalcost_warehouse[0].requisition_id
@@ -362,7 +359,7 @@ router.get('/report/totalcost/warehouse/:sDate/:eDate/:wareHouse/:wareHouseName'
     sum.balance = inventoryReportModel.comma(sum.balance)
     res.render('totalcost_warehouse', {
       hospitalName: hospitalName,
-      today: today,
+
       sdate: sdate,
       edate: edate,
       wareHouseName: wareHouseName,
@@ -383,8 +380,8 @@ router.get('/report/status/generic', wrap(async (req, res, next) => {
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
-  
-    let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+
+
     let status_generic = await inventoryReportModel.status_generic(db);
     status_generic = status_generic[0];
     status_generic.forEach(value => {
@@ -392,7 +389,7 @@ router.get('/report/status/generic', wrap(async (req, res, next) => {
       value.qty = inventoryReportModel.commaQty(value.qty);
       value.minqty = inventoryReportModel.commaQty(value.minqty);
     })
-    res.render('status_generic', { hospitalName: hospitalName, today: today, status_generic: status_generic });
+    res.render('status_generic', { hospitalName: hospitalName, status_generic: status_generic });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -405,7 +402,6 @@ router.get('/report/maxcost/issue/:date', wrap(async (req, res, next) => {
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let month = moment(date).format('MMMM ') + (moment(date).get('year') + 543);
   let startdate = moment(date).format('YYYY-MM-01');
   let enddate = moment(date).format('YYYY-MM-31');
@@ -415,7 +411,7 @@ router.get('/report/maxcost/issue/:date', wrap(async (req, res, next) => {
     value.cost = inventoryReportModel.comma(value.cost);
   })
   if (maxcost_issue[0] === undefined) { res.render('error404'); }
-  res.render('maxcost_issue', { hospitalName: hospitalName, today: today, maxcost_issue: maxcost_issue, month: month });
+  res.render('maxcost_issue', { hospitalName: hospitalName, maxcost_issue: maxcost_issue, month: month });
 }));//ทำFrontEndแล้ว //ตรวจสอบแล้ว 14-9-60 // ตรวจสอบแล้ว 27/9/60
 router.get('/report/maxcost/group/issue/:date', wrap(async (req, res, next) => {
   let db = req.db;
@@ -423,7 +419,6 @@ router.get('/report/maxcost/group/issue/:date', wrap(async (req, res, next) => {
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let month = moment(date).format('MMMM ') + (moment(date).get('year') + 543);
   let startdate = moment(date).format('YYYY-MM-01');
   let enddate = moment(date).format('YYYY-MM-31');
@@ -434,7 +429,7 @@ router.get('/report/maxcost/group/issue/:date', wrap(async (req, res, next) => {
     value.ned = (value.ned).toFixed(2)
   })
   if (maxcost_group_issue[0] === undefined) { res.render('error404'); }
-  res.render('maxcost_group_issue', { hospitalName: hospitalName, today: today, maxcost_group_issue: maxcost_group_issue, month: month });
+  res.render('maxcost_group_issue', { hospitalName: hospitalName, maxcost_group_issue: maxcost_group_issue, month: month });
 }));//ทำFrontEndแล้ว //ตรวจสอบแล้ว 14-9-60
 
 
@@ -448,7 +443,6 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
   let hospitalName = hosdetail[0].hospname;
 
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
   let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
 
@@ -528,7 +522,6 @@ router.get('/report/generic/stock2/', wrap(async (req, res, next) => {
   let hospitalName = hosdetail[0].hospname;
 
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
   let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
 
@@ -608,7 +601,6 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
   let hospitalName = hosdetail[0].hospname;
 
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
   let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
 
@@ -725,7 +717,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
     _summit: _summit,
     _inventory_stock: _inventory_stock,
     hospitalName: hospitalName,
-    today: today,
+
     genericId: genericId,
     generic_name: _generic_name,
     unit: _unit,
@@ -748,7 +740,6 @@ router.get('/report/count/requis/:date', wrap(async (req, res, next) => {
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let count_requis = await inventoryReportModel.count_requis(db, date);
   count_requis = count_requis[0];
   let check, count_sum_requis, count_sum_requis_item, count_sum_requis_cost;
@@ -766,7 +757,7 @@ router.get('/report/count/requis/:date', wrap(async (req, res, next) => {
 
   if (check == "error") { res.render('error404'); }
   res.render('count_requis', {
-    hospitalName: hospitalName, today: today,
+    hospitalName: hospitalName,
     count_requis: count_requis, month: month, count_sum_requis: count_sum_requis, count_sum_requis_item: count_sum_requis_item,
     count_sum_requis_cost: count_sum_requis_cost
   });
@@ -788,7 +779,6 @@ router.get('/report/issueStraff', wrap(async (req, res, next) => {
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   for (let ii in issue_id) {
     let i: any = issue_body.filter(person => person.issue_id == +issue_id[ii]);
     issueBody.push(i[0])
@@ -805,7 +795,7 @@ router.get('/report/issueStraff', wrap(async (req, res, next) => {
   });
 
   res.render('product_issue_straff', {
-    hospitalName: hospitalName, issueBody: issueBody, issueListDetail: issueListDetail, issue_date: issue_date, today: today, count: issueListDetail.length
+    hospitalName: hospitalName, issueBody: issueBody, issueListDetail: issueListDetail, issue_date: issue_date, count: issueListDetail.length
   });
   // //console.log(issueBody[0].issue_id);
   // res.send({ ok: true, issueBody: issueBody, issueListDetail: issueListDetail, issue_date:issue_date })
@@ -858,7 +848,6 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
 
   if (wareHouse == 0) { wareHouse = '%%'; }
   else { wareHouse = '%' + wareHouse + '%'; }
@@ -897,7 +886,7 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
 
   if (check == "error") { res.render('error404'); }
   res.render('product_expired', {
-    hospitalName: hospitalName, today: today, product_expired: product_expired,
+    hospitalName: hospitalName, product_expired: product_expired,
     wareHouseName: wareHouseName, genericName: genericName, startDate: startDate, endDate: endDate, sum: sum, day: day
   });
 }));//ทำFrontEndแล้ว //ตรวจสอบแล้ว 14-9-60  // ตรวจสอบแล้ว 27/9/60
@@ -908,7 +897,6 @@ router.get('/report/check/receive/issue/:year', wrap(async (req, res, next) => {
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let startDate = (year - 1) + '-10-1'
   let endDate = (year) + '-9-30'
   year = parseInt(year) + 543;
@@ -928,7 +916,7 @@ router.get('/report/check/receive/issue/:year', wrap(async (req, res, next) => {
     value.cost_unit = inventoryReportModel.comma(value.cost_unit)
   })
 
-  res.render('check_receive_issue', { hospitalName: hospitalName, today: today, check_receive_issue: check_receive_issue, startDate: startDate, endDate: endDate, year: year });
+  res.render('check_receive_issue', { hospitalName: hospitalName, check_receive_issue: check_receive_issue, startDate: startDate, endDate: endDate, year: year });
 }));//ตรวจสอบแล้ว 14-9-60
 router.get('/report/list/cost/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
   let db = req.db;
@@ -1061,7 +1049,6 @@ router.get('/report/list/receiveCode/:sID/:eID', wrap(async (req, res, next) => 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let list_receive3 = await inventoryReportModel._list_receive5(db, sID, eID);
   list_receive3.forEach(value => {
     productId.push(value.product_id);
@@ -1081,7 +1068,7 @@ router.get('/report/list/receiveCode/:sID/:eID', wrap(async (req, res, next) => 
       value2.receive_date = moment(value2.receive_date).format('DD-MM-YYYY');
     })
   })
-  res.render('_list_receive2', { hospitalName: hospitalName, today: today, list_receive2: list_receive2, array2: array2, sID: sID, eID: eID });
+  res.render('_list_receive2', { hospitalName: hospitalName, list_receive2: list_receive2, array2: array2, sID: sID, eID: eID });
 }));
 router.get('/report/list/receiveCodeOther/:sID/:eID', wrap(async (req, res, next) => {
   let db = req.db;
@@ -1094,7 +1081,6 @@ router.get('/report/list/receiveCodeOther/:sID/:eID', wrap(async (req, res, next
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let list_receive3 = await inventoryReportModel._list_receive7(db, sID, eID);
   list_receive3.forEach(value => {
     productId.push(value.product_id);
@@ -1114,7 +1100,7 @@ router.get('/report/list/receiveCodeOther/:sID/:eID', wrap(async (req, res, next
       value2.receive_date = moment(value2.receive_date).format('DD-MM-YYYY');
     })
   })
-  res.render('_list_receive3', { hospitalName: hospitalName, today: today, list_receive2: list_receive2, array2: array2, sID: sID, eID: eID });
+  res.render('_list_receive3', { hospitalName: hospitalName, list_receive2: list_receive2, array2: array2, sID: sID, eID: eID });
 }));
 
 router.get('/report/list/receivePoCheck/:sID/:eID', wrap(async (req, res, next) => {
@@ -1139,7 +1125,6 @@ router.get('/report/list/receivePoCheck/:sID/:eID', wrap(async (req, res, next) 
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   const receive = await inventoryReportModel.receiveSelect(db, rc_ID)
 
   for (let i in receive) {
@@ -1194,7 +1179,7 @@ router.get('/report/list/receivePoCheck/:sID/:eID', wrap(async (req, res, next) 
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
-    today: today,
+
     check_receive: check_receive,
     length: length,
     province: province,
@@ -1217,7 +1202,6 @@ router.get('/report/list/receiveCodeCheck/:sID/:eID', wrap(async (req, res, next
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
 
   let qty = 0;
@@ -1249,7 +1233,7 @@ router.get('/report/list/receiveCodeCheck/:sID/:eID', wrap(async (req, res, next
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
-    today: today,
+
     check_receive: check_receive,
     province: province,
     bahtText: bahtText,
@@ -1270,7 +1254,6 @@ router.get('/report/list/receivePo/:sID/:eID', wrap(async (req, res, next) => {
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let list_receive3 = await inventoryReportModel._list_receive6(db, sID, eID);
   list_receive3.forEach(value => {
     productId.push(value.product_id);
@@ -1291,7 +1274,7 @@ router.get('/report/list/receivePo/:sID/:eID', wrap(async (req, res, next) => {
       value2.receive_date = moment(value2.receive_date).format('DD-MM-YYYY');
     })
   })
-  res.render('_list_receive2', { hospitalName: hospitalName, today: today, list_receive2: list_receive2, array2: array2, sID: sID, eID: eID });
+  res.render('_list_receive2', { hospitalName: hospitalName, list_receive2: list_receive2, array2: array2, sID: sID, eID: eID });
 }));
 router.get('/report/list/receiveDate/:sDate/:eDate', wrap(async (req, res, next) => {
   let db = req.db;
@@ -1304,7 +1287,6 @@ router.get('/report/list/receiveDate/:sDate/:eDate', wrap(async (req, res, next)
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let list_receive3 = await inventoryReportModel._list_receive4(db, sDate, eDate);
   list_receive3.forEach(value => {
     productId.push(value.product_id);
@@ -1329,7 +1311,7 @@ router.get('/report/list/receiveDate/:sDate/:eDate', wrap(async (req, res, next)
   })
   sDate = moment(sDate).format('DD MMMM ') + (+moment(sDate).get('year') + 543);
   eDate = moment(eDate).format('DD MMMM ') + (+moment(eDate).get('year') + 543);
-  res.render('_list_receive', { hospitalName: hospitalName, today: today, list_receive2: list_receive2, array2: array2, sDate: sDate, eDate: eDate });
+  res.render('_list_receive', { hospitalName: hospitalName, list_receive2: list_receive2, array2: array2, sDate: sDate, eDate: eDate });
 }));
 
 router.get('/report/list/receiveDateCheck/:sDate/:eDate', wrap(async (req, res, next) => {
@@ -1346,7 +1328,6 @@ router.get('/report/list/receiveDateCheck/:sDate/:eDate', wrap(async (req, res, 
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
 
   let qty = 0;
@@ -1378,7 +1359,7 @@ router.get('/report/list/receiveDateCheck/:sDate/:eDate', wrap(async (req, res, 
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
-    today: today,
+
     check_receive: check_receive,
     province: province,
     bahtText: bahtText,
@@ -1399,7 +1380,6 @@ router.get('/report/list/receiveDateOther/:sDate/:eDate', wrap(async (req, res, 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let list_receive3 = await inventoryReportModel._list_receive8(db, sDate, eDate);
   list_receive3.forEach(value => {
     productId.push(value.product_id);
@@ -1424,7 +1404,7 @@ router.get('/report/list/receiveDateOther/:sDate/:eDate', wrap(async (req, res, 
   })
   sDate = moment(sDate).format('DD MMMM ') + (+moment(sDate).get('year') + 543);
   eDate = moment(eDate).format('DD MMMM ') + (+moment(eDate).get('year') + 543);
-  res.render('_list_receive4', { hospitalName: hospitalName, today: today, list_receive2: list_receive2, array2: array2, sDate: sDate, eDate: eDate });
+  res.render('_list_receive4', { hospitalName: hospitalName, list_receive2: list_receive2, array2: array2, sDate: sDate, eDate: eDate });
 }));
 
 router.get('/report/receive/:receiveId', wrap(async (req, res, next) => {
@@ -1469,7 +1449,6 @@ router.get('/report/requis/day/:date', wrap(async (req, res, next) => {
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let requis = await inventoryReportModel.requis(db, date);
   requis = requis[0];
   requis.forEach(value => {
@@ -1478,7 +1457,7 @@ router.get('/report/requis/day/:date', wrap(async (req, res, next) => {
     value.cost_unit = inventoryReportModel.comma(value.cost_unit);
     value.cost = inventoryReportModel.comma(value.cost);
   });
-  res.render('requis', { hospitalName: hospitalName, today: today, requis: requis });
+  res.render('requis', { hospitalName: hospitalName, requis: requis });
 }));
 
 router.get('/report/un-receive', wrap(async (req, res, next) => {
@@ -1488,7 +1467,6 @@ router.get('/report/un-receive', wrap(async (req, res, next) => {
   let hospitalName = hosdetail[0].hospname;
 
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let unReceive = await inventoryReportModel.unReceive(db);
   unReceive = unReceive[0];
 
@@ -1498,7 +1476,7 @@ router.get('/report/un-receive', wrap(async (req, res, next) => {
 
   res.render('un-receive', {
     hospitalName: hospitalName,
-    today: today,
+
     unReceive: unReceive
   });
 }));
@@ -1637,7 +1615,6 @@ router.get('/report/stockcard2/:productId/:startDate/:endDate', wrap(async (req,
   else {
     wareHouseId = '%' + wareHouseId + '%';
   }
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let _endDate = moment(startDate).format('YYYY-MM-') + (moment(endDate).get('date') + 1);
   let stockcard = await inventoryReportModel.stockcard(db, productId, startDate, _endDate, wareHouseId);
   startDate = moment(startDate).format('DD/MM/') + (moment(startDate).get('year') + 543);
@@ -1655,7 +1632,7 @@ router.get('/report/stockcard2/:productId/:startDate/:endDate', wrap(async (req,
   });
 
 
-  res.render('stockcard', { hospitalName: hospitalName, today: today, stockcard: stockcard, endDate: endDate, startDate: startDate });
+  res.render('stockcard', { hospitalName: hospitalName, stockcard: stockcard, endDate: endDate, startDate: startDate });
 }));
 router.get('/report/stockcard2/:productId', wrap(async (req, res, next) => {
   let db = req.db;
@@ -1671,7 +1648,6 @@ router.get('/report/stockcard2/:productId', wrap(async (req, res, next) => {
   }
 
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let stockcard = await inventoryReportModel.stockcard3(db, productId, wareHouseId);
   stockcard = stockcard[0];
 
@@ -1686,7 +1662,7 @@ router.get('/report/stockcard2/:productId', wrap(async (req, res, next) => {
   });
 
 
-  res.render('stockcard3', { hospitalName: hospitalName, today: today, stockcard: stockcard });
+  res.render('stockcard3', { hospitalName: hospitalName, stockcard: stockcard });
 }));
 router.get('/report/productDisbursement/:internalissueId', wrap(async (req, res, next) => {
   let db = req.db;
@@ -1695,7 +1671,6 @@ router.get('/report/productDisbursement/:internalissueId', wrap(async (req, res,
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
 
   let productDisbursement: any[] = await inventoryReportModel.productDisbursement(db, internalissueId);
   productDisbursement = productDisbursement[0];
@@ -1710,7 +1685,7 @@ router.get('/report/productDisbursement/:internalissueId', wrap(async (req, res,
 
 
   res.render('productDisbursement', {
-    hospitalName: hospitalName, today: today,
+    hospitalName: hospitalName,
     productDisbursement: productDisbursement, unitissue: 'unitissue', warehouse: 'warehouse'
     , unit_cost: unit_cost, cost: cost
   });
@@ -1725,7 +1700,6 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
 
   let chiefPo = null;
@@ -1768,7 +1742,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
-    today: today,
+
     check_receive: check_receive,
     province: province,
     bahtText: bahtText,
@@ -1794,7 +1768,6 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   if (typeof rc_ID === 'string') rc_ID = [rc_ID];
   const receive = await inventoryReportModel.receiveSelect(db, rc_ID)
 
@@ -1860,7 +1833,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
-    today: today,
+
     check_receive: check_receive,
     length: length,
     province: province,
@@ -1882,13 +1855,12 @@ router.get('/report/balance', wrap(async (req, res, next) => {
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let balance = await inventoryReportModel.balance(db, productId, warehouseId);
   balance.forEach(value => {
     value.cost = inventoryReportModel.comma(value.cost);
   });
   if (warehouseId != null) { warehouseName = balance[0].warehouse_name; }
-  res.render('balance', { hospitalName: hospitalName, today: today, balance: balance, warehouseName: warehouseName });
+  res.render('balance', { hospitalName: hospitalName, balance: balance, warehouseName: warehouseName });
 }));
 
 router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, next) => {
@@ -2009,7 +1981,6 @@ router.get('/report/product/balance/:productId', wrap(async (req, res, next) => 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let productBalance = await inventoryReportModel.productBalance(db, productId);
   let productBalanceSum = await inventoryReportModel.productBalanceSum(db, productId);
   productBalanceSum.forEach(value => {
@@ -2028,7 +1999,7 @@ router.get('/report/product/balance/:productId', wrap(async (req, res, next) => 
     title: "test",
     productBalance: productBalance,
     productBalanceSum: productBalanceSum,
-    today: today,
+
     hospitalName: hospitalName
   });
 }));
@@ -2038,7 +2009,6 @@ router.get('/report/product/balance/warehouse/:warehouseId', wrap(async (req, re
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let productBalanceWarehouse = await inventoryReportModel.productBalanceWarehouse(db, warehouseId);
   productBalanceWarehouse.forEach(value => {
     // value.expired_date = moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543);
@@ -2049,7 +2019,7 @@ router.get('/report/product/balance/warehouse/:warehouseId', wrap(async (req, re
   });
   res.render('product_balance_warehouse', {
     productBalanceWarehouse: productBalanceWarehouse,
-    today: today,
+
     hospitalName: hospitalName
   });
 }));
@@ -2061,7 +2031,6 @@ router.get('/report/product/manufacture/warehouse', wrap(async (req, res, next) 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let productManufacture = await inventoryReportModel.productManufacture(db, warehouseId, startDate, endDate);
   if (productManufacture[0].length == 0) {
     res.render('error404');
@@ -2080,7 +2049,7 @@ router.get('/report/product/manufacture/warehouse', wrap(async (req, res, next) 
   sum = inventoryReportModel.comma(sum);
   res.render('productManufacture', {
     productManufacture: productManufacture[0],
-    today: today,
+
     hospitalName: hospitalName,
     sum: sum,
     startDate: startDate,
@@ -2111,14 +2080,13 @@ router.get('/report/product/all', wrap(async (req, res, next) => {
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let productAll = await inventoryReportModel.productAll(db, genericTypeId);
   productAll = productAll[0];
   console.log(productAll[0]);
 
   res.render('product_all', {
     productAll: productAll,
-    today: today,
+
     hospitalName: hospitalName
   });
 }));
@@ -2178,7 +2146,6 @@ router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let rs = await inventoryReportModel.purchasingNotGiveaway(db, startDate, endDate);
   let purchase = rs[0]
   purchase.forEach(e => {
@@ -2187,7 +2154,7 @@ router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req
   // res.send(rs[0]);
 
   res.render('purchasing_notgiveaway', {
-    today: today,
+
     hospitalName: hospitalName,
     purchase: purchase,
   });
@@ -2241,7 +2208,6 @@ router.get('/report/summary/disbursement/:startDate/:endDate', wrap(async (req, 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate);
   if (rs[0].length == 0) { res.render('error404'); }
   let summary = rs[0]
@@ -2281,7 +2247,6 @@ router.get('/report/product-remain/:warehouseId/:genericTypeId', wrap(async (req
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let rs = await inventoryReportModel.productRemain(db, warehouseId, genericTypeId);
   if (rs[0].length == 0) {
     res.render('error404')
@@ -2291,7 +2256,7 @@ router.get('/report/product-remain/:warehouseId/:genericTypeId', wrap(async (req
     e.expired_date = moment(e.expired_date).isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year') + 543) : '-';
   });
   res.render('productRemain', {
-    today: today,
+
     hospitalName: hospitalName,
     productRemain: productRemain,
     printDate: printDate
@@ -2306,13 +2271,12 @@ router.get('/report/generics-no-movement/:warehouseId/:startdate/:enddate', wrap
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
   let rs = await inventoryReportModel.genericsNomovement(db, warehouseId, startdate, enddate);
   let generics = rs[0];
   console.log(generics);
 
   res.render('genericsNomovement', {
-    today: today,
+
     hospitalName: hospitalName,
     printDate: printDate,
     generics: generics
