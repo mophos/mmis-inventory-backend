@@ -3,7 +3,7 @@ import * as moment from 'moment';
 
 export class Addition {
 
-  getWarehouse(knex: Knex, srcWareHouseId: any, genericTypes: any[]) { //warehouse ที่คงคลัง รวมกับรายการเติมที่รออนุมัติ และคงเหลือยังน้อยกว่า min
+  getWarehouse(knex: Knex, srcWareHouseId: any, genericTypes: any[], query: any) { //warehouse ที่คงคลัง รวมกับรายการเติมที่รออนุมัติ และคงเหลือยังน้อยกว่า min
     let subTransaction = knex('wm_addition_header as adh')
       .select('adh.dst_warehouse_id'
         , 'adg.generic_id'
@@ -13,7 +13,7 @@ export class Addition {
       .andWhereNot('adh.dst_warehouse_id', srcWareHouseId)
       .groupByRaw('adh.dst_warehouse_id, adg.generic_id');
 
-    return knex('wm_products as wp')
+    let sql = knex('wm_products as wp')
       .distinct('wp.warehouse_id as dst_warehouse_id', 'ww.warehouse_name as dst_warehouse_name')
       .join('mm_products as mp', 'mp.product_id', 'wp.product_id')
       .join('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
@@ -22,8 +22,18 @@ export class Addition {
       .joinRaw(`left join (${subTransaction}) as pt on pt.dst_warehouse_id = wp.warehouse_id and pt.generic_id = mp.generic_id`)
       .whereNot('wp.warehouse_id', srcWareHouseId)
       .whereIn('mg.generic_type_id', genericTypes)
-      .groupByRaw('wp.warehouse_id, mp.generic_id, pt.addition_qty, mgp.min_qty')
+
+    if (query) {
+      let _query = `%${query}%`;
+      sql.where(w => {
+        w.where('ww.warehouse_name', 'like', _query)
+          .orWhere('ww.short_code', query)
+      })
+    }
+
+    sql.groupByRaw('wp.warehouse_id, mp.generic_id, pt.addition_qty, mgp.min_qty')
       .havingRaw('sum(wp.qty) + IFNULL(pt.addition_qty, 0) <= mgp.min_qty');
+    return sql;
   }
 
   getWarehouseGeneric(knex: Knex, dstWareHouseId: any, srcWarehouseId: any, genericTypes: any[]) { //generic ที่มีคงคลัง รวมกับรายการเติมที่รออนุมัติ และคงเหลือยังน้อยกว่า min
@@ -69,7 +79,7 @@ export class Addition {
       .havingRaw('sum(wp.qty) + IFNULL(pt.addition_qty, 0) <= mgp.min_qty');
   }
 
-  getGeneric(knex: Knex, srcWareHouseId: any, genericTypes: any[]) { //generic ที่คงคลัง รวมกับรายการเติมที่รออนุมัติ และคงเหลือยังน้อยกว่า min
+  getGeneric(knex: Knex, srcWareHouseId: any, genericTypes: any[], query: any) { //generic ที่คงคลัง รวมกับรายการเติมที่รออนุมัติ และคงเหลือยังน้อยกว่า min
     let subTransaction = knex('wm_addition_header as adh')
       .select('adh.dst_warehouse_id'
         , 'adg.generic_id'
@@ -79,7 +89,7 @@ export class Addition {
       .andWhereNot('adh.dst_warehouse_id', srcWareHouseId)
       .groupByRaw('adh.dst_warehouse_id, adg.generic_id');
 
-    return knex('wm_products as wp')
+    let sql = knex('wm_products as wp')
       .distinct('mp.generic_id', 'mg.generic_name')
       .join('mm_products as mp', 'mp.product_id', 'wp.product_id')
       .join('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
@@ -87,7 +97,16 @@ export class Addition {
       .joinRaw(`left join (${subTransaction}) as pt on pt.dst_warehouse_id = wp.warehouse_id and pt.generic_id = mp.generic_id`)
       .whereNot('wp.warehouse_id', srcWareHouseId)
       .whereIn('mg.generic_type_id', genericTypes)
-      .groupByRaw('wp.warehouse_id, mp.generic_id, pt.addition_qty, mgp.min_qty')
+
+    if (query) {
+      let _query = `%${query}%`;
+      sql.where(w => {
+        w.where('mg.generic_name', 'like', _query)
+          .orWhere('mg.working_code', query)
+      })
+    }
+
+    return sql.groupByRaw('wp.warehouse_id, mp.generic_id, pt.addition_qty, mgp.min_qty')
       .havingRaw('sum(wp.qty) + IFNULL(pt.addition_qty, 0) <= mgp.min_qty');
   }
 
@@ -164,14 +183,24 @@ export class Addition {
       .orderBy('wp.expired_date');
   }
 
-  getTransaction(knex: Knex, srcWarehouseId, status) {
-    return knex('wm_addition_header as adh')
+  getTransaction(knex: Knex, srcWarehouseId: any, status: any, query: any) {
+    let sql = knex('wm_addition_header as adh')
       .select('adh.addition_id', 'adh.addition_date', 'adh.addition_code', 'adh.status'
         , 'adh.dst_warehouse_id', 'ww.warehouse_name as dst_warehouse_name')
       .join('wm_warehouses as ww', 'ww.warehouse_id', 'adh.dst_warehouse_id')
       .where('adh.status', status)
       .andWhere('adh.src_warehouse_id', srcWarehouseId)
-      .orderBy('adh.addition_code', 'desc');
+
+    if (query) {
+      let _query = `%${query}%`;
+      sql.where(w => {
+        w.where('ww.warehouse_name', 'like', _query)
+          .orWhere('ww.short_code', query)
+        .orWhere('adh.addition_code', 'like', _query)
+      })
+    }
+
+    return sql.orderBy('adh.addition_code', 'desc');
   }
 
   getTransactionInfo(knex: Knex, transactionId: any, srcWarehouseId: any) { //รายการ generic ที่อยู่ในใบเติมแล้ว
@@ -356,14 +385,24 @@ export class Addition {
       .delete();
   }
 
-  getTransactionHistory(knex: Knex, srcWarehouseId: any) { //รายการใบเติมที่อนุมัติแล้ว
-    return knex('wm_addition_header as adh')
+  getTransactionHistory(knex: Knex, srcWarehouseId: any, query: any) { //รายการใบเติมที่อนุมัติแล้ว
+    let sql = knex('wm_addition_header as adh')
       .select('adh.addition_id', 'adh.addition_date', 'adh.addition_code'
         , 'adh.dst_warehouse_id', 'ww.warehouse_name as dst_warehouse_name')
       .join('wm_warehouses as ww', 'ww.warehouse_id', 'adh.dst_warehouse_id')
       .where('adh.status', 'APPROVE')
       .andWhere('adh.src_warehouse_id', srcWarehouseId)
-      .orderBy('adh.addition_code', 'desc');
+
+      if (query) {
+        let _query = `%${query}%`;
+        sql.where(w => {
+          w.where('ww.warehouse_name', 'like', _query)
+            .orWhere('ww.short_code', query)
+          .orWhere('adh.addition_code', 'like', _query)
+        })
+      }
+    
+      return sql.orderBy('adh.addition_code', 'desc');
   }
 
   saveDstProducts(knex: Knex, data: any[]) {
