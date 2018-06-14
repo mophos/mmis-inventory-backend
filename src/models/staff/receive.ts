@@ -22,7 +22,7 @@ export class ReceiveModel {
 
     return knex('wm_receives as r')
       .select('r.receive_id', 'r.purchase_id', 'r.receive_date', 'r.delivery_date',
-      'r.delivery_code', 'l.labeler_name', knex.raw('sum(rd.receive_qty) as total_receive'), querySumCheck)
+        'r.delivery_code', 'l.labeler_name', knex.raw('sum(rd.receive_qty) as total_receive'), querySumCheck)
       .leftJoin('mm_labelers as l', 'l.labeler_id', 'r.labeler_id')
       .innerJoin('wm_receive_detail as rd', 'rd.receive_id', 'r.receive_id')
       .groupBy('r.receive_id')
@@ -40,8 +40,8 @@ export class ReceiveModel {
 
     return knex('wm_receives as r')
       .select('r.receive_id', 'r.purchase_id', 'r.receive_date', 'rc.check_date', 'r.delivery_date',
-      'r.delivery_code', 'l.labeler_name', queryTotalReceive, knex.raw('SUM(rcd.qty) as total_check'),
-      'a.approve_status')
+        'r.delivery_code', 'l.labeler_name', queryTotalReceive, knex.raw('SUM(rcd.qty) as total_check'),
+        'a.approve_status')
       .innerJoin('wm_receive_check as rc', 'r.receive_id', 'rc.receive_id')
       .innerJoin('wm_receive_check_detail as rcd', 'rcd.check_id', 'rc.check_id')
       .leftJoin('mm_labelers as l', 'l.labeler_id', 'r.labeler_id')
@@ -103,8 +103,8 @@ export class ReceiveModel {
   getReceiveInfo(knex: Knex, receiveId: any) {
     return knex('wm_receives as r')
       .select('r.receive_id', 'r.receive_code', 'r.receive_date', 'r.delivery_code', 'r.delivery_date',
-      'r.total_cost', 'r.receive_qty', 'r.receive_type_id', 'r.purchase_id', 'r.receive_status_id',
-      'wh.warehouse_name', 'lm.labeler_name', 'rt.receive_type_name', 'rs.receive_status_name')
+        'r.total_cost', 'r.receive_qty', 'r.receive_type_id', 'r.purchase_id', 'r.receive_status_id',
+        'wh.warehouse_name', 'lm.labeler_name', 'rt.receive_type_name', 'rs.receive_status_name')
       .leftJoin('wm_warehouses as wh', 'wh.warehouse_id', 'r.warehouse_id')
       .leftJoin('mm_labelers as lm', 'lm.labeler_id', 'r.labeler_id')
       .leftJoin('wm_receive_types as rt', 'rt.receive_type_id', 'r.receive_type_id')
@@ -154,11 +154,16 @@ export class ReceiveModel {
           (id, warehouse_id, product_id, package_id, qty,
           cost, expired_date, lot_id, location_id, receive_id)
           VALUES('${v.id}', '${v.warehouse_id}', '${v.product_id}', '${v.package_id}',
-          ${v.qty}, ${v.cost}, '${v.expired_date}', '${v.lot_id}',
+          ${v.qty}, ${v.cost},`
+      if (v.expired_date == null) {
+        sql += `null,`;
+      } else {
+        sql += `'${v.expired_date}',`
+      }
+      sql += `'${v.lot_id}',
           '${v.location_id}', '${v.receive_id}')
           ON DUPLICATE KEY UPDATE
-          qty=qty+${v.qty}
-        `;
+          qty=qty+${v.qty}`;
       sqls.push(sql);
     });
 
@@ -169,7 +174,7 @@ export class ReceiveModel {
   getReceiveProductList(knex: Knex, receiveId: string) {
     return knex('wm_receive_detail as wrd')
       .select('wrd.product_id', 'wp.product_name', 'wrd.expired_date',
-      'wrd.receive_qty', 'wrd.total_cost', 'wl.lot_no', 'mpk.*')
+        'wrd.receive_qty', 'wrd.total_cost', 'wl.lot_no', 'mpk.*')
       .innerJoin('mm_products as wp', 'wp.product_id', 'wrd.product_id')
       .innerJoin('wm_product_lots as wl', 'wl.lot_id', 'wrd.lot_id')
       .innerJoin('mm_product_package as mpp', 'mpp.product_id', 'wrd.product_id')
