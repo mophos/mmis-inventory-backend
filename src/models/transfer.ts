@@ -279,7 +279,7 @@ export class TransferModel {
       .whereIn('transfer_id', transferIds)
       .update({
         approved: 'Y',
-        approve_date: moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        approve_date: moment().format('YYYY-MM-DD HH:mm:ss'),
         approve_people_user_id: peopleUserId
       });
   }
@@ -289,7 +289,7 @@ export class TransferModel {
       .whereIn('transfer_id', transferIds)
       .update({
         confirmed: 'Y',
-        confirmed_date: moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        confirmed_date: moment().format('YYYY-MM-DD HH:mm:ss'),
         confirmed_people_user_id: peopleUserId
       });
   }
