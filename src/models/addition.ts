@@ -377,12 +377,17 @@ export class Addition {
             created_at
           )VALUES(
             '${v.wm_product_id}', ${v.dst_warehouse_id}, '${v.product_id}', ${v.qty}, ${v.cost}, 
-            '${v.lot_no}', ${v.expired_date}, ${v.unit_generic_id}, ${v.people_user_id}, 
+            '${v.lot_no}',`;
+      if (v.expired_date == null) {
+        sql += `null,`;
+      } else {
+        sql += `'${v.expired_date}',`
+      }
+      sql += ` ${v.unit_generic_id}, ${v.people_user_id}, 
             '${v.created_at}'
           )
           ON DUPLICATE KEY UPDATE
-          qty = qty+${v.qty}
-        `;
+          qty = qty+${v.qty}`;
       sqls.push(sql);
     });
 
@@ -489,8 +494,8 @@ export class Addition {
         wp1.lot_no
         order by sq1.addition_qty desc ) as lq
         where  (lq.product_name = 'คงคลัง ' and 	lq.remainQty > 0) or lq.product_name != 'คงคลัง'	`
-  return knex.raw(sql)
-}
+    return knex.raw(sql)
+  }
   printAdditionReports(knex: Knex, addition: any) {
     let sql = `
     SELECT 
@@ -538,7 +543,7 @@ export class Addition {
     let sql = `select * from wm_addition_header where addition_id = ${addition_id}`
     return knex.raw(sql)
   }
-  printAdditionApproveDetail(knex: Knex, addition_id: any){
+  printAdditionApproveDetail(knex: Knex, addition_id: any) {
     let sql = `SELECT
     mp.product_id,
     mp.product_name,
