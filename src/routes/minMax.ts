@@ -84,16 +84,16 @@ router.post('/calculate', co(async (req, res, next) => {
         let results: any = await model.calculateMinMax(db, warehouseId, fromDate, toDate, _ggs);
         let rs = results[0];
         for (let r of rs) {
-          r.min_qty = r.use_per_day * r.safety_min_day;
-          r.max_qty = r.use_per_day * r.safety_max_day;
-          r.rop_qty = r.use_per_day * r.lead_time_day;
+          r.min_qty =  Math.round(r.use_per_day * r.safety_min_day);
+          r.max_qty = Math.round(r.use_per_day * r.safety_max_day);
+          r.rop_qty = Math.round(r.use_per_day * r.lead_time_day);
           if (r.carrying_cost) {
             r.eoq_qty = Math.round(Math.sqrt((2 * r.use_total * r.ordering_cost) / r.carrying_cost));
           } else {
             r.eoq_qty = 0;
           }
         }
-        res.send({ ok: true, rows: rs });
+        res.send({ ok: true, rows: rs, process_date: moment().format('YYYY-MM-DD HH:mm:ss') });
       } else {
         res.send({ ok: false, error: 'กรุณาระบุช่วงวันที่สำหรับการคำนวณ' });
       }
@@ -111,8 +111,7 @@ router.post('/calculate', co(async (req, res, next) => {
 router.post('/save', co(async (req, res, next) => {
 
   let db = req.db;
-  let _fromDate = req.body.fromDate;
-  let _toDate = req.body.toDate;
+  let _processDate = req.body.processDate;
   let _generics = req.body.generics;
   let warehouseId = req.decoded.warehouseId;
 
@@ -131,8 +130,7 @@ router.post('/save', co(async (req, res, next) => {
         obj.safety_min_day = +v.safety_min_day;
         obj.safety_max_day = +v.safety_max_day;
         obj.use_total = +v.use_total;
-        obj.from_stock_date = moment(_fromDate).format('YYYY-MM-DD');
-        obj.to_stock_date = moment(_toDate).format('YYYY-MM-DD');
+        obj.process_date = moment(_processDate).format('YYYY-MM-DD HH:mm:ss');
         obj.lead_time_day = +v.lead_time_day;
         obj.rop_qty = +v.rop_qty;
         obj.ordering_cost = +v.ordering_cost;
