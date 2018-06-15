@@ -588,6 +588,19 @@ export class WarehouseModel {
     return knex.raw(sql, [warehouseId, type]);
   }
 
+  getTranferWarehouseDst(knex: Knex, warehouseId: any) {
+    let sql = `
+    select sn.*, dst.warehouse_name, dst.warehouse_id,dst.short_code, dst.location, dst.is_minmax_planning
+    from mm_shipping_networks as sn
+    left join wm_warehouses as dst on dst.warehouse_id=sn.destination_warehouse_id
+    where sn.source_warehouse_id = '${warehouseId}'
+    and dst.is_actived='Y' and sn.transfer_type = 'TRN'
+    group by sn.destination_warehouse_id
+    order by dst.short_code
+    `;
+    return knex.raw(sql);
+  }
+
   getMappingsGenerics(knex: Knex, hospcode: any) {
     let sql = `
       select g.generic_id, g.generic_name, g.working_code, 

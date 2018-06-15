@@ -2081,6 +2081,32 @@ router.get('/requisition/templates-items/:templateId', async (req, res, next) =>
   }
 });
 
+router.get('/tranfer/templates-items/:templateId', async (req, res, next) => {
+  let db = req.db;
+  let templateId = req.params.templateId;
+  try {
+    let rs: any = await orderModel.getTemplateTranferItems(db, templateId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
+router.get('/warehouse/tranfer/dst', async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.query.warehouseId;
+  try {
+    let rs: any = await warehouseModel.getTranferWarehouseDst(db, warehouseId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
 // file update 
 // upload his transaction
 router.post('/his-transaction/upload', upload.single('file'), co(async (req, res, next) => {

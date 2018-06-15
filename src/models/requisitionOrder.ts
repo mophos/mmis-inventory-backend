@@ -749,6 +749,25 @@ export class RequisitionOrderModel {
     return db.raw(sql, [templateId]);
   }
 
+  getTemplateTranferItems(db: Knex, templateId: any) {
+    let sql = `
+    select td.*, g.generic_name, g.working_code,
+    (
+    select ifnull(sum(wm.qty), 0) 
+    from wm_products as wm
+    inner join mm_products as mp on mp.product_id=wm.product_id
+    where mp.generic_id=g.generic_id and wm.warehouse_id=rt.src_warehouse_id
+    ) as remain_qty
+    from wm_requisition_template_detail as td
+    inner join mm_generics as g on g.generic_id=td.generic_id
+    inner join wm_requisition_template as rt on rt.template_id=td.template_id
+    where td.template_id=?
+    order by g.generic_name
+    `;
+
+    return db.raw(sql, [templateId]);
+  }
+
   getWmProducs(db: Knex, wmProductIds: any[]) {
     return db('wm_products')
       .select()
