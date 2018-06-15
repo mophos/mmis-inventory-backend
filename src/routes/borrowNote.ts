@@ -7,7 +7,7 @@ import _ = require('lodash');
 import { InventoryReportModel } from '../models/inventoryReport';
 
 const router = express.Router();
-const printDate = 'วันที่พิมพ์ ' + moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(', HH:mm:ss น.');
+const printDate = 'วันที่พิมพ์ ' + moment().format('D MMMM ') + (moment().get('year') + 543) + moment().format(', HH:mm:ss น.');
 const borrowModel = new BorrowNoteModel();
 const reqModel = new RequisitionOrderModel();
 const inventoryReportModel = new InventoryReportModel()
@@ -135,7 +135,7 @@ router.get('/report', async (req, res, next) => {
   let warehouse = req.decoded.warehouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let today = moment(new Date()).format('DD MMMM ') + (moment(new Date()).get('year') + 543);
+  let today = moment().format('DD MMMM ') + (moment().get('year') + 543);
   warehouse = '%' + warehouse + '%';
   id = Array.isArray(id) ? id : [id]
   let borrow: any

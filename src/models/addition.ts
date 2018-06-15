@@ -416,12 +416,17 @@ export class Addition {
             created_at
           )VALUES(
             '${v.wm_product_id}', ${v.dst_warehouse_id}, '${v.product_id}', ${v.qty}, ${v.cost}, 
-            '${v.lot_no}', ${v.expired_date}, ${v.unit_generic_id}, ${v.people_user_id}, 
+            '${v.lot_no}',`;
+      if (v.expired_date == null) {
+        sql += `null,`;
+      } else {
+        sql += `'${v.expired_date}',`
+      }
+      sql += ` ${v.unit_generic_id}, ${v.people_user_id}, 
             '${v.created_at}'
           )
           ON DUPLICATE KEY UPDATE
-          qty = qty+${v.qty}
-        `;
+          qty = qty+${v.qty}`;
       sqls.push(sql);
     });
 

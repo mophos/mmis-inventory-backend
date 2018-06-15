@@ -11,7 +11,7 @@ import { StockCard } from '../models/stockcard';
 import { SerialModel } from '../models/serial';
 
 const router = express.Router();
-const printDate = 'วันที่พิมพ์ ' + moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(', HH:mm:ss น.');
+const printDate = 'วันที่พิมพ์ ' + moment().format('D MMMM ') + (moment().get('year') + 543) + moment().format(', HH:mm:ss น.');
 
 const additionModel = new Addition();
 const inventoryReportModel = new InventoryReportModel();
@@ -186,7 +186,7 @@ router.get('/print/transaction/:transactionId', async (req, res, next) => {
     let hospitalName = hosdetail[0].hospname;
     moment.locale('th')
     let create_date = moment(rs.create_date).format('DD MMMM ') + (moment(rs.create_date).get('year') + 543);
-    let today = moment(new Date()).format('DD MMMM ') + (moment(new Date()).get('year') + 543);
+    let today = moment().format('DD MMMM ') + (moment().get('year') + 543);
 
     rs.forEach(v => {
       v.expired_date = moment(v.expired_date).format('DD MMMM ') + (moment(v.expired_date).get('year') + 543);
@@ -220,7 +220,7 @@ router.get('/print/transactions', async (req, res, next) => {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
     moment.locale('th')
-    let today = moment(new Date()).format('DD MMMM ') + (moment(new Date()).get('year') + 543);
+    let today = moment().format('DD MMMM ') + (moment().get('year') + 543);
     addition_id = Array.isArray(addition_id) ? addition_id : [addition_id];
     for (let h of addition_id) {
       let _detail:any = []
@@ -277,7 +277,7 @@ router.get('/print/approve', async (req, res, next) => {
     const hosdetail = await inventoryReportModel.hospital(db);
     const hospitalName = hosdetail[0].hospname;
     moment.locale('th')
-    const today = moment(new Date()).format('DD MMMM ') + (moment(new Date()).get('year') + 543);
+    const today = moment().format('DD MMMM ') + (moment().get('year') + 543);
     let header: any = []
     let detail: any = []
     let sum: any = []
