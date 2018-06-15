@@ -355,8 +355,7 @@ router.get('/warehouse/generics/min-max', co(async (req, res, next) => {
 
 router.post('/warehouse/save-minmax', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
-  let _fromDate = req.body.fromDate;
-  let _toDate = req.body.toDate;
+  let _processDate = req.body.processDate;
   let db = req.db;
 
   let items = req.body.items;
@@ -375,8 +374,7 @@ router.post('/warehouse/save-minmax', co(async (req, res, next) => {
       obj.safety_min_day = +v.safety_min_day;
       obj.safety_max_day = +v.safety_max_day;
       obj.use_total = +v.use_total;
-      obj.from_stock_date = moment(_fromDate).format('YYYY-MM-DD');
-      obj.to_stock_date = moment(_toDate).format('YYYY-MM-DD');
+      obj.process_date = moment(_processDate).format('YYYY-MM-DD');
       _items.push(obj);
     });
 
