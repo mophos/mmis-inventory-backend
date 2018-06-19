@@ -4,8 +4,8 @@ import { SettingModel } from './settings';
 const settingModel = new SettingModel();
 
 export class InventoryReportModel {
-    receiveNotMatchPO(knex:Knex,startDate:any,endDate:any){
-        let sql =`SELECT
+    receiveNotMatchPO(knex: Knex, startDate: any, endDate: any) {
+        let sql = `SELECT
         *
         FROM
             wm_receives AS wr
@@ -14,8 +14,8 @@ export class InventoryReportModel {
            and wr.receive_date between '${startDate}' and '${endDate}' `
         return knex.raw(sql)
     }
-    receiveNotMatchPoDetail(knex: Knex,receiveId:any) {
-        let sql =`SELECT
+    receiveNotMatchPoDetail(knex: Knex, receiveId: any) {
+        let sql = `SELECT
         mp.working_code,
             mp.product_name,
             sum( wrd.receive_qty ) AS receive_qty,
@@ -39,7 +39,7 @@ export class InventoryReportModel {
             mp.product_id,wrd.unit_generic_id`
         return knex.raw(sql)
     }
- 
+
     productDisbursement(knex: Knex, internalissueId) {
         let sql = `SELECT
         id.product_id,
@@ -2310,4 +2310,17 @@ OR sc.ref_src like ?
         return knex.raw(sql);
     }
 
+    requisitionReport(knex: Knex, srcWarehouseId: any, dstWarehouseId: any, sdate: any, edate: any) {
+        return knex('wm_requisition_confirm as wrc')
+            .select('mg.generic_id', 'mg.generic_name')
+            .sum('wrci.confirm_qty as qty')
+            .join('wm_requisition_confirm_item as wrci', 'wrc.confirm_id', 'wrci.confirm_id')
+            .join('wm_requisition_order as wo', 'wrd.requisition_order_id', 'wo.requisition_order_id')
+            .join('mm_generics as mg', 'mg.generic_id', 'wrci.generic_id')
+            .where('ro.wm_withdraw', srcWarehouseId)
+            .andWhere('ro.wm_requisition', dstWarehouseId)
+            .whereBetween('wo.requisition_date', sdate)
+            .andWhereBetween('wo.requisition_date', edate)
+            .groupBy('mg.generic_id')
+    }
 }
