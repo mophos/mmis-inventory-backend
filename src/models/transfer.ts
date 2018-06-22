@@ -328,19 +328,27 @@ export class TransferModel {
   }
 
   getProductsInfo(knex: Knex, transferId: any, transferGenericId: any) {
-    let sql = `
-    select tp.*
-    , wp.qty as small_remain_qty, wp.lot_no, wp.expired_date
-    , mp.product_name
-    , fu.unit_name as from_unit_name, ug.qty as conversion_qty, tu.unit_name as to_unit_name
-    from wm_transfer_product as tp
-    join wm_products as wp on wp.wm_product_id = tp.wm_product_id
-    join mm_unit_generics as ug on ug.unit_generic_id = wp.unit_generic_id
-    join mm_products as mp on mp.product_id = wp.product_id
-    join mm_units as fu on fu.unit_id = ug.from_unit_id
-    join mm_units as tu on tu.unit_id = ug.to_unit_id
-    where tp.transfer_id = ?
-    and tp.transfer_generic_id = ?
+    let sql = `SELECT
+    tp.*,
+    tp.product_qty / ug.qty as product_qty,
+    FLOOR(wp.qty / ug.qty) as pack_remain_qty,
+    wp.qty AS small_remain_qty,
+    wp.lot_no,
+    wp.expired_date,
+    mp.product_name,
+    fu.unit_name AS from_unit_name,
+    ug.qty AS conversion_qty,
+    tu.unit_name AS to_unit_name 
+  FROM
+    wm_transfer_product AS tp
+    JOIN wm_products AS wp ON wp.wm_product_id = tp.wm_product_id
+    JOIN mm_unit_generics AS ug ON ug.unit_generic_id = wp.unit_generic_id
+    JOIN mm_products AS mp ON mp.product_id = wp.product_id
+    JOIN mm_units AS fu ON fu.unit_id = ug.from_unit_id
+    JOIN mm_units AS tu ON tu.unit_id = ug.to_unit_id 
+  WHERE
+    tp.transfer_id = ? 
+    AND tp.transfer_generic_id = ?
     `;
     return knex.raw(sql, [transferId, transferGenericId]);
   }
@@ -348,7 +356,7 @@ export class TransferModel {
   getGenericInfo(knex: Knex, transferId: any, srcWarehouseId: any) {
     let sql = `
     select tg.*
-    , FLOOR(tg.transfer_qty/ug.qty) as transfer_qty
+    , tg.transfer_qty as transfer_qty
     , mg.working_code, mg.generic_name
     , sg.remain_qty
     , mg.primary_unit_id, mu.unit_name as primary_unit_name
