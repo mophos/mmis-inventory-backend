@@ -474,9 +474,13 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
         v.out_cost = inventoryReportModel.comma(+v.out_qty * +v.balance_unit_cost);
         v.balance_unit_cost = inventoryReportModel.comma(+v.balance_unit_cost * +v.balance_generic_qty);
         if (v.conversion_qty) {
-          v.in_qty = inventoryReportModel.commaQty(v.in_qty / v.conversion_qty);
-          v.out_qty = inventoryReportModel.commaQty(v.out_qty / v.conversion_qty);
-          v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty / v.conversion_qty);
+          v.in_qty = Math.floor(v.in_qty / v.conversion_qty);
+          v.out_qty = Math.floor(v.out_qty / v.conversion_qty);
+
+          v.in_qty = inventoryReportModel.commaQty(v.in_qty);
+          v.out_qty = inventoryReportModel.commaQty(v.out_qty);
+          
+          v.balance_generic_qty = inventoryReportModel.commaQty(Math.floor(v.balance_generic_qty / v.conversion_qty));
         } else {
           v.in_qty = inventoryReportModel.commaQty(v.in_qty);
           v.out_qty = inventoryReportModel.commaQty(v.out_qty);
@@ -553,9 +557,9 @@ router.get('/report/generic/stock2/', wrap(async (req, res, next) => {
         v.out_cost = inventoryReportModel.comma(+v.out_qty * +v.balance_unit_cost);
         if (v.conversion_qty) {
           v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost * v.conversion_qty);
-          v.in_qty = inventoryReportModel.commaQty(v.in_qty / v.conversion_qty);
-          v.out_qty = inventoryReportModel.commaQty(v.out_qty / v.conversion_qty);
-          v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty / v.conversion_qty);
+          v.in_qty = inventoryReportModel.commaQty(Math.floor(v.in_qty / v.conversion_qty));
+          v.out_qty = inventoryReportModel.commaQty(Math.floor(v.out_qty / v.conversion_qty));
+          v.balance_generic_qty = inventoryReportModel.commaQty(Math.floor(v.balance_generic_qty / v.conversion_qty));
         } else {
           v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost);
           v.in_qty = inventoryReportModel.commaQty(v.in_qty);
@@ -641,8 +645,8 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
         e.in_cost = inventoryReportModel.comma(_in_qty * +e.balance_unit_cost);
         e.out_cost = inventoryReportModel.comma(_out_qty * +e.balance_unit_cost);
         e.balance_unit_cost = inventoryReportModel.comma(e.balance_unit_cost * _conversion_qty);
-        e.in_qty = inventoryReportModel.commaQty(_in_qty / _conversion_qty);
-        e.out_qty = inventoryReportModel.commaQty(_out_qty / _conversion_qty);
+        e.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
+        e.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
         e.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
         if (e.in_qty != 0) {
           e.in_qty_show = e.in_qty + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')';
@@ -671,8 +675,8 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
         v.out_cost = inventoryReportModel.comma(_out_qty * +v.balance_unit_cost);
 
         // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
-        v.in_qty = inventoryReportModel.commaQty(_in_qty / _conversion_qty);
-        v.out_qty = inventoryReportModel.commaQty(_out_qty / _conversion_qty);
+        v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
+        v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
         v.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
         if (v.in_qty != 0) {
           v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
@@ -693,7 +697,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
 
       inventory_stock[0].forEach(e => {
         e.in_qty = +e.in_qty - +e.out_qty
-        e.in_qty = inventoryReportModel.commaQty(e.in_qty / e.conversion_qty);
+        e.in_qty = inventoryReportModel.commaQty(Math.floor(e.in_qty / e.conversion_qty));
       });
 
       _inventory_stock.push(inventory_stock[0])
