@@ -239,7 +239,7 @@ router.post('/approve', co(async (req, res, next) => {
           _cutProduct.push(cutProduct);
         }
       });
-
+      v = Array.isArray(v) ? v : [v];
       await issueModel.updateSummaryApprove(db, v, summary);
       // update wm_product
       await issueModel.saveProductStock(db, _cutProduct);
