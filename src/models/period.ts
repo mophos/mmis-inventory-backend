@@ -8,8 +8,8 @@ export class PeriodModel {
   }
   getPeriod(){
     moment.locale('th');
-    const month: any = moment(new Date()).format('MM');
-    const year: any = moment(new Date()).get('year');
+    const month: any = moment().format('MM');
+    const year: any = moment().get('year');
     if (month < 10) {
       return {year:year,month:month};
     }
