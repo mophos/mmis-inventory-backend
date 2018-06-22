@@ -1243,7 +1243,6 @@ router.put('/issue-transaction/:issueId', co(async (req, res, next) => {
 }));
 
 router.post('/issue-transaction/approve', co(async (req, res, next) => {
-
   let db = req.db;
   let issueIds = req.body.issueIds;
 
