@@ -266,7 +266,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         }
       }
     }
-    res.send( _list_requis)
+    // res.send( _list_requis)
     res.render('list_requis', {
       hospitalName: hospitalName,
       printDate: printDate,
