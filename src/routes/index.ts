@@ -116,7 +116,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
           value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.conversion_qty);
           value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
           value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
-          value.expired_date = value.expired_date ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
+          value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
           value.today = printDate;
           value.today += (value.updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) + moment(value.updated_at).format(', HH:mm') + ' น.' : ''
         })
@@ -218,17 +218,17 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         let items = [];
         rs.forEach(async (v: any) => {
           let objItems: any = {};
-          objItems = v
-          // objItems.generic_name = v.generic_name;
-          // objItems.product_name = v.product_name;
-          // objItems.large_unit = v.large_unit;
-          // objItems.small_unit = v.small_unit;
-          // objItems.confirm_qty = v.confirm_qty;
-          // objItems.remain = v.remain;
-          // objItems.lot_no = v.lot_no;
-          // objItems.expired_date = v.expired_date;
-          // objItems.conversion_qty = v.conversion_qty;
-          // objItems.is_approve = v.is_approve;
+          // objItems = v
+          objItems.generic_name = v.generic_name;
+          objItems.product_name = v.product_name;
+          objItems.large_unit = v.large_unit;
+          objItems.small_unit = v.small_unit;
+          objItems.confirm_qty = v.confirm_qty;
+          objItems.remain = v.remain;
+          objItems.lot_no = v.lot_no;
+          objItems.expired_date = v.expired_date;
+          objItems.conversion_qty = v.conversion_qty;
+          objItems.is_approve = v.is_approve;
           items.push(objItems)
         });
         objTitle.items = items;
