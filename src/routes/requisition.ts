@@ -321,6 +321,94 @@ router.get('/generics-requisition/:requisitionId', async (req, res, next) => {
 
 });
 
+router.get('/generic-requisition/:requisitionId', async (req, res, next) => {
+
+  let db = req.db;
+  let requisitionId: any = req.params.requisitionId;
+  let warehouseId = req.decoded.warehouseId;
+
+  let genericIds = [];
+
+  try {
+    let rs: any = await orderModel.getOrderItemsByRequisition(db, requisitionId);
+
+    let rsGenerics: any = await requisitionModel.getGenericsFromRequisition(db, requisitionId);
+
+    let _generics = rsGenerics[0];
+    console.log('rs', rs[0]);
+    console.log('generic', rsGenerics[0]);
+
+    _generics.forEach(v => {
+      genericIds.push(v.generic_id);
+    });
+
+    // let rsProducts: any = await requisitionModel.getProductInWarehousesByGenerics(db, genericIds, warehouseId);
+    // let rsReqItems: any = await requisitionModel.getRequisitionOrderItems(db, requisitionId);
+
+    let items = [];
+    rs[0].forEach(v => {
+      let obj: any = {};
+      obj.generic_id = v.generic_id;
+      obj.generic_name = v.generic_name;
+      obj.working_code = v.working_code;
+      obj.requisition_qty = v.requisition_qty; // base unit
+      obj.conversion_qty = v.conversion_qty;
+      obj.unit_generic_id = v.unit_generic_id;
+      obj.from_unit_name = v.from_unit_name;
+      obj.to_unit_name = v.to_unit_name;
+      obj.unit_generic_id = v.unit_generic_id;
+      obj.small_remain_qty = v.remain_qty;
+      obj.temp_confirm_id = v.temp_confirm_id;
+      obj.products = [];
+
+      // rsProducts.forEach(x => {
+      //   if (x.generic_id === v.generic_id) {
+      //     let _obj: any = {};
+      //     _obj.wm_product_id = x.wm_product_id;
+      //     _obj.remain_qty = x.remain_with_reserve; // base unit
+      //     _obj.reseve_qty = x.reserve_qty; // ยอดจอง จากรายการตัดจ่าย, โอน, เบิก, เติม ที่รออนุมัติ
+      //     _obj.expired_date = x.expired_date;
+      //     _obj.conversion_qty = x.conversion_qty;
+      //     _obj.unit_generic_id = x.unit_generic_id;
+      //     obj.products.push(_obj);
+      //   }
+      // });
+      items.push(obj);
+    });
+
+    // let pays = [];
+
+    // items.forEach((v, i) => {
+    //   let reqQty = v.requisition_qty; // base unit
+    //   let products = v.products;
+
+    //   products.forEach((x, idx) => {
+    //     let obj: any = {};
+    //     obj.wm_product_id = x.wm_product_id;
+    //     obj.unit_generic_id = x.unit_generic_id;
+    //     obj.conversion_qty = x.conversion_qty;
+    //     obj.generic_id = v.generic_id;
+    //     obj.remain_qty = x.remain_qty; // base unit
+
+
+    //         reqQty -= x.remain_qty;
+    //       }
+    //     }
+    //     obj.pay_qty = Math.floor(obj.pay_qty / x.conversion_qty); // pack
+
+    //     pays.push(obj);
+    //   });
+    // });
+
+    res.send({ ok: true, rows: items });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+});
+
 router.get('/generics-requisition/unpaid/:unpaidId', async (req, res, next) => {
 
   let db = req.db;
@@ -522,7 +610,7 @@ router.post('/orders/unpaid/reorder', async (req, res, next) => {
         // remove unpaid 
         await orderModel.changeToUnpaidCancel(db, [requisitionOrderId]);
         res.send({ ok: true });
-        
+
       } else {
         res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการออกใบเบิกใหม่' })
       }
@@ -1146,13 +1234,13 @@ router.post('/unpaid/confirm', async (req, res, next) => {
     let balances = [];
     let stockCard = [];
     console.log('products', products);
-    let sc: any = await orderModel.getRequisitionOrderUnpaidItem(db, orderUnpaidId);    
+    let sc: any = await orderModel.getRequisitionOrderUnpaidItem(db, orderUnpaidId);
     for (let s of sc[0]) {
       let srcObjBalance: any = {};
       let dstObjBalance: any = {};
       let srcBalance = await orderModel.getBalance(db, s.product_id, s.wm_withdraw);
       console.log('srcBalance', srcBalance[0]);
-      
+
       srcBalance[0].forEach(v => {
         srcObjBalance.product_id = v.product_id;
         srcObjBalance.warehouse_id = v.warehouse_id;
@@ -1161,8 +1249,8 @@ router.post('/unpaid/confirm', async (req, res, next) => {
         balances.push(srcObjBalance);
       });
       let dstBalance = await orderModel.getBalance(db, s.product_id, s.wm_requisition);
-      console.log('dstBalance' , dstBalance[0]);
-      
+      console.log('dstBalance', dstBalance[0]);
+
       dstBalance[0].forEach(v => {
         dstObjBalance.product_id = v.product_id;
         dstObjBalance.warehouse_id = v.warehouse_id;

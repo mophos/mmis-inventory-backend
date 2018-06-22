@@ -346,7 +346,7 @@ router.post('/allocate', async (req, res, next) => {
           unit_generic_id: p.unit_generic_id,
           conversion_qty: p.conversion_qty,
           generic_id: p.generic_id,
-          pack_remain_qty: remainQty / p.conversion_qty,
+          pack_remain_qty: Math.floor(remainQty / p.conversion_qty),
           small_remain_qty:remainQty,
           product_name: p.product_name,
           from_unit_name: p.from_unit_name,
