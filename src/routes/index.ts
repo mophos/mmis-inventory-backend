@@ -197,6 +197,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
       objHead.withdraw_warehouse_name = header[0].withdraw_warehouse_name;
       let title = await inventoryReportModel.list_requiAll(db, header[0].requisition_order_id);
       title = title[0];
+      // res.send(title)
       for (let tv of title) {
         let objTitle: any = {};
         objHead.title = {};
@@ -212,21 +213,22 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         objTitle.confirm_qty = tv.confirm_qty;
         objTitle.remain = tv.remain;
         objTitle.dosage_name = tv.dosage_name;
-        let rs = await inventoryReportModel.getDetailListRequis(db, tv.requisition_order_id, tv.withdraw_warehouse_id, tv.product_id);
+        let rs = await inventoryReportModel.getDetailListRequis(db, tv.requisition_order_id, tv.withdraw_warehouse_id, tv.generic_id);
         rs = rs[0];
         let items = [];
         rs.forEach(async (v: any) => {
           let objItems: any = {};
-          objItems.generic_name = v.generic_name;
-          objItems.product_name = v.product_name;
-          objItems.large_unit = v.large_unit;
-          objItems.small_unit = v.small_unit;
-          objItems.confirm_qty = v.confirm_qty;
-          objItems.remain = v.remain;
-          objItems.lot_no = v.lot_no;
-          objItems.expired_date = v.expired_date;
-          objItems.conversion_qty = v.conversion_qty;
-          objItems.is_approve = v.is_approve;
+          objItems = v
+          // objItems.generic_name = v.generic_name;
+          // objItems.product_name = v.product_name;
+          // objItems.large_unit = v.large_unit;
+          // objItems.small_unit = v.small_unit;
+          // objItems.confirm_qty = v.confirm_qty;
+          // objItems.remain = v.remain;
+          // objItems.lot_no = v.lot_no;
+          // objItems.expired_date = v.expired_date;
+          // objItems.conversion_qty = v.conversion_qty;
+          // objItems.is_approve = v.is_approve;
           items.push(objItems)
         });
         objTitle.items = items;
@@ -264,6 +266,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         }
       }
     }
+    res.send( _list_requis)
     res.render('list_requis', {
       hospitalName: hospitalName,
       printDate: printDate,

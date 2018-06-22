@@ -620,7 +620,7 @@ WHERE
 	r.requisition_order_id = '${requisId}' 
 	AND rci.confirm_qty != 0 
     GROUP BY
-        wp.product_id
+    rci.generic_id
     ORDER BY
         r.requisition_order_id`
         return (knex.raw(sql))
@@ -1996,7 +1996,7 @@ OR sc.ref_src like ?
       ORDER BY mg.generic_id`
         return knex.raw(sql);
     }
-    getDetailListRequis(knex: Knex, requisId, warehouseId, productId) {
+    getDetailListRequis(knex: Knex, requisId, warehouseId, genericId) {
         let sql = `select * from (SELECT
           mg.working_code AS generic_code,
           mg.generic_name,
@@ -2033,7 +2033,7 @@ OR sc.ref_src like ?
         LEFT JOIN mm_units AS mus ON mup.to_unit_id = mus.unit_id
         WHERE
           r.requisition_order_id = '${requisId}'
-        AND rci.confirm_qty != 0 and wp.product_id='${productId}'
+        AND rci.confirm_qty != 0 and rci.generic_id = '${genericId}'
         GROUP BY
           wp.product_id,wp.lot_no
         UNION ALL
@@ -2079,7 +2079,7 @@ OR sc.ref_src like ?
               LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
               AND wp.warehouse_id = r.wm_withdraw
               WHERE
-                r.requisition_order_id = '${requisId}' and wp.product_id='${productId}'
+                r.requisition_order_id = '${requisId}' and rci.generic_id = '${genericId}'
               GROUP BY
                 wp.product_id
            
@@ -2091,7 +2091,7 @@ OR sc.ref_src like ?
         ) as sq1 where sq1.remain > 0
         ) as a
         group by a.product_id,a.lot_no
-        ORDER BY a.generic_code desc`
+        ORDER BY a.generic_code desc, a.product_id asc`
         return knex.raw(sql);
     }
     getHeadRequis(knex: Knex, requisId) {
