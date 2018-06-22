@@ -10,17 +10,17 @@ export class GenericModel {
   }
 
   getRemainQtyInWarehouse(knex: Knex, warehouseId: any, genericId: any) {
-    return knex('wm_products as wm') 
+    return knex('wm_products as wm')
       .select(knex.raw('sum(wm.qty) as remain_qty'))
       .innerJoin('mm_products as mp', 'mp.product_id', 'wm.product_id')
-  .where('mp.generic_id', genericId)
-  .where('wm.warehouse_id', warehouseId)
+      .where('mp.generic_id', genericId)
+      .where('wm.warehouse_id', warehouseId)
   }
 
   searchAutocomplete(knex: Knex, q: any) {
     let q_ = `${q}%`;
     let _q_ = `%${q}%`;
-    let sql =`SELECT
+    let sql = `SELECT
     DISTINCT *
       FROM
       (
@@ -75,7 +75,7 @@ export class GenericModel {
   warehouseSearchAutocomplete(knex: Knex, warehouseId: any, q: any) {
     let q_ = `${q}%`;
     let _q_ = `%${q}%`;
-    let sql =`SELECT
+    let sql = `SELECT
     DISTINCT a.generic_id,
       a.generic_name,
       a.working_code,
@@ -152,10 +152,10 @@ export class GenericModel {
       g.working_code='${query}'
     )
     and mp.mark_deleted='N' `;
-    if(warehouseId != 'undefined'){
+    if (warehouseId != 'undefined') {
       sql += `and p.warehouse_id='${warehouseId}'`;
     }
-   sql += ` and mp.is_active='Y'
+    sql += ` and mp.is_active='Y'
     AND p.qty > 0
     group by g.generic_id
     limit 10
@@ -165,8 +165,8 @@ export class GenericModel {
   getProductInWarehousesByGenerics(knex: Knex, generics: any[], warehouseId: any) {
     return knex('wm_products as wp')
       .select('wp.*', 'pr.remain_qty', 'mp.generic_id', 'ug.unit_generic_id', 'ug.qty as conversion_qty'
-      , 'mp.product_name', 'fu.unit_name as from_unit_name', 'tu.unit_name as to_unit_name'
-      , knex.raw('FLOOR(pr.remain_qty/ug.qty) as pack_remain_qty'))
+        , 'mp.product_name', 'fu.unit_name as from_unit_name', 'tu.unit_name as to_unit_name'
+        , knex.raw('FLOOR(pr.remain_qty/ug.qty) as pack_remain_qty'))
       .join('view_product_reserve as pr', 'pr.wm_product_id', 'wp.wm_product_id') //คงคลังหลังจากหักยอดจองแล้ว
       .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
       .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'wp.unit_generic_id')
@@ -177,13 +177,32 @@ export class GenericModel {
       .whereRaw('wp.qty > 0')
       .orderBy('wp.expired_date', 'asc')
       .groupBy('wp.wm_product_id');
-  
-    }
+
+  }
+
+  getProductInWarehousesByGeneric(knex: Knex, generics: any, warehouseId: any) {
+    return knex('wm_products as wp')
+      .select('wp.*', 'pr.remain_qty', 'mp.generic_id', 'ug.unit_generic_id', 'ug.qty as conversion_qty'
+        , 'mp.product_name', 'fu.unit_name as from_unit_name', 'tu.unit_name as to_unit_name'
+        , knex.raw('FLOOR(pr.remain_qty/ug.qty) as pack_remain_qty'))
+      .join('view_product_reserve as pr', 'pr.wm_product_id', 'wp.wm_product_id') //คงคลังหลังจากหักยอดจองแล้ว
+      .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
+      .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'wp.unit_generic_id')
+      .innerJoin('mm_units as fu', 'fu.unit_id', 'ug.from_unit_id')
+      .innerJoin('mm_units as tu', 'tu.unit_id', 'ug.to_unit_id')
+      .where('mp.generic_id', generics)
+      .andWhere('wp.warehouse_id', warehouseId)
+      .whereRaw('wp.qty > 0')
+      .orderBy('wp.expired_date', 'asc')
+      .groupBy('wp.wm_product_id');
+
+  }
+
   getProductInWarehousesByGenericsBase(knex: Knex, generics: any[], warehouseId: any) {
     return knex('wm_products as wp')
       .select('wp.*', 'pr.remain_qty', 'mp.generic_id', 'ug.unit_generic_id', 'ug.qty as conversion_qty'
-      , 'mp.product_name', 'fu.unit_name as from_unit_name', 'tu.unit_name as to_unit_name'
-      , knex.raw('FLOOR(pr.remain_qty/ug.qty) as pack_remain_qty'))
+        , 'mp.product_name', 'fu.unit_name as from_unit_name', 'tu.unit_name as to_unit_name'
+        , knex.raw('FLOOR(pr.remain_qty/ug.qty) as pack_remain_qty'))
       .join('view_product_reserve as pr', 'pr.wm_product_id', 'wp.wm_product_id') //คงคลังหลังจากหักยอดจองแล้ว
       .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
       .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'wp.unit_generic_id')
