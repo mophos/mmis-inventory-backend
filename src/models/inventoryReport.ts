@@ -877,13 +877,13 @@ GROUP BY
         wr.receive_id = ? and wrd.product_id = ?
         UNION
             SELECT
-            '','','','','','',
+            '','','','','','','',
                 mg.generic_id,
                 mg.generic_name,
                 wp.qty,
                 mug.qty as small_qty,
                 '','',
-                wp.expired_date,wp.lot_no,'','','',''
+                wp.expired_date,wp.lot_no,'','','','',''
             FROM
                 wm_products wp
             JOIN mm_products mp ON mp.product_id = wp.product_id
