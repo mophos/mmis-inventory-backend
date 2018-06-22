@@ -743,7 +743,7 @@ export class RequisitionOrderModel {
     inner join mm_generics as g on g.generic_id=td.generic_id
     inner join wm_requisition_template as rt on rt.template_id=td.template_id
     where td.template_id=?
-    order by g.generic_name
+    order by td.id
     `;
 
     return db.raw(sql, [templateId]);

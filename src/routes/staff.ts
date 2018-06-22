@@ -822,7 +822,7 @@ router.delete('/transfer/:transferId', co(async (req, res, next) => {
   let transferId = req.params.transferId;
 
   try {
-    const rs = await transferModel.checkStatus(db, transferId);
+    const rs = await transferModel.checkStatus(db, [transferId]);
     const status = rs[0];
     if (status.approved === 'Y') {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
@@ -902,7 +902,7 @@ router.put('/transfer/save/:transferId', co(async (req, res, next) => {
 
   if (_generics.length && _summary) {
     try {
-      const rs = await transferModel.checkStatus(db, transferId);
+      const rs = await transferModel.checkStatus(db, [transferId]);
       const status = rs[0];
       if (status.confirmed === 'Y' || status.approved === 'Y' || status.mark_deleted === 'Y') {
         res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
@@ -1243,7 +1243,6 @@ router.put('/issue-transaction/:issueId', co(async (req, res, next) => {
 }));
 
 router.post('/issue-transaction/approve', co(async (req, res, next) => {
-
   let db = req.db;
   let issueIds = req.body.issueIds;
 
