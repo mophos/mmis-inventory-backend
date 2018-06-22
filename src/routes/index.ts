@@ -91,6 +91,50 @@ router.get('/test-stockcard', wrap(async (req, res, next) => {
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
 
+router.get('/report/approve2/requis', wrap(async (req, res, next) => {
+  let db = req.db;
+  let approve_requis: any = []
+  let sum: any = []
+  let page_re: any = req.decoded.WM_REQUISITION_REPORT_APPROVE;
+  try {
+    let requisId = req.query.requisId;
+    requisId = Array.isArray(requisId) ? requisId : [requisId]
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+
+    for (let i in requisId) {
+      const _approve_requis = await inventoryReportModel.approve_requis2(db, requisId[i]);
+      approve_requis.push(_approve_requis[0])
+      approve_requis[i] = _.chunk(approve_requis[i], page_re)
+      _.forEach(approve_requis[i], values => {
+        sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
+        _.forEach(values, value => {
+          value.total_cost = inventoryReportModel.comma(value.total_cost);
+          value.confirm_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
+          // value.updated_at ? value.confirm_date = moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) : value.confirm_date = moment(value.created_at).format('D MMMM ') + (moment(value.created_at).get('year') + 543)
+          value.cost = inventoryReportModel.comma(value.cost);
+          value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.conversion_qty);
+          value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
+          value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
+          value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
+          value.today = printDate;
+          value.today += (value.updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) + moment(value.updated_at).format(', HH:mm') + ' น.' : ''
+        })
+      })
+    }
+    // res.send({approve_requis:approve_requis,page_re:page_re,sum:sum})
+    res.render('approve_requis2', {
+      hospitalName: hospitalName,
+      approve_requis: approve_requis,
+      sum: sum
+    });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
 router.get('/report/approve/requis', wrap(async (req, res, next) => {
   let db = req.db;
   let approve_requis: any = []
@@ -113,8 +157,8 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
           value.confirm_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
           // value.updated_at ? value.confirm_date = moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) : value.confirm_date = moment(value.created_at).format('D MMMM ') + (moment(value.created_at).get('year') + 543)
           value.cost = inventoryReportModel.comma(value.cost);
-          value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.conversion_qty);
-          value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
+          value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty);
+          value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty);
           value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
           value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
           value.today = printDate;
