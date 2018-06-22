@@ -797,7 +797,6 @@ router.get('/report/issue', wrap(async (req, res, next) => {
   let issue_id: any = req.query.issue_id
   let db = req.db;
   let isArray = true
-  let length: any
   let issue_body = await issueModel.getList(db);
   let issueBody: any = []
   let issue_date: any = []
@@ -816,6 +815,10 @@ router.get('/report/issue', wrap(async (req, res, next) => {
 
     let ListDetail: any = await inventoryReportModel.getProductList(db, issue_id[ii]);
 
+    for (let i of ListDetail[0]) {
+      i.qty = inventoryReportModel.comma(i.qty);
+    }
+
     issueListDetail.push(ListDetail[0])
   }
 
@@ -828,9 +831,8 @@ router.get('/report/issue', wrap(async (req, res, next) => {
   res.render('product_issue', {
     hospitalName: hospitalName, issueBody: issueBody, issueListDetail: issueListDetail, issue_date: issue_date, printDate: printDate, count: issueListDetail.length
   });
-  // //console.log(issueBody[0].issue_id);
-  // res.send({ ok: true, issueBody: issueBody, issueListDetail: issueListDetail, issue_date:issue_date })
 }));
+
 router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', wrap(async (req, res, next) => {
   let db = req.db;
   let startDate = req.params.startDate;
