@@ -16,7 +16,7 @@ export class IssueModel {
 
   updateSummaryApprove(knex: Knex, issueIds: any, data: any) {
     return knex('wm_issue_summary')
-      .whereIn('issue_id', issueIds)
+      .where('issue_id', issueIds)
       .update(data);
   }
 
