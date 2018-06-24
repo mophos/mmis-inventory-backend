@@ -4,8 +4,8 @@ import { SettingModel } from './settings';
 const settingModel = new SettingModel();
 
 export class InventoryReportModel {
-    receiveNotMatchPO(knex:Knex,startDate:any,endDate:any){
-        let sql =`SELECT
+    receiveNotMatchPO(knex: Knex, startDate: any, endDate: any) {
+        let sql = `SELECT
         *
         FROM
             wm_receives AS wr
@@ -14,8 +14,8 @@ export class InventoryReportModel {
            and wr.receive_date between '${startDate}' and '${endDate}' `
         return knex.raw(sql)
     }
-    receiveNotMatchPoDetail(knex: Knex,receiveId:any) {
-        let sql =`SELECT
+    receiveNotMatchPoDetail(knex: Knex, receiveId: any) {
+        let sql = `SELECT
         mp.working_code,
             mp.product_name,
             sum( wrd.receive_qty ) AS receive_qty,
@@ -39,7 +39,7 @@ export class InventoryReportModel {
             mp.product_id,wrd.unit_generic_id`
         return knex.raw(sql)
     }
- 
+
     productDisbursement(knex: Knex, internalissueId) {
         let sql = `SELECT
         id.product_id,
@@ -2308,6 +2308,46 @@ OR sc.ref_src like ?
     WHERE
         v.generic_id IS NULL`
         return knex.raw(sql);
+    }
+
+    adjustStock1(knex: Knex) {
+        let sql = `SELECT
+        generic_id
+    FROM
+        view_stock_card_warehouse 
+        where warehouse_id = '505'
+    GROUP BY
+        generic_id`;
+        return knex.raw(sql);
+    }
+
+    adjustStock2(knex: Knex, genericId) {
+        let sql = `SELECT
+        *
+    FROM
+        view_stock_card_warehouse 
+        where warehouse_id = '505' 
+        and generic_id = '${genericId}'
+        ORDER BY stock_card_id
+    `;
+        return knex.raw(sql);
+    }
+
+    adjustStock3(knex: Knex, genericId) {
+        let sql = `SELECT
+        product_id
+    FROM
+        view_stock_card_warehouse 
+        where warehouse_id = '505' 
+        and generic_id = '${genericId}'
+        group by product_id
+    `;
+        return knex.raw(sql);
+    }
+
+    adjustStockUpdate(knex: Knex, data) {
+        return knex('wm_stock_card')
+            .update(data).where('stock_card_id', data.stock_card_id);
     }
 
 }
