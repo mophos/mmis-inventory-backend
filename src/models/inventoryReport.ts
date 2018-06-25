@@ -2212,30 +2212,29 @@ OR sc.ref_src like ?
         return knex.raw(sql);
     }
 
-    inventoryStatus(knex: Knex, warehouseId: any, genericTypeId: any) {
+    inventoryStatus(knex: Knex, warehouseId: any, genericTypeId: any, statusDate: any) {
         let sql = `SELECT
-        mg.working_code AS generic_code,
-        mg.generic_name,
-        mu.unit_name,
-        mgp.max_qty,
-        mg.min_qty,
-        sum(wp.qty) AS qty,
-        sum(wp.qty)*wp.cost AS cost
+        vscw.generic_id,
+        vscw.generic_name,
+        mg.working_code,
+        sum( vscw.in_qty ) - sum( vscw.out_qty ) AS qty,
+        vscw.conversion_qty,
+        vscw.large_unit,
+        vscw.small_unit,
+        avg( vscw.balance_unit_cost ) AS unit_cost,
+        ( sum( vscw.in_qty ) - sum( vscw.out_qty ) ) * avg( vscw.balance_unit_cost ) AS cost
     FROM
-        wm_products AS wp
-    JOIN mm_products AS mp ON mp.product_id = wp.product_id
-    JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
-    JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wp.unit_generic_id
-    JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
-    JOIN mm_generic_planning mgp ON mgp.generic_id = mg.generic_id
+        view_stock_card_warehouse AS vscw
+        JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id 
     WHERE
-        wp.warehouse_id = ${warehouseId} `
+        vscw.warehouse_id = '${warehouseId}'
+        AND vscw.stock_date <= '${statusDate} 23:59:59'`
         if (genericTypeId != 0) {
             sql = sql + ` AND mg.generic_type_id = ${genericTypeId}`
         }
         sql = sql + `
     GROUP BY
-        mg.generic_id
+        vscw.generic_id 
     ORDER BY
         mg.generic_name
         `
