@@ -361,7 +361,7 @@ export class TransferModel {
     , sg.remain_qty
     , mg.primary_unit_id, mu.unit_name as primary_unit_name
     from wm_transfer_generic as tg
-    join mm_unit_generics as ug on ug.unit_generic_id = tg.unit_generic_id
+    left join mm_unit_generics as ug on ug.unit_generic_id = tg.unit_generic_id
     join mm_generics as mg on mg.generic_id = tg.generic_id
     join mm_units as mu on mu.unit_id = mg.primary_unit_id
     join (
