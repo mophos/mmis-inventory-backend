@@ -810,6 +810,10 @@ export class ReceiveModel {
         sql += ` order by pc.purchase_order_number ${reverse} `;
       }
 
+      if (sort.by === 'purchase_order_book_number') {
+        sql += ` order by pc.purchase_order_book_number ${reverse} `;
+      }
+
       if (sort.by === 'order_date') {
         sql += ` order by pc.order_date ${reverse} `;
       }
