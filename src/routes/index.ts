@@ -526,7 +526,7 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
 
           v.in_qty = inventoryReportModel.commaQty(v.in_qty);
           v.out_qty = inventoryReportModel.commaQty(v.out_qty);
-          
+
           v.balance_generic_qty = inventoryReportModel.commaQty(Math.floor(v.balance_generic_qty / v.conversion_qty));
         } else {
           v.in_qty = inventoryReportModel.commaQty(v.in_qty);
@@ -2182,13 +2182,14 @@ router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req
   });
 }));
 
-router.get('/report/inventorystatus/:warehouseId/:genericTypeId', wrap(async (req, res, next) => {
+router.get('/report/inventorystatus/:warehouseId/:genericTypeId/:statusDate', wrap(async (req, res, next) => {
   let db = req.db;
   let warehouseId = req.params.warehouseId
   let genericTypeId = req.params.genericTypeId
+  let statusDate = req.params.statusDate
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.inventoryStatus(db, warehouseId, genericTypeId);
+  let rs = await inventoryReportModel.inventoryStatus(db, warehouseId, genericTypeId, statusDate);
   let list = rs[0]
   let sumlist = [];
   let sum = 0
@@ -2201,8 +2202,7 @@ router.get('/report/inventorystatus/:warehouseId/:genericTypeId', wrap(async (re
     sumlist.push(sum)
     for (let ii in list[i]) {
       list[i][ii].cost = inventoryReportModel.comma(list[i][ii].cost);
-      list[i][ii].max_qty = inventoryReportModel.commaQty(list[i][ii].max_qty);
-      list[i][ii].min_qty = inventoryReportModel.commaQty(list[i][ii].min_qty);
+      list[i][ii].unit_cost = inventoryReportModel.comma(list[i][ii].unit_cost);
       list[i][ii].qty = inventoryReportModel.commaQty(list[i][ii].qty);
     }
   }
