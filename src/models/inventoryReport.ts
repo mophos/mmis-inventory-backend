@@ -306,6 +306,7 @@ mgt.generic_type_id `
     // คิวรี่ view stockcards หลัก
     generic_stock(knex: Knex, genericId, startDate, endDate, warehouseId) {
         let sql = `SELECT
+        mg.working_code,
         vscw.stock_card_id,
         vscw.product_id,
         vscw.generic_id,
@@ -343,6 +344,7 @@ mgt.generic_type_id `
    LEFT JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
    AND vscw.transaction_type = 'REV_OTHER'
    LEFT JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id
+   join mm_generics as mg ON mg.generic_id = vscw.generic_id
    WHERE 
    vscw.warehouse_id = '${warehouseId}'
    AND
