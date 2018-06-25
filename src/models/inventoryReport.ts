@@ -2362,46 +2362,6 @@ OR sc.ref_src like ?
         return knex.raw(sql);
     }
 
-    adjustStock1(knex: Knex) {
-        let sql = `SELECT
-        generic_id
-    FROM
-        view_stock_card_warehouse 
-        where warehouse_id = '505'
-    GROUP BY
-        generic_id`;
-        return knex.raw(sql);
-    }
-
-    adjustStock2(knex: Knex, genericId) {
-        let sql = `SELECT
-        *
-    FROM
-        view_stock_card_warehouse 
-        where warehouse_id = '505' 
-        and generic_id = '${genericId}'
-        ORDER BY stock_card_id
-    `;
-        return knex.raw(sql);
-    }
-
-    adjustStock3(knex: Knex, genericId) {
-        let sql = `SELECT
-        product_id
-    FROM
-        view_stock_card_warehouse 
-        where warehouse_id = '505' 
-        and generic_id = '${genericId}'
-        group by product_id
-    `;
-        return knex.raw(sql);
-    }
-
-    adjustStockUpdate(knex: Knex, data) {
-        return knex('wm_stock_card')
-            .update(data).where('stock_card_id', data.stock_card_id);
-    }
-
     requisitionReport(knex: Knex, srcWarehouseId: any, dstWarehouseId: any, sdate: any, edate: any) {
         return knex('wm_requisition_confirm as wrc')
             .select('mg.generic_id', 'mg.generic_name')
