@@ -822,7 +822,7 @@ router.delete('/transfer/:transferId', co(async (req, res, next) => {
   let transferId = req.params.transferId;
 
   try {
-    const rs = await transferModel.checkStatus(db, transferId);
+    const rs = await transferModel.checkStatus(db, [transferId]);
     const status = rs[0];
     if (status.approved === 'Y') {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
@@ -878,10 +878,10 @@ router.get('/transfer/info-detail/:transferId', co(async (req, res, next) => {
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
-    const rsGenerics = await transferModel.getGenericInfo(db, transferId, srcWarehouseId);
+    const rsGenerics = await staffModel.getGenericInfo(db, transferId, srcWarehouseId);
     let _generics = rsGenerics[0];
     for (const g of _generics) {
-      const rsProducts = await transferModel.getProductsInfo(db, transferId, g.transfer_generic_id);
+      const rsProducts = await staffModel.getProductsInfo(db, transferId, g.transfer_generic_id);
       let _products = rsProducts[0];
       g.products = _products;
     }
@@ -902,7 +902,7 @@ router.put('/transfer/save/:transferId', co(async (req, res, next) => {
 
   if (_generics.length && _summary) {
     try {
-      const rs = await transferModel.checkStatus(db, transferId);
+      const rs = await transferModel.checkStatus(db, [transferId]);
       const status = rs[0];
       if (status.confirmed === 'Y' || status.approved === 'Y' || status.mark_deleted === 'Y') {
         res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });

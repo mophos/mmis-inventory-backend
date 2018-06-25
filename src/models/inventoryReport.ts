@@ -103,6 +103,58 @@ export class InventoryReportModel {
             ro.updated_at,
             mgd.dosage_name,
             ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
+            rci.wm_product_id,
+            concat(up.fname, ' ', up.lname) as full_name
+            FROM
+                wm_requisition_orders ro
+            JOIN wm_requisition_order_items roi ON ro.requisition_order_id = roi.requisition_order_id
+            JOIN wm_requisition_confirms rc ON rc.requisition_order_id = ro.requisition_order_id
+            JOIN wm_requisition_confirm_items rci ON rci.confirm_id = rc.confirm_id
+            AND roi.generic_id = rci.generic_id
+            JOIN mm_generics AS mg ON mg.generic_id = roi.generic_id
+            LEFT JOIN mm_generic_dosages AS mgd ON mgd.dosage_id = mg.dosage_id
+            JOIN wm_warehouses wh ON wh.warehouse_id = ro.wm_requisition
+            LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
+            JOIN mm_products mp ON wp.product_id = mp.product_id
+            JOIN mm_unit_generics AS mug ON wp.unit_generic_id = mug.unit_generic_id
+            JOIN mm_units AS mul ON mug.from_unit_id = mul.unit_id
+            JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
+            join um_people as up on up.people_id = ro.people_id
+            WHERE
+                ro.requisition_order_id = ?
+            AND rci.confirm_qty > 0
+            GROUP BY
+                rci.generic_id
+            ORDER BY
+            mg.generic_name`
+        return knex.raw(sql, requisId)
+    }
+    approve_requis2(knex: Knex, requisId) {
+        let sql = `SELECT
+            ro.requisition_code,
+            ro.requisition_date,
+            ro.updated_at,
+            ro.created_at,
+            ro.requisition_order_id,
+            mp.product_id,
+            mp.product_name,
+            mp.working_code AS trade_code,
+            roi.requisition_qty,
+            wp.cost,
+            wp.lot_no,
+            wp.expired_date,
+            sum(rci.confirm_qty) AS confirm_qty,
+            mul.unit_name AS large_unit,
+            mus.unit_name AS small_unit,
+            mug.qty as conversion_qty,
+            wh.warehouse_name,
+            rc.confirm_date,
+            mg.generic_id,
+            mg.working_code AS generic_code,
+            mg.generic_name,
+            ro.updated_at,
+            mgd.dosage_name,
+            ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
             rci.wm_product_id
             FROM
                 wm_requisition_orders ro
@@ -620,7 +672,7 @@ WHERE
 	r.requisition_order_id = '${requisId}' 
 	AND rci.confirm_qty != 0 
     GROUP BY
-        wp.product_id
+    rci.generic_id
     ORDER BY
         r.requisition_order_id`
         return (knex.raw(sql))
@@ -1996,7 +2048,7 @@ OR sc.ref_src like ?
       ORDER BY mg.generic_id`
         return knex.raw(sql);
     }
-    getDetailListRequis(knex: Knex, requisId, warehouseId, productId) {
+    getDetailListRequis(knex: Knex, requisId, warehouseId, genericId) {
         let sql = `select * from (SELECT
           mg.working_code AS generic_code,
           mg.generic_name,
@@ -2033,7 +2085,7 @@ OR sc.ref_src like ?
         LEFT JOIN mm_units AS mus ON mup.to_unit_id = mus.unit_id
         WHERE
           r.requisition_order_id = '${requisId}'
-        AND rci.confirm_qty != 0 and wp.product_id='${productId}'
+        AND rci.confirm_qty != 0 and rci.generic_id = '${genericId}'
         GROUP BY
           wp.product_id,wp.lot_no
         UNION ALL
@@ -2079,7 +2131,7 @@ OR sc.ref_src like ?
               LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
               AND wp.warehouse_id = r.wm_withdraw
               WHERE
-                r.requisition_order_id = '${requisId}' and wp.product_id='${productId}'
+                r.requisition_order_id = '${requisId}' and rci.generic_id = '${genericId}'
               GROUP BY
                 wp.product_id
            
@@ -2091,7 +2143,7 @@ OR sc.ref_src like ?
         ) as sq1 where sq1.remain > 0
         ) as a
         group by a.product_id,a.lot_no
-        ORDER BY a.generic_code desc`
+        ORDER BY a.generic_code desc, a.product_id asc`
         return knex.raw(sql);
     }
     getHeadRequis(knex: Knex, requisId) {
@@ -2308,6 +2360,46 @@ OR sc.ref_src like ?
     WHERE
         v.generic_id IS NULL`
         return knex.raw(sql);
+    }
+
+    adjustStock1(knex: Knex) {
+        let sql = `SELECT
+        generic_id
+    FROM
+        view_stock_card_warehouse 
+        where warehouse_id = '505'
+    GROUP BY
+        generic_id`;
+        return knex.raw(sql);
+    }
+
+    adjustStock2(knex: Knex, genericId) {
+        let sql = `SELECT
+        *
+    FROM
+        view_stock_card_warehouse 
+        where warehouse_id = '505' 
+        and generic_id = '${genericId}'
+        ORDER BY stock_card_id
+    `;
+        return knex.raw(sql);
+    }
+
+    adjustStock3(knex: Knex, genericId) {
+        let sql = `SELECT
+        product_id
+    FROM
+        view_stock_card_warehouse 
+        where warehouse_id = '505' 
+        and generic_id = '${genericId}'
+        group by product_id
+    `;
+        return knex.raw(sql);
+    }
+
+    adjustStockUpdate(knex: Knex, data) {
+        return knex('wm_stock_card')
+            .update(data).where('stock_card_id', data.stock_card_id);
     }
 
     requisitionReport(knex: Knex, srcWarehouseId: any, dstWarehouseId: any, sdate: any, edate: any) {

@@ -347,7 +347,7 @@ router.post('/allocate', async (req, res, next) => {
           conversion_qty: p.conversion_qty,
           generic_id: p.generic_id,
           pack_remain_qty: Math.floor(remainQty / p.conversion_qty),
-          small_remain_qty:remainQty,
+          small_remain_qty: remainQty,
           product_name: p.product_name,
           from_unit_name: p.from_unit_name,
           to_unit_name: p.to_unit_name,
@@ -356,7 +356,9 @@ router.post('/allocate', async (req, res, next) => {
           product_id: p.product_id,
           product_qty: qty,
         }
-        allocate.push(obj);
+        if (remainQty > 0) {
+          allocate.push(obj);
+        }
       }
 
     }
