@@ -21,24 +21,24 @@ html
         tr
           td.center.bold.head(colspan='10' style="font-size: 13pt;") #{hospitalName}
         tr
-          td.center.bold.head(colspan='10' style="font-size: 13pt;") รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ
+          td.center.bold.head(colspan='10' style="font-size: 13pt;") รายงานเวชภัณฑ์ที่รับอื่นๆ (บริจาค)
         //- tr
         //-   td.center.bold.head(colspan='10' style="font-size: 13pt;") วันที่ #{startdate} ถึง #{enddate}
         tr
           td.left(colspan='10' style="font-size: 13pt;") #{printDate}
         tr.dash-top(style="font-size: 13pt;")
           td.left เลขที่รับ
+          td.left เลขที่ส่ง
           td.left วันรับของ
-          td.left เลขที่ใบสั่งซื้อ
-          td.left เลขที่ใบส่งของ
-          td.left บริษัทผู้จำหน่าย
-          td(colspan='2').right ส่วนลด
-          td.right วิธีจัดซื้อ
-          td.right ประเภทงบ
+          td.left 
+          td.left 
+          td(colspan='2').right 
+          td.right 
+          td.right 
         tr.dash-bottom(style="font-size: 13pt;")
           td 
-          td.left รหัสยา
           td
+          td.left รหัสยา
           td(colspan='2').left รายการยา
           td
           td.right จำนวนที่รับ
@@ -50,19 +50,19 @@ html
             - y++
               tr(style="font-size: 12pt;")
                 td.left #{b.receive_code}
-                td.left #{b.receive_date}
-                td.left #{b.purchase_order_number}
                 td.left #{b.delivery_code}
-                td.left #{b.labeler_name_po}
+                td.left #{b.receive_date}
+                td.left 
+                td.left 
                 td
-                td.right(style='font-size: 10pt;') #{b.discount_cash}
-                td.right &nbsp;#{b.bid_name}
-                td.right #{b.bgtype_name}
+                td.right(style='font-size: 10pt;') 
+                td.right &nbsp;
+                td.right 
               tr(style="font-size: 13pt;")
+                td
                 td
                 td #{b.generic_id}
                 td.left(colspan='3')  #{b.generic_name}
-                td
                 td.right #{b.receive_qty} x #{b.qty} (#{b.unit_name})
                 td.right #{b.total_cost}
                 td.right #{b.expired_date}

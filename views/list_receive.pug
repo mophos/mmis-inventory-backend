@@ -24,7 +24,7 @@ html
               td(colspan='3') เลขที่ใบส่งของ : #{a.delivery_code}
             tr
               td(colspan='2') รหัสผู้จำหน่าย : #{a.vendor_labeler_id}
-              td(colspan='3') ผู้จำหน่าย : #{a.labeler_name}
+              td(colspan='3') ผู้จำหน่าย : #{a.labeler_name_po}
               td(colspan='3') ราคา #{a.unit_price}/#{a.small_qty} #{a.small_unit}
             tr
               td รหัสเวชภัณฑ์
@@ -42,7 +42,7 @@ html
             td #{a.receive_qty}x#{a.small_qty}
             td #{a.expired_date}
             td #{a.lot_no}
-            td #{a.labeler_name_m}
+            td #{a.labeler_name_po_m}
             td 
           -check=a.receive_id
           if(a.receive_id=='')
@@ -53,7 +53,7 @@ html
               td #{a.receive_qty}x#{a.small_qty}
               td #{a.expired_date}
               td #{a.lot_no}
-              td #{a.labeler_name_m}
+              td #{a.labeler_name_po_m}
               td 
       tfoot 
         tr.tbfooter

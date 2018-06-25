@@ -28,7 +28,7 @@ router.get('/getall/:year', wrap(async (req, res, next) => {
   let year = req.params.year;
   try {
     let rs = await periodModel.getall(db, year);
-    let today = moment(new Date()).format('YYYY-MM');
+    let today = moment().format('YYYY-MM');
     let temp;
     rs.forEach(v => {
       temp = v.period_year + '-' + v.period_month;

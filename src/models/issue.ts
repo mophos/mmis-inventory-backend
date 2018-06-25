@@ -16,7 +16,7 @@ export class IssueModel {
 
   updateSummaryApprove(knex: Knex, issueIds: any, data: any) {
     return knex('wm_issue_summary')
-      .whereIn('issue_id', issueIds)
+      .where('issue_id', issueIds)
       .update(data);
   }
 
@@ -478,12 +478,6 @@ WHERE
       .where('wm.product_id', productId)
   }
 
-  checkApprove(knex: Knex, username: any, password: any, action: any) {
-    return knex('sys_approve as sa')
-      .leftJoin('um_users as uu', 'uu.user_id', 'sa.user_id')
-      .where('sa.action_name', action)
-      .andWhere('uu.username', username)
-      .andWhere('sa.password', password)
-  }
+  
 
 }

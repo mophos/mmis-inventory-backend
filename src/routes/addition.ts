@@ -11,7 +11,7 @@ import { StockCard } from '../models/stockcard';
 import { SerialModel } from '../models/serial';
 
 const router = express.Router();
-const printDate = 'วันที่พิมพ์ ' + moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543) + moment(new Date()).format(', HH:mm:ss น.');
+const printDate = 'วันที่พิมพ์ ' + moment().format('D MMMM ') + (moment().get('year') + 543) + moment().format(', HH:mm:ss น.');
 
 const additionModel = new Addition();
 const inventoryReportModel = new InventoryReportModel();
@@ -21,6 +21,7 @@ const serialModel = new SerialModel();
 router.get('/warehouse', async (req, res, next) => {
 
   let db = req.db;
+  let query = req.query.query == 'undefined' ? null : req.query.query;
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
@@ -33,7 +34,7 @@ router.get('/warehouse', async (req, res, next) => {
         _types.push(v);
       });
 
-      let rs: any = await additionModel.getWarehouse(db, srcWarehouseId, _types);
+      let rs: any = await additionModel.getWarehouse(db, srcWarehouseId, _types, query);
       res.send({ ok: true, rows: rs });
     } else {
       res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
@@ -95,6 +96,7 @@ router.get('/generic/warehouse/:genericId', async (req, res, next) => {
 router.get('/generic', async (req, res, next) => {
 
   let db = req.db;
+  let query = req.query.query == 'undefined' ? null : req.query.query;
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
@@ -107,7 +109,7 @@ router.get('/generic', async (req, res, next) => {
         _types.push(v);
       });
 
-      let rs: any = await additionModel.getGeneric(db, srcWarehouseId, _types);
+      let rs: any = await additionModel.getGeneric(db, srcWarehouseId, _types, query);
       res.send({ ok: true, rows: rs });
     } else {
       res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
@@ -123,10 +125,11 @@ router.get('/generic', async (req, res, next) => {
 router.get('/history', async (req, res, next) => {
 
   let db = req.db;
+  let query = req.query.query == 'undefined' ? null : req.query.query;
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
-    let rs: any = await additionModel.getTransactionHistory(db, srcWarehouseId);
+    let rs: any = await additionModel.getTransactionHistory(db, srcWarehouseId, query);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     console.log(error)
@@ -140,10 +143,11 @@ router.get('/list/:status', async (req, res, next) => {
 
   let db = req.db;
   let status = req.params.status;
+  let query = req.query.query == 'undefined' ? null : req.query.query;
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
-    let rs: any = await additionModel.getTransaction(db, srcWarehouseId, status);
+    let rs: any = await additionModel.getTransaction(db, srcWarehouseId, status, query);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     console.log(error)
@@ -182,7 +186,7 @@ router.get('/print/transaction/:transactionId', async (req, res, next) => {
     let hospitalName = hosdetail[0].hospname;
     moment.locale('th')
     let create_date = moment(rs.create_date).format('DD MMMM ') + (moment(rs.create_date).get('year') + 543);
-    let today = moment(new Date()).format('DD MMMM ') + (moment(new Date()).get('year') + 543);
+    let today = moment().format('DD MMMM ') + (moment().get('year') + 543);
 
     rs.forEach(v => {
       v.expired_date = moment(v.expired_date).format('DD MMMM ') + (moment(v.expired_date).get('year') + 543);
@@ -216,7 +220,7 @@ router.get('/print/transactions', async (req, res, next) => {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
     moment.locale('th')
-    let today = moment(new Date()).format('DD MMMM ') + (moment(new Date()).get('year') + 543);
+    let today = moment().format('DD MMMM ') + (moment().get('year') + 543);
     addition_id = Array.isArray(addition_id) ? addition_id : [addition_id];
     for (let h of addition_id) {
       let _detail:any = []
@@ -273,7 +277,7 @@ router.get('/print/approve', async (req, res, next) => {
     const hosdetail = await inventoryReportModel.hospital(db);
     const hospitalName = hosdetail[0].hospname;
     moment.locale('th')
-    const today = moment(new Date()).format('DD MMMM ') + (moment(new Date()).get('year') + 543);
+    const today = moment().format('DD MMMM ') + (moment().get('year') + 543);
     let header: any = []
     let detail: any = []
     let sum: any = []

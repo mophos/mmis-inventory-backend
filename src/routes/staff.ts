@@ -46,7 +46,7 @@ const hisTransactionModel = new HisTransactionModel();
 const requisitionTypeModel = new RequisitionTypeModel();
 const periodModel = new PeriodModel();
 
-let uploadDir = './uploads';
+let uploadDir = path.join(process.env.MMIS_DATA, 'uploaded');
 
 fse.ensureDirSync(uploadDir);
 
@@ -116,10 +116,10 @@ router.get('/getproduct/:issue_id', co(async (req, res, next) => {
   }
 }));
 
-router.get('/warehouse/products/:genericType?', co(async (req, res, next) => {
+router.get('/warehouse/products', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let db = req.db;
-  let genericType = req.params.genericType;
+  let genericType = req.query.genericType;
 
   let productGroups = req.decoded.generic_type_id;
   let _pgs = [];
@@ -130,7 +130,7 @@ router.get('/warehouse/products/:genericType?', co(async (req, res, next) => {
       _pgs.push(v);
     });
     try {
-      let rows = await warehouseModel.getProductsWarehouse(db, warehouseId, _pgs, genericType);
+      let rows = await warehouseModel.getProductsWarehouseStaff(db, warehouseId, _pgs, genericType);
       res.send({ ok: true, rows: rows });
     } catch (error) {
       console.log(error);
@@ -142,6 +142,137 @@ router.get('/warehouse/products/:genericType?', co(async (req, res, next) => {
     res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
   }
 }));
+
+router.get('/warehouse/products/search', co(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let db = req.db;
+  let genericType = req.query.genericType;
+  let query = req.query.query;
+
+  let productGroups = req.decoded.generic_type_id;
+  let _pgs = [];
+
+  if (productGroups) {
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+    try {
+      let rows = await warehouseModel.getProductsWarehouseSearchStaff(db, warehouseId, _pgs, genericType, query);
+      res.send({ ok: true, rows: rows });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  }
+}));
+
+router.get('/products/stock/remain/:productId', co(async (req, res, next) => {
+  let db = req.db;
+  let productId = req.params.productId;
+  let warehouseId = req.decoded.warehouseId;
+  try {
+    let rs = await staffModel.adminGetAllProductsDetailList(db, productId, warehouseId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/warehouse/generics/requisition', co(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let db = req.db;
+  let genericType = req.query.genericType;
+  if (typeof genericType === 'string') { genericType = [genericType]; }
+  try {
+    let rows = await warehouseModel.getGenericsWarehouseRequisitionStaff(db, warehouseId, genericType);
+    res.send({ ok: true, rows: rows });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/warehouse/generics/requisition/search', co(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let db = req.db;
+  let genericType = req.query.genericType;
+  let query = req.query.query;
+  if (typeof genericType === 'string') { genericType = [genericType]; }
+  try {
+    let rows = await warehouseModel.getGenericsWarehouseRequisitionSearchStaff(db, warehouseId, genericType, query);
+    res.send({ ok: true, rows: rows });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/warehouse/generics', co(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let db = req.db;
+  let genericType = req.query.genericType;
+
+  let productGroups = req.decoded.generic_type_id;
+  let _pgs = [];
+
+  if (productGroups) {
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+    try {
+      let rows = await warehouseModel.getGenericsWarehouseStaff(db, warehouseId, _pgs, genericType);
+      res.send({ ok: true, rows: rows });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  }
+}));
+
+router.get('/warehouse/generics/search', co(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let db = req.db;
+  let genericType = req.query.genericType;
+  let query = req.query.query;
+
+  let productGroups = req.decoded.generic_type_id;
+  let _pgs = [];
+
+  if (productGroups) {
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+    try {
+      let rows = await warehouseModel.getGenericsWarehouseSearch(db, warehouseId, _pgs, genericType, query);
+      res.send({ ok: true, rows: rows });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  }
+}));
+
 router.post('/warehouse/products/search/', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let db = req.db;
@@ -224,8 +355,7 @@ router.get('/warehouse/generics/min-max', co(async (req, res, next) => {
 
 router.post('/warehouse/save-minmax', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
-  let _fromDate = req.body.fromDate;
-  let _toDate = req.body.toDate;
+  let _processDate = req.body.processDate;
   let db = req.db;
 
   let items = req.body.items;
@@ -244,8 +374,7 @@ router.post('/warehouse/save-minmax', co(async (req, res, next) => {
       obj.safety_min_day = +v.safety_min_day;
       obj.safety_max_day = +v.safety_max_day;
       obj.use_total = +v.use_total;
-      obj.from_stock_date = moment(_fromDate).format('YYYY-MM-DD');
-      obj.to_stock_date = moment(_toDate).format('YYYY-MM-DD');
+      obj.process_date = moment(_processDate).format('YYYY-MM-DD');
       _items.push(obj);
     });
 
@@ -534,7 +663,6 @@ const transferApprove = (async (db: Knex, transferIds: any[], peopleUserId: any)
       data.push(objOut);
     }
   });
-
   await transferModel.saveDstProducts(db, dstProducts);
   await transferModel.decreaseQty(db, dstProducts);
   await transferModel.changeApproveStatusIds(db, transferIds, peopleUserId);
@@ -647,8 +775,9 @@ router.post('/transfer/save', co(async (req, res, next) => {
           let generics = {
             transfer_id: transferId,
             generic_id: g.generic_id,
-            transfer_qty: g.transfer_qty,
+            transfer_qty: g.transfer_qty * g.conversion_qty,
             primary_unit_id: g.primary_unit_id,
+            unit_generic_id: g.unit_generic_id,
             location_id: g.location_id,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
@@ -661,7 +790,7 @@ router.post('/transfer/save', co(async (req, res, next) => {
               transfer_id: transferId,
               transfer_generic_id: rsTransferGeneric[0],
               wm_product_id: p.wm_product_id,
-              product_qty: p.product_qty * p.conversion_qty,
+              product_qty: p.product_qty,
               create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
               create_by: req.decoded.people_user_id
             });
@@ -693,9 +822,9 @@ router.delete('/transfer/:transferId', co(async (req, res, next) => {
   let transferId = req.params.transferId;
 
   try {
-    const rs = await transferModel.checkStatus(db, transferId);
+    const rs = await transferModel.checkStatus(db, [transferId]);
     const status = rs[0];
-    if (status.confirmed === 'Y' || status.approved === 'Y') {
+    if (status.approved === 'Y') {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
     } else {
       let rows = await transferModel.removeTransfer(db, transferId);
@@ -749,10 +878,10 @@ router.get('/transfer/info-detail/:transferId', co(async (req, res, next) => {
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
-    const rsGenerics = await transferModel.getGenericInfo(db, transferId, srcWarehouseId);
+    const rsGenerics = await staffModel.getGenericInfo(db, transferId, srcWarehouseId);
     let _generics = rsGenerics[0];
     for (const g of _generics) {
-      const rsProducts = await transferModel.getProductsInfo(db, transferId, g.transfer_generic_id);
+      const rsProducts = await staffModel.getProductsInfo(db, transferId, g.transfer_generic_id);
       let _products = rsProducts[0];
       g.products = _products;
     }
@@ -773,7 +902,7 @@ router.put('/transfer/save/:transferId', co(async (req, res, next) => {
 
   if (_generics.length && _summary) {
     try {
-      const rs = await transferModel.checkStatus(db, transferId);
+      const rs = await transferModel.checkStatus(db, [transferId]);
       const status = rs[0];
       if (status.confirmed === 'Y' || status.approved === 'Y' || status.mark_deleted === 'Y') {
         res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
@@ -791,8 +920,9 @@ router.put('/transfer/save/:transferId', co(async (req, res, next) => {
           let generics = {
             transfer_id: transferId,
             generic_id: g.generic_id,
-            transfer_qty: g.transfer_qty,
+            transfer_qty: g.transfer_qty * g.conversion_qty,
             primary_unit_id: g.primary_unit_id,
+            unit_generic_id: g.unit_generic_id,
             location_id: g.location_id,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
@@ -805,7 +935,7 @@ router.put('/transfer/save/:transferId', co(async (req, res, next) => {
               transfer_id: transferId,
               transfer_generic_id: rsTransferGeneric[0],
               wm_product_id: p.wm_product_id,
-              product_qty: p.product_qty * p.conversion_qty,
+              product_qty: p.product_qty,
               create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
               create_by: req.decoded.people_user_id
             });
@@ -1113,7 +1243,6 @@ router.put('/issue-transaction/:issueId', co(async (req, res, next) => {
 }));
 
 router.post('/issue-transaction/approve', co(async (req, res, next) => {
-
   let db = req.db;
   let issueIds = req.body.issueIds;
 
@@ -1951,6 +2080,32 @@ router.get('/requisition/templates-items/:templateId', async (req, res, next) =>
   }
 });
 
+router.get('/tranfer/templates-items/:templateId', async (req, res, next) => {
+  let db = req.db;
+  let templateId = req.params.templateId;
+  try {
+    let rs: any = await orderModel.getTemplateTranferItems(db, templateId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
+router.get('/warehouse/tranfer/dst', async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.query.warehouseId;
+  try {
+    let rs: any = await warehouseModel.getTranferWarehouseDst(db, warehouseId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
 // file update 
 // upload his transaction
 router.post('/his-transaction/upload', upload.single('file'), co(async (req, res, next) => {
@@ -2324,7 +2479,7 @@ router.get('/report/issue', async (req, res, next) => {
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   moment.locale('th');
-  let today = moment(new Date()).format('D MMMM ') + (moment(new Date()).get('year') + 543);
+  let today = moment().format('D MMMM ') + (moment().get('year') + 543);
   for (let ii in issue_id) {
     let i: any = issue_body.filter(person => person.issue_id == +issue_id[ii]);
     issueBody.push(i[0])

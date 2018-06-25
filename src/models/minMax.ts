@@ -5,11 +5,15 @@ export class MinMaxModel {
 
   getHeader(knex: Knex, warehouseId: any) {
     let sql = `
-      select from_stock_date, to_stock_date
+    select DATE_SUB(CURDATE(),INTERVAL IFNULL(s.value, s.default) DAY) from_stock_date
+    , CURDATE() to_stock_date
+    , (select process_date
       from mm_generic_planning
       where warehouse_id = ?
       and is_active = 'Y'
-      limit 1
+      limit 1) process_date
+    from sys_settings s
+    where s.action_name = 'WM_MIN_MAX_USED_DAY'
     `;
     return knex.raw(sql, [warehouseId]);
   }
@@ -54,9 +58,9 @@ export class MinMaxModel {
   calculateMinMax(knex: Knex, warehouseId: any, fromDate: any, toDate: any, genericGroups: any[]) {
     let sql = `
       select mp.generic_id, mg.working_code, mg.generic_name, sum(wp.qty) qty, mu.unit_name 
-      , IFNULL(sc.use_total, 0) use_total, IFNULL(CEIL(sc.use_per_day), 0) use_per_day
-      , IFNULL(gp.safety_min_day, 0) safety_min_day
-      , IFNULL(gp.safety_max_day, 0) safety_max_day
+      , IFNULL(sc.use_total, 0) use_total, IFNULL(sc.use_per_day, 0) use_per_day
+      , IFNULL(gp.safety_min_day, (select IFNULL(a.value, a.default) from sys_settings a where a.action_name = 'WM_SAFETY_MIN_DAY')) safety_min_day
+      , IFNULL(gp.safety_max_day, (select IFNULL(b.value, b.default) from sys_settings b where b.action_name = 'WM_SAFETY_MAX_DAY')) safety_max_day
       , IFNULL(gp.lead_time_day, 0) lead_time_day
       , IFNULL(gp.rop_qty, 0) rop_qty
       , IFNULL(gp.ordering_cost, 0) ordering_cost
@@ -72,10 +76,10 @@ export class MinMaxModel {
         select 
         ws.generic_id
         , SUM(ws.out_qty) use_total
-        , IFNULL(SUM(ws.out_qty), 0) / (DATEDIFF(?, ?)+1) use_per_day
+        , IFNULL(SUM(ws.out_qty), 0) / DATEDIFF(?, ?) use_per_day
         from wm_stock_card ws
         where ws.ref_src = ?
-        and ws.transaction_type in ('TRN_OUT', 'ISS', 'HIS')
+        and ws.transaction_type in ('TRN_OUT', 'ISS', 'HIS', 'REQ_OUT', 'ADJUST', 'ADD_OUT')
         and (date(ws.stock_date) between ? and ?)
         group by ws.generic_id
       ) sc on sc.generic_id = mp.generic_id

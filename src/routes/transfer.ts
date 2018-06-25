@@ -120,9 +120,9 @@ router.delete('/:transferId', co(async (req, res, next) => {
   let transferId = req.params.transferId;
 
   try {
-    const rs = await transferModel.checkStatus(db, transferId);
+    const rs = await transferModel.checkStatus(db, [transferId]);
     const status = rs[0];
-    if (status.confirmed === 'Y' || status.approved === 'Y') {
+    if (status.approved === 'Y') {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
     } else {
       let rows = await transferModel.removeTransfer(db, transferId);
@@ -171,6 +171,8 @@ router.post('/save', co(async (req, res, next) => {
             transfer_qty: g.transfer_qty,
             primary_unit_id: g.primary_unit_id,
             location_id: g.location_id,
+            unit_generic_id: g.unit_generic_id,
+            // conversion_qty: g.conversion_qty,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
           };
@@ -219,7 +221,7 @@ router.put('/save/:transferId', co(async (req, res, next) => {
   let transferId = req.params.transferId;
 
   if (_generics.length && _summary) {
-    const rs = await transferModel.checkStatus(db, transferId);
+    const rs = await transferModel.checkStatus(db, [transferId]);
     const status = rs[0];
     if (status.confirmed === 'Y' || status.approved === 'Y' || status.mark_deleted === 'Y') {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
@@ -239,7 +241,7 @@ router.put('/save/:transferId', co(async (req, res, next) => {
             transfer_id: transferId,
             generic_id: g.generic_id,
             transfer_qty: g.transfer_qty,
-            // unit_generic_id: g.unit_generic_id,
+            unit_generic_id: g.unit_generic_id,
             primary_unit_id: g.primary_unit_id,
             location_id: g.location_id,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),

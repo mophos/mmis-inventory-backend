@@ -18,13 +18,13 @@
     "dotenv": "^4.0.0",
     "express": "^4.15.2",
     "fs-extra": "^3.0.1",
-    "gulp": "^3.9.1",
+    "gulp": "^4.0.0",
     "gulp-data": "^1.2.1",
     "gulp-pug": "^3.3.0",
     "html-pdf": "^2.1.0",
     "json2xls": "^0.1.2",
-    "jsonwebtoken": "^7.4.0",
-    "knex": "^0.13.0",
+    "jsonwebtoken": "^8.2.2",
+    "knex": "^0.14.6",
     "lodash": "^4.17.4",
     "moment": "^2.18.1",
     "morgan": "^1.8.1",
@@ -51,8 +51,8 @@
     "@types/node": "^7.0.15",
     "@types/random-js": "^1.0.28",
     "@types/serve-favicon": "^2.2.27",
-    "nodemon": "^1.17.2",
+    "nodemon": "^1.17.5",
     "ts-node": "^6.0.2",
-    "typescript": "^2.7.2"
+    "typescript": "^2.8.3"
   }
 }

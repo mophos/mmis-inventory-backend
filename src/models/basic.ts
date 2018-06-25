@@ -2,7 +2,11 @@ import Knex = require('knex');
 import * as moment from 'moment';
 
 export class BasicModel {
-
+  checkApprove(knex: Knex, username: any, password: any) {
+    return knex('um_users as uu')
+      .andWhere('uu.username', username)
+      .andWhere('uu.password',  password)
+  }
   getProductVendors(knex: Knex, genericId: any) {
     return knex('mm_products as mp')
       .select('ml.labeler_name', 'ml.labeler_id')
@@ -137,7 +141,7 @@ export class BasicModel {
 
   getGenericGroups(knex: Knex) {
     return knex('mm_generic_types')
-      .where('isactive', '1');
+      .where('is_actived', 'Y');
   }
 
   getGenericInGroups(knex: Knex, groupId: any) {
