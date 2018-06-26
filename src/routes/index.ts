@@ -490,7 +490,7 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
   let warehouseId = req.query.warehouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-
+  let dateSetting = req.decoded.WM_STOCK_DATE == 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
   let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
 
@@ -509,7 +509,7 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
   // console.log(genericId, '**************');
 
   for (let id in genericId) {
-    generic_stock = await inventoryReportModel.generic_stock(db, genericId[id], _startDate, _endDate, warehouseId);
+    generic_stock = await inventoryReportModel.generic_stock(db, dateSetting, genericId[id], _startDate, _endDate, warehouseId);
 
     if (generic_stock[0].length > 0) {
       _genericId.push(generic_stock[0][0].generic_id)
@@ -572,7 +572,7 @@ router.get('/report/generic/stock2/', wrap(async (req, res, next) => {
   let warehouseId = req.query.warehouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-
+  let dateSetting = req.decoded.WM_STOCK_DATE == 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
   let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
 
@@ -591,7 +591,7 @@ router.get('/report/generic/stock2/', wrap(async (req, res, next) => {
   // console.log(genericId, '**************');
 
   for (let id in genericId) {
-    generic_stock = await inventoryReportModel.generic_stock(db, genericId[id], _startDate, _endDate, warehouseId);
+    generic_stock = await inventoryReportModel.generic_stock(db, dateSetting, genericId[id], _startDate, _endDate, warehouseId);
 
     if (generic_stock[0].length > 0) {
       _genericId.push(generic_stock[0][0].generic_id)
@@ -650,7 +650,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
   let warehouseId = req.query.warehouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-
+  let dateSetting = req.decoded.WM_STOCK_DATE == 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
   let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
 
@@ -674,9 +674,10 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
   // console.log(genericId, '**************');
 
   for (let id in genericId) {
-    summit = await inventoryReportModel.summit_stockcard(db, genericId[id], _startDate, warehouseId)
-    generic_stock = await inventoryReportModel.generic_stock(db, genericId[id], _startDate, _endDate, warehouseId);
-    inventory_stock = await inventoryReportModel.inventory_stockcard(db, genericId[id], _endDate, warehouseId)
+
+    summit = await inventoryReportModel.summit_stockcard(db, dateSetting, genericId[id], _startDate, warehouseId)
+    generic_stock = await inventoryReportModel.generic_stock(db, dateSetting, genericId[id], _startDate, _endDate, warehouseId);
+    inventory_stock = await inventoryReportModel.inventory_stockcard(db, dateSetting, genericId[id], _endDate, warehouseId)
 
     if (generic_stock[0].length > 0) {
       _genericId.push(generic_stock[0][0].generic_id)
@@ -692,7 +693,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
         const _in_qty = +e.in_qty;
         const _out_qty = +e.out_qty;
         const _conversion_qty = +e.conversion_qty;
-        e.stock_date = moment(e.stock_date).format('DD/MM/') + (moment(e.stock_date).get('year') + 543);
+        e.stock_date = moment(e.stock_date, 'YYYY-MM-DD').isValid() ? moment(e.stock_date).format('DD/MM/') + (moment(e.stock_date).get('year') + 543) : '-';
         e.expired_date = moment(e.expired_date, 'YYYY-MM-DD').isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year')) : '-';
         e.balance_generic_qty = inventoryReportModel.commaQty(e.balance_generic_qty);
         e.in_cost = inventoryReportModel.comma(_in_qty * +e.balance_unit_cost);
@@ -721,7 +722,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
         const _out_qty = +v.out_qty;
         const _conversion_qty = +v.conversion_qty;
 
-        v.stock_date = moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543);
+        v.stock_date = moment(v.stock_date, 'YYYY-MM-DD').isValid() ? moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543) : '-';
         v.expired_date = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('DD/MM/') + (moment(v.expired_date).get('year')) : '-';
         v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
         v.in_cost = inventoryReportModel.comma(_in_qty * +v.balance_unit_cost);
