@@ -20,7 +20,7 @@ html
               td.left(colspan='4')(style="font-size: 15pt;") เลขที่ใบเบิก #{c[0].requisition_code}
               td.right(colspan='5')(style="font-size: 15pt;") วันที่อนุมัติ #{c[0].confirm_date}
             tr 
-              td.left(colspan='9')(style="font-size: 15pt;") หน่วยงานที่เบิก #{c[0].warehouse_name}
+              td.left(colspan='4')(style="font-size: 15pt;") หน่วยงานที่เบิก #{c[0].warehouse_name}
               td.right(colspan='5')(style="font-size: 15pt;") วันที่เบิก #{c[0].requisition_date}
             tr 
               td.left(colspan='9')(style="font-size: 15pt;") ณ วันที่ #{c[0].today}
@@ -32,9 +32,9 @@ html
               th.left(style="width: 3%;") รูปแบบ
               th.right(style="width: 14%;") จำนวนขอเบิก
               th.right(style="width: 14%;") จำนวนอนุมัติ
-              //- th.right(style="width: 10%;") มูลค่า/แพ็ค
-              //- th.left(style="width: 8%;") &nbsp;lot
-              //- th.right(style="width: 8%;") วันหมดอายุ
+              th.right(style="width: 10%;") มูลค่า/แพ็ค
+              th.left(style="width: 8%;") &nbsp;lot
+              th.right(style="width: 8%;") วันหมดอายุ
               th.right(style="width: 10%;") รวมมูลค่า
           tbody
           - var y=0
@@ -46,25 +46,26 @@ html
                 td #{s+1}.
                 td(style="font-size: 12pt;") &nbsp;#{a.generic_name}
                 td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
-                td.right(style="font-size: 12pt;") &nbsp;#{a.requisition_qty } #{a.small_unit}
+                td.right(style="font-size: 12pt;") &nbsp;#{a.requisition_qty } #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
                 - s++
               else
-                if ( c[y-2].product_id !== a.product_id )  
+                if ( c[y-2].generic_name !== a.generic_name )  
                   td #{s+1}.
                   td(style="font-size: 12pt;") &nbsp;#{a.generic_name}
                   td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
-                  td.right(style="font-size: 12pt;") &nbsp;#{a.requisition_qty} #{a.small_unit}
+                  td.right(style="font-size: 12pt;") &nbsp;#{a.requisition_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
                   - s++
                 else 
                   td 
                   td 
                   td 
                   td.right 
-              td.right(style="font-size: 12pt;") &nbsp;#{a.confirm_qty} #{a.small_unit}
-              //- td.right(style="font-size: 12pt;") &nbsp;#{a.cost}
-              //- td(style="font-size: 12pt; word-break:break-all;") &nbsp;#{a.lot_no}
-              //- td.right(style="font-size: 12pt;") &nbsp;#{a.expired_date}
+              td.right(style="font-size: 12pt;") &nbsp;#{a.confirm_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
+              td.right(style="font-size: 12pt;") &nbsp;#{a.cost}
+              td(style="font-size: 12pt; word-break:break-all;") &nbsp;#{a.lot_no}
+              td.right(style="font-size: 12pt;") &nbsp;#{a.expired_date}
               td.right(style="font-size: 12pt;") &nbsp;#{a.total_cost}
+            .pagebreak
             .pagebreak
           tfoot
             tr.dash-top
@@ -86,7 +87,7 @@ html
                   
                 else
                   td.right ลงชื่อ
-                  td.center 
+                  td.center(style="border-bottom:1px dashed black;width:25%;")
                   td.left (ผู้เบิก)
                 td
                 td.right ลงชื่อ
