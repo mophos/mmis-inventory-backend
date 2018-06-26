@@ -803,15 +803,12 @@ export class ReceiveModel {
     and pc.is_cancel != 'Y'`;
 
     if (query) sql += `and pc.purchase_order_number LIKE ${_query}`
+    if (query) sql += `or pc.purchase_order_book_number LIKE ${_query}`
 
     if (sort.by) {
       let reverse = sort.reverse ? 'DESC' : 'ASC';
       if (sort.by === 'purchase_order_number') {
         sql += ` order by pc.purchase_order_number ${reverse} `;
-      }
-
-      if (sort.by === 'purchase_order_book_number') {
-        sql += ` order by pc.purchase_order_book_number ${reverse} `;
       }
 
       if (sort.by === 'order_date') {
