@@ -650,7 +650,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
   let warehouseId = req.query.warehouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let dateSetting = req.decoded.WM_STOCK_DATE == 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
   let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
 
@@ -671,7 +671,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
   let _inventory_stock: any = [];
   genericId = Array.isArray(genericId) ? genericId : [genericId]
   Array.isArray(genericId)
-  // console.log(genericId, '**************');
+  console.log(req.decoded.WM_STOCK_DATE, '**************');
 
   for (let id in genericId) {
 
