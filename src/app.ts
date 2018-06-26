@@ -1,18 +1,16 @@
-'use strict';
+
 import * as path from 'path';
 let envPath = path.join(__dirname, '../../mmis-config');
 require('dotenv').config(({ path: envPath }));
 
 import * as express from 'express';
-import * as favicon from 'serve-favicon';
+import { NextFunction, Request, Response } from 'express';
 import * as logger from 'morgan';
 import * as cookieParser from 'cookie-parser';
 import * as bodyParser from 'body-parser';
 import * as cors from 'cors';
-import * as fse from 'fs-extra';
 import * as _ from 'lodash';
 
-const protect = require('@risingstack/protect');
 // path for export report
 // const pugPath = process.env.PUG_PATH;
 // const htmlPath = process.env.HTML_PATH;
@@ -57,11 +55,8 @@ import periodRoute from "./routes/period";
 import minMaxRoute from "./routes/minMax";
 
 import transferRoute from './routes/transfer';
-// common route
-import internalissueRoute from "./routes/internalIssue";
 import requisitionRoute from "./routes/requisition";
 
-import loginRoute from './routes/login';
 import stdRoute from './routes/standardCode';
 
 import lotRoute from './routes/lots';
@@ -144,7 +139,7 @@ let checkAuth = (req, res, next) => {
     });
 }
 
-let staffAuth = (req, res, next) => {
+let staffAuth = (req: Request, res: Response, next: NextFunction) => {
   const decoded = req.decoded;
   const accessRight = decoded.accessRight;
   try {
@@ -191,7 +186,7 @@ let dbConnection: MySqlConnectionConfig = {
   multipleStatements: true
 }
 
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   req.db = Knex({
     client: 'mysql',
     connection: dbConnection,
@@ -204,7 +199,7 @@ app.use((req, res, next) => {
         });
       }
     },
-    debug: process.env.SQL_DEBUG || true,
+    debug: true,
     acquireConnectionTimeout: 5000
   });
 
@@ -278,13 +273,13 @@ app.use('/', checkAuth, indexRoute);
 app.use('/temperature', temperatureRoute);
 
 //catch 404 and forward to error handler
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   var err = new Error('Not Found');
   err['status'] = 404;
   next(err);
 });
 
-app.use((err: Error, req, res, next) => {
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.log(err);
   let errorMessage;
   switch (err['code']) {
