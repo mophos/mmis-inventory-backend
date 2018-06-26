@@ -155,6 +155,7 @@ export class InventoryReportModel {
             ro.updated_at,
             mgd.dosage_name,
             ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
+            concat(up.fname, ' ', up.lname) as full_name,
             rci.wm_product_id
             FROM
                 wm_requisition_orders ro
@@ -170,6 +171,7 @@ export class InventoryReportModel {
             JOIN mm_unit_generics AS mug ON wp.unit_generic_id = mug.unit_generic_id
             JOIN mm_units AS mul ON mug.from_unit_id = mul.unit_id
             JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
+            join um_people as up on up.people_id = ro.people_id
             WHERE
                 ro.requisition_order_id = ?
             AND rci.confirm_qty > 0

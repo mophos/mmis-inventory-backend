@@ -96,6 +96,9 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
   let approve_requis: any = []
   let sum: any = []
   let page_re: any = req.decoded.WM_REQUISITION_REPORT_APPROVE;
+  let warehouse_id:any  = req.decoded.warehouseId
+  // console.log(req.decoded);
+  
   try {
     let requisId = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
@@ -108,6 +111,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
       _.forEach(approve_requis[i], values => {
         sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
         _.forEach(values, value => {
+          value.full_name = warehouse_id === 505 ? '' : value.full_name
           value.total_cost = inventoryReportModel.comma(value.total_cost);
           value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
@@ -123,7 +127,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
       })
     }
     // res.send({approve_requis:approve_requis,page_re:page_re,sum:sum})
-    res.render('approve_requis2', {
+    res.render('approve_requis', {
       hospitalName: hospitalName,
       approve_requis: approve_requis,
       sum: sum
@@ -168,7 +172,7 @@ router.get('/report/approve2/requis', wrap(async (req, res, next) => {
       })
     }
     // res.send({approve_requis:approve_requis,page_re:page_re,sum:sum})
-    res.render('approve_requis', {
+    res.render('approve_requis2', {
       hospitalName: hospitalName,
       approve_requis: approve_requis,
       sum: sum
