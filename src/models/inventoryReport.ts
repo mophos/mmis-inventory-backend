@@ -155,6 +155,7 @@ export class InventoryReportModel {
             ro.updated_at,
             mgd.dosage_name,
             ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
+            concat(up.fname, ' ', up.lname) as full_name,
             rci.wm_product_id
             FROM
                 wm_requisition_orders ro
@@ -170,6 +171,7 @@ export class InventoryReportModel {
             JOIN mm_unit_generics AS mug ON wp.unit_generic_id = mug.unit_generic_id
             JOIN mm_units AS mul ON mug.from_unit_id = mul.unit_id
             JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
+            join um_people as up on up.people_id = ro.people_id
             WHERE
                 ro.requisition_order_id = ?
             AND rci.confirm_qty > 0
@@ -304,8 +306,9 @@ mgt.generic_type_id `
     }
 
     // คิวรี่ view stockcards หลัก
-    generic_stock(knex: Knex, genericId, startDate, endDate, warehouseId) {
+    generic_stock(knex: Knex, dateSetting = 'view_stock_card_warehouse', genericId, startDate, endDate, warehouseId) {
         let sql = `SELECT
+        mg.working_code,
         vscw.stock_card_id,
         vscw.product_id,
         vscw.generic_id,
@@ -337,12 +340,13 @@ mgt.generic_type_id `
         wrt.receive_type_name,
         wr.receive_type_id
    FROM
-       view_stock_card_warehouse AS vscw
+       ${dateSetting} AS vscw
    LEFT JOIN wm_receives AS wr ON wr.receive_id = vscw.document_ref_id
    AND vscw.transaction_type = 'REV'
    LEFT JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
    AND vscw.transaction_type = 'REV_OTHER'
    LEFT JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id
+   join mm_generics as mg ON mg.generic_id = vscw.generic_id
    WHERE 
    vscw.warehouse_id = '${warehouseId}'
    AND
@@ -355,7 +359,7 @@ mgt.generic_type_id `
     }
 
     // ยอดยกมาใน stockcard 
-    summit_stockcard(knex: Knex, genericId, startDate, warehouseId) {
+    summit_stockcard(knex: Knex, dateSetting = 'view_stock_card_warehouse', genericId, startDate, warehouseId) {
         let sql = `SELECT
         vscw.stock_card_id,
         vscw.product_id,
@@ -386,7 +390,7 @@ mgt.generic_type_id `
         '' AS delivery_code,
         '' AS delivery_code_other
     FROM
-        view_stock_card_warehouse AS vscw
+        ${dateSetting} AS vscw
     WHERE
         vscw.warehouse_id = '${warehouseId}'
     AND vscw.generic_id = '${genericId}'
@@ -397,7 +401,7 @@ mgt.generic_type_id `
     }
 
     // คิวรี่ คงคลังใน stockcard โชว์เป็น แพ๊ค
-    inventory_stockcard(knex: Knex, genericId, endDate, warehouseId) {
+    inventory_stockcard(knex: Knex, dateSetting = 'view_stock_card_warehouse', genericId, endDate, warehouseId) {
         let sql = `SELECT
         vscw.unit_generic_id,
         vscw.lot_no,
@@ -407,7 +411,7 @@ mgt.generic_type_id `
         vscw.large_unit,
         vscw.small_unit
     FROM
-        view_stock_card_warehouse AS vscw
+        ${dateSetting} AS vscw
     WHERE
         vscw.warehouse_id = '${warehouseId}'
     AND vscw.generic_id = '${genericId}'
@@ -2210,30 +2214,29 @@ OR sc.ref_src like ?
         return knex.raw(sql);
     }
 
-    inventoryStatus(knex: Knex, warehouseId: any, genericTypeId: any) {
+    inventoryStatus(knex: Knex, warehouseId: any, genericTypeId: any, statusDate: any) {
         let sql = `SELECT
-        mg.working_code AS generic_code,
-        mg.generic_name,
-        mu.unit_name,
-        mgp.max_qty,
-        mg.min_qty,
-        sum(wp.qty) AS qty,
-        sum(wp.qty)*wp.cost AS cost
+        vscw.generic_id,
+        vscw.generic_name,
+        mg.working_code,
+        sum( vscw.in_qty ) - sum( vscw.out_qty ) AS qty,
+        vscw.conversion_qty,
+        vscw.large_unit,
+        vscw.small_unit,
+        avg( vscw.balance_unit_cost ) AS unit_cost,
+        ( sum( vscw.in_qty ) - sum( vscw.out_qty ) ) * avg( vscw.balance_unit_cost ) AS cost
     FROM
-        wm_products AS wp
-    JOIN mm_products AS mp ON mp.product_id = wp.product_id
-    JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
-    JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wp.unit_generic_id
-    JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
-    JOIN mm_generic_planning mgp ON mgp.generic_id = mg.generic_id
+        view_stock_card_warehouse AS vscw
+        JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id 
     WHERE
-        wp.warehouse_id = ${warehouseId} `
+        vscw.warehouse_id = '${warehouseId}'
+        AND vscw.stock_date <= '${statusDate} 23:59:59'`
         if (genericTypeId != 0) {
             sql = sql + ` AND mg.generic_type_id = ${genericTypeId}`
         }
         sql = sql + `
     GROUP BY
-        mg.generic_id
+        vscw.generic_id 
     ORDER BY
         mg.generic_name
         `
@@ -2360,46 +2363,6 @@ OR sc.ref_src like ?
     WHERE
         v.generic_id IS NULL`
         return knex.raw(sql);
-    }
-
-    adjustStock1(knex: Knex) {
-        let sql = `SELECT
-        generic_id
-    FROM
-        view_stock_card_warehouse 
-        where warehouse_id = '505'
-    GROUP BY
-        generic_id`;
-        return knex.raw(sql);
-    }
-
-    adjustStock2(knex: Knex, genericId) {
-        let sql = `SELECT
-        *
-    FROM
-        view_stock_card_warehouse 
-        where warehouse_id = '505' 
-        and generic_id = '${genericId}'
-        ORDER BY stock_card_id
-    `;
-        return knex.raw(sql);
-    }
-
-    adjustStock3(knex: Knex, genericId) {
-        let sql = `SELECT
-        product_id
-    FROM
-        view_stock_card_warehouse 
-        where warehouse_id = '505' 
-        and generic_id = '${genericId}'
-        group by product_id
-    `;
-        return knex.raw(sql);
-    }
-
-    adjustStockUpdate(knex: Knex, data) {
-        return knex('wm_stock_card')
-            .update(data).where('stock_card_id', data.stock_card_id);
     }
 
     requisitionReport(knex: Knex, srcWarehouseId: any, dstWarehouseId: any, sdate: any, edate: any) {

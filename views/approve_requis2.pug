@@ -20,7 +20,8 @@ html
               td.left(colspan='4')(style="font-size: 15pt;") เลขที่ใบเบิก #{c[0].requisition_code}
               td.right(colspan='5')(style="font-size: 15pt;") วันที่อนุมัติ #{c[0].confirm_date}
             tr 
-              td.left(colspan='9')(style="font-size: 15pt;") หน่วยงานที่เบิก #{c[0].warehouse_name}
+              td.left(colspan='4')(style="font-size: 15pt;") หน่วยงานที่เบิก #{c[0].warehouse_name}
+              td.right(colspan='5')(style="font-size: 15pt;") วันที่เบิก #{c[0].requisition_date}
             tr 
               td.left(colspan='9')(style="font-size: 15pt;") ณ วันที่ #{c[0].today}
             tr 
@@ -69,6 +70,7 @@ html
               td.right(style="font-size: 12pt;") &nbsp;#{a.expired_date}
               td.right(style="font-size: 12pt;") &nbsp;#{a.total_cost}
             .pagebreak
+            .pagebreak
           tfoot
             tr.dash-top
               td(colspan='9' height='10px;')
@@ -80,30 +82,60 @@ html
               td(colspan='9') &nbsp; 
             tr 
               td(colspan='9') &nbsp; 
-            tr 
-              td.center(colspan='4' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้เบิก)
-                br
-                br
-                | (.....................................................................)
-              td.center(colspan='5' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้จ่าย)
-                br
-                br
-                | (.....................................................................)
-            tr 
-              td(colspan='9') &nbsp; 
-            tr 
-              td(colspan='9') &nbsp; 
-            tr 
-              td(colspan='9') &nbsp; 
-            tr 
-              td.center(colspan='4' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้อนุมัติ)
-                br
-                br
-                | (.....................................................................)
-              td.center(colspan='5' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้รับ)
-                br
-                br
-                | (.....................................................................)      
+            table.table(style="font-size: 13pt;")
+              tr
+                if(c[0].full_name) 
+                  td.right ลงชื่อ
+                  td.center(style="border-bottom:1px dashed black;width:25%;" ) #{c[0].full_name}
+                  td.left (ผู้เบิก)
+                  
+                else
+                  td.right ลงชื่อ
+                  td.center(style="border-bottom:1px dashed black;width:25%;")
+                  td.left (ผู้เบิก)
+                td
+                td.right ลงชื่อ
+                td.center(style="border-bottom:1px dashed black;width:25%;")
+                td.left (ผู้จ่าย)    
+              tr
+                td(colspan='7') &nbsp;
+              tr
+                if(c[0].full_name)
+                  td.right (
+                  td.center(style="border-bottom:1px dashed black;width:25%;") #{c[0].full_name} 
+                  td.left ) 
+                else
+                  td.right (
+                  td.center(style="border-bottom:1px dashed black;width:25%;")
+                  td.left ) 
+                td
+                td.right (
+                td.center(style="border-bottom:1px dashed black;width:25%;")
+                td.left ) 
+              tr
+                td(colspan="7")
+                  br
+                  br
+                  br
+                  br
+              tr
+                td.right ลงชื่อ
+                td.center(style="border-bottom:1px dashed black;width:25%;")
+                td.left (ผู้อนุมัติ)  
+                td
+                td.right ลงชื่อ
+                td.center(style="border-bottom:1px dashed black;width:25%;")
+                td.left (ผู้รับ)    
+              tr
+                td(colspan='7') &nbsp;
+              tr
+                td.right (
+                td.center(style="border-bottom:1px dashed black;width:25%;")
+                td.left ) 
+                td
+                td.right (
+                td.center(style="border-bottom:1px dashed black;width:25%;")
+                td.left ) 
         - l++
         //- div(content)
         //-   div(pageFooter)

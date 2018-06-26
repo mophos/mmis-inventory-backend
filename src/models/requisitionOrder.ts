@@ -688,10 +688,17 @@ export class RequisitionOrderModel {
   getConfirmItems(db: Knex, confirmId: any) {
     let sql = `
     select rci.wm_product_id, rci.generic_id, floor(rci.confirm_qty/ug.qty) as confirm_qty,
-    ug.qty as conversion_qty
+    ug.qty as conversion_qty,mp.product_name,mp.working_code,wp.lot_no,wp.expired_date,
+    mu.unit_name as to_unit_name,mu2.unit_name as from_unit_name,ug.qty as conversion_qty,
+    wp.qty as small_remain_qty,wp.qty/ug.qty as pack_remain_qty
     from wm_requisition_confirm_items as rci
+    inner join wm_requisition_confirms as rc on rci.confirm_id = rc.confirm_id
+    inner join wm_requisition_orders as ro on ro.requisition_order_id = rc.requisition_order_id
     inner join wm_products as wp on wp.wm_product_id=rci.wm_product_id
     inner join mm_unit_generics as ug on ug.unit_generic_id=wp.unit_generic_id
+    inner join mm_units as mu on mu.unit_id = ug.to_unit_id
+    inner join mm_units as mu2 on mu2.unit_id = ug.from_unit_id
+    inner join mm_products as mp on wp.product_id = mp.product_id
     where rci.confirm_id=?
     `;
     return db.raw(sql, [confirmId]);

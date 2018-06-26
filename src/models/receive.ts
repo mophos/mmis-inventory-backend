@@ -803,15 +803,12 @@ export class ReceiveModel {
     and pc.is_cancel != 'Y'`;
 
     if (query) sql += `and pc.purchase_order_number LIKE ${_query}`
+    if (query) sql += `or pc.purchase_order_book_number LIKE ${_query}`
 
     if (sort.by) {
       let reverse = sort.reverse ? 'DESC' : 'ASC';
       if (sort.by === 'purchase_order_number') {
         sql += ` order by pc.purchase_order_number ${reverse} `;
-      }
-
-      if (sort.by === 'purchase_order_book_number') {
-        sql += ` order by pc.purchase_order_book_number ${reverse} `;
       }
 
       if (sort.by === 'order_date') {
@@ -1400,7 +1397,7 @@ export class ReceiveModel {
     FROM
       wm_receive_other_detail rod
     WHERE
-      rod.warehouse_id = ${warehouseId}
+      rod.warehouse_id = '${warehouseId}'
     AND rod.receive_other_id = rt.receive_other_id
     ) `;
     if (status == 'approve') {
@@ -1428,14 +1425,15 @@ export class ReceiveModel {
       wm_receive_other_detail rod
       join mm_products mp on rod.product_id = mp.product_id
     WHERE
-      rod.warehouse_id = ${warehouseId}
+      rod.warehouse_id = '${warehouseId}'
     AND rod.receive_other_id = rt.receive_other_id
     and (
       mp.working_code = '${query}' or
-      mp.product_name like '${_query}'      
+      mp.product_name like '${_query}' or  
+      rt.receive_code like '${_query}' or 
+      d.donator_name like '${_query}'
     )
-  )
-  or  (rt.receive_code like '${_query}' or d.donator_name like '${_query}')`;
+  )`;
     if (status == 'approve') {
       sql += ` and ra.receive_other_id is not null`
     } else if (status == 'Napprove') {
@@ -1496,45 +1494,46 @@ export class ReceiveModel {
 
   getReceiveStatus(knex: Knex, limit: number, offset: number, warehouseId, status, sort: any = {}) {
     let sql = `
+    SELECT
+    r.*, r.is_cancel,
+    (
       SELECT
-      r.*, r.is_cancel,
-      (
-        SELECT
-          count(*)
-        FROM
-          wm_receive_detail AS rd
-        WHERE
-          rd.receive_id = r.receive_id
-      ) AS total,
-      (
-        SELECT
-          sum(rd.cost * rd.receive_qty)
-        FROM
-          wm_receive_detail AS rd
-        WHERE
-          rd.receive_id = r.receive_id
-      ) AS cost,
-      l.labeler_name,
-      ra.approve_id,
-      pc.purchase_order_id,
-      pc.purchase_order_number,
-      pc.purchase_order_book_number,
-      ra.approve_id,
-      ra.approve_date
-    FROM
-      wm_receives AS r
-    LEFT JOIN mm_labelers AS l ON l.labeler_id = r.vendor_labeler_id
-    left join pc_purchasing_order pc on pc.purchase_order_id = r.purchase_order_id
-    LEFT JOIN wm_receive_approve AS ra ON ra.receive_id = r.receive_id
-    WHERE
-      r.receive_id IN (
-        SELECT
-          rd.receive_id
-        FROM
-          wm_receive_detail rd
-        WHERE
-          rd.warehouse_id = '${warehouseId}'
-        AND rd.receive_id = r.receive_id
+        count(*)
+      FROM
+        wm_receive_detail AS rd
+      WHERE
+        rd.receive_id = r.receive_id
+    ) AS total,
+    (
+      SELECT
+        sum(rd.cost * rd.receive_qty)
+      FROM
+        wm_receive_detail AS rd
+      WHERE
+        rd.receive_id = r.receive_id
+    ) AS cost,
+    l.labeler_name,
+    ra.approve_id,
+    pc.purchase_order_id,
+    pc.purchase_order_number,
+    pc.purchase_order_book_number,
+    ra.approve_id,
+    ra.approve_date
+  FROM
+    wm_receives AS r
+  LEFT JOIN mm_labelers AS l ON l.labeler_id = r.vendor_labeler_id
+  LEFT JOIN wm_receive_approve AS ra ON ra.receive_id = r.receive_id
+  left join pc_purchasing_order pc on pc.purchase_order_id = r.purchase_order_id
+  WHERE
+    r.receive_id IN (
+      SELECT
+        rd.receive_id
+      FROM
+        wm_receive_detail rd
+      join mm_products mp on mp.product_id = rd.product_id
+      WHERE
+        rd.warehouse_id = '${warehouseId}'
+      AND rd.receive_id = r.receive_id
       ) `;
     if (status == 'approve') {
       sql += ` and ra.receive_id is not null`
@@ -1639,9 +1638,13 @@ export class ReceiveModel {
         AND rd.receive_id = r.receive_id
         and (
           mp.working_code = '${query}' or
-          mp.product_name like '${_query}'
+          mp.product_name like '${_query}' or  
+          r.receive_code like '${_query}' or 
+          l.labeler_name like '${_query}' or 
+          pc.purchase_order_number like '${_query}' or
+          pc.purchase_order_book_number like '${_query}'
         )
-      ) or  (r.receive_code like '${_query}' or l.labeler_name like '${_query}' or pc.purchase_order_number like '${_query}' or pc.purchase_order_book_number like '${_query}')`;
+      ) `;
     if (status == 'approve') {
       sql += ` and ra.receive_id is not null`
     } else if (status == 'Napprove') {
