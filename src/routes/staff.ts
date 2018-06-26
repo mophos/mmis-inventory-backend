@@ -878,10 +878,10 @@ router.get('/transfer/info-detail/:transferId', co(async (req, res, next) => {
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
-    const rsGenerics = await transferModel.getGenericInfo(db, transferId, srcWarehouseId);
+    const rsGenerics = await staffModel.getGenericInfo(db, transferId, srcWarehouseId);
     let _generics = rsGenerics[0];
     for (const g of _generics) {
-      const rsProducts = await transferModel.getProductsInfo(db, transferId, g.transfer_generic_id);
+      const rsProducts = await staffModel.getProductsInfo(db, transferId, g.transfer_generic_id);
       let _products = rsProducts[0];
       g.products = _products;
     }
