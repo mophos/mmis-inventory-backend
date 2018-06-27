@@ -388,8 +388,8 @@ export class StockCard {
       , gbq.balance_generic_qty
       , pbq.balance_qty
       , wp.cost as balance_unit_cost
-      , adh.src_warehouse_id as ref_src
-      , adh.dst_warehouse_id as ref_dst
+      , adh.dst_warehouse_id as ref_src
+      , adh.src_warehouse_id as ref_dst
       , 'รับเติม' as comment
       , wp.lot_no
       , wp.expired_date
@@ -456,7 +456,7 @@ export class StockCard {
         group by wp.product_id, wp.lot_no, wp.expired_date, wp.warehouse_id
       ) pbq on pbq.product_id = wp.product_id and pbq.lot_no <=> wp.lot_no and pbq.expired_date <=> wp.expired_date and pbq.warehouse_id = adh.src_warehouse_id
       where adh.addition_id in (?)
-      group by adh.dst_warehouse_id, adp.wm_product_id
+      group by adh.src_warehouse_id, adp.wm_product_id
     `;
 
     return db.raw(sql, [TransactionType.ADDITION_OUT, transactionIds]);
