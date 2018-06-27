@@ -413,7 +413,7 @@ export class StockCard {
     `;
 
     return db.raw(sql, [TransactionType.ADDITION_IN, transactionIds]);
-
+  
   }
 
   saveStockAdditionOut(db: Knex, transactionIds: any[]) {
@@ -460,6 +460,97 @@ export class StockCard {
     `;
 
     return db.raw(sql, [TransactionType.ADDITION_OUT, transactionIds]);
+  }
 
+  saveStockTransferIn(db: Knex, transactionIds: any[]) {
+    let sql = `
+    insert into wm_stock_card(
+      stock_date, product_id, generic_id, unit_generic_id, transaction_type,
+      document_ref_id, document_ref, in_qty, in_unit_cost, balance_generic_qty,
+      balance_qty, balance_unit_cost, ref_src, ref_dst, comment, 
+      lot_no, expired_date)
+    select current_timestamp() as stock_date
+      , wp.product_id
+      , tfg.generic_id
+      , wp.unit_generic_id
+      , ? as transaction_type
+      , tfh.transfer_id as document_ref_id
+      , tfh.transfer_code as document_ref
+      , sum(tfp.product_qty) as in_qty
+      , wp.cost as in_unit_cost
+      , gbq.balance_generic_qty
+      , pbq.balance_qty
+      , wp.cost as balance_unit_cost
+      , tfh.dst_warehouse_id as ref_src
+      , tfh.src_warehouse_id as ref_dst
+      , 'รับโอน' as comment
+      , wp.lot_no
+      , wp.expired_date
+    from wm_transfer tfh
+    join wm_transfer_generic tfg on tfg.transfer_id = tfh.transfer_id
+    join wm_transfer_product tfp on tfp.transfer_generic_id = tfg.transfer_generic_id
+    join wm_products wp on wp.wm_product_id = tfp.wm_product_id
+    left join (
+        select mp.generic_id, wp.warehouse_id, sum(wp.qty) balance_generic_qty
+        from wm_products wp
+        join mm_products mp on mp.product_id = wp.product_id
+        group by warehouse_id, generic_id
+    ) gbq on gbq.generic_id = tfg.generic_id and gbq.warehouse_id = tfh.dst_warehouse_id
+    left join (
+        select wp.product_id, wp.lot_no, wp.expired_date, wp.warehouse_id, sum(wp.qty) balance_qty
+        from wm_products wp
+        group by wp.product_id, wp.lot_no, wp.expired_date, wp.warehouse_id
+    ) pbq on pbq.product_id = wp.product_id and pbq.lot_no <=> wp.lot_no and pbq.expired_date <=> wp.expired_date and pbq.warehouse_id = tfh.dst_warehouse_id
+    where tfh.transfer_id in (?)
+    group by tfh.dst_warehouse_id, tfp.wm_product_id
+    `;
+
+    return db.raw(sql, [TransactionType.TRANSFER_IN, transactionIds]);
+  }
+
+  saveStockTransferOut(db: Knex, transactionIds: any[]) {
+    let sql = `
+    insert into wm_stock_card(
+      stock_date, product_id, generic_id, unit_generic_id, transaction_type,
+      document_ref_id, document_ref, out_qty, out_unit_cost, balance_generic_qty,
+      balance_qty, balance_unit_cost, ref_src, ref_dst, comment,
+      lot_no, expired_date)
+    select current_timestamp() as stock_date
+      , wp.product_id
+      , tfg.generic_id
+      , wp.unit_generic_id
+      , ? as transaction_type
+      , tfh.transfer_id as document_ref_id
+      , tfh.transfer_code as document_ref
+      , sum(tfp.product_qty) as out_qty
+      , wp.cost as out_unit_cost
+      , gbq.balance_generic_qty
+      , pbq.balance_qty
+      , wp.cost as balance_unit_cost
+      , tfh.src_warehouse_id as ref_src
+      , tfh.dst_warehouse_id as ref_dst
+      , 'โอน' as comment
+      , wp.lot_no
+      , wp.expired_date
+      from wm_transfer tfh
+      join wm_transfer_generic tfg on tfg.transfer_id = tfh.transfer_id
+      join wm_transfer_product tfp on tfp.transfer_generic_id = tfg.transfer_generic_id
+      join wm_products wp on wp.wm_product_id = tfp.wm_product_id
+      left join (
+        select mp.generic_id, wp.warehouse_id, sum(wp.qty) balance_generic_qty
+        from wm_products wp
+        join mm_products mp on mp.product_id = wp.product_id
+        group by warehouse_id, generic_id
+      ) gbq on gbq.generic_id = tfg.generic_id and gbq.warehouse_id = tfh.src_warehouse_id
+      left join (
+        select wp.product_id, wp.lot_no, wp.expired_date, wp.warehouse_id, sum(wp.qty) balance_qty
+        from wm_products wp
+        group by wp.product_id, wp.lot_no, wp.expired_date, wp.warehouse_id
+      ) pbq on pbq.product_id = wp.product_id and pbq.lot_no <=> wp.lot_no and pbq.expired_date <=> wp.expired_date and pbq.warehouse_id = tfh.src_warehouse_id
+      where tfh.transfer_id in (?)
+      group by tfh.src_warehouse_id, tfp.wm_product_id
+    `;
+
+    return db.raw(sql, [TransactionType.TRANSFER_OUT, transactionIds]);
   }
 }
