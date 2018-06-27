@@ -184,8 +184,7 @@ router.post('/', co(async (req, res, next) => {
   let summary = req.body.summary;
   let products = req.body.products;
   let closePurchase = req.body.closePurchase;
-  let warehouse_id = req.decoded.warehouseId;
-
+  
   if (summary.deliveryCode && summary.deliveryDate &&
     summary.supplierId && summary.receiveDate && products.length) {
 
@@ -274,7 +273,7 @@ router.post('/', co(async (req, res, next) => {
                 receive_qty: +v.receive_qty,
                 unit_generic_id: v.unit_generic_id,
                 location_id: v.location_id,
-                warehouse_id: warehouse_id,
+                warehouse_id: v.warehouse_id,
                 cost: +v.cost,
                 lot_no: v.lot_no,
                 expired_date: moment(v.expired_date, 'DD/MM/YYYY').isValid() ? moment(v.expired_date, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
