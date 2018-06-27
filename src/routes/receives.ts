@@ -1117,10 +1117,16 @@ router.delete('/remove', co(async (req, res, next) => {
       await receiveModel.removeReceive(db, receiveId, peopleUserId);
 
       if (purchaseOrderId) {
-        await receiveModel.updatePurchaseStatus2(db, purchaseOrderId, 'PREPARED');
+        let rsCurrent = await receiveModel.getCurrentPurchaseStatus(db, purchaseOrderId);
+        if (rsCurrent) {
+          if (rsCurrent[0].purchase_order_status === 'COMPLETED') {
+            await receiveModel.updatePurchaseStatus2(db, purchaseOrderId, 'APPROVED');
+          }
+        }
       }
 
-      res.send({ ok: true })
+      res.send({ ok: true });
+
     } catch (error) {
       res.send({ ok: false, error: error.message });
     } finally {

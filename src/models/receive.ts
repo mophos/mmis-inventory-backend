@@ -1105,6 +1105,11 @@ export class ReceiveModel {
       });
   }
 
+  getCurrentPurchaseStatus(knex: Knex, purchaseOrderId: any) {
+    return knex('pc_purchasing_order')
+      .where('purchase_order_id', purchaseOrderId);
+  }
+
   updatePurchaseApproveStatus(knex: Knex, purchaseOrderId: any) {
     return knex('pc_purchasing_order')
       .where('purchase_order_id', purchaseOrderId)
