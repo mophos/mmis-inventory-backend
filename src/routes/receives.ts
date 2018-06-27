@@ -184,7 +184,7 @@ router.post('/', co(async (req, res, next) => {
   let summary = req.body.summary;
   let products = req.body.products;
   let closePurchase = req.body.closePurchase;
-  
+
   if (summary.deliveryCode && summary.deliveryDate &&
     summary.supplierId && summary.receiveDate && products.length) {
 
@@ -1117,7 +1117,7 @@ router.delete('/remove', co(async (req, res, next) => {
       await receiveModel.removeReceive(db, receiveId, peopleUserId);
 
       if (purchaseOrderId) {
-        await receiveModel.updatePurchaseApproveStatus(db, purchaseOrderId);
+        await receiveModel.updatePurchaseStatus2(db, purchaseOrderId, 'PREPARED');
       }
 
       res.send({ ok: true })
