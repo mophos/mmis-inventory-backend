@@ -73,8 +73,15 @@ router.put('/stockcard/update', async (req, res, next) => {
   let data: any = req.body.data;
   let receiveType = req.body.rceiveType;
   let receiveDetailId = req.body.receiveDetailId;
+  let unitGenericId = req.body.unitGenericId;
+  let newQty = req.body.newQty;
 
   try {
+    if (receiveType === 'PO') {
+      await toolModel.updateReceiveDetail(db, receiveDetailId, unitGenericId, newQty);
+    } else {
+      await toolModel.updateReceiveOtherDetail(db, receiveDetailId, unitGenericId, newQty);
+    }
     await toolModel.updateStockCard(db, data);
     res.send({ ok: true });
   } catch (error) {

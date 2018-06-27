@@ -66,6 +66,24 @@ export class ToolModel {
       .limit(1);
   }
 
+  updateReceiveDetail(db: Knex, receiveDetailId: any, unitGenericId: any, qty: number) {
+    return db('wm_receive_detail')
+      .select('receive_detail_id', receiveDetailId)
+      .update({
+        unit_generic_id: unitGenericId,
+        receive_qty: qty
+      });
+  }
+
+  updateReceiveOtherDetail(db: Knex, receiveDetailId: any, unitGenericId: any, qty: number) {
+    return db('wm_receive_detail')
+      .select('receive_other_detail_id', receiveDetailId)
+      .update({
+        unit_generic_id: unitGenericId,
+        receive_qty: qty
+      });
+  }
+
   updateStockCard(db: Knex, data: any[]) {
     let sql = [];
     for (let v of data) {
