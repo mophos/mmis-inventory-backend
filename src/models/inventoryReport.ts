@@ -155,6 +155,7 @@ export class InventoryReportModel {
             ro.updated_at,
             mgd.dosage_name,
             ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
+            concat(up.fname, ' ', up.lname) as full_name,
             rci.wm_product_id
             FROM
                 wm_requisition_orders ro
@@ -170,6 +171,7 @@ export class InventoryReportModel {
             JOIN mm_unit_generics AS mug ON wp.unit_generic_id = mug.unit_generic_id
             JOIN mm_units AS mul ON mug.from_unit_id = mul.unit_id
             JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
+            join um_people as up on up.people_id = ro.people_id
             WHERE
                 ro.requisition_order_id = ?
             AND rci.confirm_qty > 0
@@ -304,7 +306,7 @@ mgt.generic_type_id `
     }
 
     // คิวรี่ view stockcards หลัก
-    generic_stock(knex: Knex, genericId, startDate, endDate, warehouseId) {
+    generic_stock(knex: Knex, dateSetting = 'view_stock_card_warehouse', genericId, startDate, endDate, warehouseId) {
         let sql = `SELECT
         mg.working_code,
         vscw.stock_card_id,
@@ -338,7 +340,7 @@ mgt.generic_type_id `
         wrt.receive_type_name,
         wr.receive_type_id
    FROM
-       view_stock_card_warehouse AS vscw
+       ${dateSetting} AS vscw
    LEFT JOIN wm_receives AS wr ON wr.receive_id = vscw.document_ref_id
    AND vscw.transaction_type = 'REV'
    LEFT JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
@@ -357,7 +359,7 @@ mgt.generic_type_id `
     }
 
     // ยอดยกมาใน stockcard 
-    summit_stockcard(knex: Knex, genericId, startDate, warehouseId) {
+    summit_stockcard(knex: Knex, dateSetting = 'view_stock_card_warehouse', genericId, startDate, warehouseId) {
         let sql = `SELECT
         vscw.stock_card_id,
         vscw.product_id,
@@ -388,7 +390,7 @@ mgt.generic_type_id `
         '' AS delivery_code,
         '' AS delivery_code_other
     FROM
-        view_stock_card_warehouse AS vscw
+        ${dateSetting} AS vscw
     WHERE
         vscw.warehouse_id = '${warehouseId}'
     AND vscw.generic_id = '${genericId}'
@@ -399,7 +401,7 @@ mgt.generic_type_id `
     }
 
     // คิวรี่ คงคลังใน stockcard โชว์เป็น แพ๊ค
-    inventory_stockcard(knex: Knex, genericId, endDate, warehouseId) {
+    inventory_stockcard(knex: Knex, dateSetting = 'view_stock_card_warehouse', genericId, endDate, warehouseId) {
         let sql = `SELECT
         vscw.unit_generic_id,
         vscw.lot_no,
@@ -409,7 +411,7 @@ mgt.generic_type_id `
         vscw.large_unit,
         vscw.small_unit
     FROM
-        view_stock_card_warehouse AS vscw
+        ${dateSetting} AS vscw
     WHERE
         vscw.warehouse_id = '${warehouseId}'
     AND vscw.generic_id = '${genericId}'
