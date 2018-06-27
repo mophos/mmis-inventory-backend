@@ -668,11 +668,13 @@ export class ReceiveModel {
     let queries = sqls.join(';');
     return knex.raw(queries);
   }
+
   removeReceive(knex: Knex, receiveId: string, peopleUserId: any) {
     return knex('wm_receives')
       .where('receive_id', receiveId)
       .update({
         is_cancel: 'Y',
+        purchase_order_id: '',
         cancel_people_user_id: peopleUserId
       });
   }
@@ -1093,6 +1095,19 @@ export class ReceiveModel {
       .update({
         purchase_order_status: 'COMPLETED'
       });
+  }
+
+  updatePurchaseStatus2(knex: Knex, purchaseOrderId: any, status: string) {
+    return knex('pc_purchasing_order')
+      .where('purchase_order_id', purchaseOrderId)
+      .update({
+        purchase_order_status: status
+      });
+  }
+
+  getCurrentPurchaseStatus(knex: Knex, purchaseOrderId: any) {
+    return knex('pc_purchasing_order')
+      .where('purchase_order_id', purchaseOrderId);
   }
 
   updatePurchaseApproveStatus(knex: Knex, purchaseOrderId: any) {
