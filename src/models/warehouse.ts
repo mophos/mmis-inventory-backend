@@ -320,13 +320,14 @@ export class WarehouseModel {
     let query = knex('wm_products as p')
       .select('p.wm_product_id', 'p.product_id', 'mp.working_code', knex.raw('sum(p.qty) as qty'), knex.raw('ifnull(sum(v.reserve_qty),0) as reserve_qty'), knex.raw('sum(p.qty * p.cost) as total_cost'),
         'mp.product_name', 'g.generic_name', 'g.working_code as generic_working_code', 'mp.primary_unit_id', 'u.unit_name as small_unit', 'uu.unit_name as large_unit', 'mug.qty as conversion',
-        'g.min_qty', 'g.max_qty')
+        'mgp.min_qty', 'mgp.max_qty')
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
       .leftJoin('mm_generics as g', 'g.generic_id', 'mp.generic_id')
       .leftJoin('mm_unit_generics as mug', 'mug.unit_generic_id', 'p.unit_generic_id')
       .leftJoin('mm_units as u', 'u.unit_id', 'mug.to_unit_id')
       .leftJoin('mm_units as uu', 'uu.unit_id', 'mug.from_unit_id')
       .leftJoin('view_product_reserve as v', 'v.wm_product_id', 'p.wm_product_id')
+      .joinRaw('join mm_generic_planning as mgp ON g.generic_id = mgp.generic_id and mgp.warehouse_id = p.warehouse_id')
       .where('mp.mark_deleted', 'N')
       .where('p.warehouse_id', warehouseId)
       .whereRaw('p.qty > 0')

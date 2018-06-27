@@ -96,9 +96,9 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
   let approve_requis: any = []
   let sum: any = []
   let page_re: any = req.decoded.WM_REQUISITION_REPORT_APPROVE;
-  let warehouse_id:any  = req.decoded.warehouseId
+  let warehouse_id: any = req.decoded.warehouseId
   // console.log(req.decoded);
-  
+
   try {
     let requisId = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
@@ -650,7 +650,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
   let warehouseId = req.query.warehouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let dateSetting = req.decoded.WM_STOCK_DATE ===  'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
   let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
 
@@ -2197,6 +2197,7 @@ router.get('/report/inventorystatus/:warehouseId/:genericTypeId/:statusDate', wr
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let rs = await inventoryReportModel.inventoryStatus(db, warehouseId, genericTypeId, statusDate);
+  let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
   let list = rs[0]
   let sumlist = [];
   let sum = 0
@@ -2221,6 +2222,7 @@ router.get('/report/inventorystatus/:warehouseId/:genericTypeId/:statusDate', wr
   // res.send(sumlist);
 
   res.render('inventorystatus', {
+    statusDate_text: statusDate_text,
     printDate: printDate,
     hospitalName: hospitalName,
     list: list,
