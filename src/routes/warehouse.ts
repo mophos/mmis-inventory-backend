@@ -266,6 +266,21 @@ router.get('/get-staff-mappings', wrap(async (req, res, next) => {
     db.destroy();
   }
 }));
+router.get('/get-staff-mappings/search', wrap(async (req, res, next) => {
+  let db = req.db;
+  let hospcode = req.decoded.his_hospcode;
+  let warehouseId = req.decoded.warehouseId;
+  let query = req.query.query;
+
+  try {
+    let results = await warehouseModel.getSearchStaffMappingsGenerics(db, hospcode, warehouseId,query);
+    res.send({ ok: true, rows: results[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  } finally {
+    db.destroy();
+  }
+}));
 
 router.post('/mapping/save', wrap(async (req, res, next) => {
   let db = req.db;

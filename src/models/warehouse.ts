@@ -150,7 +150,7 @@ export class WarehouseModel {
     if (genericType) {
       query.andWhere('mg.generic_type_id', genericType);
     }
-    query.groupByRaw('wp.product_id, wp.lot_no')
+    query.groupByRaw('wp.product_id')
       .orderByRaw('wp.qty DESC');
     return query;
   }
@@ -310,7 +310,7 @@ export class WarehouseModel {
     if (genericType) {
       query.andWhere('g.generic_type_id', genericType);
     }
-    query.groupBy('p.product_id, wp.lot_no')
+    query.groupBy('p.product_id')
       .orderBy('g.generic_name')
     return query;
   }
@@ -618,6 +618,35 @@ export class WarehouseModel {
     return knex.raw(sql, [hospcode]);
   }
 
+  getSearchStaffMappingsGenerics(knex: Knex, hospcode: any, warehouseId: any,q: any) {
+    const _q = `%${q}%`;
+    let sql = `
+      select g.generic_id, g.generic_name, g.working_code, 
+      g.generic_id as mmis, group_concat(h.his) as his, ifnull(h.conversion, 1) as conversion,
+      u.unit_name as base_unit_name
+      from mm_generics as g
+      left join wm_his_mappings as h on h.mmis=g.generic_id and h.hospcode=?
+      inner join mm_units as u on u.unit_id=g.primary_unit_id
+      where g.mark_deleted='N'
+      and g.is_active='Y'
+      and g.generic_id in (
+        select mp.generic_id
+        from wm_products as wp 
+        inner join mm_products as mp on mp.product_id=wp.product_id
+        where wp.warehouse_id=?
+        and mp.product_name like ${_q} 
+        and mp.working_code = ${q}
+        and mp.keywords like ${_q} 
+      )
+      and g.generic_name like ${_q} 
+      and g.working_code = ${q}
+      and g.keywords like ${_q} 
+      group by g.generic_id
+      order by g.generic_name
+      
+  `;
+    return knex.raw(sql, [hospcode, warehouseId]);
+  }
   getStaffMappingsGenerics(knex: Knex, hospcode: any, warehouseId: any) {
     let sql = `
       select g.generic_id, g.generic_name, g.working_code, 
