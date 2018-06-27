@@ -173,7 +173,7 @@ export class WarehouseModel {
     if (genericType) {
       query.andWhere('mg.generic_type_id', genericType);
     }
-    query.groupByRaw('wp.product_id')
+    query.groupByRaw('wp.product_id, wp.lot_no')
       .orderBy('mp.product_name');
     return query;
   }
@@ -310,7 +310,7 @@ export class WarehouseModel {
     if (genericType) {
       query.andWhere('g.generic_type_id', genericType);
     }
-    query.groupBy('p.product_id')
+    query.groupBy('p.product_id, wp.lot_no')
       .orderBy('g.generic_name')
     return query;
   }
