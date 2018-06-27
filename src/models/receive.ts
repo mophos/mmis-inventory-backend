@@ -412,26 +412,27 @@ export class ReceiveModel {
   getReceiveOtherEditProductList(knex: Knex, receiveOtherId: any) {
     let sql = `
       SELECT
-    rd.cost,
+      rd.cost,
       rd.product_id,
       rd.receive_qty,
       rd.lot_no,
       rd.expired_date,
       rd.receive_other_id,
+      rd.location_id,
       rd.warehouse_id,
       pd.product_name,
       mg.generic_id,
       mg.generic_name,
       mu.unit_name AS primary_unit_name,
-        pd.primary_unit_id,
-        ge.num_days AS expire_num_days,
-          mug.qty AS conversion_qty,
-            l.donator_name,
-            l.donator_id,
-            rd.unit_generic_id,
-            r.delivery_code,
-            r.receive_code,
-            r.receive_date
+      pd.primary_unit_id,
+      ge.num_days AS expire_num_days,
+      mug.qty AS conversion_qty,
+      l.donator_name,
+      l.donator_id,
+      rd.unit_generic_id,
+      r.delivery_code,
+      r.receive_code,
+      r.receive_date
     FROM
     wm_receive_other_detail AS rd
     JOIN wm_receive_other AS r ON rd.receive_other_id = r.receive_other_id
