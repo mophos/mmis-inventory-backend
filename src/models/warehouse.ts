@@ -619,7 +619,43 @@ export class WarehouseModel {
     return knex.raw(sql, [hospcode]);
   }
 
-  getSearchStaffMappingsGenerics(knex: Knex, hospcode: any, warehouseId: any,q: any) {
+  getMappingsGenericsSearch(knex: Knex, hospcode: any, keywords: any) {
+    let sql = `
+    SELECT
+    g.generic_id,
+    g.generic_name,
+    g.working_code,
+    g.generic_id AS mmis,
+    group_concat( h.his ) AS his,
+    ifnull( h.conversion, 1 ) AS conversion,
+    u.unit_name AS base_unit_name 
+  FROM
+    mm_generics AS g
+    LEFT JOIN wm_his_mappings AS h ON h.mmis = g.generic_id 
+    AND h.hospcode = '${hospcode}'
+    INNER JOIN mm_units AS u ON u.unit_id = g.primary_unit_id
+    JOIN mm_products AS mp ON mp.generic_id = g.generic_id
+  WHERE
+    g.mark_deleted = 'N' 
+    AND g.is_active = 'Y'
+    AND (
+    mp.product_name LIKE '%${keywords}%'
+    OR g.generic_name LIKE '%${keywords}%'
+    OR g.working_code = '${keywords}'
+    OR mp.working_code = '${keywords}'
+    OR mp.keywords LIKE '%${keywords}%'
+    OR g.keywords LIKE '%${keywords}%'
+    ) 
+  GROUP BY
+    g.generic_id 
+  ORDER BY
+    g.generic_name
+      
+  `;
+    return knex.raw(sql);
+  }
+
+  getSearchStaffMappingsGenerics(knex: Knex, hospcode: any, warehouseId: any, q: any) {
     const _q = `%${q}%`;
     let sql = `
     select * from(
