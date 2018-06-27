@@ -238,6 +238,22 @@ router.get('/get-mappings-generics', wrap(async (req, res, next) => {
   }
 }));
 
+router.get('/get-mappings-generics-search/:keywords', wrap(async (req, res, next) => {
+  let db = req.db;
+  let hospcode = req.decoded.his_hospcode;
+  let keywords = req.params.keywords
+  console.log(keywords,'56565656');
+
+  try {
+    let results = await warehouseModel.getMappingsGenericsSearch(db, hospcode, keywords);
+    res.send({ ok: true, rows: results[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  } finally {
+    db.destroy();
+  }
+}));
+
 // router.get('/get-mappings-products/:generic_id', wrap(async (req, res, next) => {
 //   let db = req.db;
 //   let hospcode = req.decoded.his_hospcode;
@@ -273,7 +289,7 @@ router.get('/get-staff-mappings/search', wrap(async (req, res, next) => {
   let query = req.query.query;
 
   try {
-    let results = await warehouseModel.getSearchStaffMappingsGenerics(db, hospcode, warehouseId,query);
+    let results = await warehouseModel.getSearchStaffMappingsGenerics(db, hospcode, warehouseId, query);
     res.send({ ok: true, rows: results[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message })
@@ -982,7 +998,7 @@ router.put('/products/lot-expired', wrap(async (req, res, next) => {
         history_time: moment().format('HH:mm:ss'),
         create_by: peopleId
       }
-      
+
       await warehouseModel.insertProductHistory(db, history);
 
       await warehouseModel.updateProduct(db, data.product_id, oldData, newData);
