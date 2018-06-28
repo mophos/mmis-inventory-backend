@@ -327,7 +327,7 @@ export class WarehouseModel {
       .leftJoin('mm_units as u', 'u.unit_id', 'mug.to_unit_id')
       .leftJoin('mm_units as uu', 'uu.unit_id', 'mug.from_unit_id')
       .leftJoin('view_product_reserve as v', 'v.wm_product_id', 'p.wm_product_id')
-      .joinRaw('join mm_generic_planning as mgp ON g.generic_id = mgp.generic_id and mgp.warehouse_id = p.warehouse_id')
+      .joinRaw('left join mm_generic_planning as mgp ON g.generic_id = mgp.generic_id and mgp.warehouse_id = p.warehouse_id')
       .where('mp.mark_deleted', 'N')
       .where('p.warehouse_id', warehouseId)
       .whereRaw('p.qty > 0')
