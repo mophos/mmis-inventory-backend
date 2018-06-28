@@ -844,4 +844,45 @@ group by mpp.product_id
 
     return db.raw(queries);
   }
+
+  productReceive(knex: Knex, startdate: any, enddate: any) {
+    let sql = `SELECT
+    ppo.purchase_order_number,
+    ppo.order_date,
+    mg.working_code AS generic_code,
+    mg.generic_name,
+    mp.working_code AS product_code,
+    mp.product_name,
+    mu.unit_name,
+    mug.qty AS conversion,
+    mu2.unit_name AS package,
+    wrd.cost,
+    wrd.receive_qty * mug.qty AS total_qty,
+    wrd.receive_qty * wrd.cost AS total_cost,
+    mgt.generic_type_name,
+    mga.account_name,
+    mgh. NAME AS generic_hosp_name,
+    ml.labeler_name
+  FROM
+    wm_receives AS wr
+  JOIN wm_receive_detail AS wrd ON wrd.receive_id = wr.receive_id
+  JOIN pc_purchasing_order AS ppo ON ppo.purchase_order_id = wr.purchase_order_id
+  JOIN wm_receive_approve AS wra ON wra.receive_id = wr.receive_id
+  JOIN mm_products AS mp ON mp.product_id = wrd.product_id
+  JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
+  JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wrd.unit_generic_id
+  JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
+  JOIN mm_units mu2 ON mu2.unit_id = mug.from_unit_id
+  LEFT JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
+  LEFT JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
+  LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
+  LEFT JOIN mm_labelers ml ON ppo.labeler_id = ml.labeler_id
+  WHERE
+    wrd.is_free = 'N'
+  AND wr.receive_date BETWEEN '${startdate}'
+  AND '${enddate}'
+  ORDER BY
+    wr.receive_date`
+    return knex.raw(sql)
+  }
 }
