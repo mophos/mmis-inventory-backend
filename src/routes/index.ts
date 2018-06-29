@@ -2,20 +2,12 @@
 
 import * as express from 'express';
 import { InventoryReportModel } from '../models/inventoryReport';
-import * as moment from 'moment';
+// import * as moment from 'moment';
 import * as wrap from 'co-express';
 import * as _ from 'lodash';
-import { SerialModel } from '../models/serial';
-import { StockCard } from '../models/stockcard';
 import { IssueModel } from '../models/issue'
-import { TIMEOUT } from 'dns';
-import { awaitExpression, updateExpression } from 'babel-types';
-import { Z_VERSION_ERROR } from 'zlib';
-import { ReceiveModel } from '../models/receive';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
-const serialModel = new SerialModel();
-const stockCard = new StockCard();
 const issueModel = new IssueModel();
 
 
@@ -23,19 +15,13 @@ const path = require('path')
 const fse = require('fs-extra');
 const fs = require('fs');
 const json2xls = require('json2xls');
+var moment = require('moment');
 moment.locale('th');
 const printDate = 'วันที่พิมพ์ ' + moment().format('D MMMM ') + (moment().get('year') + 543) + moment().format(', HH:mm:ss น.');
 
 router.get('/', (req, res, next) => {
   res.send({ ok: true, message: 'Welcome to Inventory API server' });
 });
-
-// router.get('/test-serial', wrap(async(req, res, next) => {
-//   const db = req.db;
-//   const srType = 'PO';
-//   let sr = await serialModel.getSerial(db, srType);
-//   res.send(sr);
-// }));
 
 router.get('/report/receiveNotMatchPO/:startDate/:endDate', wrap(async (req, res, next) => {
 
@@ -96,9 +82,9 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
   let approve_requis: any = []
   let sum: any = []
   let page_re: any = req.decoded.WM_REQUISITION_REPORT_APPROVE;
-  let warehouse_id:any  = req.decoded.warehouseId
+  let warehouse_id: any = req.decoded.warehouseId
   // console.log(req.decoded);
-  
+
   try {
     let requisId = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
@@ -650,7 +636,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
   let warehouseId = req.query.warehouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let dateSetting = req.decoded.WM_STOCK_DATE ===  'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
   let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
 
@@ -937,7 +923,7 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
 
   if (check == "error") { res.render('error404'); }
   res.render('product_expired', {
-    hospitalName: hospitalName, product_expired: product_expired,
+    hospitalName: hospitalName, product_expired: product_expired, printDate: printDate,
     wareHouseName: wareHouseName, genericName: genericName, startDate: startDate, endDate: endDate, sum: sum, day: day
   });
 }));//ทำFrontEndแล้ว //ตรวจสอบแล้ว 14-9-60  // ตรวจสอบแล้ว 27/9/60
