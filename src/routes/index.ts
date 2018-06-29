@@ -2183,6 +2183,7 @@ router.get('/report/inventorystatus/:warehouseId/:genericTypeId/:statusDate', wr
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let rs = await inventoryReportModel.inventoryStatus(db, warehouseId, genericTypeId, statusDate);
+  let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
   let list = rs[0]
   let sumlist = [];
   let sum = 0
@@ -2207,6 +2208,7 @@ router.get('/report/inventorystatus/:warehouseId/:genericTypeId/:statusDate', wr
   // res.send(sumlist);
 
   res.render('inventorystatus', {
+    statusDate_text: statusDate_text,
     printDate: printDate,
     hospitalName: hospitalName,
     list: list,

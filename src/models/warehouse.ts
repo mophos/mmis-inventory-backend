@@ -150,7 +150,7 @@ export class WarehouseModel {
     if (genericType) {
       query.andWhere('mg.generic_type_id', genericType);
     }
-    query.groupByRaw('wp.product_id, wp.lot_no')
+    query.groupByRaw('wp.product_id')
       .orderByRaw('wp.qty DESC');
     return query;
   }
@@ -173,7 +173,7 @@ export class WarehouseModel {
     if (genericType) {
       query.andWhere('mg.generic_type_id', genericType);
     }
-    query.groupByRaw('wp.product_id')
+    query.groupByRaw('wp.product_id, wp.lot_no')
       .orderBy('mp.product_name');
     return query;
   }
@@ -320,13 +320,14 @@ export class WarehouseModel {
     let query = knex('wm_products as p')
       .select('p.wm_product_id', 'p.product_id', 'mp.working_code', knex.raw('sum(p.qty) as qty'), knex.raw('ifnull(sum(v.reserve_qty),0) as reserve_qty'), knex.raw('sum(p.qty * p.cost) as total_cost'),
         'mp.product_name', 'g.generic_name', 'g.working_code as generic_working_code', 'mp.primary_unit_id', 'u.unit_name as small_unit', 'uu.unit_name as large_unit', 'mug.qty as conversion',
-        'g.min_qty', 'g.max_qty')
+        'mgp.min_qty', 'mgp.max_qty')
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
       .leftJoin('mm_generics as g', 'g.generic_id', 'mp.generic_id')
       .leftJoin('mm_unit_generics as mug', 'mug.unit_generic_id', 'p.unit_generic_id')
       .leftJoin('mm_units as u', 'u.unit_id', 'mug.to_unit_id')
       .leftJoin('mm_units as uu', 'uu.unit_id', 'mug.from_unit_id')
       .leftJoin('view_product_reserve as v', 'v.wm_product_id', 'p.wm_product_id')
+      .joinRaw('left join mm_generic_planning as mgp ON g.generic_id = mgp.generic_id and mgp.warehouse_id = p.warehouse_id')
       .where('mp.mark_deleted', 'N')
       .where('p.warehouse_id', warehouseId)
       .whereRaw('p.qty > 0')
@@ -618,6 +619,70 @@ export class WarehouseModel {
     return knex.raw(sql, [hospcode]);
   }
 
+  getMappingsGenericsSearch(knex: Knex, hospcode: any, keywords: any) {
+    let sql = `
+    SELECT
+    g.generic_id,
+    g.generic_name,
+    g.working_code,
+    g.generic_id AS mmis,
+    group_concat( h.his ) AS his,
+    ifnull( h.conversion, 1 ) AS conversion,
+    u.unit_name AS base_unit_name 
+  FROM
+    mm_generics AS g
+    LEFT JOIN wm_his_mappings AS h ON h.mmis = g.generic_id 
+    AND h.hospcode = '${hospcode}'
+    INNER JOIN mm_units AS u ON u.unit_id = g.primary_unit_id
+    JOIN mm_products AS mp ON mp.generic_id = g.generic_id
+  WHERE
+    g.mark_deleted = 'N' 
+    AND g.is_active = 'Y'
+    AND (
+    mp.product_name LIKE '%${keywords}%'
+    OR g.generic_name LIKE '%${keywords}%'
+    OR g.working_code = '${keywords}'
+    OR mp.working_code = '${keywords}'
+    OR mp.keywords LIKE '%${keywords}%'
+    OR g.keywords LIKE '%${keywords}%'
+    ) 
+  GROUP BY
+    g.generic_id 
+  ORDER BY
+    g.generic_name
+      
+  `;
+    return knex.raw(sql);
+  }
+
+  getSearchStaffMappingsGenerics(knex: Knex, hospcode: any, warehouseId: any, q: any) {
+    const _q = `%${q}%`;
+    let sql = `
+    select * from(
+      select g.generic_id, g.generic_name, g.working_code, g.keywords,
+      g.generic_id as mmis, group_concat(h.his) as his, ifnull(h.conversion, 1) as conversion,
+      u.unit_name as base_unit_name
+      from mm_generics as g
+      left join wm_his_mappings as h on h.mmis=g.generic_id and h.hospcode= '${hospcode}'
+      inner join mm_units as u on u.unit_id=g.primary_unit_id
+      where g.mark_deleted='N'
+      and g.is_active='Y'
+      and g.generic_id in (
+        select mp.generic_id
+        from wm_products as wp 
+        inner join mm_products as mp on mp.product_id=wp.product_id
+        where wp.warehouse_id= '${warehouseId}'
+      )
+      group by g.generic_id
+      order by g.generic_name
+    ) as g
+    where 
+     g.working_code = '${q}'
+      or g.generic_name like '${_q}' 
+      or g.keywords like '${_q}' 
+  `;
+    return knex.raw(sql);
+  }
   getStaffMappingsGenerics(knex: Knex, hospcode: any, warehouseId: any) {
     let sql = `
       select g.generic_id, g.generic_name, g.working_code, 
