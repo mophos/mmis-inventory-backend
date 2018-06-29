@@ -968,6 +968,7 @@ router.get('/report/check/receive/issue/:year', wrap(async (req, res, next) => {
 
   res.render('check_receive_issue', { hospitalName: hospitalName, check_receive_issue: check_receive_issue, startDate: startDate, endDate: endDate, year: year });
 }));//ตรวจสอบแล้ว 14-9-60
+
 router.get('/report/list/cost/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
   let db = req.db;
   let startDate = req.params.startDate
@@ -1006,6 +1007,7 @@ router.get('/report/list/cost/:startDate/:endDate/:warehouseId/:warehouseName', 
     sumt: sumt, startDate: startDate, endDate: endDate, list_cost: list_cost, hospitalName: hospitalName, warehouseName: warehouseName, printDate: printDate
   });
 }));//ตรวจสอบแล้ว 14-9-60
+
 router.get('/report/list/receiveOther', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID = req.query.receiveOtherID;
@@ -2310,6 +2312,47 @@ router.get('/report/generics-no-movement/:warehouseId/:startdate/:enddate', wrap
     generics: generics
   });
 }));
+
+router.get('/report/receive/export/:startdate/:enddate', async (req, res, next) => {
+
+  const db = req.db;
+  let startdate = req.params.startdate
+  let enddate = req.params.enddate
+
+  // get tmt data
+  let rs: any = await inventoryReportModel.productReceive(db, startdate, enddate);
+
+  let json = [];
+  rs[0].forEach(v => {
+    let obj: any = {};
+    obj.purchase_order_number = v.purchase_order_number;
+    obj.order_date = v.order_date;
+    obj.generic_code = v.generic_code;
+    obj.generic_name = v.generic_name;
+    obj.product_code = v.product_code;
+    obj.product_name = v.product_name;
+    obj.unit_name = v.unit_name;
+    obj.conversion = v.conversion;
+    obj.package = v.package;
+    obj.cost = v.cost;
+    obj.total_qty = v.total_qty;
+    obj.total_cost = v.total_cost;
+    obj.generic_type_name = v.generic_type_name;
+    obj.account_name = v.account_name;
+    obj.generic_hosp_name = v.generic_hosp_name;
+    obj.labeler_name = v.labeler_name;
+    json.push(obj);
+  });
+
+  const xls = json2xls(json);
+  const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+  // create directory
+  fse.ensureDirSync(exportDirectory);
+  const filePath = path.join(exportDirectory, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
+  fs.writeFileSync(filePath, xls, 'binary');
+  // force download
+  res.download(filePath, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
+});
 
 
 export default router;
