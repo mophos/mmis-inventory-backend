@@ -133,7 +133,7 @@ html
           td(colspan='12') คงคลัง ณ วันที่ #{endDate}
         for s in _inventory_stock[i]
           tr
-            td(colspan='12') #{s.in_qty} #{s.large_unit} (#{s.conversion_qty} #{s.small_unit})
+            td(colspan='12') #{s.lot_no} [ #{s.in_qty} #{s.large_unit} (#{s.conversion_qty} #{s.small_unit}) ]
         //- tfoot 
         //-   tr.tbfooter
         //-     td(colspan='10')
