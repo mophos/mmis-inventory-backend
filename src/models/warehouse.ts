@@ -112,7 +112,7 @@ export class WarehouseModel {
   remove(knex: Knex, warehouseId: string) {
     return knex('wm_warehouses')
       .where('warehouse_id', warehouseId)
-      .del();
+      .update({ 'is_deleted': 'Y', 'is_actived': 'N' });
   }
 
   removeWarehouseType(knex: Knex, warehouseId: string) {

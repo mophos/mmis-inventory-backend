@@ -64,6 +64,7 @@ import donatorRoute from './routes/donators';
 import countingRoute from './routes/counting';
 
 import shippingNetworkRoute from './routes/shippingNetworks';
+import AdjustStockRoute from './routes/adjustStock';
 import userRoute from './routes/users';
 
 // reports
@@ -245,7 +246,7 @@ app.use('/counting', checkAuth, adminAuth, countingRoute)
 app.use('/shipping-networks', checkAuth, adminAuth, shippingNetworkRoute)
 app.use('/issues', checkAuth, adminAuth, issueRoute)
 app.use('/his-transaction', checkAuth, adminAuth, hisTransactionRoute)
-
+app.use('/adjust-stock', checkAuth, adminAuth, AdjustStockRoute)
 // common route
 app.use('/requisition', checkAuth, adminAuth, requisitionRoute);
 

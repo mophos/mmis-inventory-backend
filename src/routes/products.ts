@@ -197,6 +197,23 @@ router.get('/listall', async (req, res, next) => {
 
 });
 
+router.get('/in/warehouse', async (req, res, next) => {
+
+  let db = req.db;
+  const genericId = req.query.genericId;
+  const warehouseId = req.decoded.warehouseId;
+
+  try {
+    let rs: any = await productModel.productInWarehouse(db,warehouseId,genericId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+});
+
 router.post('/', async (req, res, next) => {
   let products = req.body.products;
 
