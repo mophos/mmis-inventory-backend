@@ -412,26 +412,27 @@ export class ReceiveModel {
   getReceiveOtherEditProductList(knex: Knex, receiveOtherId: any) {
     let sql = `
       SELECT
-    rd.cost,
+      rd.cost,
       rd.product_id,
       rd.receive_qty,
       rd.lot_no,
       rd.expired_date,
       rd.receive_other_id,
+      rd.location_id,
       rd.warehouse_id,
       pd.product_name,
       mg.generic_id,
       mg.generic_name,
       mu.unit_name AS primary_unit_name,
-        pd.primary_unit_id,
-        ge.num_days AS expire_num_days,
-          mug.qty AS conversion_qty,
-            l.donator_name,
-            l.donator_id,
-            rd.unit_generic_id,
-            r.delivery_code,
-            r.receive_code,
-            r.receive_date
+      pd.primary_unit_id,
+      ge.num_days AS expire_num_days,
+      mug.qty AS conversion_qty,
+      l.donator_name,
+      l.donator_id,
+      rd.unit_generic_id,
+      r.delivery_code,
+      r.receive_code,
+      r.receive_date
     FROM
     wm_receive_other_detail AS rd
     JOIN wm_receive_other AS r ON rd.receive_other_id = r.receive_other_id
@@ -668,11 +669,13 @@ export class ReceiveModel {
     let queries = sqls.join(';');
     return knex.raw(queries);
   }
+
   removeReceive(knex: Knex, receiveId: string, peopleUserId: any) {
     return knex('wm_receives')
       .where('receive_id', receiveId)
       .update({
         is_cancel: 'Y',
+        purchase_order_id: '',
         cancel_people_user_id: peopleUserId
       });
   }
@@ -1095,6 +1098,19 @@ export class ReceiveModel {
       });
   }
 
+  updatePurchaseStatus2(knex: Knex, purchaseOrderId: any, status: string) {
+    return knex('pc_purchasing_order')
+      .where('purchase_order_id', purchaseOrderId)
+      .update({
+        purchase_order_status: status
+      });
+  }
+
+  getCurrentPurchaseStatus(knex: Knex, purchaseOrderId: any) {
+    return knex('pc_purchasing_order')
+      .where('purchase_order_id', purchaseOrderId);
+  }
+
   updatePurchaseApproveStatus(knex: Knex, purchaseOrderId: any) {
     return knex('pc_purchasing_order')
       .where('purchase_order_id', purchaseOrderId)
@@ -1429,11 +1445,13 @@ export class ReceiveModel {
     AND rod.receive_other_id = rt.receive_other_id
     and (
       mp.working_code = '${query}' or
-      mp.product_name like '${_query}' or  
-      rt.receive_code like '${_query}' or 
-      d.donator_name like '${_query}'
+      mp.product_name like '${_query}' 
     )
-  )`;
+  ) or (  
+      rt.receive_code like '${_query}' or 
+      d.donator_name like '${_query}' or
+      rt.delivery_code like '${_query}'
+    )`;
     if (status == 'approve') {
       sql += ` and ra.receive_other_id is not null`
     } else if (status == 'Napprove') {
@@ -1483,7 +1501,7 @@ export class ReceiveModel {
       mp.working_code = '${query}' or
       mp.product_name like '${_query}'      
     )
-    ) or  (rt.receive_code like '${_query}' or d.donator_name like '${_query}')`;
+    ) or  (rt.receive_code like '${_query}' or d.donator_name like '${_query}' or rt.delivery_code like '${_query}')`;
     if (status == 'approve') {
       sql += ` and ra.receive_other_id is not null`
     } else if (status == 'Napprove') {
@@ -1642,7 +1660,8 @@ export class ReceiveModel {
           r.receive_code like '${_query}' or 
           l.labeler_name like '${_query}' or 
           pc.purchase_order_number like '${_query}' or
-          pc.purchase_order_book_number like '${_query}'
+          pc.purchase_order_book_number like '${_query}' or
+          r.delivery_code LIKE '${_query}'
         )
       ) `;
     if (status == 'approve') {
@@ -1702,7 +1721,7 @@ export class ReceiveModel {
           mp.working_code = '${query}' or
           mp.product_name like '${_query}'
         )
-      ) or (r.receive_code like '${_query}' or l.labeler_name like '${_query}' or pc.purchase_order_number like '${_query}' or pc.purchase_order_book_number like '${_query}')`;
+      ) or (r.receive_code like '${_query}' or l.labeler_name like '${_query}' or pc.purchase_order_number like '${_query}' or pc.purchase_order_book_number like '${_query}' or r.delivery_code LIKE '${_query}')`;
     if (status == 'approve') {
       sql += ` and ra.receive_id is not null`
     } else if (status == 'Napprove') {

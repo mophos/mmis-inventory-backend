@@ -844,4 +844,5 @@ group by mpp.product_id
 
     return db.raw(queries);
   }
+
 }
