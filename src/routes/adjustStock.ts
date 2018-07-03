@@ -71,6 +71,7 @@ router.post('/', async (req, res, next) => {
     head.adjust_date = moment.tz('Asia/Bangkok').format('YYYY-MM-DD HH:mm:ss');
     head.people_user_id = peopleUserId;
     head.warehouse_id = warehouseId;
+    head.is_approved = 'Y';
     const adjustId = await adjustStockModel.saveHead(db, head);
     if (adjustId) {
       for (const d of detail) {
