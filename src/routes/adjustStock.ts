@@ -15,9 +15,18 @@ const serialModel = new SerialModel();
 router.get('/list', async (req, res, next) => {
   const db = req.db;
   const warehouseId = req.decoded.warehouseId;
+  const limit = +req.query.limit;
+  const offset = +req.query.offset;
   try {
-    const rs = await adjustStockModel.list(db, warehouseId);
-    res.send({ ok: true, rows: rs });
+    const rs = await adjustStockModel.list(db, warehouseId, limit, offset);
+    const rsTotal = await adjustStockModel.totalList(db, warehouseId);
+    for (const r of rs) {
+      const rsGeneric = await adjustStockModel.getGeneric(db, r.adjust_id);
+      if (rsGeneric) {
+        r.generics = rsGeneric;
+      }
+    }
+    res.send({ ok: true, rows: rs, total: rsTotal[0].total });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
