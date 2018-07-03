@@ -688,7 +688,9 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
   let _inventory_stock: any = [];
   genericId = Array.isArray(genericId) ? genericId : [genericId]
   Array.isArray(genericId)
-  console.log(req.decoded.WM_STOCK_DATE, '**************');
+
+  let warehouseName = await inventoryReportModel.getWarehouse(db, warehouseId)
+  warehouseName = warehouseName[0].warehouse_name
 
   for (let id in genericId) {
 
@@ -785,7 +787,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
     _summit: _summit,
     _inventory_stock: _inventory_stock,
     hospitalName: hospitalName,
-
+    warehouseName: warehouseName,
     genericId: genericId,
     generic_name: _generic_name,
     unit: _unit,

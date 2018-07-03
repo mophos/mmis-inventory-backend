@@ -845,7 +845,7 @@ WHERE
     }
 
     list_cost(knex: Knex, genericTypeId, startDate, endDate, warehouseId) {
-    let sql = `
+        let sql = `
         SELECT
             q.generic_type_name,
             q.account_name,
@@ -2413,5 +2413,9 @@ OR sc.ref_src like ?
       ORDER BY
         wr.receive_date`
         return knex.raw(sql)
-      }
+    }
+
+    getWarehouse(knex: Knex, warehouseId: any) {
+        return knex('wm_warehouses').where('warehouse_id', warehouseId)
+    }
 }
