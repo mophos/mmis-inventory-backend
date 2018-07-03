@@ -77,7 +77,37 @@ router.get('/test-stockcard', wrap(async (req, res, next) => {
 // export default router;
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
+router.get('/report/adjust-stockcard', wrap(async (req, res, next) => {
+  const db = req.db;
+  let adjustId = req.query.adjustId;
+  adjustId = Array.isArray(adjustId) ? adjustId : [adjustId];
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    const _adjust = await inventoryReportModel.getAdjust(db, adjustId);
+    let adjust:any
+    adjust = _adjust.length ? _adjust : res.render('error404')
+    let detailGen:any =[];
+    for(let details of adjust) {
+      const _detailGen = await inventoryReportModel.getAdjustGenericDetail(db, details.adjust_id)
+      console.log(_detailGen);
+      details.detailGen = _detailGen;
+      for(let _dGen of details.detailGen) {
+        const _detailPro = await inventoryReportModel.getAdjustProductDetail(db, _dGen.adjust_generic_id);
+        _dGen.detailPro = _detailPro;
+      }
+    }
+    res.render('list_adjust', {
+      hospitalName: hospitalName,
+      printDate: printDate,
+      adjust: adjust
+    });
+    res.send({ ok: true , adjust: adjust});
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
 
+}));
 router.get('/report/approve/requis', wrap(async (req, res, next) => {
   let db = req.db;
   let approve_requis: any = []
