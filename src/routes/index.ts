@@ -714,22 +714,37 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
         v.stock_date = moment(v.stock_date, 'YYYY-MM-DD').isValid() ? moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543) : '-';
         v.expired_date = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('DD/MM/') + (moment(v.expired_date).get('year')) : '-';
         v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
-        v.in_cost = inventoryReportModel.comma(_in_qty * +v.balance_unit_cost);
-        v.out_cost = inventoryReportModel.comma(_out_qty * +v.balance_unit_cost);
 
-        // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
-        v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
-        v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
-        v.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
-        if (v.in_qty != 0) {
-          v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
-        } else {
-          v.in_qty_show = '-';
-        }
-        if (v.out_qty != 0) {
-          v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
-        } else {
-          v.out_qty_show = '-';
+        //มี unit_generic_id จะโชว์เป็น pack
+        if (v.small_unit && v.large_unit) {
+          v.in_cost = inventoryReportModel.comma(_in_qty * +v.balance_unit_cost);
+          v.out_cost = inventoryReportModel.comma(_out_qty * +v.balance_unit_cost);
+          // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
+          v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
+          v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
+          v.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
+          if (v.in_qty != 0) {
+            v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else {
+            v.in_qty_show = '-';
+          }
+          if (v.out_qty != 0) {
+            v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else {
+            v.out_qty_show = '-';
+          }
+        }//ไม่มี unit_generic_id จะโชว์เป็น base
+        else {
+          if (v.in_qty != 0) {
+            v.in_qty_show = v.in_qty;
+          } else {
+            v.in_qty_show = '-';
+          }
+          if (v.out_qty != 0) {
+            v.out_qty_show = v.out_qty;
+          } else {
+            v.out_qty_show = '-';
+          }
         }
 
         v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost * _conversion_qty);
@@ -739,8 +754,15 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
       });
 
       inventory_stock[0].forEach(e => {
-        e.in_qty = +e.in_qty - +e.out_qty
-        e.in_qty = inventoryReportModel.commaQty(Math.floor(e.in_qty / e.conversion_qty));
+        //มี unit_generic_id จะโชว์เป็น pack
+        if (e.unit_generic_id) {
+          e.in_qty = +e.in_qty - +e.out_qty
+          e.in_qty = inventoryReportModel.commaQty(Math.floor(e.in_qty / e.conversion_qty));
+        }
+        //ไม่มี unit_generic_id จะโชว์เป็น base
+        else {
+          e.in_qty = inventoryReportModel.commaQty(+e.in_qty - +e.out_qty)
+        }
       });
 
       _inventory_stock.push(inventory_stock[0])
