@@ -1,0 +1,63 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    - for(var page of adjust)
+      .page
+      table.table
+        thead
+          tr 
+            td.center.bold #{hospitalName} 
+          tr 
+            td.center.bold ใบรายการปรับยอด
+          tr 
+            td.center วันที่ปรับยอด #{page.adjust_date}
+          tr 
+            td.left ใบเบิกเลขที่ #{page.adjust_code}
+          tr 
+            td.left หมายเหตุ #{page.reason}
+          tr 
+            td.left #{printDate}
+        - for(var head of page.detailGen)
+          tbody
+            tr.dash-top
+              td
+                table.table
+                  tr
+                    td รหัสยา 
+                    td(width="55%") : #{head.generic_code}
+                    td จำนวนก่อนปรับยอด
+                    td : #{head.old_qty} #{head.unit_name}
+                  tr
+                    td ชื่อสามัญ
+                    td(width="55%") : #{head.generic_name} 
+                    td จำนวนหลังปรับยอด
+                    td : #{head.new_qty} #{head.unit_name}
+                  //- tr
+                  //-   td หน่วยบรรจุ
+                  //-   td : #{list_requis[page][head].title.large_unit}
+                  //-   td รูปแบบ
+                  //-   td : #{list_requis[page][head].title.dosage_name}
+            tr
+              td
+                table.table
+                  tr
+                    td.center(width="40%") ชื่อทางการค้า 
+                    td จำนวนก่อนปรับยอด
+                    td จำนวนก่อนปรับยอด
+                    //- td lot no.
+                    //- td คงเหลือ
+                  - for(var detail of head.detailPro)
+                    tr
+                      td.left #{detail.product_name}
+                      td.left #{detail.old_qty} #{detail.small_unit_name}
+                      td.left #{detail.new_qty} #{detail.small_unit_name}
+            //-           td #{list_requis[page][head].title.items[detail].lot_no}
+            //-           td #{list_requis[page][head].title.items[detail].remain} #{list_requis[page][head].title.items[detail].large_unit} (#{list_requis[page][head].title.items[detail].conversion_qty} #{list_requis[page][head].title.items[detail].small_unit})
+            tr.dash-bottom
+              td(colspan='10')
+      .pagebreak
