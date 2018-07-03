@@ -704,44 +704,4 @@ router.post('/mapping/tmt/upload', upload.single('file'), async (req, res, next)
 
 });
 
-router.get('/receive/export/:startdate/:enddate', async (req, res, next) => {
-
-  const db = req.db;
-  let startdate = req.params.startdate
-  let enddate = req.params.enddate
-
-  // get tmt data
-  let rs: any = await productModel.productReceive(db, startdate, enddate);
-
-  let json = [];
-  rs[0].forEach(v => {
-    let obj: any = {};
-    obj.purchase_order_number = v.purchase_order_number;
-    obj.order_date = v.order_date;
-    obj.generic_code = v.generic_code;
-    obj.generic_name = v.generic_name;
-    obj.product_code = v.product_code;
-    obj.product_name = v.product_name;
-    obj.unit_name = v.unit_name;
-    obj.conversion = v.conversion;
-    obj.package = v.package;
-    obj.cost = v.cost;
-    obj.total_qty = v.total_qty;
-    obj.total_cost = v.total_cost;
-    obj.generic_type_name = v.generic_type_name;
-    obj.account_name = v.account_name;
-    obj.generic_hosp_name = v.generic_hosp_name;
-    json.push(obj);
-  });
-
-  const xls = json2xls(json);
-  const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
-  // create directory
-  fse.ensureDirSync(exportDirectory);
-  const filePath = path.join(exportDirectory, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
-  fs.writeFileSync(filePath, xls, 'binary');
-  // force download
-  res.download(filePath, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
-});
-
 export default router;
