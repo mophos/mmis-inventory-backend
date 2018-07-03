@@ -1445,11 +1445,13 @@ export class ReceiveModel {
     AND rod.receive_other_id = rt.receive_other_id
     and (
       mp.working_code = '${query}' or
-      mp.product_name like '${_query}' or  
-      rt.receive_code like '${_query}' or 
-      d.donator_name like '${_query}'
+      mp.product_name like '${_query}' 
     )
-  )`;
+  ) or (  
+      rt.receive_code like '${_query}' or 
+      d.donator_name like '${_query}' or
+      rt.delivery_code like '${_query}'
+    )`;
     if (status == 'approve') {
       sql += ` and ra.receive_other_id is not null`
     } else if (status == 'Napprove') {
@@ -1499,7 +1501,7 @@ export class ReceiveModel {
       mp.working_code = '${query}' or
       mp.product_name like '${_query}'      
     )
-    ) or  (rt.receive_code like '${_query}' or d.donator_name like '${_query}')`;
+    ) or  (rt.receive_code like '${_query}' or d.donator_name like '${_query}' or rt.delivery_code like '${_query}')`;
     if (status == 'approve') {
       sql += ` and ra.receive_other_id is not null`
     } else if (status == 'Napprove') {
@@ -1658,7 +1660,8 @@ export class ReceiveModel {
           r.receive_code like '${_query}' or 
           l.labeler_name like '${_query}' or 
           pc.purchase_order_number like '${_query}' or
-          pc.purchase_order_book_number like '${_query}'
+          pc.purchase_order_book_number like '${_query}' or
+          r.delivery_code LIKE '${_query}'
         )
       ) `;
     if (status == 'approve') {
@@ -1718,7 +1721,7 @@ export class ReceiveModel {
           mp.working_code = '${query}' or
           mp.product_name like '${_query}'
         )
-      ) or (r.receive_code like '${_query}' or l.labeler_name like '${_query}' or pc.purchase_order_number like '${_query}' or pc.purchase_order_book_number like '${_query}')`;
+      ) or (r.receive_code like '${_query}' or l.labeler_name like '${_query}' or pc.purchase_order_number like '${_query}' or pc.purchase_order_book_number like '${_query}' or r.delivery_code LIKE '${_query}')`;
     if (status == 'approve') {
       sql += ` and ra.receive_id is not null`
     } else if (status == 'Napprove') {
