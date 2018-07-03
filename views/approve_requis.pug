@@ -32,8 +32,8 @@ html
               th.left(style="width: 3%;") รูปแบบ
               th.right(style="width: 14%;") จำนวนขอเบิก
               th.right(style="width: 14%;") จำนวนอนุมัติ
-              th.right(style="width: 10%;") มูลค่า/แพ็ค
-              th.left(style="width: 8%;") &nbsp;lot
+              th.right(style="width: 10%;") มูลค่า/แพ็ค&nbsp;
+              th.left(style="width: 8%;") lot
               th.right(style="width: 8%;") วันหมดอายุ
               th.right(style="width: 10%;") รวมมูลค่า
           tbody
@@ -60,9 +60,9 @@ html
                   td 
                   td 
                   td.right 
-              td.right(style="font-size: 12pt;") &nbsp;#{a.confirm_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
-              td.right(style="font-size: 12pt;") &nbsp;#{a.cost}
-              td(style="font-size: 12pt; word-break:break-all;") &nbsp;#{a.lot_no}
+              td.right(style="font-size: 12pt;") &nbsp;#{a.confirm_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit}) 
+              td.right(style="font-size: 12pt; padding-right:8px;") &nbsp;#{a.cost}
+              td(style="font-size: 12pt; word-break:break-all;") #{a.lot_no}
               td.right(style="font-size: 12pt;") &nbsp;#{a.expired_date}
               td.right(style="font-size: 12pt;") &nbsp;#{a.total_cost}
             .pagebreak
