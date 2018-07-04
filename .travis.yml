@@ -9,4 +9,4 @@ branches:
 before_script:
   - npm install -g typescript@2.7.2
 script:
-  - tsc
+  - npx tsc
