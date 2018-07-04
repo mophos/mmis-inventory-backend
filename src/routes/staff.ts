@@ -184,6 +184,20 @@ router.get('/products/stock/remain/:productId', co(async (req, res, next) => {
   }
 }));
 
+router.get('/products/stock/remain/generic/:genericId', co(async (req, res, next) => {
+  let db = req.db;
+  let genericId = req.params.genericId;
+  let warehouseId = req.decoded.warehouseId;
+  try {
+    let rs = await staffModel.adminGetAllProductsDetailListGeneric(db, genericId, warehouseId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
 router.get('/warehouse/generics/requisition', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let db = req.db;
@@ -2707,4 +2721,45 @@ router.post('/adjust-stock/', async (req, res, next) => {
   }
 });
 
+router.delete('/generic', async (req, res, next) => {
+  const db = req.db;
+  const genericId = req.query.genericId;
+  const warehouseId = req.decoded.warehouseId;
+  try {
+    const rsCheck: any = await staffModel.checkRemoveGeneric(db, genericId, warehouseId);
+    console.log(rsCheck.length);
+    if (rsCheck.length == 0) {
+      await staffModel.removeGeneric(db, genericId, warehouseId);
+      res.send({ ok: true });
+    } else {
+      res.send({ ok: false, error: 'กรุณาจัดการรายการยาให้หมดก่อนที่จะลบรายการ' })
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
+router.delete('/product', async (req, res, next) => {
+  const db = req.db;
+  const productId = req.query.productId;
+  const warehouseId = req.decoded.warehouseId;
+  try {
+    const rsCheck: any = await staffModel.checkRemoveProduct(db, productId, warehouseId);
+    console.log(rsCheck.length);
+    if (rsCheck.length == 0) {
+      await staffModel.removeProduct(db, productId, warehouseId);
+      res.send({ ok: true });
+    } else {
+      res.send({ ok: false, error: 'กรุณาจัดการรายการยาให้หมดก่อนที่จะลบรายการ' })
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
 export default router;

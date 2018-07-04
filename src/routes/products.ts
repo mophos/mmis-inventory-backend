@@ -204,7 +204,7 @@ router.get('/in/warehouse', async (req, res, next) => {
   const warehouseId = req.decoded.warehouseId;
 
   try {
-    let rs: any = await productModel.productInWarehouse(db,warehouseId,genericId);
+    let rs: any = await productModel.productInWarehouse(db, warehouseId, genericId);
     res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -448,6 +448,20 @@ router.get('/stock/remain/:productId', async (req, res, next) => {
 
   try {
     let rs = await productModel.adminGetAllProductsDetailList(db, productId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
+router.get('/stock/remain/generic/:genericId', async (req, res, next) => {
+  let db = req.db;
+  let genericId = req.params.genericId;
+
+  try {
+    let rs = await productModel.adminGetAllProductsDetailListGeneric(db, genericId);
     res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
