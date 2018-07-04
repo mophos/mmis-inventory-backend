@@ -7,7 +7,6 @@ branches:
     - master
     - develop
 before_script:
-
-script:
   - npm install -g typescript@2.7.2
+script:
   - tsc
