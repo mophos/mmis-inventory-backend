@@ -904,7 +904,41 @@ WHERE
         JOIN mm_labelers ml ON wr.vendor_labeler_id = ml.labeler_id
         JOIN wm_products wp ON wrd.product_id = wp.product_id
         AND wrd.lot_no = wp.lot_no
-        JOIN view_all_product vap ON wrd.product_id = vap.product_id
+        JOIN (
+            SELECT
+	mp.product_id AS product_id,
+	mp.product_name AS product_name,
+	mg.generic_id AS generic_id,
+	mg.generic_name AS generic_name,
+	mgt.generic_type_id AS generic_type_id,
+	mgt.generic_type_name AS generic_type_name,
+	mul.unit_id AS large_unit_id,
+	mul.unit_name AS large_unit,
+	mus.unit_id AS small_unit_id,
+	mus.unit_name AS small_unit,
+	muc.qty AS small_qty,
+	muc.unit_generic_id AS unit_generic_id 
+FROM
+	(
+	(
+	(
+	(
+	(
+	(
+	( mm_generics mg LEFT JOIN mm_products AS mp ON ( ( mg.generic_id = mp.generic_id ) ) )
+	LEFT JOIN mm_generic_types AS mgt ON ( ( mg.generic_type_id = mgt.generic_type_id ) ) 
+	)
+	LEFT JOIN mm_generic_dosages AS mgdd ON ( ( mg.dosage_id = mgdd.dosage_id ) ) 
+	)
+	LEFT JOIN mm_unit_generics AS muc ON ( ( mp.generic_id = muc.generic_id ) ) 
+	)
+	LEFT JOIN mm_units AS mul ON ( ( muc.from_unit_id = mul.unit_id ) ) 
+	)
+	LEFT JOIN mm_units AS mus ON ( ( muc.to_unit_id = mus.unit_id ) ) 
+	)
+	LEFT JOIN mm_generic_types AS mgdt ON ( ( mg.generic_type_id = mgdt.generic_type_id ) ) 
+	)
+        ) as vap ON wrd.product_id = vap.product_id
         AND wrd	.unit_generic_id = vap.unit_generic_id
         JOIN mm_products mp ON mp.product_id = wp.product_id
         JOIN mm_labelers ml2 ON mp.m_labeler_id = ml2.labeler_id
@@ -938,7 +972,41 @@ WHERE
             wm_receives wr
         JOIN wm_receive_detail wrd ON wr.receive_id = wrd.receive_id
         JOIN mm_labelers ml ON wr.vendor_labeler_id = ml.labeler_id
-        JOIN view_all_product vap ON wrd.product_id = vap.product_id
+        JOIN (
+            SELECT
+	mp.product_id AS product_id,
+	mp.product_name AS product_name,
+	mg.generic_id AS generic_id,
+	mg.generic_name AS generic_name,
+	mgt.generic_type_id AS generic_type_id,
+	mgt.generic_type_name AS generic_type_name,
+	mul.unit_id AS large_unit_id,
+	mul.unit_name AS large_unit,
+	mus.unit_id AS small_unit_id,
+	mus.unit_name AS small_unit,
+	muc.qty AS small_qty,
+	muc.unit_generic_id AS unit_generic_id 
+FROM
+	(
+	(
+	(
+	(
+	(
+	(
+	( mm_generics mg LEFT JOIN mm_products AS mp ON ( ( mg.generic_id = mp.generic_id ) ) )
+	LEFT JOIN mm_generic_types AS mgt ON ( ( mg.generic_type_id = mgt.generic_type_id ) ) 
+	)
+	LEFT JOIN mm_generic_dosages AS mgdd ON ( ( mg.dosage_id = mgdd.dosage_id ) ) 
+	)
+	LEFT JOIN mm_unit_generics AS muc ON ( ( mp.generic_id = muc.generic_id ) ) 
+	)
+	LEFT JOIN mm_units AS mul ON ( ( muc.from_unit_id = mul.unit_id ) ) 
+	)
+	LEFT JOIN mm_units AS mus ON ( ( muc.to_unit_id = mus.unit_id ) ) 
+	)
+	LEFT JOIN mm_generic_types AS mgdt ON ( ( mg.generic_type_id = mgdt.generic_type_id ) ) 
+	)
+        ) as  vap ON wrd.product_id = vap.product_id
         AND wrd.unit_generic_id = vap.unit_generic_id
         JOIN mm_products mp ON mp.product_id = wrd.product_id
         left JOIN mm_labelers ml2 ON mp.m_labeler_id = ml2.labeler_id
@@ -1044,7 +1112,41 @@ WHERE
         JOIN mm_labelers ml ON wr.vendor_labeler_id = ml.labeler_id
         JOIN wm_products wp ON wrd.product_id = wp.product_id
         AND wrd.lot_no = wp.lot_no
-        JOIN view_all_product vap ON wrd.product_id = vap.product_id
+        JOIN (
+            SELECT
+	mp.product_id AS product_id,
+	mp.product_name AS product_name,
+	mg.generic_id AS generic_id,
+	mg.generic_name AS generic_name,
+	mgt.generic_type_id AS generic_type_id,
+	mgt.generic_type_name AS generic_type_name,
+	mul.unit_id AS large_unit_id,
+	mul.unit_name AS large_unit,
+	mus.unit_id AS small_unit_id,
+	mus.unit_name AS small_unit,
+	muc.qty AS small_qty,
+	muc.unit_generic_id AS unit_generic_id 
+FROM
+	(
+	(
+	(
+	(
+	(
+	(
+	( mm_generics mg LEFT JOIN mm_products AS mp ON ( ( mg.generic_id = mp.generic_id ) ) )
+	LEFT JOIN mm_generic_types AS mgt ON ( ( mg.generic_type_id = mgt.generic_type_id ) ) 
+	)
+	LEFT JOIN mm_generic_dosages AS mgdd ON ( ( mg.dosage_id = mgdd.dosage_id ) ) 
+	)
+	LEFT JOIN mm_unit_generics AS muc ON ( ( mp.generic_id = muc.generic_id ) ) 
+	)
+	LEFT JOIN mm_units AS mul ON ( ( muc.from_unit_id = mul.unit_id ) ) 
+	)
+	LEFT JOIN mm_units AS mus ON ( ( muc.to_unit_id = mus.unit_id ) ) 
+	)
+	LEFT JOIN mm_generic_types AS mgdt ON ( ( mg.generic_type_id = mgdt.generic_type_id ) ) 
+	)
+        ) as vap ON wrd.product_id = vap.product_id
         AND wrd.unit_generic_id = vap.unit_generic_id
         JOIN mm_products mp ON mp.product_id = wp.product_id
         JOIN mm_labelers ml2 ON mp.m_labeler_id = ml2.labeler_id
