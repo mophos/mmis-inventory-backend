@@ -242,7 +242,7 @@ router.get('/get-mappings-generics-search/:keywords', wrap(async (req, res, next
   let db = req.db;
   let hospcode = req.decoded.his_hospcode;
   let keywords = req.params.keywords
-  console.log(keywords,'56565656');
+  console.log(keywords, '56565656');
 
   try {
     let results = await warehouseModel.getMappingsGenericsSearch(db, hospcode, keywords);
@@ -636,9 +636,6 @@ router.delete('/:warehouseId', (req, res, next) => {
 
   warehouseModel.remove(db, warehouseId)
     .then((results: any) => {
-      return warehouseModel.removeWarehouseType(db, warehouseId)
-    })
-    .then(() => {
       res.send({ ok: true });
     })
     .catch(error => {
