@@ -183,6 +183,7 @@ export class GenericModel {
     }
     sql += ` and mp.is_active='Y'
     AND p.qty > 0
+    and p.is_actived = 'Y'
     group by g.generic_id
     limit 10
     `;

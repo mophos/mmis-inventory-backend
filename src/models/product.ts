@@ -276,6 +276,27 @@ export class ProductModel {
     return knex.raw(sql, [productId]);
   }
 
+  adminGetAllProductsDetailListGeneric(knex: Knex, genericId: any) {
+    let sql = `
+    select mp.product_name,mp.working_code,p.wm_product_id, p.product_id, sum(p.qty) as qty, floor(sum(p.qty)/ug.qty) as pack_qty, sum(p.cost*p.qty) as total_cost, p.cost, p.warehouse_id,
+    w.warehouse_name, p.lot_no, p.expired_date, mpp.max_qty, mpp.min_qty, u1.unit_name as from_unit_name, ug.qty as conversion_qty,
+    u2.unit_name as to_unit_name,v.reserve_qty
+    from wm_products as p
+    left join wm_warehouses as w on w.warehouse_id=p.warehouse_id
+    inner join mm_products as mp on mp.product_id=p.product_id
+    left join mm_generic_planning as mpp on mpp.generic_id=mp.generic_id and mpp.warehouse_id=p.warehouse_id
+    inner join mm_unit_generics as ug on ug.unit_generic_id=p.unit_generic_id
+    left join mm_units as u1 on u1.unit_id=ug.from_unit_id
+    left join mm_units as u2 on u2.unit_id=ug.to_unit_id
+    left join view_product_reserve v on v.wm_product_id = p.wm_product_id
+    where mp.generic_id = '${genericId}'
+    group by p.lot_no, p.expired_date, p.warehouse_id
+    HAVING sum(p.qty) != 0
+    order by w.warehouse_name
+    `;
+    return knex.raw(sql);
+  }
+
   adminSearchAllProductsLabeler(knex: Knex, query: any, labelerId: any) {
     let q_ = `${query}%`;
     let _q_ = `%${query}%`;
