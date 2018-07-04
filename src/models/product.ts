@@ -22,6 +22,41 @@ export class ProductModel {
     return knex.raw(sql);
   }
 
+  productInWarehouse(knex: Knex, warehouseId, genericId) {
+    let sql = `
+    SELECT
+    wp.*,
+    mug.cost AS packcost,
+    mp.product_name,
+    wp.lot_no,
+    wp.expired_date,
+    mg.working_code,
+    mg.generic_id,
+    mg.generic_name,
+    l.location_name,
+    l.location_desc,
+    u.unit_name AS base_unit_name,
+    mug.qty AS conversion,
+    uu.unit_name AS large_unit,
+    mp.is_lot_control 
+    FROM
+      wm_products AS wp
+      INNER JOIN mm_products AS mp ON mp.product_id = wp.product_id
+      LEFT JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
+      LEFT JOIN wm_locations AS l ON l.location_id = wp.location_id
+      LEFT JOIN mm_units AS u ON u.unit_id = mp.primary_unit_id
+      LEFT JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wp.unit_generic_id
+      LEFT JOIN mm_units AS uu ON uu.unit_id = mug.from_unit_id 
+    WHERE
+      wp.warehouse_id = '${warehouseId}'
+      AND mg.generic_id = '${genericId}'
+      and wp.qty > 0
+    ORDER BY
+    wp.qty DESC
+    `;
+    return knex.raw(sql);
+  }
+
 
   searchallProduct(knex: Knex, query) {
     let _query = `%${query}%`;

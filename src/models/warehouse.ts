@@ -112,7 +112,7 @@ export class WarehouseModel {
   remove(knex: Knex, warehouseId: string) {
     return knex('wm_warehouses')
       .where('warehouse_id', warehouseId)
-      .del();
+      .update({ 'is_deleted': 'Y', 'is_actived': 'N' });
   }
 
   removeWarehouseType(knex: Knex, warehouseId: string) {
@@ -150,7 +150,7 @@ export class WarehouseModel {
     if (genericType) {
       query.andWhere('mg.generic_type_id', genericType);
     }
-    query.groupByRaw('wp.product_id')
+    query.groupBy('wp.product_id')
       .orderByRaw('wp.qty DESC');
     return query;
   }
@@ -173,7 +173,7 @@ export class WarehouseModel {
     if (genericType) {
       query.andWhere('mg.generic_type_id', genericType);
     }
-    query.groupByRaw('wp.product_id, wp.lot_no')
+    query.groupBy('wp.product_id')
       .orderBy('mp.product_name');
     return query;
   }
@@ -310,7 +310,7 @@ export class WarehouseModel {
     if (genericType) {
       query.andWhere('g.generic_type_id', genericType);
     }
-    query.groupBy('p.product_id')
+    query.groupBy('g.generic_id')
       .orderBy('g.generic_name')
     return query;
   }
@@ -343,8 +343,8 @@ export class WarehouseModel {
     if (genericType) {
       query.andWhere('g.generic_type_id', genericType);
     }
-    query.groupBy('p.product_id')
-      .orderBy('mp.product_name')
+    query.groupBy('g.generic_id')
+      .orderBy('g.generic_name')
     return query;
   }
   getProductsWarehouseSearch(knex: Knex, warehouseId: string, productGroups: any[], query: string) {
@@ -367,7 +367,7 @@ export class WarehouseModel {
           .orWhere('mp.keywords', 'like', _query)
       })
       .whereIn('mg.generic_type_id', productGroups)
-      .groupByRaw('wp.product_id, wp.lot_no')
+      .groupByRaw('wp.product_id')
       .orderByRaw('wp.qty DESC');
     return sql;
   }

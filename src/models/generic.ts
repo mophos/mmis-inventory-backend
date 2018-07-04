@@ -9,6 +9,32 @@ export class GenericModel {
       .andWhere('is_actived', 'Y');
   }
 
+  getGenericInWarehouse(knex: Knex, warehouseId: any) {
+    return knex.raw(`SELECT
+    mg.generic_id,
+    mg.working_code AS generic_code,
+    mg.generic_name,
+    (
+      SELECT
+        sum( wp.qty ) 
+      FROM
+        wm_products wp
+        JOIN mm_products mp ON wp.product_id = mp.product_id 
+      WHERE
+        wp.warehouse_id = '${warehouseId}' 
+        AND mp.generic_id = mg.generic_id 
+      GROUP BY
+        mp.generic_id 
+    ) as qty
+    FROM
+      mm_generics mg
+    WHERE
+      mg.generic_id IN ( 
+        SELECT mp.generic_id FROM wm_products wp JOIN mm_products mp ON wp.product_id = mp.product_id 
+        WHERE wp.warehouse_id = '${warehouseId}' and wp.qty > 0 GROUP BY mp.generic_id 
+      ) `);
+  }
+
   getRemainQtyInWarehouse(knex: Knex, warehouseId: any, genericId: any) {
     return knex('wm_products as wm')
       .select(knex.raw('sum(wm.qty) as remain_qty'))
