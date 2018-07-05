@@ -374,7 +374,9 @@ router.post('/stock/products/all', async (req, res, next) => {
   let offset = req.body.offset || 0;
   let genericType = req.body.genericType;
   let sort = req.body.sort;
-
+  if (typeof genericType === 'string') {
+    genericType = [genericType];
+  }
   if (genericType) {
     try {
       let rsTotal = await productModel.adminGetAllProductTotal(db, genericType);
