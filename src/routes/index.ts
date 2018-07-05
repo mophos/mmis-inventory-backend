@@ -2,7 +2,7 @@
 
 import * as express from 'express';
 import { InventoryReportModel } from '../models/inventoryReport';
-// import * as moment from 'moment';
+import * as moment from 'moment';
 import * as wrap from 'co-express';
 import * as _ from 'lodash';
 import { IssueModel } from '../models/issue'
@@ -16,9 +16,9 @@ const fse = require('fs-extra');
 const fs = require('fs');
 const json2xls = require('json2xls');
 
-var moment = require('moment-timezone');
+var momentTz= require('moment-timezone');
 moment.locale('th');
-const printDate = 'วันที่พิมพ์ ' + moment.tz('Asia/Bangkok').format('D MMMM ') + (moment.tz('Asia/Bangkok').get('year') + 543) + moment.tz('Asia/Bangkok').format(', HH:mm:ss น.');
+const printDate = 'วันที่พิมพ์ ' + moment().format('D MMMM ') + (moment().get('year') + 543) + momentTz.tz('Asia/Bangkok').format(', HH:mm:ss น.');
 router.get('/', (req, res, next) => {
   res.send({ ok: true, message: 'Welcome to Inventory API server' });
 });
