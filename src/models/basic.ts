@@ -12,6 +12,7 @@ export class BasicModel {
       .select('ml.labeler_name', 'ml.labeler_id')
       .innerJoin('mm_labelers as ml', 'ml.labeler_id', 'mp.v_labeler_id')
       .where('mp.generic_id', genericId)
+      .where('ml.is_deleted', 'N')
       .groupBy('mp.v_labeler_id');
   }
 
@@ -29,7 +30,8 @@ export class BasicModel {
     let _query2 = `${query}%`;
     let sql = `
     select * from mm_labelers as ml 
-    where (ml.labeler_name like ? or ml.short_code like ?) and ml.is_manufacturer = 'Y' limit 10
+    where (ml.labeler_name like ? or ml.short_code like ?) and ml.is_manufacturer = 'Y' 
+    and ml.is_deleted='N' limit 10
     `;
     return knex.raw(sql, [_query, _query2]);
   }
@@ -39,7 +41,8 @@ export class BasicModel {
     let _query2 = `${query}%`;
     let sql = `
     select * from mm_labelers as ml 
-    where (ml.labeler_name like ? or ml.short_code like ?) and ml.is_vendor = 'Y' limit 10
+    where (ml.labeler_name like ? or ml.short_code like ?) and ml.is_vendor = 'Y' 
+    and ml.is_deleted='N' limit 10
     `;
     return knex.raw(sql, [_query, _query2]);
   }
