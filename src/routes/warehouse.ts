@@ -922,7 +922,8 @@ router.get('/export/excel', wrap(async (req, res, next) => {
   let templateId = req.query.templateId;
   let db = req.db;
 
-  fse.ensureDirSync(process.env.TMP_PATH);
+  const pathTmp = path.join(process.env.MMIS_DATA, 'temp');
+  fse.ensureDirSync(pathTmp);
 
   if (templateId) {
     try {
@@ -948,7 +949,7 @@ router.get('/export/excel', wrap(async (req, res, next) => {
 
       // create tmp file
       let tmpFile = `${_tableName}-${moment().format('x')}.xls`;
-      tmpFile = path.join(process.env.TMP_PATH, tmpFile);
+      tmpFile = path.join(pathTmp, tmpFile);
       let excel = json2xls(r);
       fs.writeFileSync(tmpFile, excel, 'binary');
       res.download(tmpFile, (err) => {
