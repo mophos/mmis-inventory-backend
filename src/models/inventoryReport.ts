@@ -1964,7 +1964,7 @@ OR sc.ref_src like ?
             .join('wm_warehouses as wh', 'wh.warehouse_id', 'wp.warehouse_id')
             .where('wp.warehouse_id', warehouseId)
     }
-    productManufacture(knex: Knex, warehouseId: any, startDate, endDate) {
+    productManufacture(knex: Knex, warehouseId: any, startDate, endDate, genericId) {
         return knex.raw(
             `SELECT
             ro.receive_code,
@@ -1982,11 +1982,15 @@ OR sc.ref_src like ?
                 wm_receive_other ro
             JOIN wm_receive_other_detail rod ON ro.receive_other_id = rod.receive_other_id
             JOIN mm_products mp ON rod.product_id = mp.product_id
+            JOIN mm_generics mg on mp.generic_id = mg.generic_id
+            join mm_generic_types mgt on mg.generic_type_id = mgt.generic_type_id
             JOIN mm_unit_generics mug ON mug.unit_generic_id = rod.unit_generic_id
             JOIN mm_units mu ON mug.from_unit_id = mu.unit_id
             JOIN mm_units mu2 ON mug.to_unit_id = mu2.unit_id
             WHERE rod.warehouse_id = '${warehouseId}'
-            and ro.receive_date between '${startDate}' and '${endDate}'`
+            and mgt.generic_type_code ='DRUG_PRODUCTION'
+            and ro.receive_date between '${startDate}' and '${endDate}'
+            and mp.generic_id like '${genericId}'`
         )
     }
 
