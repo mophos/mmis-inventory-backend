@@ -250,7 +250,7 @@ export class WarehouseModel {
       .where('mp.mark_deleted', 'N')
       .where('p.warehouse_id', warehouseId)
       // .whereRaw('p.qty > 0')
-      .where('p.is_actived','Y')
+      .where('p.is_actived', 'Y')
       .havingRaw('sum(p.qty) <= mgp.min_qty')
     if (genericType) {
       query.andWhere('g.generic_type_id', genericType);
@@ -274,7 +274,7 @@ export class WarehouseModel {
       .leftJoin('view_product_reserve as v', 'v.wm_product_id', 'p.wm_product_id')
       .joinRaw(`left join mm_generic_planning as mgp on mgp.generic_id = g.generic_id and mgp.warehouse_id = ${warehouseId}`)
       .where('mp.mark_deleted', 'N')
-      .where('p.is_actived','Y')
+      .where('p.is_actived', 'Y')
       .where('p.warehouse_id', warehouseId)
       .where(w => {
         w.where('mp.product_name', 'like', _q)
@@ -523,6 +523,22 @@ export class WarehouseModel {
     return knex.raw(sql);
   }
 
+  getallRequisitionTemplateSearch(knex: Knex, query: string) {
+    let _q = `%${query}%`;
+    let sql = `
+    select wrt.template_id, wrt.src_warehouse_id, wrt.dst_warehouse_id, 
+    ws.warehouse_name as src_warehouse_name, 
+    wd.warehouse_name as dst_warehouse_name, 
+    wrt.template_subject, wrt.created_date
+    from wm_requisition_template as wrt
+    inner join wm_warehouses as ws on wrt.src_warehouse_id = ws.warehouse_id
+    inner join wm_warehouses as wd on wrt.dst_warehouse_id = wd.warehouse_id
+    where wrt.template_subject like '${_q}' or ws.warehouse_name like '${_q}' or wd.warehouse_name like '${_q}'
+    order by wrt.template_subject`;
+
+    return knex.raw(sql);
+  }
+
   //แสดง template ทั้งหมด ของ warehouse นี้
   getallRequisitionTemplateInwarehouse(knex: Knex, warehouseId: string) {
     let sql = `
@@ -538,6 +554,24 @@ export class WarehouseModel {
     `;
 
     return knex.raw(sql, [warehouseId]);
+  }
+
+  getallRequisitionTemplateInwarehouseSearch(knex: Knex, warehouseId: string, query: string) {
+    let _q = `%${query}%`;
+    let sql = `
+  select wrt.template_id, wrt.src_warehouse_id, wrt.dst_warehouse_id, 
+  ws.warehouse_name as src_warehouse_name, 
+  wd.warehouse_name as dst_warehouse_name, 
+  wrt.template_subject, wrt.created_date
+  from wm_requisition_template as wrt
+  inner join wm_warehouses as ws on wrt.src_warehouse_id = ws.warehouse_id
+  inner join wm_warehouses as wd on wrt.dst_warehouse_id = wd.warehouse_id
+  where wrt.src_warehouse_id='${warehouseId}' and 
+  (wrt.template_subject like '${_q}' or ws.warehouse_name like '${_q}' or wd.warehouse_name like '${_q}')
+  order by wrt.template_subject
+    `;
+
+    return knex.raw(sql);
   }
 
   getRequisitionTemplateInwarehouse(knex: Knex, srcWarehouseId: string, dstWarehouseId: string) {

@@ -23,6 +23,15 @@ function printDate() {
   return printDate;
 }
 
+
+function checkNull(value) {
+  if (value == '' || value == null || value == 'null' || value == undefined || value == 'undefined') {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 router.get('/', (req, res, next) => {
   res.send({ ok: true, message: 'Welcome to Inventory API server' });
 });
@@ -941,6 +950,7 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
   let endDate = req.params.endDate;
   let wareHouse = req.params.wareHouse;
   let genericId = req.params.genericId;
+  let genericTypeId = req.query.genericTypeId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
@@ -949,7 +959,7 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
   if (genericId == 0) { genericId = '%%'; }
   else { genericId = '%' + genericId + '%'; }
 
-  let product_expired = await inventoryReportModel.product_expired(db, startDate, endDate, wareHouse, genericId);
+  let product_expired = await inventoryReportModel.product_expired(db, startDate, endDate, wareHouse, genericId, genericTypeId);
   product_expired = product_expired[0];
   let sumn = 0;
   product_expired.forEach(value => {
@@ -2106,9 +2116,12 @@ router.get('/report/product/manufacture/warehouse', wrap(async (req, res, next) 
   let warehouseId = req.query.warehouseId;
   let startDate = req.query.startDate;
   let endDate = req.query.endDate;
+  let genericId = req.query.genericId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let productManufacture = await inventoryReportModel.productManufacture(db, warehouseId, startDate, endDate);
+  moment.locale('th');
+  genericId = checkNull(genericId) ? '%%' : '%' + genericId + '%';
+  let productManufacture = await inventoryReportModel.productManufacture(db, warehouseId, startDate, endDate, genericId);
   if (productManufacture[0].length == 0) {
     res.render('error404');
   }
@@ -2130,7 +2143,8 @@ router.get('/report/product/manufacture/warehouse', wrap(async (req, res, next) 
     hospitalName: hospitalName,
     sum: sum,
     startDate: startDate,
-    endDate: endDate
+    endDate: endDate,
+    printDate: printDate()
   });
 }));
 router.get('/test/:n', wrap(async (req, res, next) => {

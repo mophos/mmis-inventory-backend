@@ -516,6 +516,20 @@ router.get('/warehouseproducttemplate', wrap(async (req, res, next) => {
   }
 }));
 
+router.get('/warehouseproducttemplate/search', wrap(async (req, res, next) => {
+  let db = req.db;
+  let query = req.query.query;
+  try {
+    let reqult = await warehouseModel.getallRequisitionTemplateSearch(db,query);
+    res.send({ ok: true, rows: reqult[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+
 // remove req template
 router.delete('/requisition/remove-template/:templateId', wrap(async (req, res, next) => {
   let db = req.db;
@@ -535,11 +549,10 @@ router.delete('/requisition/remove-template/:templateId', wrap(async (req, res, 
 }));
 
 //แสดง template ทั้งหมด ของ warehouse นี้
-router.get('/alltemplateinwarehouse/:warehouseId', wrap(async (req, res, next) => {
+router.get('/alltemplateinwarehouse', wrap(async (req, res, next) => {
   let db = req.db;
   try {
-    let warehouseId = req.params.warehouseId;
-    let sourceWarehouseId = req.params.sourceWarehouseId;
+    let warehouseId = req.query.warehouseId;
     let reqult = await warehouseModel.getallRequisitionTemplateInwarehouse(db, warehouseId);
     res.send({ ok: true, rows: reqult[0] });
   } catch (error) {
@@ -550,12 +563,27 @@ router.get('/alltemplateinwarehouse/:warehouseId', wrap(async (req, res, next) =
   }
 }));
 
-router.get('/templateinwarehouse/:srcWarehouseId/:dstWarehouseId', wrap(async (req, res, next) => {
+router.get('/alltemplateinwarehouse/search', wrap(async (req, res, next) => {
+  let db = req.db;
+  try {
+    let warehouseId = req.query.warehouseId;
+    let query = req.query.query;
+    let reqult = await warehouseModel.getallRequisitionTemplateInwarehouseSearch(db, warehouseId, query);
+    res.send({ ok: true, rows: reqult[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/templateinwarehouse', wrap(async (req, res, next) => {
   let db = req.db;
   try {
 
-    let srcWarehouseId = req.params.srcWarehouseId;
-    let dstWarehouseId = req.params.dstWarehouseId;
+    let srcWarehouseId = req.query.srcWarehouseId;
+    let dstWarehouseId = req.query.dstWarehouseId;
     let reqult = await warehouseModel.getRequisitionTemplateInwarehouse(db, srcWarehouseId, dstWarehouseId);
     res.send({ ok: true, rows: reqult[0] });
   } catch (error) {
