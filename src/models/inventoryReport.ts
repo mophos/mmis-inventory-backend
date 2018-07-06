@@ -508,7 +508,7 @@ mgt.generic_type_id `
         and wr.requisition_date like ?`
         return (knex.raw(sql, [date, date, date, date]))
     }
-    product_expired(knex: Knex, startDate, endDate, wareHouse, genericId) {
+    product_expired(knex: Knex, startDate, endDate, wareHouse, genericId, genericTypeId) {
         let sql = `
         SELECT
         wp.product_id,
@@ -541,6 +541,7 @@ mgt.generic_type_id `
         AND wp.qty != 0
         AND wp.warehouse_id LIKE ?
         AND mg.generic_id LIKE ?
+        AND mg.generic_type_id = '${genericTypeId}'
         GROUP BY
             wp.product_id
         ORDER BY
@@ -1144,27 +1145,27 @@ WHERE
     }
     getAdjust(knex: Knex, id: any) {
         return knex('wm_adjusts')
-        .whereIn('adjust_id', id);
+            .whereIn('adjust_id', id);
     }
 
     getAdjustGenericDetail(knex: Knex, adId: any) {
         return knex('wm_adjust_generics as wag')
-        .select('wag.*','mg.generic_name','mg.working_code as generic_code','mu.unit_name')
-        .leftJoin('mm_generics as mg','mg.generic_id','wag.generic_id')
-        .leftJoin('mm_units as mu','mu.unit_id','mg.primary_unit_id')
-        .where('wag.adjust_id', adId);
+            .select('wag.*', 'mg.generic_name', 'mg.working_code as generic_code', 'mu.unit_name')
+            .leftJoin('mm_generics as mg', 'mg.generic_id', 'wag.generic_id')
+            .leftJoin('mm_units as mu', 'mu.unit_id', 'mg.primary_unit_id')
+            .where('wag.adjust_id', adId);
     }
     getAdjustProductDetail(knex: Knex, adGId: any) {
         return knex('wm_adjust_products as wap')
-        .select('wap.*','mp.product_name','mul.unit_name as lengh_unit_name','mus.unit_name as small_unit_name','mug.qty as samll_qty')
-        .leftJoin('wm_products as wm','wm.wm_product_id','wap.wm_product_id')
-        .leftJoin('mm_products as mp','mp.product_id','wm.product_id')
-        .leftJoin('mm_unit_generics as mug','mug.unit_generic_id','wm.unit_generic_id')
-        .leftJoin('mm_units as mul','mul.unit_id','mug.from_unit_id')
-        .leftJoin('mm_units as mus','mus.unit_id','mug.to_unit_id')
-        .where('adjust_generic_id', adGId);
+            .select('wap.*', 'mp.product_name', 'mul.unit_name as lengh_unit_name', 'mus.unit_name as small_unit_name', 'mug.qty as samll_qty')
+            .leftJoin('wm_products as wm', 'wm.wm_product_id', 'wap.wm_product_id')
+            .leftJoin('mm_products as mp', 'mp.product_id', 'wm.product_id')
+            .leftJoin('mm_unit_generics as mug', 'mug.unit_generic_id', 'wm.unit_generic_id')
+            .leftJoin('mm_units as mul', 'mul.unit_id', 'mug.from_unit_id')
+            .leftJoin('mm_units as mus', 'mus.unit_id', 'mug.to_unit_id')
+            .where('adjust_generic_id', adGId);
     }
-    
+
 
     async hospital(knex: Knex) {
         let array = [];

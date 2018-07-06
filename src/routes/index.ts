@@ -941,6 +941,7 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
   let endDate = req.params.endDate;
   let wareHouse = req.params.wareHouse;
   let genericId = req.params.genericId;
+  let genericTypeId = req.query.genericTypeId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
@@ -949,7 +950,7 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
   if (genericId == 0) { genericId = '%%'; }
   else { genericId = '%' + genericId + '%'; }
 
-  let product_expired = await inventoryReportModel.product_expired(db, startDate, endDate, wareHouse, genericId);
+  let product_expired = await inventoryReportModel.product_expired(db, startDate, endDate, wareHouse, genericId, genericTypeId);
   product_expired = product_expired[0];
   let sumn = 0;
   product_expired.forEach(value => {

@@ -9,19 +9,19 @@ export class AlertExpiredModel {
       .orderBy('mg.generic_name');
   }
 
-  getAllGenerics(knex: Knex,data :any) {
+  getAllGenerics(knex: Knex, data: any) {
     return knex('mm_generics as mg')
-      .select('mg.*', 'ge.num_days','gt.*')
+      .select('mg.*', 'ge.num_days', 'gt.*')
       .leftJoin('wm_generic_expired_alert as ge', 'ge.generic_id', 'mg.generic_id')
       .leftJoin('mm_generic_types as gt', 'gt.generic_type_id', 'mg.generic_type_id')
-      .whereIn('gt.generic_type_id',data)
+      .whereIn('gt.generic_type_id', data)
       .orderBy('mg.generic_name')
   }
 
   listUnSet(knex: Knex) {
 
     return knex('mm_generics as mg')
-      .select('mg.*', 'ge.num_days')    
+      .select('mg.*', 'ge.num_days')
       .leftJoin('wm_generic_expired_alert as ge', 'ge.generic_id', 'mg.generic_id')
       .orderBy('mg.generic_name')
       .whereRaw('ge.num_days=0 or ge.num_days is null');
@@ -64,8 +64,8 @@ export class AlertExpiredModel {
     set num_days = ${numDays} where mg.generic_type_id in (${type})`
     return knex.raw(sql);
   }
-  productExpired(knex: Knex){
-    let sql=`SELECT
+  productExpired(knex: Knex, genericTypeId) {
+    let sql = `SELECT
       xp.generic_id,
       mg.working_code,
       mg.generic_name,
@@ -85,11 +85,12 @@ export class AlertExpiredModel {
       JOIN wm_warehouses ww ON ww.warehouse_id = wp.warehouse_id
       WHERE
         DATEDIFF(wp.expired_date, CURDATE()) < xp.num_days
+        and mg.generic_type_id in (${genericTypeId})
       GROUP BY
         wp.product_id,
         wp.lot_no,
         wp.expired_date,
         wp.warehouse_id`
-        return knex.raw(sql);
+    return knex.raw(sql);
   }
 }
