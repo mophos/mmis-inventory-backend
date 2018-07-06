@@ -5,13 +5,14 @@ export class BasicModel {
   checkApprove(knex: Knex, username: any, password: any) {
     return knex('um_users as uu')
       .andWhere('uu.username', username)
-      .andWhere('uu.password',  password)
+      .andWhere('uu.password', password)
   }
   getProductVendors(knex: Knex, genericId: any) {
     return knex('mm_products as mp')
       .select('ml.labeler_name', 'ml.labeler_id')
       .innerJoin('mm_labelers as ml', 'ml.labeler_id', 'mp.v_labeler_id')
       .where('mp.generic_id', genericId)
+      .where('ml.is_deleted', 'N')
       .groupBy('mp.v_labeler_id');
   }
 
@@ -20,6 +21,7 @@ export class BasicModel {
       .select('ml.labeler_name', 'ml.labeler_id')
       .innerJoin('mm_labelers as ml', 'ml.labeler_id', 'mp.m_labeler_id')
       .where('mp.generic_id', genericId)
+      .where('ml.is_deleted', 'N')
       .groupBy('mp.m_labeler_id');
   }
 
@@ -28,7 +30,8 @@ export class BasicModel {
     let _query2 = `${query}%`;
     let sql = `
     select * from mm_labelers as ml 
-    where (ml.labeler_name like ? or ml.short_code like ?) and ml.is_manufacturer = 'Y' limit 10
+    where (ml.labeler_name like ? or ml.short_code like ?) and ml.is_manufacturer = 'Y' 
+    and ml.is_deleted='N' limit 10
     `;
     return knex.raw(sql, [_query, _query2]);
   }
@@ -38,7 +41,8 @@ export class BasicModel {
     let _query2 = `${query}%`;
     let sql = `
     select * from mm_labelers as ml 
-    where (ml.labeler_name like ? or ml.short_code like ?) and ml.is_vendor = 'Y' limit 10
+    where (ml.labeler_name like ? or ml.short_code like ?) and ml.is_vendor = 'Y' 
+    and ml.is_deleted='N' limit 10
     `;
     return knex.raw(sql, [_query, _query2]);
   }
@@ -46,7 +50,7 @@ export class BasicModel {
   getProductLots(knex: Knex, productId: any) {
     return knex('wm_products as w')
       .select('w.lot_no', 'w.expired_date', 'w.qty',
-      knex.raw('timestampdiff(month, current_date(), w.expired_date) as count_expired'))
+        knex.raw('timestampdiff(month, current_date(), w.expired_date) as count_expired'))
       .innerJoin('mm_products as p', 'p.product_id', 'w.product_id')
       .where('w.product_id', productId)
       .groupByRaw('w.product_id, w.lot_no')
@@ -56,7 +60,7 @@ export class BasicModel {
   getProductLotsWarehouse(knex: Knex, productId: any, warehouseId: any) {
     return knex('wm_products as w')
       .select('w.lot_no', 'w.expired_date', 'w.qty',
-      knex.raw('timestampdiff(month, current_date(), w.expired_date) as count_expired'))
+        knex.raw('timestampdiff(month, current_date(), w.expired_date) as count_expired'))
       .innerJoin('mm_products as p', 'p.product_id', 'w.product_id')
       .where('w.product_id', productId)
       .where('w.warehouse_id', warehouseId)
@@ -108,8 +112,8 @@ export class BasicModel {
 
   getNetworkTypes(knex: Knex) {
     return knex('mm_transfer_types')
-    .where('transfer_code','TRN')
-    .orWhere('transfer_code','REQ');
+      .where('transfer_code', 'TRN')
+      .orWhere('transfer_code', 'REQ');
   }
   getNetworkTypesC(knex: Knex) {
     return knex('mm_transfer_types')
@@ -130,13 +134,13 @@ export class BasicModel {
   searchDonator(knex: Knex, query: any) {
     let _query = `%${query}%`;
     return knex('wm_donators')
-    .where(w => {
-      w.where('donator_name', 'like', _query)
-        .orWhere('short_code', 'like', _query)
-    })
-    .where('mark_deleted', 'N')
-    .orderBy('donator_name')
-    .limit(10);
+      .where(w => {
+        w.where('donator_name', 'like', _query)
+          .orWhere('short_code', 'like', _query)
+      })
+      .where('mark_deleted', 'N')
+      .orderBy('donator_name')
+      .limit(10);
   }
 
   getGenericGroups(knex: Knex) {
