@@ -33,10 +33,27 @@ export class StaffModel {
     left join mm_units as u1 on u1.unit_id=ug.from_unit_id
     left join mm_units as u2 on u2.unit_id=ug.to_unit_id
     left join view_product_reserve v on v.wm_product_id = p.wm_product_id
-    where p.product_id='${productId}' and p.warehouse_id = '${warehouseId}'
+    where p.product_id='${productId}' and p.warehouse_id = '${warehouseId}'and p.is_actived = 'Y' and p.qty > 0
     group by p.lot_no, p.expired_date, p.warehouse_id
-    HAVING sum(p.qty) != 0
     order by w.warehouse_name
+    `;
+    return knex.raw(sql);
+  }
+
+  adminGetAllProductsDetailListGeneric(knex: Knex, genericId: any, warehouseId) {
+    let sql = `
+    select mp.product_name,mp.working_code,p.wm_product_id, p.product_id, sum(p.qty) as qty, floor(sum(p.qty)/ug.qty) as pack_qty, sum(p.cost*p.qty) as total_cost, p.cost, p.warehouse_id,
+    p.lot_no, p.expired_date, mpp.max_qty, mpp.min_qty, u1.unit_name as from_unit_name, ug.qty as conversion_qty,
+    u2.unit_name as to_unit_name,v.reserve_qty
+    from wm_products as p
+    inner join mm_products as mp on mp.product_id=p.product_id
+    left join mm_generic_planning as mpp on mpp.generic_id=mp.generic_id and mpp.warehouse_id=p.warehouse_id
+    inner join mm_unit_generics as ug on ug.unit_generic_id=p.unit_generic_id
+    left join mm_units as u1 on u1.unit_id=ug.from_unit_id
+    left join mm_units as u2 on u2.unit_id=ug.to_unit_id
+    left join view_product_reserve v on v.wm_product_id = p.wm_product_id
+    where mp.generic_id='${genericId}' and p.warehouse_id = '${warehouseId}' and p.is_actived = 'Y' and p.qty > 0
+    group by p.lot_no, p.expired_date, p.warehouse_id
     `;
     return knex.raw(sql);
   }
@@ -452,5 +469,33 @@ export class StaffModel {
     return knex.raw(sql, [transferId, transferGenericId]);
   }
 
+  checkRemoveGeneric(knex: Knex, genericId, warehouseId) {
+    return knex('wm_products as wp')
+      .join('mm_products as mp', 'wp.product_id', 'mp.product_id')
+      .where('mp.generic_id', genericId)
+      .where('wp.warehouse_id', warehouseId)
+      .where('wp.qty', '>', 0)
+  }
 
+  removeGeneric(knex: Knex, genericId, warehouseId) {
+    return knex('wm_products as wp')
+      .join('mm_products as mp', 'wp.product_id', 'mp.product_id')
+      .where('mp.generic_id', genericId)
+      .where('wp.warehouse_id', warehouseId)
+      .update({ 'is_actived': 'N' });
+  }
+
+  checkRemoveProduct(knex: Knex, productId, warehouseId) {
+    return knex('wm_products as wp')
+      .where('wp.product_id', productId)
+      .where('wp.warehouse_id', warehouseId)
+      .where('wp.qty', '>', 0)
+  }
+
+  removeProduct(knex: Knex, productId, warehouseId) {
+    return knex('wm_products as wp')
+      .where('wp.product_id', productId)
+      .where('wp.warehouse_id', warehouseId)
+      .update({ 'is_actived': 'N' });
+  }
 }

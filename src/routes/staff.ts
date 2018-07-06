@@ -19,6 +19,8 @@ import * as uuid from 'uuid/v4';
 import * as crypto from 'crypto';
 
 import xlsx from 'node-xlsx';
+const fs = require('fs');
+const json2xls = require('json2xls');
 
 import * as co from 'co-express';
 import { IssueModel } from '../models/issue';
@@ -181,6 +183,20 @@ router.get('/products/stock/remain/:productId', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   try {
     let rs = await staffModel.adminGetAllProductsDetailList(db, productId, warehouseId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/products/stock/remain/generic/:genericId', co(async (req, res, next) => {
+  let db = req.db;
+  let genericId = req.params.genericId;
+  let warehouseId = req.decoded.warehouseId;
+  try {
+    let rs = await staffModel.adminGetAllProductsDetailListGeneric(db, genericId, warehouseId);
     res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -2736,6 +2752,28 @@ router.post('/receives/other/status/search', co(async (req, res, next) => {
   }
 }));
 
+router.delete('/generic', async (req, res, next) => {
+  const db = req.db;
+  const genericId = req.query.genericId;
+  const warehouseId = req.decoded.warehouseId;
+  try {
+    const rsCheck: any = await staffModel.checkRemoveGeneric(db, genericId, warehouseId);
+    console.log(rsCheck.length);
+    if (rsCheck.length == 0) {
+      await staffModel.removeGeneric(db, genericId, warehouseId);
+      res.send({ ok: true });
+    } else {
+      res.send({ ok: false, error: 'กรุณาจัดการรายการยาให้หมดก่อนที่จะลบรายการ' })
+    }
+  } catch (error) {
+  console.log(error);
+  res.send({ ok: false, error: error.message });
+} finally {
+  db.destroy();
+}
+});
+
+
 router.get('/receives/count/approve', (req, res, next) => {
   let db = req.db;
   let warehouseId = req.decoded.warehouseId
@@ -2917,6 +2955,27 @@ router.post('/receives/other/approve', co(async (req, res, next) => {
     db.destroy();
   }
 }));
+
+router.delete('/product', async (req, res, next) => {
+  const db = req.db;
+  const productId = req.query.productId;
+  const warehouseId = req.decoded.warehouseId;
+  try {
+    const rsCheck: any = await staffModel.checkRemoveProduct(db, productId, warehouseId);
+    console.log(rsCheck.length);
+    if (rsCheck.length == 0) {
+      await staffModel.removeProduct(db, productId, warehouseId);
+      res.send({ ok: true });
+    } else {
+      res.send({ ok: false, error: 'กรุณาจัดการรายการยาให้หมดก่อนที่จะลบรายการ' })
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
 
 router.get('/receives/purchases/check-holiday', co(async (req, res, nex) => {
   let date = req.query.date
@@ -3116,15 +3175,15 @@ router.get('/receives/status', (req, res, next) => {
 router.get('/period/status', (async (req, res, next) => {
   let db = req.db;
   let date = req.query.date;
-  const month = moment(date).get('month')+1;
+  const month = moment(date).get('month') + 1;
   let year = moment(date).get('year');
   if (month >= 10) {
-    year+=1;
+    year += 1;
   }
-  
+
   try {
-    let rs = await periodModel.getStatus(db,month,year);
-      res.send({ ok: true, rows: rs });
+    let rs = await periodModel.getStatus(db, month, year);
+    res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -3132,4 +3191,53 @@ router.get('/period/status', (async (req, res, next) => {
   }
 }));
 
+router.get('/warehouses/export/excel', async (req, res, next) => {
+  let templateId = req.query.templateId;
+  let db = req.db;
+
+  const pathTmp = path.join(process.env.MMIS_DATA, 'temp');
+  fse.ensureDirSync(pathTmp);
+
+  if (templateId) {
+    try {
+      let _tableName = `template`;
+
+      let result = await productModel.getAllProductInTemplate(db, templateId);
+      let r = [];
+      let i = 0;
+      result[0].forEach(v => {
+        i++;
+        let unit = '';
+        if (v.large_unit || v.qty || v.small_unit) {
+          unit = v.large_unit + '(' + v.qty + ' ' + v.small_unit + ')';
+        }
+        r.push({
+          'ลำดับ': i,
+          'รหัส': v.working_code,
+          'ชื่อสินค้า': v.generic_name,
+          'หน่วย': unit
+        })
+      });
+      // console.log(result);
+
+      // create tmp file
+      let tmpFile = `${_tableName}-${moment().format('x')}.xls`;
+      tmpFile = path.join(pathTmp, tmpFile);
+      let excel = json2xls(r);
+      fs.writeFileSync(tmpFile, excel, 'binary');
+      res.download(tmpFile, (err) => {
+        if (err) {
+          res.send({ ok: false, message: err })
+        } else {
+          fse.removeSync(tmpFile);
+        }
+      });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: 'ไม่สามารถส่งออกไฟล์ .xls ได้' });
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบตารางข้อมูลที่ต้องการ' });
+  }
+});
 export default router;
