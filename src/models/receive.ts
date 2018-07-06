@@ -805,8 +805,15 @@ export class ReceiveModel {
     and pc.purchase_order_status != 'COMPLETED'
     and pc.is_cancel != 'Y'`;
 
-    if (query) sql += `and pc.purchase_order_number LIKE ${_query}`
-    if (query) sql += `or pc.purchase_order_book_number LIKE ${_query}`
+    if (query) {
+      sql += ` and pc.purchase_order_number LIKE ${_query} 
+      or pc.purchase_order_book_number LIKE ${_query}
+      or pc.purchase_order_id in (select p.purchase_order_id 
+      from pc_purchasing_order p 
+      join pc_purchasing_order_item poi on p.purchase_order_id=poi.purchase_order_id
+      join mm_generics mg on mg.generic_id = poi.generic_id
+    where mg.generic_name like ${_query}) `;
+    }
 
     if (sort.by) {
       let reverse = sort.reverse ? 'DESC' : 'ASC';
@@ -831,7 +838,6 @@ export class ReceiveModel {
     }
 
     sql += ` limit ${limit} offset ${offset} `;
-
     return knex.raw(sql);
 
   }
