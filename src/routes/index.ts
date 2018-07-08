@@ -2292,10 +2292,10 @@ router.get('/report/inventorystatus/:warehouseId/:genericTypeId/:statusDate', wr
   });
 }));
 
-router.get('/report/summary/disbursement/:startDate/:endDate', wrap(async (req, res, next) => {
+router.get('/report/summary/disbursement', wrap(async (req, res, next) => {
   let db = req.db;
-  let startDate = req.params.startDate
-  let endDate = req.params.endDate
+  let startDate = req.query.startDate
+  let endDate = req.query.endDate
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate);
