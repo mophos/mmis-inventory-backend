@@ -15,7 +15,7 @@ const path = require('path')
 const fse = require('fs-extra');
 const fs = require('fs');
 const json2xls = require('json2xls');
-
+moment.locale('th');
 
 function printDate() {
   moment.locale('th');
@@ -2292,10 +2292,10 @@ router.get('/report/inventorystatus/:warehouseId/:genericTypeId/:statusDate', wr
   });
 }));
 
-router.get('/report/summary/disbursement/:startDate/:endDate', wrap(async (req, res, next) => {
+router.get('/report/summary/disbursement', wrap(async (req, res, next) => {
   let db = req.db;
-  let startDate = req.params.startDate
-  let endDate = req.params.endDate
+  let startDate = req.query.startDate
+  let endDate = req.query.endDate
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate);
@@ -2320,14 +2320,63 @@ router.get('/report/summary/disbursement/:startDate/:endDate', wrap(async (req, 
     summary_list.push(list)
   }
   // res.send(summary_list);
-  let month = moment(startDate).format(' MMMM ') + (moment(startDate).get('year') + 543);
+  startDate = moment(startDate).format('DD MMMM ') + (moment(startDate).get('year') + 543);
+  endDate = moment(endDate).format('DD MMMM ') + (moment(endDate).get('year') + 543);
   res.render('summary_disbursement', {
     printDate: printDate(),
     hospitalName: hospitalName,
     summary: summary,
     summary_list: summary_list,
-    month: month
+    startDate: startDate,
+    endDate: endDate
   });
+}));
+
+router.get('/report/summary/disbursement/excel', wrap(async (req, res, next) => {
+  let db = req.db;
+  let startDate = req.query.startDate
+  let endDate = req.query.endDate
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate);
+  let summary = rs[0];
+  // let summary_list = [];
+  let data = []
+  for (const v of summary) {
+    data.push({ '': 'รหัสหน่วยเบิก', ' ': v.short_code, '  ': '' });
+    data.push({ '': 'หน่วยเบิก', ' ': v.warehouse_name, '  ': '' });
+    data.push({ '': 'จำนวนใบเบิกรวม', ' ': v.count_requisition, '  ': 'ใบ' });
+    data.push({ '': 'จำนวนรายการรวม', ' ': v.count_requisition_item, '  ': 'รายการ' });
+    data.push({ '': 'มูลค่ารวม', ' ': v.cost, '  ': 'บาท' });
+    data.push({ '': 'แยกรายการตามประเภท', ' ': '', '  ': '' });
+    data.push({ '': '', ' ': 'จำนวนรายการ', '  ': 'มูลค่าเบิก' });
+
+    let list = await inventoryReportModel.summaryDisbursement_list(db, startDate, endDate, v.wm_requisition);
+    for (const l of list[0]) {
+      l.cost = l.cost !== null ? l.cost : '0';
+      l.count = l.count !== null ? l.count : '0';
+      let genericTypeName = l.generic_type_name;
+      if (l.account_name != null)
+        genericTypeName += ` (${l.account_name});`
+      data.push({ '': genericTypeName, ' ': l.count, '  ': l.cost });
+    }
+    data.push({ '': '', ' ': '', '  ': '' });
+  }
+
+
+  const xls = json2xls(data);
+  // res.send(data)
+  const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+  // create directory
+  fse.ensureDirSync(exportDirectory);
+  const filePath = path.join(exportDirectory, 'รายงานเบิกแยกตามหน่วยเบิก.xlsx');
+  fs.writeFileSync(filePath, xls, 'binary');
+  // force download
+  res.download(filePath, 'รายงานเบิกแยกตามหน่วยเบิก.xlsx');
+
+  // res.send(summary_list);
+  let month = moment(startDate).format(' MMMM ') + (moment(startDate).get('year') + 543);
+
 }));
 
 router.get('/report/product-remain/:warehouseId/:genericTypeId', wrap(async (req, res, next) => {

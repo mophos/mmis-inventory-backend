@@ -2253,7 +2253,7 @@ OR sc.ref_src like ?
           wm_requisition_orders r
          WHERE
           r.wm_requisition = ro.wm_requisition
-         AND r.is_cancel = 'N'
+         AND r.is_cancel = 'N' and r.requisition_date BETWEEN '${startDate}' and '${endDate}'
          GROUP BY
           r.wm_requisition
         ) count_requisition,
