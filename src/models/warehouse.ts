@@ -159,7 +159,7 @@ export class WarehouseModel {
     let query = knex('wm_products as wp')
       .select('wp.wm_product_id', 'mp.product_id', 'mug.cost as packcost', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', 'mp.working_code as trade_code', 'mg.working_code as generic_code', 'mg.generic_id', 'mg.generic_name',
         'l.location_name', 'l.location_desc', 'u.unit_name as small_unit', 'mug.qty as conversion', 'uu.unit_name as large_unit', 'mp.is_lot_control',
-        'mgp.min_qty', 'mgp.max_qty')
+        'mgp.min_qty', 'mgp.max_qty',knex.raw(`ifnull(sum(v.reserve_qty),0) as reserve_qty`))
       .sum('wp.qty as qty')
       .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
       .leftJoin('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
@@ -168,6 +168,7 @@ export class WarehouseModel {
       .leftJoin('mm_units as u', 'u.unit_id', 'mug.to_unit_id')
       .leftJoin('mm_units as uu', 'uu.unit_id', 'mug.from_unit_id')
       .joinRaw(`left join mm_generic_planning as mgp on mgp.generic_id = mg.generic_id and mgp.warehouse_id = ${warehouseId}`)
+      .joinRaw(`left join view_product_reserve v on v.wm_product_id = wp.wm_product_id`)
       .where('wp.warehouse_id', warehouseId)
       .where('wp.is_actived', 'Y')
       .whereIn('mg.generic_type_id', productGroups)
@@ -184,7 +185,7 @@ export class WarehouseModel {
     let query = knex('wm_products as wp')
       .select('wp.wm_product_id', 'mp.product_id', 'mug.cost as packcost', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', 'mp.working_code as trade_code', 'mg.working_code as generic_code', 'mg.generic_id', 'mg.generic_name',
         'l.location_name', 'l.location_desc', 'u.unit_name as small_unit', 'mug.qty as conversion', 'uu.unit_name as large_unit', 'mp.is_lot_control',
-        'mgp.min_qty', 'mgp.max_qty')
+        'mgp.min_qty', 'mgp.max_qty',knex.raw(`ifnull(sum(v.reserve_qty),0) as reserve_qty`))
       .sum('wp.qty as qty')
       .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
       .leftJoin('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
@@ -193,6 +194,7 @@ export class WarehouseModel {
       .leftJoin('mm_units as u', 'u.unit_id', 'mug.to_unit_id')
       .leftJoin('mm_units as uu', 'uu.unit_id', 'mug.from_unit_id')
       .joinRaw(`left join mm_generic_planning as mgp on mgp.generic_id = mg.generic_id and mgp.warehouse_id = ${warehouseId}`)
+      .joinRaw(`left join view_product_reserve v on v.wm_product_id = wp.wm_product_id`)
       .where('wp.warehouse_id', warehouseId)
       .where('wp.is_actived', 'Y')
       .whereIn('mg.generic_type_id', productGroups)
