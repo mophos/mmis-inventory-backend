@@ -170,6 +170,8 @@ export class WarehouseModel {
       .joinRaw(`left join mm_generic_planning as mgp on mgp.generic_id = mg.generic_id and mgp.warehouse_id = ${warehouseId}`)
       .joinRaw(`left join view_product_reserve v on v.wm_product_id = wp.wm_product_id`)
       .where('wp.warehouse_id', warehouseId)
+      .where('mp.mark_deleted', 'N')
+      .where('mg.mark_deleted', 'N')
       .where('wp.is_actived', 'Y')
       .whereIn('mg.generic_type_id', productGroups)
     if (genericType) {
@@ -197,6 +199,8 @@ export class WarehouseModel {
       .joinRaw(`left join view_product_reserve v on v.wm_product_id = wp.wm_product_id`)
       .where('wp.warehouse_id', warehouseId)
       .where('wp.is_actived', 'Y')
+      .where('mp.mark_deleted', 'N')
+      .where('mg.mark_deleted', 'N')
       .whereIn('mg.generic_type_id', productGroups)
       .where(w => {
         w.where('mp.product_name', 'like', _q)
@@ -306,6 +310,7 @@ export class WarehouseModel {
       .leftJoin('view_product_reserve as v', 'v.wm_product_id', 'p.wm_product_id')
       .joinRaw(`left join mm_generic_planning as mgp on mgp.generic_id = g.generic_id and mgp.warehouse_id = ${warehouseId}`)
       .where('mp.mark_deleted', 'N')
+      .where('g.mark_deleted', 'N')
       .where('p.warehouse_id', warehouseId)
       // .whereRaw('p.qty > 0')
       .where('p.is_actived', 'Y')
@@ -329,6 +334,7 @@ export class WarehouseModel {
       .leftJoin('view_product_reserve as v', 'v.wm_product_id', 'p.wm_product_id')
       .joinRaw(`left join mm_generic_planning as mgp on mgp.generic_id = g.generic_id and mgp.warehouse_id = ${warehouseId}`)
       .where('mp.mark_deleted', 'N')
+      .where('g.mark_deleted', 'N')
       .where('p.warehouse_id', warehouseId)
       // .whereRaw('p.qty > 0')
       .where('p.is_actived', 'Y')
@@ -346,6 +352,8 @@ export class WarehouseModel {
     }
     query.groupBy('g.generic_id')
       .orderBy('g.generic_name')
+      console.log(query.toString());
+      
     return query;
   }
   getProductsWarehouseSearch(knex: Knex, warehouseId: string, productGroups: any[], query: string) {
@@ -397,6 +405,8 @@ export class WarehouseModel {
       .join('mm_units as u', 'u.unit_id', 'g.primary_unit_id')
       .joinRaw('left join mm_generic_planning as gp on gp.generic_id=g.generic_id and gp.warehouse_id = wp.warehouse_id')
       .where('wp.warehouse_id', warehouseId)
+      .where('mp.mark_deleted', 'N')
+      .where('g.mark_deleted', 'N')
       .where('wp.is_actived', 'Y');
     if (genericType) {
       query.where('g.generic_type_id', genericType);
@@ -430,6 +440,8 @@ export class WarehouseModel {
       .joinRaw('left join mm_generic_planning as gp on gp.generic_id=g.generic_id and gp.warehouse_id = wp.warehouse_id')
       .where('wp.warehouse_id', warehouseId)
       .where('wp.is_actived', 'Y')
+      .where('mp.mark_deleted', 'N')
+      .where('g.mark_deleted', 'N')
       .where(w => {
         w.where('mp.product_name', 'like', _query)
           .orWhere('g.generic_name', 'like', _query)

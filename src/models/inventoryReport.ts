@@ -905,7 +905,41 @@ WHERE
         JOIN mm_labelers ml ON wr.vendor_labeler_id = ml.labeler_id
         JOIN wm_products wp ON wrd.product_id = wp.product_id
         AND wrd.lot_no = wp.lot_no
-        JOIN view_all_product vap ON wrd.product_id = vap.product_id
+        JOIN (
+            SELECT
+	mp.product_id AS product_id,
+	mp.product_name AS product_name,
+	mg.generic_id AS generic_id,
+	mg.generic_name AS generic_name,
+	mgt.generic_type_id AS generic_type_id,
+	mgt.generic_type_name AS generic_type_name,
+	mul.unit_id AS large_unit_id,
+	mul.unit_name AS large_unit,
+	mus.unit_id AS small_unit_id,
+	mus.unit_name AS small_unit,
+	muc.qty AS small_qty,
+	muc.unit_generic_id AS unit_generic_id 
+FROM
+	(
+	(
+	(
+	(
+	(
+	(
+	( mm_generics mg LEFT JOIN mm_products AS mp ON ( ( mg.generic_id = mp.generic_id ) ) )
+	LEFT JOIN mm_generic_types AS mgt ON ( ( mg.generic_type_id = mgt.generic_type_id ) ) 
+	)
+	LEFT JOIN mm_generic_dosages AS mgdd ON ( ( mg.dosage_id = mgdd.dosage_id ) ) 
+	)
+	LEFT JOIN mm_unit_generics AS muc ON ( ( mp.generic_id = muc.generic_id ) ) 
+	)
+	LEFT JOIN mm_units AS mul ON ( ( muc.from_unit_id = mul.unit_id ) ) 
+	)
+	LEFT JOIN mm_units AS mus ON ( ( muc.to_unit_id = mus.unit_id ) ) 
+	)
+	LEFT JOIN mm_generic_types AS mgdt ON ( ( mg.generic_type_id = mgdt.generic_type_id ) ) 
+	)
+        ) as vap ON wrd.product_id = vap.product_id
         AND wrd	.unit_generic_id = vap.unit_generic_id
         JOIN mm_products mp ON mp.product_id = wp.product_id
         JOIN mm_labelers ml2 ON mp.m_labeler_id = ml2.labeler_id
@@ -939,7 +973,41 @@ WHERE
             wm_receives wr
         JOIN wm_receive_detail wrd ON wr.receive_id = wrd.receive_id
         JOIN mm_labelers ml ON wr.vendor_labeler_id = ml.labeler_id
-        JOIN view_all_product vap ON wrd.product_id = vap.product_id
+        JOIN (
+            SELECT
+	mp.product_id AS product_id,
+	mp.product_name AS product_name,
+	mg.generic_id AS generic_id,
+	mg.generic_name AS generic_name,
+	mgt.generic_type_id AS generic_type_id,
+	mgt.generic_type_name AS generic_type_name,
+	mul.unit_id AS large_unit_id,
+	mul.unit_name AS large_unit,
+	mus.unit_id AS small_unit_id,
+	mus.unit_name AS small_unit,
+	muc.qty AS small_qty,
+	muc.unit_generic_id AS unit_generic_id 
+FROM
+	(
+	(
+	(
+	(
+	(
+	(
+	( mm_generics mg LEFT JOIN mm_products AS mp ON ( ( mg.generic_id = mp.generic_id ) ) )
+	LEFT JOIN mm_generic_types AS mgt ON ( ( mg.generic_type_id = mgt.generic_type_id ) ) 
+	)
+	LEFT JOIN mm_generic_dosages AS mgdd ON ( ( mg.dosage_id = mgdd.dosage_id ) ) 
+	)
+	LEFT JOIN mm_unit_generics AS muc ON ( ( mp.generic_id = muc.generic_id ) ) 
+	)
+	LEFT JOIN mm_units AS mul ON ( ( muc.from_unit_id = mul.unit_id ) ) 
+	)
+	LEFT JOIN mm_units AS mus ON ( ( muc.to_unit_id = mus.unit_id ) ) 
+	)
+	LEFT JOIN mm_generic_types AS mgdt ON ( ( mg.generic_type_id = mgdt.generic_type_id ) ) 
+	)
+        ) as  vap ON wrd.product_id = vap.product_id
         AND wrd.unit_generic_id = vap.unit_generic_id
         JOIN mm_products mp ON mp.product_id = wrd.product_id
         left JOIN mm_labelers ml2 ON mp.m_labeler_id = ml2.labeler_id
@@ -1045,7 +1113,41 @@ WHERE
         JOIN mm_labelers ml ON wr.vendor_labeler_id = ml.labeler_id
         JOIN wm_products wp ON wrd.product_id = wp.product_id
         AND wrd.lot_no = wp.lot_no
-        JOIN view_all_product vap ON wrd.product_id = vap.product_id
+        JOIN (
+            SELECT
+	mp.product_id AS product_id,
+	mp.product_name AS product_name,
+	mg.generic_id AS generic_id,
+	mg.generic_name AS generic_name,
+	mgt.generic_type_id AS generic_type_id,
+	mgt.generic_type_name AS generic_type_name,
+	mul.unit_id AS large_unit_id,
+	mul.unit_name AS large_unit,
+	mus.unit_id AS small_unit_id,
+	mus.unit_name AS small_unit,
+	muc.qty AS small_qty,
+	muc.unit_generic_id AS unit_generic_id 
+FROM
+	(
+	(
+	(
+	(
+	(
+	(
+	( mm_generics mg LEFT JOIN mm_products AS mp ON ( ( mg.generic_id = mp.generic_id ) ) )
+	LEFT JOIN mm_generic_types AS mgt ON ( ( mg.generic_type_id = mgt.generic_type_id ) ) 
+	)
+	LEFT JOIN mm_generic_dosages AS mgdd ON ( ( mg.dosage_id = mgdd.dosage_id ) ) 
+	)
+	LEFT JOIN mm_unit_generics AS muc ON ( ( mp.generic_id = muc.generic_id ) ) 
+	)
+	LEFT JOIN mm_units AS mul ON ( ( muc.from_unit_id = mul.unit_id ) ) 
+	)
+	LEFT JOIN mm_units AS mus ON ( ( muc.to_unit_id = mus.unit_id ) ) 
+	)
+	LEFT JOIN mm_generic_types AS mgdt ON ( ( mg.generic_type_id = mgdt.generic_type_id ) ) 
+	)
+        ) as vap ON wrd.product_id = vap.product_id
         AND wrd.unit_generic_id = vap.unit_generic_id
         JOIN mm_products mp ON mp.product_id = wp.product_id
         JOIN mm_labelers ml2 ON mp.m_labeler_id = ml2.labeler_id
@@ -1165,8 +1267,46 @@ WHERE
             .leftJoin('mm_units as mus', 'mus.unit_id', 'mug.to_unit_id')
             .where('adjust_generic_id', adGId);
     }
+    receiveOrthorCost(knex:Knex, startDate: any, endDate: any, warehouseId:any, receiveTpyeId:any) {
 
+        let sql = `
+        SELECT
+        wro.receive_other_id,
+        wro.receive_date,
+        wro.receive_code,
+        mg.generic_id,
+        mg.generic_name,
+        sum( wrod.receive_qty ) AS receive_qty,
+        mul.unit_name AS small_unit_name,
+        mus.unit_name AS lange_unit_name,
+        wrod.cost,
+        sum( wrod.receive_qty ) * wrod.cost as costAmount,
+        wrt.receive_type_name 
+        FROM
+        wm_receive_other AS wro
+        LEFT JOIN wm_receive_other_detail AS wrod ON wrod.receive_other_id = wro.receive_other_id
+        LEFT JOIN mm_products AS mp ON mp.product_id = wrod.product_id
+        LEFT JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
+        LEFT JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wrod.unit_generic_id
+        LEFT JOIN mm_units AS mul ON mul.unit_id = mug.from_unit_id
+        LEFT JOIN mm_units AS mus ON mus.unit_id = mug.to_unit_id
+        LEFT JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id 
+        WHERE
+        wro.receive_date BETWEEN '${startDate}'
+        AND '${endDate}'
+        AND wro.receive_type_id in (${receiveTpyeId})`
+        
 
+        if (warehouseId !== '0') {
+          sql +=`  and wrod.warehouse_id = ${warehouseId}`
+        }
+        sql += ` GROUP BY mg.generic_id, wro.receive_other_id`;
+
+        return knex.raw(sql);
+
+    }
+        
+        
     async hospital(knex: Knex) {
         let array = [];
         let result = await settingModel.getValue(knex, 'SYS_HOSPITAL');
