@@ -29,6 +29,9 @@ import { StockCard } from '../models/stockcard';
 import { HisTransactionModel } from '../models/hisTransaction';
 import { RequisitionTypeModel } from '../models/requisitionType';
 import { AdjustStockModel } from '../models/adjustStock';
+import { ReceiveModel } from '../models/receive';
+import { BasicModel } from '../models/basic';
+
 
 const router = express.Router();
 const staffModel = new StaffModel();
@@ -46,6 +49,8 @@ const hisTransactionModel = new HisTransactionModel();
 const requisitionTypeModel = new RequisitionTypeModel();
 const periodModel = new PeriodModel();
 const adjustStockModel = new AdjustStockModel();
+const receiveModel = new ReceiveModel();
+const basicModel = new BasicModel();
 
 let uploadDir = path.join(process.env.MMIS_DATA, 'uploaded');
 var moment = require('moment-timezone');
@@ -2430,25 +2435,6 @@ router.get('/requisition-type', async (req, res, next) => {
   };
 });
 
-router.get('/period/status', (async (req, res, next) => {
-  let db = req.db;
-  let date = req.query.date;
-  const month = moment(date).get('month') + 1;
-  let year = moment(date).get('year');
-  if (month >= 10) {
-    year += 1;
-  }
-
-  try {
-    let rs = await periodModel.getStatus(db, month, year);
-    res.send({ ok: true, rows: rs });
-  } catch (error) {
-    res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
-  }
-}));
-
 router.get('/requisition/temp', async (req, res, next) => {
   let db = req.db;
   let warehouseId = req.decoded.warehouseId;
@@ -2724,6 +2710,49 @@ router.post('/adjust-stock/', async (req, res, next) => {
   }
 });
 
+router.post('/receives/other/status', co(async (req, res, next) => {
+  let db = req.db;
+  let limit = +req.body.limit;
+  let offset = +req.body.offset;
+  let warehouseId = req.decoded.warehouseId;
+  let status = req.body.status;
+  let sort = req.body.sort;
+
+  try {
+    let rsTotal = await receiveModel.getReceiveOtherStatusTotal(db, warehouseId, status);
+    let total = +rsTotal[0][0].total;
+    const results = await receiveModel.getReceiveOtherStatus(db, limit, offset, warehouseId, status, sort);
+    res.send({ ok: true, rows: results[0], total: total });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.post('/receives/other/status/search', co(async (req, res, next) => {
+  let db = req.db;
+  let limit = +req.body.limit;
+  let offset = +req.body.offset;
+  let warehouseId = req.decoded.warehouseId;
+  let status = req.body.status;
+  let query = req.body.query;
+  let sort = req.body.sort;
+
+  try {
+    let rsTotal = await receiveModel.getReceiveOtherStatusTotalSearch(db, query, warehouseId, status);
+    let total = +rsTotal[0][0].total;
+    const results = await receiveModel.getReceiveOtherStatusSearch(db, limit, offset, query, warehouseId, status, sort);
+    res.send({ ok: true, rows: results[0], total: total });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
 router.delete('/generic', async (req, res, next) => {
   const db = req.db;
   const genericId = req.query.genericId;
@@ -2738,12 +2767,195 @@ router.delete('/generic', async (req, res, next) => {
       res.send({ ok: false, error: 'กรุณาจัดการรายการยาให้หมดก่อนที่จะลบรายการ' })
     }
   } catch (error) {
-    console.log(error);
+  console.log(error);
+  res.send({ ok: false, error: error.message });
+} finally {
+  db.destroy();
+}
+});
+
+
+router.get('/receives/count/approve', (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.decoded.warehouseId
+  receiveModel.getCountApprove(db, warehouseId)
+    .then((results: any) => {
+      res.send({ ok: true, rows: results[0] });
+    })
+    .catch(error => {
+      res.send({ ok: false, error: error.message })
+    })
+    .finally(() => {
+      db.destroy();
+    });
+});
+
+router.get('/receives/count/approve/other', (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.decoded.warehouseId
+  receiveModel.getCountApproveOther(db, warehouseId)
+    .then((results: any) => {
+      res.send({ ok: true, rows: results[0] });
+    })
+    .catch(error => {
+      res.send({ ok: false, error: error.message })
+    })
+    .finally(() => {
+      db.destroy();
+    });
+});
+
+router.get('/receives/other/product-list/:receiveOtherId', co(async (req, res, next) => {
+  let db = req.db;
+  let receiveOtherId = req.params.receiveOtherId;
+
+  try {
+    let rs = await receiveModel.getReceiveOtherProductList(db, receiveOtherId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
+}));
+
+router.post('/basic/checkApprove', async (req, res, next) => {
+  let db = req.db;
+  try {
+    let username = req.body.username;
+    let password = req.body.password;
+    let action = req.body.action;
+    password = crypto.createHash('md5').update(password).digest('hex');
+    const isCheck = await basicModel.checkApprove(db, username, password);
+    console.log(isCheck[0]);
+    let rights = isCheck[0].access_right.split(',');
+
+    if (_.indexOf(rights, action) > -1) {
+      res.send({ ok: true })
+    } else {
+      res.send({ ok: false });
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error });
+  }
+
 });
+
+router.post('/receives/other/approve', co(async (req, res, next) => {
+  let db = req.db;
+  let userId = req.decoded.id;
+  let peopleId = req.decoded.people_id;
+  let receiveIds = req.body.receiveIds;
+  let comment = req.body.comment;
+  let approveDate = req.body.approveDate;
+
+  try {
+    let approveDatas = [];
+    _.forEach(receiveIds, (v: any) => {
+      let _approveData = {
+        approve_date: approveDate,
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        people_user_id: req.decoded.people_user_id,
+        receive_other_id: v,
+        comment: comment
+      }
+
+      approveDatas.push(_approveData);
+    });
+
+    await receiveModel.removeOldApproveOther(db, receiveIds);
+    await receiveModel.saveApprove(db, approveDatas);
+    // get product
+    let _rproducts = await receiveModel.getReceiveOtherProductsImport(db, receiveIds);
+
+    let products: any = [];
+    _rproducts.forEach((v: any) => {
+      // let id = moment().add(10, 'ms').format('x');
+      let id = uuid();
+
+      let obj: any = {
+        wm_product_id: id,
+        warehouse_id: v.warehouse_id,
+        product_id: v.product_id,
+        generic_id: v.generic_id,
+        receive_code: v.receive_code,
+        receive_other_id: v.receive_other_id,
+        balance: v.balance,
+        qty: (v.receive_qty * v.conversion_qty),
+        price: (v.cost * v.receive_qty) / (v.receive_qty * v.conversion_qty),
+        cost: (v.cost * v.receive_qty) / (v.receive_qty * v.conversion_qty),
+        lot_no: v.lot_no,
+        expired_date: moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date, 'YYYY-MM-DD').format('YYYY-MM-DD') : null,
+        unit_generic_id: v.unit_generic_id,
+        donator_id: v.donator_id,
+        location_id: +v.location_id,
+        people_user_id: req.decoded.people_user_id,
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss')
+      };
+      // add product
+      products.push(obj);
+    });
+
+    // get balance
+    let warehouseId = req.decoded.warehouseId;
+    let balances = await receiveModel.getProductRemainByReceiveOtherIds(db, receiveIds, warehouseId);
+    balances = balances[0];
+
+    console.log('******************************');
+    console.log(balances);
+    console.log('******************************');
+
+    // save stockcard
+    let data = [];
+
+    products.forEach(v => {
+      let obj: any = {};
+      obj.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+      obj.product_id = v.product_id;
+      obj.generic_id = v.generic_id;
+      obj.unit_generic_id = v.unit_generic_id;
+      obj.transaction_type = TransactionType.RECEIVE_OTHER;
+      obj.document_ref_id = v.receive_other_id;
+      obj.document_ref = v.receive_code;
+      obj.in_qty = v.qty;
+      obj.in_unit_cost = v.cost;
+
+      let balance = 0;
+      let balance_generic = 0;
+      let idx = _.findIndex(balances, {
+        product_id: v.product_id,
+        warehouse_id: v.warehouse_id
+      });
+
+      if (idx > -1) {
+        balance = balances[idx].balance + v.qty;
+        balance_generic = balances[idx].balance_generic + v.qty;
+        balances[idx].balance += v.qty;
+        balances[idx].balance_generic += v.qty;
+      }
+
+      obj.balance_qty = balance;
+      obj.balance_generic_qty = balance_generic;
+      obj.balance_unit_cost = v.cost;
+      obj.ref_src = v.donator_id;
+      obj.ref_dst = v.warehouse_id;
+      obj.comment = 'รับเข้าคลังแบบอื่นๆ';
+      obj.lot_no = v.lot_no;
+      obj.expired_date = v.expired_date;
+      data.push(obj);
+    });
+
+    await receiveModel.saveProducts(db, products);
+    await stockCardModel.saveFastStockTransaction(db, data);
+
+    res.send({ ok: true });
+
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
 
 router.delete('/product', async (req, res, next) => {
   const db = req.db;
@@ -2765,6 +2977,220 @@ router.delete('/product', async (req, res, next) => {
     db.destroy();
   }
 });
+
+router.get('/receives/purchases/check-holiday', co(async (req, res, nex) => {
+  let date = req.query.date
+  let db = req.db;
+  date = moment(date).format('YYYY-MM-DD');
+  let dateNotYear = '2000' + moment(date).format('-MM-DD');
+  console.log('..............');
+
+  console.log(date);
+
+  const lastWeek: any = moment(date).format('d');
+  console.log(lastWeek);
+
+  if (lastWeek == 0 || lastWeek == 6) {
+    res.send({ ok: false, error: 'วันที่คุณเลือกเป็นวันหยุดราชการ จะรับสินค้าหรือไม่' });
+  } else {
+    try {
+      const rows = await receiveModel.getPurchaseCheckHoliday(db, date);
+      const row_notYear = await receiveModel.getPurchaseCheckHoliday(db, dateNotYear);
+
+
+      if (rows.length > 0 || row_notYear.length > 0) {
+        res.send({ ok: false, error: 'วันที่คุณเลือกเป็นวันหยุดราชการ จะรับสินค้าหรือไม่' });
+      } else {
+        res.send({ ok: true });
+      }
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  }
+}));
+
+router.post('/receives/other', co(async (req, res, next) => {
+
+  let db = req.db;
+  let summary = req.body.summary;
+  let products: any = [];
+  products = req.body.products;
+
+  if (summary.receiveDate && summary.receiveTypeId && summary.donatorId && products.length) {
+    try {
+      let receiveCode = await serialModel.getSerial(db, 'RO');
+      // let receiveId = moment().format('x');
+
+      const data: any = {
+        receive_code: receiveCode,
+        receive_type_id: summary.receiveTypeId,
+        receive_date: summary.receiveDate,
+        receive_status_id: summary.receiveStatusId,
+        comment: summary.comment,
+        delivery_code: summary.deliveryCode,
+        donator_id: summary.donatorId,
+        people_user_id: req.decoded.people_user_id,
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        comment_expired: summary.comment_expired,
+        is_expired: summary.is_expired
+      }
+
+      let year = moment(summary.receiveDate, 'YYYY-MM-DD').get('year');
+      let month = moment(summary.receiveDate, 'YYYY-MM-DD').get('month') + 1;
+
+      let isClose = await periodModel.isPeriodClose(db, year, month);
+
+      if (isClose) {
+        res.send({ ok: false, error: 'บัญชีถูกปิดแล้ว' });
+      } else {
+        let rsSummary = await receiveModel.saveReceiveSummaryOther(db, data);
+
+        let productsData = [];
+
+        products.forEach((v: any) => {
+          let pdata: any = {
+            // conversion_qty: +v.conversion_qty,
+            receive_other_id: rsSummary[0],
+            product_id: v.product_id,
+            receive_qty: +v.receive_qty,
+            unit_generic_id: v.unit_generic_id,
+            location_id: v.location_id,
+            warehouse_id: v.warehouse_id,
+            cost: +v.cost,
+            lot_no: v.lot_no,
+            expired_date: moment(v.expired_date, 'DD/MM/YYYY').isValid() ? moment(v.expired_date, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
+            manufacturer_labeler_id: v.manufacture_id
+          }
+          productsData.push(pdata);
+        });
+
+        await receiveModel.saveReceiveDetailOther(db, productsData);
+        res.send({ ok: true, rows: rsSummary });
+      }
+
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+
+  } else {
+    res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
+  }
+
+}));
+
+router.put('/receives/update/cost', co(async (req, res, nex) => {
+
+  let db = req.db;
+  let products = req.body.products;
+  let productsData = [];
+  products.forEach((v: any) => {
+    if (v.cost != 0) {
+      let pdata: any = {
+        unit_generic_id: v.unit_generic_id,
+        cost: v.cost
+      }
+      productsData.push(pdata);
+    }
+  });
+  try {
+    const rows = await receiveModel.updateCost(db, productsData);
+    res.send({ ok: true, rows: rows[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/receives/purchases/check-expire', co(async (req, res, nex) => {
+  let genericId: any = req.query.genericId  //[{product_id:product_id,expired_date:expired_date}]
+  let expiredDate: any = req.query.expiredDate
+
+  let db = req.db;
+  let i = 0;
+  let l = 0;
+  let diffday: any;
+  try {
+    const rows = await receiveModel.getPurchaseCheckExpire(db, genericId);
+    const day = rows[0].num_days;
+    moment.locale('th');
+    console.log(moment(expiredDate));
+
+    diffday = moment(expiredDate).diff(moment(), 'days');
+    console.log(diffday);
+
+    if (day > diffday) {
+      i++;
+    }
+    if (diffday < 0) {
+      l++;
+    }
+
+    if (i == 0) {
+      res.send({ ok: true });
+    } else {
+      res.send({ ok: false, error: 'มียาใกล้หมดอายุภายใน ' + day + ' วัน ต้องการรับสินค้าหรือไม่' });
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}
+));
+
+router.get('/receives/types', (req, res, next) => {
+  let db = req.db;
+
+  receiveModel.getTypes(db)
+    .then((results: any) => {
+      res.send({ ok: true, rows: results });
+    })
+    .catch(error => {
+      res.send({ ok: false, error: error.message })
+    })
+    .finally(() => {
+      db.destroy();
+    });
+});
+
+router.get('/receives/status', (req, res, next) => {
+  let db = req.db;
+
+  receiveModel.getStatus(db)
+    .then((results: any) => {
+      res.send({ ok: true, rows: results });
+    })
+    .catch(error => {
+      res.send({ ok: false, error: error.message })
+    })
+    .finally(() => {
+      db.destroy();
+    });
+});
+
+router.get('/period/status', (async (req, res, next) => {
+  let db = req.db;
+  let date = req.query.date;
+  const month = moment(date).get('month') + 1;
+  let year = moment(date).get('year');
+  if (month >= 10) {
+    year += 1;
+  }
+
+  try {
+    let rs = await periodModel.getStatus(db, month, year);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
 
 router.get('/warehouses/export/excel', async (req, res, next) => {
   let templateId = req.query.templateId;
@@ -2815,4 +3241,68 @@ router.get('/warehouses/export/excel', async (req, res, next) => {
     res.send({ ok: false, error: 'ไม่พบตารางข้อมูลที่ต้องการ' });
   }
 });
+
+router.get('/receives/other/detail/:receiveOtherId', co(async (req, res, next) => {
+
+  let db = req.db;
+  let receiveOtherId = req.params.receiveOtherId;
+
+  if (receiveOtherId) {
+    try {
+      let rs = await receiveModel.getReceiveOtherDetail(db, receiveOtherId);
+      res.send({ ok: true, detail: rs });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการ' });
+  }
+
+}));
+
+router.get('/receives/other/detail/product-list/:receiveOtherId', co(async (req, res, next) => {
+
+  let db = req.db;
+  let receiveOtherId = req.params.receiveOtherId;
+
+  if (receiveOtherId) {
+    try {
+      let rs = await receiveModel.getReceiveOtherEditProductList(db, receiveOtherId);
+      res.send({ ok: true, rows: rs[0] });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการ' });
+  }
+
+}));
+
+router.delete('/receives/other/:receiveOtherId', co(async (req, res, next) => {
+
+  let db = req.db;
+  let receiveOtherId = req.params.receiveOtherId;
+
+  if (receiveOtherId) {
+    try {
+      let peopleUserId: any = req.decoded.people_user_id;
+      await receiveModel.removeReceiveOther(db, receiveOtherId, peopleUserId);
+      res.send({ ok: true });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการลบ' });
+  }
+
+}));
 export default router;
