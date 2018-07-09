@@ -102,11 +102,22 @@ router.get('/report/adjust-stockcard', wrap(async (req, res, next) => {
     let detailGen: any = [];
     for (let details of adjust) {
       const _detailGen = await inventoryReportModel.getAdjustGenericDetail(db, details.adjust_id)
-      console.log(_detailGen);
+      // console.log(_detailGen);
       details.detailGen = _detailGen;
       for (let _dGen of details.detailGen) {
         const _detailPro = await inventoryReportModel.getAdjustProductDetail(db, _dGen.adjust_generic_id);
         _dGen.detailPro = _detailPro;
+      }
+    }
+    for(let details of adjust){
+      details.adjust_date = moment(details.adjust_date).isValid()?moment(details.adjust_date).format('DD MMMM ') + (moment(details.adjust_date).get('year') +543) : ''
+      for(let _dGen of details.detailGen){
+        _dGen.old_qty = inventoryReportModel.commaQty(_dGen.old_qty);
+        _dGen.new_qty = inventoryReportModel.commaQty(_dGen.new_qty);
+        for(let _dGenDe of _dGen.detailPro){
+          _dGenDe.old_qty = inventoryReportModel.commaQty(_dGenDe.old_qty);
+        _dGenDe.new_qty = inventoryReportModel.commaQty(_dGenDe.new_qty);
+        }
       }
     }
     res.render('list_adjust', {
