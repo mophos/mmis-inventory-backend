@@ -1319,8 +1319,6 @@ router.put('/update/cost', co(async (req, res, nex) => {
   } finally {
     db.destroy();
   }
-
-
 }));
 
 router.get('/count/approve', (req, res, next) => {
