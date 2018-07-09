@@ -17,7 +17,7 @@ html
           tr 
             td.center วันที่ปรับยอด #{page.adjust_date}
           tr 
-            td.left ใบเบิกเลขที่ #{page.adjust_code}
+            td.left ใบการปรับยอดเลขที่ #{page.adjust_code}
           tr 
             td.left หมายเหตุ #{page.reason}
           tr 
@@ -48,7 +48,7 @@ html
                   tr
                     td.center(width="40%") ชื่อทางการค้า 
                     td จำนวนก่อนปรับยอด
-                    td จำนวนก่อนปรับยอด
+                    td จำนวนหลังปรับยอด
                     //- td lot no.
                     //- td คงเหลือ
                   - for(var detail of head.detailPro)
