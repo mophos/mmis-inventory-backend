@@ -52,7 +52,7 @@ export class StaffModel {
     left join mm_units as u1 on u1.unit_id=ug.from_unit_id
     left join mm_units as u2 on u2.unit_id=ug.to_unit_id
     left join view_product_reserve v on v.wm_product_id = p.wm_product_id
-    where mp.generic_id='${genericId}' and p.warehouse_id = '${warehouseId}' and p.is_actived = 'Y' and p.qty > 0
+    where mp.generic_id='${genericId}' and p.warehouse_id = '${warehouseId}' and p.is_actived = 'Y'
     group by p.lot_no, p.expired_date, p.warehouse_id
     `;
     return knex.raw(sql);
