@@ -195,7 +195,6 @@ router.get('/products/stock/remain/generic/:genericId', co(async (req, res, next
   let db = req.db;
   let genericId = req.params.genericId;
   let warehouseId = req.decoded.warehouseId;
-  console.log(warehouseId,genericId,'xxxxxxxxxxxxxxxx')
   try {
     let rs = await staffModel.adminGetAllProductsDetailListGeneric(db, genericId, warehouseId);
     res.send({ ok: true, rows: rs[0] });
