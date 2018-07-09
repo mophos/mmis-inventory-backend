@@ -3240,4 +3240,68 @@ router.get('/warehouses/export/excel', async (req, res, next) => {
     res.send({ ok: false, error: 'ไม่พบตารางข้อมูลที่ต้องการ' });
   }
 });
+
+router.get('/receives/other/detail/:receiveOtherId', co(async (req, res, next) => {
+
+  let db = req.db;
+  let receiveOtherId = req.params.receiveOtherId;
+
+  if (receiveOtherId) {
+    try {
+      let rs = await receiveModel.getReceiveOtherDetail(db, receiveOtherId);
+      res.send({ ok: true, detail: rs });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการ' });
+  }
+
+}));
+
+router.get('/receives/other/detail/product-list/:receiveOtherId', co(async (req, res, next) => {
+
+  let db = req.db;
+  let receiveOtherId = req.params.receiveOtherId;
+
+  if (receiveOtherId) {
+    try {
+      let rs = await receiveModel.getReceiveOtherEditProductList(db, receiveOtherId);
+      res.send({ ok: true, rows: rs[0] });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการ' });
+  }
+
+}));
+
+router.delete('/receives/other/:receiveOtherId', co(async (req, res, next) => {
+
+  let db = req.db;
+  let receiveOtherId = req.params.receiveOtherId;
+
+  if (receiveOtherId) {
+    try {
+      let peopleUserId: any = req.decoded.people_user_id;
+      await receiveModel.removeReceiveOther(db, receiveOtherId, peopleUserId);
+      res.send({ ok: true });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการลบ' });
+  }
+
+}));
 export default router;
