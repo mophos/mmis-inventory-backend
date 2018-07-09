@@ -38,6 +38,9 @@ router.get('/genericSelec', async (req, res, next) => {
   let db = req.db;
   let _data = req.query.id
   try {
+    if (typeof _data === 'string') {
+      _data = [_data];
+    }
     let rs: any = await alertModel.getAllGenerics(db, _data);
     res.send({ ok: true, rows: rs });
   } catch (error) {
@@ -164,7 +167,13 @@ router.post('/all', async (req, res, next) => {
 
 router.get('/products/expired', (req, res, next) => {
   let db = req.db;
-  alertModel.productExpired(db)
+  let genericTypeId = req.query.genericTypeId;
+  if (typeof genericTypeId === 'string') {
+    genericTypeId = [genericTypeId];
+  }
+  console.log(genericTypeId);
+  
+  alertModel.productExpired(db, genericTypeId)
     .then((results: any) => {
       res.send({ ok: true, rows: results[0] });
     })

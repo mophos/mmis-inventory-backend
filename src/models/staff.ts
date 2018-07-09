@@ -44,7 +44,7 @@ export class StaffModel {
     let sql = `
     select mp.product_name,mp.working_code,p.wm_product_id, p.product_id, sum(p.qty) as qty, floor(sum(p.qty)/ug.qty) as pack_qty, sum(p.cost*p.qty) as total_cost, p.cost, p.warehouse_id,
     p.lot_no, p.expired_date, mpp.max_qty, mpp.min_qty, u1.unit_name as from_unit_name, ug.qty as conversion_qty,
-    u2.unit_name as to_unit_name,v.reserve_qty
+    u2.unit_name as to_unit_name,ifnull(v.reserve_qty,0) as reserve_qty
     from wm_products as p
     inner join mm_products as mp on mp.product_id=p.product_id
     left join mm_generic_planning as mpp on mpp.generic_id=mp.generic_id and mpp.warehouse_id=p.warehouse_id

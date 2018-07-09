@@ -15,12 +15,21 @@ const path = require('path')
 const fse = require('fs-extra');
 const fs = require('fs');
 const json2xls = require('json2xls');
-
+moment.locale('th');
 
 function printDate() {
   moment.locale('th');
   const printDate = 'วันที่พิมพ์ ' + moment().format('D MMMM ') + (moment().get('year') + 543) + moment().format(', HH:mm:ss น.');
   return printDate;
+}
+
+
+function checkNull(value) {
+  if (value == '' || value == null || value == 'null' || value == undefined || value == 'undefined') {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 router.get('/', (req, res, next) => {
@@ -941,6 +950,7 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
   let endDate = req.params.endDate;
   let wareHouse = req.params.wareHouse;
   let genericId = req.params.genericId;
+  let genericTypeId = req.query.genericTypeId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
@@ -949,7 +959,7 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
   if (genericId == 0) { genericId = '%%'; }
   else { genericId = '%' + genericId + '%'; }
 
-  let product_expired = await inventoryReportModel.product_expired(db, startDate, endDate, wareHouse, genericId);
+  let product_expired = await inventoryReportModel.product_expired(db, startDate, endDate, wareHouse, genericId, genericTypeId);
   product_expired = product_expired[0];
   let sumn = 0;
   product_expired.forEach(value => {
@@ -2106,9 +2116,12 @@ router.get('/report/product/manufacture/warehouse', wrap(async (req, res, next) 
   let warehouseId = req.query.warehouseId;
   let startDate = req.query.startDate;
   let endDate = req.query.endDate;
+  let genericId = req.query.genericId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let productManufacture = await inventoryReportModel.productManufacture(db, warehouseId, startDate, endDate);
+  moment.locale('th');
+  genericId = checkNull(genericId) ? '%%' : '%' + genericId + '%';
+  let productManufacture = await inventoryReportModel.productManufacture(db, warehouseId, startDate, endDate, genericId);
   if (productManufacture[0].length == 0) {
     res.render('error404');
   }
@@ -2130,7 +2143,8 @@ router.get('/report/product/manufacture/warehouse', wrap(async (req, res, next) 
     hospitalName: hospitalName,
     sum: sum,
     startDate: startDate,
-    endDate: endDate
+    endDate: endDate,
+    printDate: printDate()
   });
 }));
 router.get('/test/:n', wrap(async (req, res, next) => {
@@ -2278,10 +2292,10 @@ router.get('/report/inventorystatus/:warehouseId/:genericTypeId/:statusDate', wr
   });
 }));
 
-router.get('/report/summary/disbursement/:startDate/:endDate', wrap(async (req, res, next) => {
+router.get('/report/summary/disbursement', wrap(async (req, res, next) => {
   let db = req.db;
-  let startDate = req.params.startDate
-  let endDate = req.params.endDate
+  let startDate = req.query.startDate
+  let endDate = req.query.endDate
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate);
@@ -2306,14 +2320,63 @@ router.get('/report/summary/disbursement/:startDate/:endDate', wrap(async (req, 
     summary_list.push(list)
   }
   // res.send(summary_list);
-  let month = moment(startDate).format(' MMMM ') + (moment(startDate).get('year') + 543);
+  startDate = moment(startDate).format('DD MMMM ') + (moment(startDate).get('year') + 543);
+  endDate = moment(endDate).format('DD MMMM ') + (moment(endDate).get('year') + 543);
   res.render('summary_disbursement', {
     printDate: printDate(),
     hospitalName: hospitalName,
     summary: summary,
     summary_list: summary_list,
-    month: month
+    startDate: startDate,
+    endDate: endDate
   });
+}));
+
+router.get('/report/summary/disbursement/excel', wrap(async (req, res, next) => {
+  let db = req.db;
+  let startDate = req.query.startDate
+  let endDate = req.query.endDate
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate);
+  let summary = rs[0];
+  // let summary_list = [];
+  let data = []
+  for (const v of summary) {
+    data.push({ '': 'รหัสหน่วยเบิก', ' ': v.short_code, '  ': '' });
+    data.push({ '': 'หน่วยเบิก', ' ': v.warehouse_name, '  ': '' });
+    data.push({ '': 'จำนวนใบเบิกรวม', ' ': v.count_requisition, '  ': 'ใบ' });
+    data.push({ '': 'จำนวนรายการรวม', ' ': v.count_requisition_item, '  ': 'รายการ' });
+    data.push({ '': 'มูลค่ารวม', ' ': v.cost, '  ': 'บาท' });
+    data.push({ '': 'แยกรายการตามประเภท', ' ': '', '  ': '' });
+    data.push({ '': '', ' ': 'จำนวนรายการ', '  ': 'มูลค่าเบิก' });
+
+    let list = await inventoryReportModel.summaryDisbursement_list(db, startDate, endDate, v.wm_requisition);
+    for (const l of list[0]) {
+      l.cost = l.cost !== null ? l.cost : '0';
+      l.count = l.count !== null ? l.count : '0';
+      let genericTypeName = l.generic_type_name;
+      if (l.account_name != null)
+        genericTypeName += ` (${l.account_name});`
+      data.push({ '': genericTypeName, ' ': l.count, '  ': l.cost });
+    }
+    data.push({ '': '', ' ': '', '  ': '' });
+  }
+
+
+  const xls = json2xls(data);
+  // res.send(data)
+  const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+  // create directory
+  fse.ensureDirSync(exportDirectory);
+  const filePath = path.join(exportDirectory, 'รายงานเบิกแยกตามหน่วยเบิก.xlsx');
+  fs.writeFileSync(filePath, xls, 'binary');
+  // force download
+  res.download(filePath, 'รายงานเบิกแยกตามหน่วยเบิก.xlsx');
+
+  // res.send(summary_list);
+  let month = moment(startDate).format(' MMMM ') + (moment(startDate).get('year') + 543);
+
 }));
 
 router.get('/report/product-remain/:warehouseId/:genericTypeId', wrap(async (req, res, next) => {
