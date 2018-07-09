@@ -120,6 +120,45 @@ router.get('/report/adjust-stockcard', wrap(async (req, res, next) => {
   }
 
 }));
+
+router.get('/report/receiveOrthorCost/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
+  const db = req.db;
+  let startDate = req.params.startDate;
+  let endDate = req.params.endDate;
+  let warehouseId = req.params.warehouseId;
+  let warehouseName = req.params.warehouseName;
+  let receiveTpyeId = Array.isArray(req.query.receiveTpyeId) ? req.query.receiveTpyeId : [req.query.receiveTpyeId];
+  // warehouseId = warehouseId ? +warehouseId : 'ทุกคลังสินค้า'
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+
+    let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId,receiveTpyeId);
+    let hospitalName = hosdetail[0].hospname;
+    //  res.send(data[0])
+    let sum = inventoryReportModel.comma(_.sumBy(data[0], (o: any) => { return o.receive_qty * o.cost; }));
+
+    for (let tmp of data[0]) {
+      tmp.receive_date = moment(tmp.receive_date).isValid() ? moment(tmp.receive_date).format('DD MMM ') + (moment(tmp.receive_date).get('year') + 543) : '';
+      tmp.receive_qty = inventoryReportModel.commaQty(tmp.receive_qty);
+      tmp.cost = inventoryReportModel.comma(tmp.cost);
+      tmp.costAmount = inventoryReportModel.comma(tmp.costAmount);
+    }
+    startDate = moment(startDate).format('DD MMMM ') + (moment(startDate).get('year') + 543)
+    endDate = moment(endDate).format('DD MMMM ') + (moment(endDate).get('year') + 543)
+    res.render('receive_other_cost', {
+      hospitalName: hospitalName,
+      printDate: printDate(),
+      warehouseName: warehouseName,
+      data: data[0],
+      startDate: startDate,
+      endDate: endDate,
+      sum: sum
+    });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+}));
+
 router.get('/report/approve/requis', wrap(async (req, res, next) => {
   let db = req.db;
   let approve_requis: any = []
