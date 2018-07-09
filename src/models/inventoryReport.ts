@@ -1266,8 +1266,46 @@ FROM
         .leftJoin('mm_units as mus','mus.unit_id','mug.to_unit_id')
         .where('adjust_generic_id', adGId);
     }
-    
+    receiveOrthorCost(knex:Knex, startDate: any, endDate: any, warehouseId:any, receiveTpyeId:any) {
 
+        let sql = `
+        SELECT
+        wro.receive_other_id,
+        wro.receive_date,
+        wro.receive_code,
+        mg.generic_id,
+        mg.generic_name,
+        sum( wrod.receive_qty ) AS receive_qty,
+        mul.unit_name AS small_unit_name,
+        mus.unit_name AS lange_unit_name,
+        wrod.cost,
+        sum( wrod.receive_qty ) * wrod.cost as costAmount,
+        wrt.receive_type_name 
+        FROM
+        wm_receive_other AS wro
+        LEFT JOIN wm_receive_other_detail AS wrod ON wrod.receive_other_id = wro.receive_other_id
+        LEFT JOIN mm_products AS mp ON mp.product_id = wrod.product_id
+        LEFT JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
+        LEFT JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wrod.unit_generic_id
+        LEFT JOIN mm_units AS mul ON mul.unit_id = mug.from_unit_id
+        LEFT JOIN mm_units AS mus ON mus.unit_id = mug.to_unit_id
+        LEFT JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id 
+        WHERE
+        wro.receive_date BETWEEN '${startDate}'
+        AND '${endDate}'
+        AND wro.receive_type_id in (${receiveTpyeId})`
+        
+
+        if (warehouseId !== '0') {
+          sql +=`  and wrod.warehouse_id = ${warehouseId}`
+        }
+        sql += ` GROUP BY mg.generic_id, wro.receive_other_id`;
+
+        return knex.raw(sql);
+
+    }
+        
+        
     async hospital(knex: Knex) {
         let array = [];
         let result = await settingModel.getValue(knex, 'SYS_HOSPITAL');
