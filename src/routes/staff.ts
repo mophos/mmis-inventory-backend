@@ -53,7 +53,7 @@ const receiveModel = new ReceiveModel();
 const basicModel = new BasicModel();
 
 let uploadDir = path.join(process.env.MMIS_DATA, 'uploaded');
-var moment = require('moment-timezone');
+var moment = require('moment');
 fse.ensureDirSync(uploadDir);
 
 var storage = multer.diskStorage({
@@ -2626,10 +2626,10 @@ router.post('/adjust-stock/', async (req, res, next) => {
     head.warehouse_id = warehouseId;
     head.is_approved = 'Y';
     const adjustId = await adjustStockModel.saveHead(db, head);
-    if (adjustId) {
+    if (adjustId[0]) {
       for (const d of detail) {
         const generic = {
-          adjust_id: adjustId,
+          adjust_id: adjustId[0],
           generic_id: d.generic_id,
           old_qty: d.old_qty,
           new_qty: d.qty
@@ -2652,11 +2652,11 @@ router.post('/adjust-stock/', async (req, res, next) => {
               // ปรับยอดลดลง
               const adjQty = p.old_qty - p.qty;
               data = {
-                stock_date: moment.tz('Asia/Bangkok').format('YYYY-MM-DD HH:mm:ss'),
+                stock_date: moment().format('YYYY-MM-DD HH:mm:ss'),
                 product_id: p.product_id,
                 generic_id: d.generic_id,
                 transaction_type: 'ADJUST',
-                document_ref_id: adjustId,
+                document_ref_id: adjustId[0],
                 document_ref: adjustCode,
                 in_qty: 0,
                 in_unit_cost: 0,
@@ -2664,22 +2664,22 @@ router.post('/adjust-stock/', async (req, res, next) => {
                 out_unit_cost: p.cost,
                 balance_generic_qty: balanceGeneric[0].qty,
                 balance_qty: balanceProduct[0].qty,
-                balance_unit_cost: p.cost,
+                balance_unit_cost: p.cost || 0,
                 ref_src: warehouseId,
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
                 unit_generic_id: p.unit_generic_id,
-                expired_date: p.expired_date
+                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null,
               }
             } else {
               // ปรับยอดเพิ่มขึ้น
               const adjQty = p.qty - p.old_qty;
               data = {
-                stock_date: moment.tz('Asia/Bangkok').format('YYYY-MM-DD HH:mm:ss'),
+                stock_date: moment().format('YYYY-MM-DD HH:mm:ss'),
                 product_id: p.product_id,
                 generic_id: d.generic_id,
                 transaction_type: 'ADJUST',
-                document_ref_id: adjustId,
+                document_ref_id: adjustId[0],
                 document_ref: adjustCode,
                 in_qty: adjQty,
                 in_unit_cost: p.cost,
@@ -2691,7 +2691,7 @@ router.post('/adjust-stock/', async (req, res, next) => {
                 ref_src: warehouseId,
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
-                expired_date: p.expired_date
+                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null,
               }
             }
             await adjustStockModel.saveStockCard(db, data);
@@ -2766,11 +2766,11 @@ router.delete('/generic', async (req, res, next) => {
       res.send({ ok: false, error: 'กรุณาจัดการรายการยาให้หมดก่อนที่จะลบรายการ' })
     }
   } catch (error) {
-  console.log(error);
-  res.send({ ok: false, error: error.message });
-} finally {
-  db.destroy();
-}
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
 });
 
 
