@@ -2,6 +2,7 @@ import Knex = require('knex');
 import * as moment from 'moment';
 
 export class WarehouseModel {
+  
   list(knex: Knex) {
     let sql = `
       select w.*, t.type_name, 
@@ -13,6 +14,7 @@ export class WarehouseModel {
         ) as his_warehouse
       from wm_warehouses as w
       left join wm_types as t on t.type_id=w.type_id
+      where w.is_deleted = 'N'
       order by w.is_actived desc,w.short_code asc
     `;
 
