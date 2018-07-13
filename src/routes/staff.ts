@@ -3019,7 +3019,8 @@ router.post('/receives/other', co(async (req, res, next) => {
 
   if (summary.receiveDate && summary.receiveTypeId && summary.donatorId && products.length) {
     try {
-      let receiveCode = await serialModel.getSerial(db, 'RO');
+      let receiveCode = await serialModel.getSerialSatff(db, 'RO');
+      console.log(receiveCode,'******************************');
       // let receiveId = moment().format('x');
 
       const data: any = {
@@ -3301,6 +3302,75 @@ router.delete('/receives/other/:receiveOtherId', co(async (req, res, next) => {
     }
   } else {
     res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการลบ' });
+  }
+
+}));
+
+router.put('/receives/other/:receiveOtherId', co(async (req, res, next) => {
+
+  let db = req.db;
+  let receiveOtherId = req.params.receiveOtherId;
+  let summary = req.body.summary;
+  let products: any = [];
+
+  products = req.body.products;
+
+  if (summary.receiveDate && summary.receiveTypeId && summary.donatorId && products.length) {
+
+    const data: any = {
+      receive_type_id: summary.receiveTypeId,
+      receive_date: summary.receiveDate,
+      comment: summary.comment,
+      delivery_code: summary.deliveryCode,
+      donator_id: summary.donatorId,
+      people_user_id: req.decoded.people_user_id,
+      is_expired: summary.is_expired,
+      comment_expired: summary.comment_expired
+    }
+
+    let productsData = [];
+
+    products.forEach((v: any) => {
+      let pdata: any = {
+        receive_other_id: receiveOtherId,
+        // conversion_qty: +v.conversion_qty,
+        product_id: v.product_id,
+        receive_qty: +v.receive_qty,
+        unit_generic_id: v.unit_generic_id,
+        location_id: v.location_id,
+        warehouse_id: v.warehouse_id,
+        cost: +v.cost,
+        lot_no: v.lot_no,
+        expired_date: moment(v.expired_date, 'DD/MM/YYYY').isValid() ? moment(v.expired_date, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
+        manufacturer_labeler_id: v.manufacture_id
+      }
+      productsData.push(pdata);
+    });
+
+    try {
+
+      let year = moment(summary.receiveDate, 'YYYY-MM-DD').get('year');
+      let month = moment(summary.receiveDate, 'YYYY-MM-DD').get('month') + 1;
+
+      let isClose = await periodModel.isPeriodClose(db, year, month);
+
+      if (isClose) {
+        res.send({ ok: false, error: 'บัญชีถูกปิดแล้ว' });
+      } else {
+        await receiveModel.updateReceiveSummaryOther(db, receiveOtherId, data);
+        await receiveModel.removeReceiveDetailOther(db, receiveOtherId);
+        await receiveModel.saveReceiveDetailOther(db, productsData);
+        res.send({ ok: true });
+      }
+
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+
+  } else {
+    res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
   }
 
 }));
