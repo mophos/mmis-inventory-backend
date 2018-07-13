@@ -161,7 +161,7 @@ export class WarehouseModel {
     let query = knex('wm_products as wp')
       .select('wp.wm_product_id', 'mp.product_id', 'mug.cost as packcost', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', 'mp.working_code as trade_code', 'mg.working_code as generic_code', 'mg.generic_id', 'mg.generic_name',
         'l.location_name', 'l.location_desc', 'u.unit_name as small_unit', 'mug.qty as conversion', 'uu.unit_name as large_unit', 'mp.is_lot_control',
-        'mgp.min_qty', 'mgp.max_qty',knex.raw(`ifnull(sum(v.reserve_qty),0) as reserve_qty`))
+        'mgp.min_qty', 'mgp.max_qty', knex.raw(`ifnull(sum(v.reserve_qty),0) as reserve_qty`))
       .sum('wp.qty as qty')
       .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
       .leftJoin('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
@@ -189,7 +189,7 @@ export class WarehouseModel {
     let query = knex('wm_products as wp')
       .select('wp.wm_product_id', 'mp.product_id', 'mug.cost as packcost', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', 'mp.working_code as trade_code', 'mg.working_code as generic_code', 'mg.generic_id', 'mg.generic_name',
         'l.location_name', 'l.location_desc', 'u.unit_name as small_unit', 'mug.qty as conversion', 'uu.unit_name as large_unit', 'mp.is_lot_control',
-        'mgp.min_qty', 'mgp.max_qty',knex.raw(`ifnull(sum(v.reserve_qty),0) as reserve_qty`))
+        'mgp.min_qty', 'mgp.max_qty', knex.raw(`ifnull(sum(v.reserve_qty),0) as reserve_qty`))
       .sum('wp.qty as qty')
       .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
       .leftJoin('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
@@ -243,9 +243,8 @@ export class WarehouseModel {
   }
 
   getGenericsWarehouseRequisitionStaff(knex: Knex, warehouseId: string, genericType: any) {
-
     let query = knex('wm_products as p')
-      .select('p.wm_product_id', 'p.product_id', 'mp.working_code', knex.raw('sum(p.qty) as qty'), knex.raw('ifnull(sum(v.reserve_qty),0) as reserve_qty'), knex.raw('sum(p.qty * p.cost) as total_cost'),
+      .select('g.generic_id', 'p.wm_product_id', 'p.product_id', 'mp.working_code', knex.raw('sum(p.qty) as qty'), knex.raw('ifnull(sum(v.reserve_qty),0) as reserve_qty'), knex.raw('sum(p.qty * p.cost) as total_cost'),
         'mp.product_name', 'g.generic_name', 'g.working_code as generic_working_code', 'mp.primary_unit_id', 'u.unit_name as small_unit', 'uu.unit_name as large_unit', 'mug.qty as conversion',
         'mgp.min_qty', 'mgp.max_qty')
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
@@ -271,7 +270,7 @@ export class WarehouseModel {
   getGenericsWarehouseRequisitionSearchStaff(knex: Knex, warehouseId: string, genericType: any, q) {
     let _q = '%' + q + '%';
     let query = knex('wm_products as p')
-      .select('p.wm_product_id', 'p.product_id', 'mp.working_code', knex.raw('sum(p.qty) as qty'), knex.raw('ifnull(sum(v.reserve_qty),0) as reserve_qty'), knex.raw('sum(p.qty * p.cost) as total_cost'),
+      .select('g.generic_id', 'p.wm_product_id', 'p.product_id', 'mp.working_code', knex.raw('sum(p.qty) as qty'), knex.raw('ifnull(sum(v.reserve_qty),0) as reserve_qty'), knex.raw('sum(p.qty * p.cost) as total_cost'),
         'mp.product_name', 'g.generic_name', 'g.working_code as generic_working_code', 'mp.primary_unit_id', 'u.unit_name as small_unit', 'uu.unit_name as large_unit', 'mug.qty as conversion',
         'mgp.min_qty', 'mgp.max_qty')
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
@@ -354,8 +353,8 @@ export class WarehouseModel {
     }
     query.groupBy('g.generic_id')
       .orderBy('g.generic_name')
-      console.log(query.toString());
-      
+    console.log(query.toString());
+
     return query;
   }
   getProductsWarehouseSearch(knex: Knex, warehouseId: string, productGroups: any[], query: string) {
