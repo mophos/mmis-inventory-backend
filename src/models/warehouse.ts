@@ -683,17 +683,14 @@ export class WarehouseModel {
     LEFT JOIN wm_his_mappings AS h ON h.mmis = g.generic_id 
     AND h.hospcode = '${hospcode}'
     INNER JOIN mm_units AS u ON u.unit_id = g.primary_unit_id
-    JOIN mm_products AS mp ON mp.generic_id = g.generic_id
   WHERE
     g.mark_deleted = 'N' 
     AND g.is_active = 'Y'
     AND (
-    mp.product_name LIKE '%${keywords}%'
-    OR g.generic_name LIKE '%${keywords}%'
+    g.generic_name LIKE '%${keywords}%'
     OR g.working_code = '${keywords}'
-    OR mp.working_code = '${keywords}'
-    OR mp.keywords LIKE '%${keywords}%'
     OR g.keywords LIKE '%${keywords}%'
+    OR g.generic_id IN ( SELECT generic_id FROM mm_products WHERE ( product_name LIKE %${keywords}%' OR working_code = '${keywords}' OR keywords LIKE %${keywords}%' ) ) 
     ) 
   GROUP BY
     g.generic_id 
