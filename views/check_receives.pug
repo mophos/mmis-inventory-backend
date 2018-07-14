@@ -21,7 +21,7 @@ html
         .fontspace
         | ตามกรรมการผู้มีรายนามและตำแหน่งข้างท้าย ได้พร้อมกันตรวจรับ #{generic_name[s]}
         | ซึ่ง #{check_receive[s][0].labeler_name_po} ผู้ขายได้นำส่งตามใบสั่งซื้อของ#{hospitalName}
-        | เลขที่
+        | เลขที่ 
         if(check_receive[s][0].purchase_order_book_number) 
           | #{check_receive[s][0].purchase_order_book_number} 
         else 
