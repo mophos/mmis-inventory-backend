@@ -690,7 +690,12 @@ export class WarehouseModel {
     g.generic_name LIKE '%${keywords}%'
     OR g.working_code = '${keywords}'
     OR g.keywords LIKE '%${keywords}%'
-    OR g.generic_id IN ( SELECT generic_id FROM mm_products WHERE ( product_name LIKE %${keywords}%' OR working_code = '${keywords}' OR keywords LIKE %${keywords}%' ) ) 
+    OR g.generic_id IN ( 
+      SELECT generic_id FROM mm_products 
+      WHERE ( 
+        product_name LIKE '%${keywords}%' OR 
+        working_code = '${keywords}' OR 
+        keywords LIKE '%${keywords}%' ) ) 
     ) 
   GROUP BY
     g.generic_id 
