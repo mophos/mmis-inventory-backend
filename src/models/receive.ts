@@ -432,7 +432,8 @@ export class ReceiveModel {
       rd.unit_generic_id,
       r.delivery_code,
       r.receive_code,
-      r.receive_date
+      r.receive_date,
+      rd.manufacturer_labeler_id
     FROM
     wm_receive_other_detail AS rd
     JOIN wm_receive_other AS r ON rd.receive_other_id = r.receive_other_id

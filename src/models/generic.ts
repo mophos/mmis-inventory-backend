@@ -127,6 +127,8 @@ export class GenericModel {
               mm_generics
             WHERE
               working_code = '${q}'
+              and mark_deleted ='N'
+              and is_active ='Y'
           ) AS s
         UNION ALL
           SELECT
@@ -139,6 +141,8 @@ export class GenericModel {
                 mm_generics
               WHERE
                 generic_name LIKE '${q_}'
+                and mark_deleted ='N'
+              and is_active ='Y'
               LIMIT 5
             ) AS s
           UNION ALL
@@ -151,8 +155,12 @@ export class GenericModel {
                 FROM
                   mm_generics
                 WHERE
+                (
                   generic_name LIKE '${_q_}'
                 OR keywords LIKE '${_q_}'
+                )
+                and mark_deleted ='N'
+              and is_active ='Y'
                 ORDER BY
                   generic_name
                 LIMIT 10
