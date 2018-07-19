@@ -1756,4 +1756,9 @@ export class ReceiveModel {
     }
     return knex.raw(sql);
   }
+  
+  getProductPurchase(knex: Knex,purchaseOrderId){
+    return knex('pc_purchasing_order_item')
+    .where('purchase_order_id',purchaseOrderId)
+  }
 }
