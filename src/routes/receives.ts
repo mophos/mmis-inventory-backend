@@ -651,7 +651,6 @@ router.post('/other', co(async (req, res, next) => {
     } finally {
       db.destroy();
     }
-
   } else {
     res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
   }
@@ -1319,6 +1318,8 @@ router.put('/update/cost', co(async (req, res, nex) => {
   } finally {
     db.destroy();
   }
+
+
 }));
 
 router.get('/count/approve', (req, res, next) => {
