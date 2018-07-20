@@ -199,11 +199,6 @@ router.post('/', co(async (req, res, next) => {
     });
 
     try {
-
-      if (closePurchase === 'Y' && summary.purchaseOrderId) {
-        let productPurchase = await receiveModel.getProductPurchase(db, summary.purchaseOrderId)
-
-      }
       // check delivery code (invoice)
       let countDelivery = await receiveModel.checkDeliveryCode(db, summary.deliveryCode, summary.supplierId);
       if (countDelivery[0].total > 0) {
@@ -631,8 +626,6 @@ router.post('/other', co(async (req, res, next) => {
         let productsData = [];
 
         products.forEach((v: any) => {
-          console.log(v.manufacture_id);
-          
           let pdata: any = {
             // conversion_qty: +v.conversion_qty,
             receive_other_id: rsSummary[0],
@@ -658,7 +651,6 @@ router.post('/other', co(async (req, res, next) => {
     } finally {
       db.destroy();
     }
-
   } else {
     res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
   }
