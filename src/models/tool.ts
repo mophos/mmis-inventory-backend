@@ -44,7 +44,7 @@ export class ToolModel {
 
   getReceivesOtherItems(db: Knex, receiveId: any) {
     let sql = `
-      select rd.receive_other_detail_id, rd.receive_other_id, rd.product_id, rd.lot_no, rd.expired_date, rd.receive_qty, rd.unit_generic_id, rd.warehouse_id,
+      select rd.receive_detail_id, rd.receive_other_id, rd.product_id, rd.lot_no, rd.expired_date, rd.receive_qty, rd.unit_generic_id, rd.warehouse_id,
       p.product_name, p.generic_id, p.working_code,
       ug.qty as conversion_qty, ut.unit_name as to_unit_name, uf.unit_name as from_unit_name, ug.qty*rd.receive_qty as total_small_qty
       from wm_receive_other_detail as rd
@@ -77,7 +77,7 @@ export class ToolModel {
 
   updateReceiveOtherDetail(db: Knex, receiveDetailId: any, unitGenericId: any, qty: number) {
     return db('wm_receive_detail')
-      .select('receive_other_detail_id', receiveDetailId)
+      .select('receive_detail_id', receiveDetailId)
       .update({
         unit_generic_id: unitGenericId,
         receive_qty: qty

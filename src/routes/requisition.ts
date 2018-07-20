@@ -121,18 +121,6 @@ router.post('/fast/orders', async (req, res, next) => {
 
       let rsOrder: any = await orderModel.saveOrder(db, order);
       let requisitionId = rsOrder[0];
-      let items: any = [];
-
-      generics.forEach((v: any) => {
-        let obj: any = {
-          requisition_order_id: requisitionId,
-          generic_id: v.generic_id,
-          requisition_qty: v.requisition_qty * v.to_unit_qty, // small qty
-          unit_generic_id: v.unit_generic_id
-        }
-        items.push(obj);
-      });
-      await orderModel.saveItems(db, items);
 
       let headConfirm: any = {};
       const detailConfirm = []
@@ -142,7 +130,17 @@ router.post('/fast/orders', async (req, res, next) => {
       headConfirm.created_at = order.created_at;
       let rsConfirm: any = await orderModel.saveConfirm(db, headConfirm);
       let confirmId = rsConfirm[0];
+
+      let detailResuest: any = [];
+
       for (const g of generics) {
+        let obj: any = {
+          requisition_order_id: requisitionId,
+          generic_id: g.generic_id,
+          requisition_qty: g.requisition_qty * g.to_unit_qty, // small qty
+          unit_generic_id: g.unit_generic_id
+        }
+        detailResuest.push(obj);
         for (const p of g.products) {
           detailConfirm.push({
             confirm_id: confirmId,
@@ -151,8 +149,9 @@ router.post('/fast/orders', async (req, res, next) => {
             confirm_qty: p.confirm_qty * p.conversion_qty// หน่วยย่อย
           });
         }
-        await orderModel.saveConfirmItems(db, detailConfirm);
       }
+      await orderModel.saveItems(db, detailResuest);
+      await orderModel.saveConfirmItems(db, detailConfirm);
 
       res.send({ ok: true });
     } catch (error) {
