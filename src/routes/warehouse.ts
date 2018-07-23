@@ -238,14 +238,31 @@ router.get('/get-mappings-generics', wrap(async (req, res, next) => {
   }
 }));
 
-router.get('/get-mappings-generics-search/:keywords', wrap(async (req, res, next) => {
+router.get('/get-mappings-generics-search-type/:keywords/:genericType', wrap(async (req, res, next) => {
   let db = req.db;
   let hospcode = req.decoded.his_hospcode;
   let keywords = req.params.keywords
-  console.log(keywords, '56565656');
+  let genericType = req.params.genericType
+  
+  if (keywords) {
+    try {
+      let results = await warehouseModel.getMappingsGenericsSearchType(db, hospcode, keywords, genericType);
+      res.send({ ok: true, rows: results[0] });
+    } catch (error) {
+      res.send({ ok: false, error: error.message })
+    } finally {
+      db.destroy();
+    }
+  }
+}));
+
+router.get('/get-mappings-generics-type/:genericType', wrap(async (req, res, next) => {
+  let db = req.db;
+  let hospcode = req.decoded.his_hospcode;
+  let genericType = req.params.genericType
 
   try {
-    let results = await warehouseModel.getMappingsGenericsSearch(db, hospcode, keywords);
+    let results = await warehouseModel.getMappingsGenericsType(db, hospcode, genericType);
     res.send({ ok: true, rows: results[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message })
@@ -520,7 +537,7 @@ router.get('/warehouseproducttemplate/search', wrap(async (req, res, next) => {
   let db = req.db;
   let query = req.query.query;
   try {
-    let reqult = await warehouseModel.getallRequisitionTemplateSearch(db,query);
+    let reqult = await warehouseModel.getallRequisitionTemplateSearch(db, query);
     res.send({ ok: true, rows: reqult[0] });
   } catch (error) {
     console.log(error);
