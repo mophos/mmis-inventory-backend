@@ -739,13 +739,13 @@ export class WarehouseModel {
     return knex.raw(sql);
   }
 
-  getSearchStaffMappingsGenerics(knex: Knex, hospcode: any, warehouseId: any, q: any) {
+  getSearchStaffMappingsGenerics(knex: Knex, hospcode: any, warehouseId: any, q: any, genericType: any) {
     const _q = `%${q}%`;
     let sql = `
     select * from(
       select g.generic_id, g.generic_name, g.working_code, g.keywords,
       g.generic_id as mmis, group_concat(h.his) as his, ifnull(h.conversion, 1) as conversion,
-      u.unit_name as base_unit_name
+      u.unit_name as base_unit_name , g.generic_type_id
       from mm_generics as g
       left join wm_his_mappings as h on h.mmis=g.generic_id and h.hospcode= '${hospcode}'
       inner join mm_units as u on u.unit_id=g.primary_unit_id
@@ -761,12 +761,40 @@ export class WarehouseModel {
       order by g.generic_name
     ) as g
     where 
-     g.working_code = '${q}'
+     (g.working_code = '${q}'
       or g.generic_name like '${_q}' 
-      or g.keywords like '${_q}' 
-  `;
+      or g.keywords like '${_q}')`
+    if (genericType != 'all') {
+      sql += `AND g.generic_type_id = '${genericType}'`;
+    }
     return knex.raw(sql);
   }
+
+  getStaffMappingsGenericsType(knex: Knex, hospcode: any, warehouseId: any, genericType: any) {
+    let sql = `
+    select * from(
+      select g.generic_id, g.generic_name, g.working_code, g.keywords,
+      g.generic_id as mmis, group_concat(h.his) as his, ifnull(h.conversion, 1) as conversion,
+      u.unit_name as base_unit_name , g.generic_type_id
+      from mm_generics as g
+      left join wm_his_mappings as h on h.mmis=g.generic_id and h.hospcode= '${hospcode}'
+      inner join mm_units as u on u.unit_id=g.primary_unit_id
+      where g.mark_deleted='N'
+      and g.is_active='Y'
+      and g.generic_id in (
+        select mp.generic_id
+        from wm_products as wp 
+        inner join mm_products as mp on mp.product_id=wp.product_id
+        where wp.warehouse_id= '${warehouseId}' and wp.is_actived = 'Y'
+      )
+      group by g.generic_id
+      order by g.generic_name
+    ) as g
+    where 
+      g.generic_type_id = '${genericType}'`
+    return knex.raw(sql);
+  }
+
   getStaffMappingsGenerics(knex: Knex, hospcode: any, warehouseId: any) {
     let sql = `
       select g.generic_id, g.generic_name, g.working_code, 
