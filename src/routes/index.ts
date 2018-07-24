@@ -17,9 +17,14 @@ const fs = require('fs');
 const json2xls = require('json2xls');
 moment.locale('th');
 
-function printDate() {
+function printDate(SYS_PRINT_DATE) {
   moment.locale('th');
-  const printDate = 'วันที่พิมพ์ ' + moment().format('D MMMM ') + (moment().get('year') + 543) + moment().format(', HH:mm:ss น.');
+  let printDate
+  if (SYS_PRINT_DATE === 'Y') {
+    printDate = 'วันที่พิมพ์ ' + moment().format('D MMMM ') + (moment().get('year') + 543) + moment().format(', HH:mm:ss น.');
+  } else {
+    printDate = '';
+  }
   return printDate;
 }
 
@@ -67,7 +72,7 @@ router.get('/report/receiveNotMatchPO/:startDate/:endDate', wrap(async (req, res
     // res.send(receiveDetail)
     res.render('receive_not_match_po', {
       hospitalName: hospitalName,
-      printDate: printDate(),
+      printDate: printDate(req.decoded.SYS_PRINT_DATE),
       receives: receives,
       startDate: startDate,
       endDate: endDate
@@ -109,20 +114,20 @@ router.get('/report/adjust-stockcard', wrap(async (req, res, next) => {
         _dGen.detailPro = _detailPro;
       }
     }
-    for(let details of adjust){
-      details.adjust_date = moment(details.adjust_date).isValid()?moment(details.adjust_date).format('DD MMMM ') + (moment(details.adjust_date).get('year') +543) : ''
-      for(let _dGen of details.detailGen){
+    for (let details of adjust) {
+      details.adjust_date = moment(details.adjust_date).isValid() ? moment(details.adjust_date).format('DD MMMM ') + (moment(details.adjust_date).get('year') + 543) : ''
+      for (let _dGen of details.detailGen) {
         _dGen.old_qty = inventoryReportModel.commaQty(_dGen.old_qty);
         _dGen.new_qty = inventoryReportModel.commaQty(_dGen.new_qty);
-        for(let _dGenDe of _dGen.detailPro){
+        for (let _dGenDe of _dGen.detailPro) {
           _dGenDe.old_qty = inventoryReportModel.commaQty(_dGenDe.old_qty);
-        _dGenDe.new_qty = inventoryReportModel.commaQty(_dGenDe.new_qty);
+          _dGenDe.new_qty = inventoryReportModel.commaQty(_dGenDe.new_qty);
         }
       }
     }
     res.render('list_adjust', {
       hospitalName: hospitalName,
-      printDate: printDate(),
+      printDate: printDate(req.decoded.SYS_PRINT_DATE),
       adjust: adjust
     });
     res.send({ ok: true, adjust: adjust });
@@ -143,7 +148,7 @@ router.get('/report/receiveOrthorCost/:startDate/:endDate/:warehouseId/:warehous
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
 
-    let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId,receiveTpyeId);
+    let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId, receiveTpyeId);
     let hospitalName = hosdetail[0].hospname;
     //  res.send(data[0])
     let sum = inventoryReportModel.comma(_.sumBy(data[0], (o: any) => { return o.receive_qty * o.cost; }));
@@ -158,7 +163,7 @@ router.get('/report/receiveOrthorCost/:startDate/:endDate/:warehouseId/:warehous
     endDate = moment(endDate).format('DD MMMM ') + (moment(endDate).get('year') + 543)
     res.render('receive_other_cost', {
       hospitalName: hospitalName,
-      printDate: printDate(),
+      printDate: printDate(req.decoded.SYS_PRINT_DATE),
       warehouseName: warehouseName,
       data: data[0],
       startDate: startDate,
@@ -200,7 +205,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
           value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
           value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
           value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
-          value.today = printDate();
+          value.today = printDate(req.decoded.SYS_PRINT_DATE);
           value.today += (value.updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) + moment(value.updated_at).format(', HH:mm') + ' น.' : ''
         })
       })
@@ -245,7 +250,7 @@ router.get('/report/approve2/requis', wrap(async (req, res, next) => {
           value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty);
           value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
           value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
-          value.today = printDate();
+          value.today = printDate(req.decoded.SYS_PRINT_DATE);
           value.today += (value.updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) + moment(value.updated_at).format(', HH:mm') + ' น.' : ''
         })
       })
@@ -396,7 +401,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
     // res.send( _list_requis)
     res.render('list_requis', {
       hospitalName: hospitalName,
-      printDate: printDate(),
+      printDate: printDate(req.decoded.SYS_PRINT_DATE),
       list_requis: _list_requis
     });
   } catch (error) {
@@ -412,7 +417,7 @@ router.get('/report/list/refill/:requisId', wrap(async (req, res, next) => {
     let requisId = req.params.requisId;
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
-    let today = printDate();
+    let today = printDate(req.decoded.SYS_PRINT_DATE);
     let list_requis = await inventoryReportModel.list_requis(db, requisId);
     list_requis = list_requis[0];
     if (list_requis[0] === undefined) { res.render('error404'); }
@@ -629,7 +634,7 @@ router.get('/report/generic/stock/', wrap(async (req, res, next) => {
     generic_stock: generic_stock,
     _generic_stock: _generic_stock,
     hospitalName: hospitalName,
-    printDate: printDate(),
+    printDate: printDate(req.decoded.SYS_PRINT_DATE),
     genericId: genericId,
     generic_name: _generic_name,
     unit: _unit,
@@ -709,7 +714,7 @@ router.get('/report/generic/stock2/', wrap(async (req, res, next) => {
     generic_stock: generic_stock,
     _generic_stock: _generic_stock,
     hospitalName: hospitalName,
-    printDate: printDate(),
+    printDate: printDate(req.decoded.SYS_PRINT_DATE),
     genericId: genericId,
     generic_name: _generic_name,
     unit: _unit,
@@ -880,7 +885,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
     _genericId: _genericId,
     startDate: startDate,
     endDate: endDate,
-    printDate: printDate()
+    printDate: printDate(req.decoded.SYS_PRINT_DATE)
   });
 }));
 
@@ -990,7 +995,7 @@ router.get('/report/issue', wrap(async (req, res, next) => {
   });
 
   res.render('product_issue', {
-    hospitalName: hospitalName, issueBody: issueBody, issueListDetail: issueListDetail, issue_date: issue_date, printDate: printDate(), count: issueListDetail.length
+    hospitalName: hospitalName, issueBody: issueBody, issueListDetail: issueListDetail, issue_date: issue_date, printDate: printDate(req.decoded.SYS_PRINT_DATE), count: issueListDetail.length
   });
 }));
 
@@ -1041,7 +1046,7 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
 
   if (check == "error") { res.render('error404'); }
   res.render('product_expired', {
-    hospitalName: hospitalName, product_expired: product_expired, printDate: printDate(),
+    hospitalName: hospitalName, product_expired: product_expired, printDate: printDate(req.decoded.SYS_PRINT_DATE),
     wareHouseName: wareHouseName, genericName: genericName, startDate: startDate, endDate: endDate, sum: sum, day: day
   });
 }));//ทำFrontEndแล้ว //ตรวจสอบแล้ว 14-9-60  // ตรวจสอบแล้ว 27/9/60
@@ -1108,7 +1113,7 @@ router.get('/report/list/cost/:startDate/:endDate/:warehouseId/:warehouseName', 
   sumt = inventoryReportModel.comma(sumt)
   // res.send({ sumt: sumt, list_cost: list_cost, startDate: startDate, endDate: endDate, warehouseName: warehouseName })
   res.render('list_cost', {
-    sumt: sumt, startDate: startDate, endDate: endDate, list_cost: list_cost, hospitalName: hospitalName, warehouseName: warehouseName, printDate: printDate()
+    sumt: sumt, startDate: startDate, endDate: endDate, list_cost: list_cost, hospitalName: hospitalName, warehouseName: warehouseName, printDate: printDate(req.decoded.SYS_PRINT_DATE)
   });
 }));//ตรวจสอบแล้ว 14-9-60
 
@@ -1145,7 +1150,7 @@ router.get('/report/list/receiveOther', wrap(async (req, res, next) => {
     })
   })
   // res.send({receiveID:receiveID,list_receive3:list_receive3,receiveId:receiveId,productId:productId})
-  res.render('list_receive2', { hospitalName: hospitalName, printDate: printDate(), list_receive2: list_receive2, array2: array2 });
+  res.render('list_receive2', { hospitalName: hospitalName, printDate: printDate(req.decoded.SYS_PRINT_DATE), list_receive2: list_receive2, array2: array2 });
 }));//ตรวจสอบแล้ว 14-9-60
 
 router.get('/report/list/receive', wrap(async (req, res, next) => {
@@ -1191,7 +1196,7 @@ router.get('/report/list/receive', wrap(async (req, res, next) => {
     })
   })
   // res.send({receiveID:receiveID,list_receive3:list_receive3,receiveId:receiveId,productId:productId})
-  res.render('list_receive', { hospitalName: hospitalName, printDate: printDate(), list_receive2: list_receive2, array2: array2 });
+  res.render('list_receive', { hospitalName: hospitalName, printDate: printDate(req.decoded.SYS_PRINT_DATE), list_receive2: list_receive2, array2: array2 });
 }));
 router.get('/report/list/receiveCode/:sID/:eID', wrap(async (req, res, next) => {
   let db = req.db;
@@ -1639,7 +1644,7 @@ router.get('/report/tranfer/:tranferId', wrap(async (req, res, next) => {
   tranfer.forEach(value => {
     value.expired_date = moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year') + 543);
   });
-  res.render('tranfer', { hospitalName: hospitalName, printDate: printDate(), tranfer: tranfer, tranferCount: tranferCount });
+  res.render('tranfer', { hospitalName: hospitalName, printDate: printDate(req.decoded.SYS_PRINT_DATE), tranfer: tranfer, tranferCount: tranferCount });
   // res.send({tranfer,tranferCount})
 }));
 
@@ -1683,7 +1688,7 @@ router.get('/report/tranfers', wrap(async (req, res, next) => {
     tranferCount = await inventoryReportModel.tranferCount(db, tranferId[id]);
     _tranferCounts.push(tranferCount[0])
   }
-  res.render('tranfers', { hospitalName: hospitalName, printDate: printDate(), _tmpTranfer: _tmpTranfer, _tranferCounts: _tranferCounts, tranferId: tranferId, _tmpSum: _tmpSum });
+  res.render('tranfers', { hospitalName: hospitalName, printDate: printDate(req.decoded.SYS_PRINT_DATE), _tmpTranfer: _tmpTranfer, _tranferCounts: _tranferCounts, tranferId: tranferId, _tmpSum: _tmpSum });
   // console.log('++++++++++++++++++++++++++++++++++++++++', _tmpTranfer);
   // res.send(_tmpTranfer)
 }));
@@ -1742,7 +1747,7 @@ router.get('/report/tranfers2', wrap(async (req, res, next) => {
   })
   // res.send([{ list_tranfer: list_tranfer, _tranfers: _tranfers }])
   if (_tranfers[0] === undefined) res.render('error404');
-  res.render('list_tranfers', { hospitalName: hospitalName, printDate: printDate(), _tranfers: _tranfers, _tranferCounts: _tranferCounts, tranferId: _tranferId, list_tranfer: list_tranfer });
+  res.render('list_tranfers', { hospitalName: hospitalName, printDate: printDate(req.decoded.SYS_PRINT_DATE), _tranfers: _tranfers, _tranferCounts: _tranferCounts, tranferId: _tranferId, list_tranfer: list_tranfer });
 }));
 
 router.get('/report/stockcard2/:productId/:startDate/:endDate', wrap(async (req, res, next) => {
@@ -2036,7 +2041,7 @@ router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, 
   res.render('productReceive2', {
     allcost: allcost,
     hospitalName: hospitalName,
-    printDate: printDate(),
+    printDate: printDate(req.decoded.SYS_PRINT_DATE),
     productReceive: productReceive,
     startdate: startdate,
     enddate: enddate
@@ -2073,7 +2078,7 @@ router.get('/report/product/receive', wrap(async (req, res, next) => {
   res.render('productReceive2', {
     allcost: allcost,
     hospitalName: hospitalName,
-    printDate: printDate(),
+    printDate: printDate(req.decoded.SYS_PRINT_DATE),
     productReceive: productReceive
     // ,startdate:startdate,enddate:enddate
   });
@@ -2109,7 +2114,7 @@ router.get('/report/product/receive/other', wrap(async (req, res, next) => {
   res.render('productReceiveOther', {
     allcost: allcost,
     hospitalName: hospitalName,
-    printDate: printDate(),
+    printDate: printDate(req.decoded.SYS_PRINT_DATE),
     productReceive: productReceive
     // ,startdate:startdate,enddate:enddate
   });
@@ -2194,7 +2199,7 @@ router.get('/report/product/manufacture/warehouse', wrap(async (req, res, next) 
     sum: sum,
     startDate: startDate,
     endDate: endDate,
-    printDate: printDate()
+    printDate: printDate(req.decoded.SYS_PRINT_DATE)
   });
 }));
 router.get('/test/:n', wrap(async (req, res, next) => {
@@ -2333,7 +2338,7 @@ router.get('/report/inventorystatus/:warehouseId/:genericTypeId/:statusDate', wr
 
   res.render('inventorystatus', {
     statusDate_text: statusDate_text,
-    printDate: printDate(),
+    printDate: printDate(req.decoded.SYS_PRINT_DATE),
     hospitalName: hospitalName,
     list: list,
     sumlist: sumlist,
@@ -2373,7 +2378,7 @@ router.get('/report/summary/disbursement', wrap(async (req, res, next) => {
   startDate = moment(startDate).format('DD MMMM ') + (moment(startDate).get('year') + 543);
   endDate = moment(endDate).format('DD MMMM ') + (moment(endDate).get('year') + 543);
   res.render('summary_disbursement', {
-    printDate: printDate(),
+    printDate: printDate(req.decoded.SYS_PRINT_DATE),
     hospitalName: hospitalName,
     summary: summary,
     summary_list: summary_list,
@@ -2447,7 +2452,7 @@ router.get('/report/product-remain/:warehouseId/:genericTypeId', wrap(async (req
 
     hospitalName: hospitalName,
     productRemain: productRemain,
-    printDate: printDate()
+    printDate: printDate(req.decoded.SYS_PRINT_DATE)
   });
 }));
 
@@ -2465,7 +2470,7 @@ router.get('/report/generics-no-movement/:warehouseId/:startdate/:enddate', wrap
   res.render('genericsNomovement', {
 
     hospitalName: hospitalName,
-    printDate: printDate(),
+    printDate: printDate(req.decoded.SYS_PRINT_DATE),
     generics: generics
   });
 }));
