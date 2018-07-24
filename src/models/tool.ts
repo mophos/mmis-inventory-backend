@@ -58,13 +58,7 @@ export class ToolModel {
     return db.raw(sql, [receiveId]);
   }
 
-  getStockCardId(db: Knex, receiveId: any, productId: any) {
-    return db('wm_stock_card')
-      .select('stock_card_id', 'ref_dst')
-      .where('document_ref_id', receiveId)
-      .where('product_id', productId)
-      .limit(1);
-  }
+
 
   updateReceiveDetail(db: Knex, receiveDetailId: any, unitGenericId: any, qty: number) {
     return db('wm_receive_detail')
@@ -82,27 +76,6 @@ export class ToolModel {
         unit_generic_id: unitGenericId,
         receive_qty: qty
       });
-  }
-
-  updateStockCard(db: Knex, data: any[]) {
-    let sql = [];
-    for (let v of data) {
-      sql.push(db('wm_stock_card')
-        .where('stock_card_id', v.stock_card_id)
-        .update({
-          unit_generic_id: v.unit_generic_id,
-          balance_qty: v.balance_qty,
-          balance_generic_qty: v.balance_generic_qty,
-          in_qty: v.in_qty,
-          out_qty: v.out_qty
-        }).toString());
-    }
-
-    let allSql = sql.join(';');
-
-    console.log(allSql);
-
-    return db.raw(allSql, []);
   }
 
   getStockCardList(db: Knex, stockCardId: any, productId: any, lotNo: any, warehouseId: any) {
@@ -124,4 +97,66 @@ export class ToolModel {
       .orderBy('s.stock_card_id', 'ASC');
   }
 
+  // //////////////////////
+
+  updateReceive(db: Knex, receiveId: any, products: any) {
+    return db('wm_receive_detail')
+      .where('receive_id', receiveId)
+      .where('product_id', products.product_id)
+      .where('lot_no', products.lot_no_old)
+      .where('is_free', products.is_free)
+      .update({
+        unit_generic_id: products.unit_generic_id,
+        receive_qty: products.receive_qty,
+        is_free: products.is_free,
+        cost: products.cost,
+        discount: products.discount,
+        lot_no: products.lot_no,
+        expired_date: products.expired_date
+      })
+  }
+
+  getStockCardId(db: Knex, id: any, productId: any, lotNo: any) {
+    return db('wm_stock_card')
+      .select('stock_card_id', 'ref_dst')
+      .where('document_ref_id', id)
+      .where('product_id', productId)
+      .where('lot_no', lotNo)
+      .limit(1);
+  }
+
+  getStockcardList(knex: Knex, warehouseId, genericId) {
+    return knex('view_stock_card_warehouse')
+      .where('warehouse_id', warehouseId)
+      .where('generic_id', genericId)
+      .orderBy('stock_card_id')
+  }
+
+  getStockcardProduct(knex: Knex, warehouseId, genericId) {
+
+    return knex('view_stock_card_warehouse')
+      .select('product_id')
+      .where('warehouse_id', warehouseId)
+      .where('generic_id', genericId)
+      .groupBy('product_id')
+  }
+
+  updateStockcard(knex: Knex, data, stockCardId) {
+    console.log(knex('wm_stock_card')
+      .where('stock_card_id', stockCardId)
+      .update(data).toString());
+
+    return knex('wm_stock_card')
+      .where('stock_card_id', stockCardId)
+      .update(data);
+  }
+
+  updateStockcardList(knex: Knex, data) {
+    const sql = knex('wm_stock_card')
+      .update(data).where('stock_card_id', data.stock_card_id);
+    console.log(sql.toString());
+
+
+    return sql;
+  }
 }
