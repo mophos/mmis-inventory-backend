@@ -109,14 +109,14 @@ router.get('/report/adjust-stockcard', wrap(async (req, res, next) => {
         _dGen.detailPro = _detailPro;
       }
     }
-    for(let details of adjust){
-      details.adjust_date = moment(details.adjust_date).isValid()?moment(details.adjust_date).format('DD MMMM ') + (moment(details.adjust_date).get('year') +543) : ''
-      for(let _dGen of details.detailGen){
+    for (let details of adjust) {
+      details.adjust_date = moment(details.adjust_date).isValid() ? moment(details.adjust_date).format('DD MMMM ') + (moment(details.adjust_date).get('year') + 543) : ''
+      for (let _dGen of details.detailGen) {
         _dGen.old_qty = inventoryReportModel.commaQty(_dGen.old_qty);
         _dGen.new_qty = inventoryReportModel.commaQty(_dGen.new_qty);
-        for(let _dGenDe of _dGen.detailPro){
+        for (let _dGenDe of _dGen.detailPro) {
           _dGenDe.old_qty = inventoryReportModel.commaQty(_dGenDe.old_qty);
-        _dGenDe.new_qty = inventoryReportModel.commaQty(_dGenDe.new_qty);
+          _dGenDe.new_qty = inventoryReportModel.commaQty(_dGenDe.new_qty);
         }
       }
     }
@@ -143,7 +143,7 @@ router.get('/report/receiveOrthorCost/:startDate/:endDate/:warehouseId/:warehous
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
 
-    let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId,receiveTpyeId);
+    let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId, receiveTpyeId);
     let hospitalName = hosdetail[0].hospname;
     //  res.send(data[0])
     let sum = inventoryReportModel.comma(_.sumBy(data[0], (o: any) => { return o.receive_qty * o.cost; }));
@@ -1111,6 +1111,51 @@ router.get('/report/list/cost/:startDate/:endDate/:warehouseId/:warehouseName', 
     sumt: sumt, startDate: startDate, endDate: endDate, list_cost: list_cost, hospitalName: hospitalName, warehouseName: warehouseName, printDate: printDate()
   });
 }));//ตรวจสอบแล้ว 14-9-60
+
+router.get('/report/list/cost/type/:startDate/:endDate/:warehouseId/:warehouseName/:genericType', wrap(async (req, res, next) => {
+  let db = req.db;
+  let startDate = req.params.startDate
+  let endDate = req.params.endDate
+  let warehouseId = req.params.warehouseId
+  let warehouseName = req.params.warehouseName
+  let genericTypeId = req.params.genericType
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let sumt: any = 0
+
+  if (warehouseId == 0) { warehouseId = '%%'; }
+  else { warehouseId = '%' + warehouseId + '%'; }
+
+  let list_cost: any = await inventoryReportModel.list_cost(db, genericTypeId, startDate, endDate, warehouseId);
+  list_cost = list_cost[0];
+  let _sun = _.sumBy(list_cost, 'cost')
+
+  _.forEach(list_cost, (v: any, index: any) => {
+    sumt += +v.cost
+    v.generic_type_name = index === 0 ? v.generic_type_name : null;
+    v.cost = inventoryReportModel.comma(v.cost)
+    v.sum = index === list_cost.length - 1 ? inventoryReportModel.comma(_sun) : null;
+    console.log(v.sum);
+  });
+
+  // _.forEach(list_cost, (opject: any) => {
+  //   let _sun = _.sumBy(opject, 'cost')
+  //   sumt += _sun
+  //   _.forEach(opject, (value: any, index: any) => {
+  //     value.cost = inventoryReportModel.comma(value.cost)
+  //     value.generic_type_name = index === 0 ? value.generic_type_name : null;
+  //     value.sum = index === opject.length - 1 ? inventoryReportModel.comma(_sun) : null;
+  //   })
+  // })
+
+  startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
+  endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+  sumt = inventoryReportModel.comma(sumt)
+  // res.send({ sumt: sumt, list_cost: list_cost, startDate: startDate, endDate: endDate, warehouseName: warehouseName })
+  res.render('list_cost_type', {
+    sumt: sumt, startDate: startDate, endDate: endDate, list_cost: list_cost, hospitalName: hospitalName, warehouseName: warehouseName, printDate: printDate()
+  });
+}));
 
 router.get('/report/list/receiveOther', wrap(async (req, res, next) => {
   let db = req.db;

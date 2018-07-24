@@ -841,7 +841,7 @@ WHERE
 
     getGenericType(knex: Knex) {
         return knex('mm_generic_types')
-            .select('generic_type_id')
+            .select('generic_type_id','generic_type_code')
             .orderBy('generic_type_id')
     }
 
@@ -850,7 +850,8 @@ WHERE
         SELECT
             q.generic_type_name,
             q.account_name,
-            sum( q.cost ) AS cost 
+            sum( q.cost ) AS cost,
+            q.generic_type_code
         FROM
             (
         SELECT
@@ -862,7 +863,8 @@ WHERE
             mga.account_name,
             mg.generic_type_id,
             mga.account_id,
-            mgt.generic_type_name
+            mgt.generic_type_name,
+            mgt.generic_type_code
         FROM
             view_stock_card_warehouse AS vscw
             JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
