@@ -1875,23 +1875,25 @@ OR sc.ref_src like ?
         ppo.purchase_order_book_number,
         ppo.purchase_order_number,
         ppo.chief_id,
-        (
-            SELECT
-                COUNT( mg.generic_id )
-            FROM
-                wm_receives wrr
-                JOIN wm_receive_detail wrd ON wrd.receive_id = wrr.receive_id
-                LEFT JOIN pc_purchasing_order ppo ON ppo.purchase_order_id = wrr.purchase_order_id
-                LEFT JOIN mm_products mp ON mp.product_id = wrd.product_id
-                LEFT JOIN mm_generics mg ON mg.generic_id = mp.generic_id 
-                WHERE
-               wrr.receive_id = wr.receive_id
-        ) as amount_qty,
+        subq.amount_qty,
         mgt.generic_type_name
         FROM wm_receives wr
         JOIN wm_receive_detail wrd ON wrd.receive_id=wr.receive_id
         LEFT JOIN wm_receive_approve waa ON waa.receive_id = wr.receive_id
-        LEFT JOIN wm_warehouses wh ON wh.warehouse_id=wrd.warehouse_id
+        LEFT JOIN (SELECT q.receive_id, count(q.product_id) as amount_qty from (
+            SELECT
+               wrr.receive_id, wrdd.product_id
+            FROM
+                wm_receives wrr
+                JOIN wm_receive_detail wrdd ON wrdd.receive_id = wrr.receive_id
+                LEFT JOIN pc_purchasing_order ppoo ON ppoo.purchase_order_id = wrr.purchase_order_id
+                LEFT JOIN mm_products mp ON mp.product_id = wrdd.product_id
+                LEFT JOIN mm_generics mg ON mg.generic_id = mp.generic_id 
+                WHERE
+               wrr.receive_id in (${receiveID})
+							 GROUP BY wrr.receive_id ,wrdd.product_id , wrdd.is_free ) as q
+							 group by q.receive_id
+        ) as subq ON subq.receive_id = wr.receive_id
         LEFT JOIN mm_labelers ml ON ml.labeler_id=wrd.vendor_labeler_id
         LEFT JOIN wm_receive_types wrt ON wrt.receive_type_id=wr.receive_type_id
         LEFT JOIN pc_purchasing_order ppo ON ppo.purchase_order_id=wr.purchase_order_id
