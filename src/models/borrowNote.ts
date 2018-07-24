@@ -150,7 +150,11 @@ export class BorrowNoteModel {
     return sql;
   }
 
-  getItemsWithGenerics(db: Knex, warehouseId: any, genericIds: any[]) {
+  getItemsWithGenerics(db: Knex, warehouseId: any, genericIds: any[], requisitionId: any) {
+    let ugid = db('wm_requisition_order_items')
+                    .select('unit_generic_id')
+                    .where ('requisition_order_id',requisitionId);
+    // ugid = Array.isArray(ugid) ? ugid : [ugid];
     return db('wm_borrow_note_detail as d')
       .select('d.borrow_note_detail_id', 'd.generic_id', 'd.qty', 'd.unit_generic_id', 'g.generic_name',
         'ug.qty as conversion_qty', 'u.unit_name as to_unit_name', 'uf.unit_name as from_unit_name',
@@ -164,6 +168,7 @@ export class BorrowNoteModel {
       .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
       .whereIn('d.generic_id', genericIds)
       .where('n.wm_borrow', warehouseId)
+      .whereIn( 'ug.unit_generic_id'  , ugid)
       .whereNull('requisition_order_id');
   }
 
