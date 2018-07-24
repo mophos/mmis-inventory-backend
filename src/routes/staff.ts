@@ -2118,7 +2118,11 @@ router.get('/warehouse/tranfer/dst', async (req, res, next) => {
   let warehouseId = req.query.warehouseId;
   try {
     let rs: any = await warehouseModel.getTranferWarehouseDst(db, warehouseId);
-    res.send({ ok: true, rows: rs[0] });
+    if(rs.length){
+      res.send({ ok: true, rows: rs[0] });
+    } else {
+      res.send({ ok: true, rows: [] });
+    }
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
