@@ -1143,22 +1143,12 @@ router.get('/report/list/cost/type/:startDate/:endDate/:warehouseId/:warehouseNa
     console.log(v.sum);
   });
 
-  // _.forEach(list_cost, (opject: any) => {
-  //   let _sun = _.sumBy(opject, 'cost')
-  //   sumt += _sun
-  //   _.forEach(opject, (value: any, index: any) => {
-  //     value.cost = inventoryReportModel.comma(value.cost)
-  //     value.generic_type_name = index === 0 ? value.generic_type_name : null;
-  //     value.sum = index === opject.length - 1 ? inventoryReportModel.comma(_sun) : null;
-  //   })
-  // })
-
   startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
   endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
   sumt = inventoryReportModel.comma(sumt)
   // res.send({ sumt: sumt, list_cost: list_cost, startDate: startDate, endDate: endDate, warehouseName: warehouseName })
   res.render('list_cost_type', {
-    sumt: sumt, startDate: startDate, endDate: endDate, list_cost: list_cost, hospitalName: hospitalName, warehouseName: warehouseName, printDate: printDate()
+    sumt: sumt, startDate: startDate, endDate: endDate, list_cost: list_cost, hospitalName: hospitalName, warehouseName: warehouseName, printDate: printDate(req.decoded.SYS_PRINT_DATE)
   });
 }));
 
@@ -2560,6 +2550,48 @@ router.get('/report/receive/export/:startdate/:enddate', async (req, res, next) 
   // force download
   res.download(filePath, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
 });
+
+router.get('/report/list/cost/excel/:startDate/:warehouseId/:warehouseName/:genericTypeId', wrap(async (req, res, next) => {
+  let db = req.db;
+  let startDate = req.params.startDate;
+  let warehouseId = req.params.warehouseId;
+  let warehouseName = req.params.warehouseName;
+  let genericTypeId = req.params.genericTypeId;
+
+  let rs: any = await inventoryReportModel.listCostExcel(db, genericTypeId, startDate, warehouseId)
+  rs = rs[0];
+  let json = [];
+  let sum = 0;
+
+  rs.forEach(v => {
+    let obj: any = {};
+    sum += +v.cost;
+    obj.generic_type_name = v.generic_type_name;
+    if (v.generic_type_code == 'MEDICINE') {
+      obj.account_name = v.account_name;
+    } else {
+      obj.account_name = '';
+    }
+    obj.cost = inventoryReportModel.comma(v.cost)
+    obj.generic_type_code = v.generic_type_code;
+    obj.sum = '';
+    json.push(obj);
+  });
+
+  let sumText = inventoryReportModel.comma(sum)
+  json[json.length - 1].sum = sumText
+
+  // res.send(json)
+
+  const xls = json2xls(json);
+  const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+  // create directory
+  fse.ensureDirSync(exportDirectory);
+  const filePath = path.join(exportDirectory, 'รายงานมูลค่ายาและเวชภัณฑ์คงคลัง.xlsx');
+  fs.writeFileSync(filePath, xls, 'binary');
+  // force download
+  res.download(filePath, 'รายงานมูลค่ายาและเวชภัณฑ์คงคลัง.xlsx');
+}));
 
 
 export default router;
