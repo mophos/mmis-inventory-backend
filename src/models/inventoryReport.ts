@@ -841,7 +841,7 @@ WHERE
 
     getGenericType(knex: Knex) {
         return knex('mm_generic_types')
-            .select('generic_type_id')
+            .select('generic_type_id', 'generic_type_code')
             .orderBy('generic_type_id')
     }
 
@@ -850,7 +850,8 @@ WHERE
         SELECT
             q.generic_type_name,
             q.account_name,
-            sum( q.cost ) AS cost 
+            sum( q.cost ) AS cost,
+            q.generic_type_code
         FROM
             (
         SELECT
@@ -862,7 +863,8 @@ WHERE
             mga.account_name,
             mg.generic_type_id,
             mga.account_id,
-            mgt.generic_type_name
+            mgt.generic_type_name,
+            mgt.generic_type_code
         FROM
             view_stock_card_warehouse AS vscw
             JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
@@ -877,6 +879,50 @@ WHERE
             ) AS q 
         GROUP BY
             q.account_id,
+            q.generic_type_id
+        `
+        return (knex.raw(sql))
+    }
+
+    listCostExcel(knex: Knex, genericTypeId, startDate, warehouseId) {
+        let sql = `
+        SELECT
+            q.generic_type_name,
+            q.account_name,
+            sum( q.cost ) AS cost,
+            q.generic_type_code
+        FROM
+            (
+        SELECT
+            mg.working_code,
+            sum( vscw.in_qty ) - sum( vscw.out_qty ) AS qty,
+            vscw.conversion_qty,
+            avg( vscw.balance_unit_cost ) AS unit_cost,
+            ( sum( vscw.in_qty ) - sum( vscw.out_qty ) ) * avg( vscw.balance_unit_cost ) AS cost,
+            mga.account_name,
+            mg.generic_type_id,
+            mga.account_id,
+            mgt.generic_type_name,
+            mgt.generic_type_code
+        FROM
+            view_stock_card_warehouse AS vscw
+            JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
+            JOIN mm_generic_accounts AS mga ON mg.account_id = mga.account_id
+            LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+        WHERE
+            vscw.warehouse_id LIKE '${warehouseId}'
+            AND vscw.stock_date <= '${startDate} 23:59:59'
+            `
+        if (genericTypeId !== 'all') {
+            sql += `AND mg.generic_type_id = '${genericTypeId}'`
+        }
+        sql += `GROUP BY
+            vscw.generic_id 
+            ) AS q 
+        GROUP BY
+            q.account_id,
+            q.generic_type_id
+        ORDER BY
             q.generic_type_id
         `
         return (knex.raw(sql))
@@ -1267,7 +1313,7 @@ FROM
             .leftJoin('mm_units as mus', 'mus.unit_id', 'mug.to_unit_id')
             .where('adjust_generic_id', adGId);
     }
-    receiveOrthorCost(knex:Knex, startDate: any, endDate: any, warehouseId:any, receiveTpyeId:any) {
+    receiveOrthorCost(knex: Knex, startDate: any, endDate: any, warehouseId: any, receiveTpyeId: any) {
 
         let sql = `
         SELECT
@@ -1295,18 +1341,18 @@ FROM
         wro.receive_date BETWEEN '${startDate}'
         AND '${endDate}'
         AND wro.receive_type_id in (${receiveTpyeId})`
-        
+
 
         if (warehouseId !== '0') {
-          sql +=`  and wrod.warehouse_id = ${warehouseId}`
+            sql += `  and wrod.warehouse_id = ${warehouseId}`
         }
         sql += ` GROUP BY mg.generic_id, wro.receive_other_id`;
 
         return knex.raw(sql);
 
     }
-        
-        
+
+
     async hospital(knex: Knex) {
         let array = [];
         let result = await settingModel.getValue(knex, 'SYS_HOSPITAL');

@@ -30,33 +30,32 @@ html
       tbody
       - y=0
       - s=1
-      for array in list_cost
-        for a in array
-          if  (a.generic_type_name !== null)
-            - y++
-            if(a.generic_type_code == 'MEDICINE')
-              tr
-                td.center #{y}
-                td #{a.generic_type_name}
-                td
-                td
-                td
-            else
-              tr
-                td.center #{y}
-                td #{a.generic_type_name}
-                td.right #{a.cost}
-                td.right #{a.sum}
-                td.right (#{s})
-              - s++
-          if(a.generic_type_code == 'MEDICINE') 
+      for a in list_cost
+        if  (a.generic_type_name !== null)
+          - y++
+          if(a.generic_type_code == 'MEDICINE')
             tr
-              td  
-              td - #{a.account_name}
+              td.center #{y}
+              td #{a.generic_type_name}
+              td
+              td
+              td
+          else
+            tr
+              td.center #{y}
+              td #{a.generic_type_name}
               td.right #{a.cost}
               td.right #{a.sum}
               td.right (#{s})
             - s++
+        if(a.generic_type_code == 'MEDICINE') 
+          tr
+            td  
+            td - #{a.account_name}
+            td.right #{a.cost}
+            td.right #{a.sum}
+            td.right (#{s})
+          - s++
       tfooter 
         tr
           td.dash-top.right(colspan=6) รวมมูลค่าทั้งสิ้น #{sumt} บาท
