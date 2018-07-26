@@ -9,6 +9,32 @@ export class GenericModel {
       .andWhere('is_actived', 'Y');
   }
 
+  getGenericInWarehouse(knex: Knex, warehouseId: any) {
+    return knex.raw(`SELECT
+    mg.generic_id,
+    mg.working_code AS generic_code,
+    mg.generic_name,
+    (
+      SELECT
+        sum( wp.qty ) 
+      FROM
+        wm_products wp
+        JOIN mm_products mp ON wp.product_id = mp.product_id 
+      WHERE
+        wp.warehouse_id = '${warehouseId}' 
+        AND mp.generic_id = mg.generic_id 
+      GROUP BY
+        mp.generic_id 
+    ) as qty
+    FROM
+      mm_generics mg
+    WHERE
+      mg.generic_id IN ( 
+        SELECT mp.generic_id FROM wm_products wp JOIN mm_products mp ON wp.product_id = mp.product_id 
+        WHERE wp.warehouse_id = '${warehouseId}' and wp.qty > 0 GROUP BY mp.generic_id 
+      ) `);
+  }
+
   getRemainQtyInWarehouse(knex: Knex, warehouseId: any, genericId: any) {
     return knex('wm_products as wm')
       .select(knex.raw('sum(wm.qty) as remain_qty'))
@@ -101,6 +127,8 @@ export class GenericModel {
               mm_generics
             WHERE
               working_code = '${q}'
+              and mark_deleted ='N'
+              and is_active ='Y'
           ) AS s
         UNION ALL
           SELECT
@@ -113,6 +141,8 @@ export class GenericModel {
                 mm_generics
               WHERE
                 generic_name LIKE '${q_}'
+                and mark_deleted ='N'
+              and is_active ='Y'
               LIMIT 5
             ) AS s
           UNION ALL
@@ -125,8 +155,12 @@ export class GenericModel {
                 FROM
                   mm_generics
                 WHERE
+                (
                   generic_name LIKE '${_q_}'
                 OR keywords LIKE '${_q_}'
+                )
+                and mark_deleted ='N'
+              and is_active ='Y'
                 ORDER BY
                   generic_name
                 LIMIT 10
@@ -157,6 +191,7 @@ export class GenericModel {
     }
     sql += ` and mp.is_active='Y'
     AND p.qty > 0
+    and p.is_actived = 'Y'
     group by g.generic_id
     limit 10
     `;

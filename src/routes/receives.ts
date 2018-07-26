@@ -184,7 +184,6 @@ router.post('/', co(async (req, res, next) => {
   let summary = req.body.summary;
   let products = req.body.products;
   let closePurchase = req.body.closePurchase;
-  let warehouse_id = req.decoded.warehouseId;
 
   if (summary.deliveryCode && summary.deliveryDate &&
     summary.supplierId && summary.receiveDate && products.length) {
@@ -274,7 +273,7 @@ router.post('/', co(async (req, res, next) => {
                 receive_qty: +v.receive_qty,
                 unit_generic_id: v.unit_generic_id,
                 location_id: v.location_id,
-                warehouse_id: warehouse_id,
+                warehouse_id: v.warehouse_id,
                 cost: +v.cost,
                 lot_no: v.lot_no,
                 expired_date: moment(v.expired_date, 'DD/MM/YYYY').isValid() ? moment(v.expired_date, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
@@ -652,7 +651,6 @@ router.post('/other', co(async (req, res, next) => {
     } finally {
       db.destroy();
     }
-
   } else {
     res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
   }
@@ -1118,10 +1116,16 @@ router.delete('/remove', co(async (req, res, next) => {
       await receiveModel.removeReceive(db, receiveId, peopleUserId);
 
       if (purchaseOrderId) {
-        await receiveModel.updatePurchaseApproveStatus(db, purchaseOrderId);
+        let rsCurrent = await receiveModel.getCurrentPurchaseStatus(db, purchaseOrderId);
+        if (rsCurrent) {
+          if (rsCurrent[0].purchase_order_status === 'COMPLETED') {
+            await receiveModel.updatePurchaseStatus2(db, purchaseOrderId, 'APPROVED');
+          }
+        }
       }
 
-      res.send({ ok: true })
+      res.send({ ok: true });
+
     } catch (error) {
       res.send({ ok: false, error: error.message });
     } finally {

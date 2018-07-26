@@ -22,6 +22,41 @@ export class ProductModel {
     return knex.raw(sql);
   }
 
+  productInWarehouse(knex: Knex, warehouseId, genericId) {
+    let sql = `
+    SELECT
+    wp.*,
+    mug.cost AS packcost,
+    mp.product_name,
+    wp.lot_no,
+    wp.expired_date,
+    mg.working_code,
+    mg.generic_id,
+    mg.generic_name,
+    l.location_name,
+    l.location_desc,
+    u.unit_name AS base_unit_name,
+    mug.qty AS conversion,
+    uu.unit_name AS large_unit,
+    mp.is_lot_control 
+    FROM
+      wm_products AS wp
+      INNER JOIN mm_products AS mp ON mp.product_id = wp.product_id
+      LEFT JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
+      LEFT JOIN wm_locations AS l ON l.location_id = wp.location_id
+      LEFT JOIN mm_units AS u ON u.unit_id = mp.primary_unit_id
+      LEFT JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wp.unit_generic_id
+      LEFT JOIN mm_units AS uu ON uu.unit_id = mug.from_unit_id 
+    WHERE
+      wp.warehouse_id = '${warehouseId}'
+      AND mg.generic_id = '${genericId}'
+      and wp.qty > 0
+    ORDER BY
+    wp.qty DESC
+    `;
+    return knex.raw(sql);
+  }
+
 
   searchallProduct(knex: Knex, query) {
     let _query = `%${query}%`;
@@ -239,6 +274,27 @@ export class ProductModel {
     order by w.warehouse_name
     `;
     return knex.raw(sql, [productId]);
+  }
+
+  adminGetAllProductsDetailListGeneric(knex: Knex, genericId: any) {
+    let sql = `
+    select mp.product_name,mp.working_code,p.wm_product_id, p.product_id, sum(p.qty) as qty, floor(sum(p.qty)/ug.qty) as pack_qty, sum(p.cost*p.qty) as total_cost, p.cost, p.warehouse_id,
+    w.warehouse_name, p.lot_no, p.expired_date, mpp.max_qty, mpp.min_qty, u1.unit_name as from_unit_name, ug.qty as conversion_qty,
+    u2.unit_name as to_unit_name,v.reserve_qty
+    from wm_products as p
+    left join wm_warehouses as w on w.warehouse_id=p.warehouse_id
+    inner join mm_products as mp on mp.product_id=p.product_id
+    left join mm_generic_planning as mpp on mpp.generic_id=mp.generic_id and mpp.warehouse_id=p.warehouse_id
+    inner join mm_unit_generics as ug on ug.unit_generic_id=p.unit_generic_id
+    left join mm_units as u1 on u1.unit_id=ug.from_unit_id
+    left join mm_units as u2 on u2.unit_id=ug.to_unit_id
+    left join view_product_reserve v on v.wm_product_id = p.wm_product_id
+    where mp.generic_id = '${genericId}'
+    group by p.lot_no, p.expired_date, p.warehouse_id
+    HAVING sum(p.qty) != 0
+    order by w.warehouse_name
+    `;
+    return knex.raw(sql);
   }
 
   adminSearchAllProductsLabeler(knex: Knex, query: any, labelerId: any) {
@@ -844,4 +900,5 @@ group by mpp.product_id
 
     return db.raw(queries);
   }
+
 }

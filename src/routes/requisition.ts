@@ -98,6 +98,71 @@ router.post('/orders', async (req, res, next) => {
 
 });
 
+router.post('/fast/orders', async (req, res, next) => {
+  let db = req.db;
+  let order: any = req.body.order;
+  let generics = req.body.generics;
+  let people_id = req.decoded.people_id;
+
+  let year = moment(order.requisition_date, 'YYYY-MM-DD').get('year');
+  let month = moment(order.requisition_date, 'YYYY-MM-DD').get('month') + 1;
+
+  let isClose = await periodModel.isPeriodClose(db, year, month);
+
+  if (isClose) {
+    res.send({ ok: false, error: 'รอบบัญชีถูกปิดแล้ว' })
+  } else {
+    try {
+      // get serial
+      let serial = await serialModel.getSerial(db, 'RQ');
+      order.requisition_code = serial;
+      order.people_id = people_id;
+      order.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
+
+      let rsOrder: any = await orderModel.saveOrder(db, order);
+      let requisitionId = rsOrder[0];
+
+      let headConfirm: any = {};
+      const detailConfirm = []
+      headConfirm.confirm_date = order.created_at;
+      headConfirm.requisition_order_id = requisitionId;
+      headConfirm.people_id = people_id;
+      headConfirm.created_at = order.created_at;
+      let rsConfirm: any = await orderModel.saveConfirm(db, headConfirm);
+      let confirmId = rsConfirm[0];
+
+      let detailResuest: any = [];
+
+      for (const g of generics) {
+        let obj: any = {
+          requisition_order_id: requisitionId,
+          generic_id: g.generic_id,
+          requisition_qty: g.requisition_qty * g.to_unit_qty, // small qty
+          unit_generic_id: g.unit_generic_id
+        }
+        detailResuest.push(obj);
+        for (const p of g.products) {
+          detailConfirm.push({
+            confirm_id: confirmId,
+            generic_id: p.generic_id,
+            wm_product_id: p.wm_product_id,
+            confirm_qty: p.confirm_qty * p.conversion_qty// หน่วยย่อย
+          });
+        }
+      }
+      await orderModel.saveItems(db, detailResuest);
+      await orderModel.saveConfirmItems(db, detailConfirm);
+
+      res.send({ ok: true });
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  }
+
+});
+
 router.put('/orders/:requisitionId', async (req, res, next) => {
   let db = req.db;
   let people_id = req.decoded.people_id;
@@ -1409,9 +1474,10 @@ router.post('/borrow-notes', async (req, res, next) => {
   let db = req.db;
   let genericIds = req.body.genericIds;
   let warehouseId = req.body.warehouseId;
-
+  let requisitionId = req.body.requisitionId;
+  genericIds = Array.isArray(genericIds) ? genericIds: [genericIds];
   try {
-    let rs: any = await borrowNoteModel.getItemsWithGenerics(db, warehouseId, genericIds);
+    let rs: any = await borrowNoteModel.getItemsWithGenerics(db, warehouseId, genericIds, requisitionId);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });

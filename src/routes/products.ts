@@ -197,6 +197,23 @@ router.get('/listall', async (req, res, next) => {
 
 });
 
+router.get('/in/warehouse', async (req, res, next) => {
+
+  let db = req.db;
+  const genericId = req.query.genericId;
+  const warehouseId = req.decoded.warehouseId;
+
+  try {
+    let rs: any = await productModel.productInWarehouse(db, warehouseId, genericId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+});
+
 router.post('/', async (req, res, next) => {
   let products = req.body.products;
 
@@ -357,7 +374,9 @@ router.post('/stock/products/all', async (req, res, next) => {
   let offset = req.body.offset || 0;
   let genericType = req.body.genericType;
   let sort = req.body.sort;
-
+  if (typeof genericType === 'string') {
+    genericType = [genericType];
+  }
   if (genericType) {
     try {
       let rsTotal = await productModel.adminGetAllProductTotal(db, genericType);
@@ -431,6 +450,20 @@ router.get('/stock/remain/:productId', async (req, res, next) => {
 
   try {
     let rs = await productModel.adminGetAllProductsDetailList(db, productId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
+router.get('/stock/remain/generic/:genericId', async (req, res, next) => {
+  let db = req.db;
+  let genericId = req.params.genericId;
+
+  try {
+    let rs = await productModel.adminGetAllProductsDetailListGeneric(db, genericId);
     res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });

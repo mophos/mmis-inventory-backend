@@ -35,6 +35,19 @@ router.get('/types', co(async (req, res, next) => {
 
 }));
 
+router.get('/in/warehouse', async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.decoded.warehouseId;
+  try {
+    let rs = await genericModel.getGenericInWarehouse(db, warehouseId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
 router.get('/search-autocomplete', async (req, res, next) => {
 
   let db = req.db;
@@ -52,6 +65,7 @@ router.get('/search-autocomplete', async (req, res, next) => {
     db.destroy();
   }
 });
+
 router.get('/warehouse/search/autocomplete', async (req, res, next) => {
 
   let db = req.db;

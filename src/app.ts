@@ -1,18 +1,16 @@
-'use strict';
+
 import * as path from 'path';
 let envPath = path.join(__dirname, '../../mmis-config');
 require('dotenv').config(({ path: envPath }));
 
 import * as express from 'express';
-import * as favicon from 'serve-favicon';
+import { NextFunction, Request, Response } from 'express';
 import * as logger from 'morgan';
 import * as cookieParser from 'cookie-parser';
 import * as bodyParser from 'body-parser';
 import * as cors from 'cors';
-import * as fse from 'fs-extra';
 import * as _ from 'lodash';
 
-const protect = require('@risingstack/protect');
 // path for export report
 // const pugPath = process.env.PUG_PATH;
 // const htmlPath = process.env.HTML_PATH;
@@ -57,11 +55,8 @@ import periodRoute from "./routes/period";
 import minMaxRoute from "./routes/minMax";
 
 import transferRoute from './routes/transfer';
-// common route
-import internalissueRoute from "./routes/internalIssue";
 import requisitionRoute from "./routes/requisition";
 
-import loginRoute from './routes/login';
 import stdRoute from './routes/standardCode';
 
 import lotRoute from './routes/lots';
@@ -69,6 +64,7 @@ import donatorRoute from './routes/donators';
 import countingRoute from './routes/counting';
 
 import shippingNetworkRoute from './routes/shippingNetworks';
+import AdjustStockRoute from './routes/adjustStock';
 import userRoute from './routes/users';
 
 // reports
@@ -94,6 +90,8 @@ import staffRoute from './routes/staff';
 import settingRoute from './routes/setting';
 import versionRoute from './routes/version';
 import borrowNoteRoute from './routes/borrowNote';
+
+import toolsRoute from './routes/tools';
 
 const app: express.Express = express();
 
@@ -142,7 +140,7 @@ let checkAuth = (req, res, next) => {
     });
 }
 
-let staffAuth = (req, res, next) => {
+let staffAuth = (req: Request, res: Response, next: NextFunction) => {
   const decoded = req.decoded;
   const accessRight = decoded.accessRight;
   try {
@@ -189,7 +187,7 @@ let dbConnection: MySqlConnectionConfig = {
   multipleStatements: true
 }
 
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   req.db = Knex({
     client: 'mysql',
     connection: dbConnection,
@@ -202,7 +200,7 @@ app.use((req, res, next) => {
         });
       }
     },
-    debug: process.env.SQL_DEBUG || true,
+    debug: true,
     acquireConnectionTimeout: 5000
   });
 
@@ -210,7 +208,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/api-test', testRoute);
-app.use('/version',versionRoute);
+app.use('/version', versionRoute);
 app.use('/generics', checkAuth, genericRoute);
 app.use('/generics-medical-supplies', checkAuth, adminAuth, genericMedicalSuppliesRoute);
 app.use('/labelers', checkAuth, adminAuth, labelerRoute);
@@ -248,7 +246,7 @@ app.use('/counting', checkAuth, adminAuth, countingRoute)
 app.use('/shipping-networks', checkAuth, adminAuth, shippingNetworkRoute)
 app.use('/issues', checkAuth, adminAuth, issueRoute)
 app.use('/his-transaction', checkAuth, adminAuth, hisTransactionRoute)
-
+app.use('/adjust-stock', checkAuth, adminAuth, AdjustStockRoute)
 // common route
 app.use('/requisition', checkAuth, adminAuth, requisitionRoute);
 
@@ -257,7 +255,7 @@ app.use('/reports/products', checkAuth, reportProductRoute);
 app.use('/reports/requisition', reportRequisitionRoute);
 app.use('/reports/inventory', reportInventoryRoute);
 app.use('/reports/internalissue', reportInternalissueRoute);
-app.use('/staff/borrow-notes', checkAuth,staffAuth, borrowNoteRoute);
+app.use('/staff/borrow-notes', checkAuth, staffAuth, borrowNoteRoute);
 app.use('/borrow-notes', checkAuth, adminAuth, borrowNoteRoute);
 // staff
 app.use('/staff', checkAuth, staffAuth, staffRoute);
@@ -267,21 +265,22 @@ app.use('/users', checkAuth, userRoute);
 app.use('/units', checkAuth, unitsRoute);
 app.use('/min-max', checkAuth, minMaxRoute)
 // setting
-
 app.use('/setting', checkAuth, settingRoute);
+// tools
+app.use('/tools', checkAuth, adminAuth, toolsRoute);
 
 app.use('/', checkAuth, indexRoute);
 //temperature
 app.use('/temperature', temperatureRoute);
 
 //catch 404 and forward to error handler
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   var err = new Error('Not Found');
   err['status'] = 404;
   next(err);
 });
 
-app.use((err: Error, req, res, next) => {
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.log(err);
   let errorMessage;
   switch (err['code']) {

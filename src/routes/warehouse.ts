@@ -238,6 +238,39 @@ router.get('/get-mappings-generics', wrap(async (req, res, next) => {
   }
 }));
 
+router.get('/get-mappings-generics-search-type/:keywords/:genericType', wrap(async (req, res, next) => {
+  let db = req.db;
+  let hospcode = req.decoded.his_hospcode;
+  let keywords = req.params.keywords
+  let genericType = req.params.genericType
+
+  if (keywords) {
+    try {
+      let results = await warehouseModel.getMappingsGenericsSearchType(db, hospcode, keywords, genericType);
+      res.send({ ok: true, rows: results[0] });
+    } catch (error) {
+      res.send({ ok: false, error: error.message })
+    } finally {
+      db.destroy();
+    }
+  }
+}));
+
+router.get('/get-mappings-generics-type/:genericType', wrap(async (req, res, next) => {
+  let db = req.db;
+  let hospcode = req.decoded.his_hospcode;
+  let genericType = req.params.genericType
+
+  try {
+    let results = await warehouseModel.getMappingsGenericsType(db, hospcode, genericType);
+    res.send({ ok: true, rows: results[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  } finally {
+    db.destroy();
+  }
+}));
+
 // router.get('/get-mappings-products/:generic_id', wrap(async (req, res, next) => {
 //   let db = req.db;
 //   let hospcode = req.decoded.his_hospcode;
@@ -259,6 +292,39 @@ router.get('/get-staff-mappings', wrap(async (req, res, next) => {
 
   try {
     let results = await warehouseModel.getStaffMappingsGenerics(db, hospcode, warehouseId);
+    res.send({ ok: true, rows: results[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/get-staff-mappings/search/:query/:genericType', wrap(async (req, res, next) => {
+  let db = req.db;
+  let hospcode = req.decoded.his_hospcode;
+  let warehouseId = req.decoded.warehouseId;
+  let query = req.params.query;
+  let genericType = req.params.genericType;
+
+  try {
+    let results = await warehouseModel.getSearchStaffMappingsGenerics(db, hospcode, warehouseId, query, genericType);
+    res.send({ ok: true, rows: results[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/get-staff-mappings/type/:genericType', wrap(async (req, res, next) => {
+  let db = req.db;
+  let hospcode = req.decoded.his_hospcode;
+  let warehouseId = req.decoded.warehouseId;
+  let genericType = req.params.genericType;
+
+  try {
+    let results = await warehouseModel.getStaffMappingsGenericsType(db, hospcode, warehouseId, genericType);
     res.send({ ok: true, rows: results[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message })
@@ -485,6 +551,20 @@ router.get('/warehouseproducttemplate', wrap(async (req, res, next) => {
   }
 }));
 
+router.get('/warehouseproducttemplate/search', wrap(async (req, res, next) => {
+  let db = req.db;
+  let query = req.query.query;
+  try {
+    let reqult = await warehouseModel.getallRequisitionTemplateSearch(db, query);
+    res.send({ ok: true, rows: reqult[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+
 // remove req template
 router.delete('/requisition/remove-template/:templateId', wrap(async (req, res, next) => {
   let db = req.db;
@@ -504,11 +584,10 @@ router.delete('/requisition/remove-template/:templateId', wrap(async (req, res, 
 }));
 
 //แสดง template ทั้งหมด ของ warehouse นี้
-router.get('/alltemplateinwarehouse/:warehouseId', wrap(async (req, res, next) => {
+router.get('/alltemplateinwarehouse', wrap(async (req, res, next) => {
   let db = req.db;
   try {
-    let warehouseId = req.params.warehouseId;
-    let sourceWarehouseId = req.params.sourceWarehouseId;
+    let warehouseId = req.query.warehouseId;
     let reqult = await warehouseModel.getallRequisitionTemplateInwarehouse(db, warehouseId);
     res.send({ ok: true, rows: reqult[0] });
   } catch (error) {
@@ -519,12 +598,27 @@ router.get('/alltemplateinwarehouse/:warehouseId', wrap(async (req, res, next) =
   }
 }));
 
-router.get('/templateinwarehouse/:srcWarehouseId/:dstWarehouseId', wrap(async (req, res, next) => {
+router.get('/alltemplateinwarehouse/search', wrap(async (req, res, next) => {
+  let db = req.db;
+  try {
+    let warehouseId = req.query.warehouseId;
+    let query = req.query.query;
+    let reqult = await warehouseModel.getallRequisitionTemplateInwarehouseSearch(db, warehouseId, query);
+    res.send({ ok: true, rows: reqult[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/templateinwarehouse', wrap(async (req, res, next) => {
   let db = req.db;
   try {
 
-    let srcWarehouseId = req.params.srcWarehouseId;
-    let dstWarehouseId = req.params.dstWarehouseId;
+    let srcWarehouseId = req.query.srcWarehouseId;
+    let dstWarehouseId = req.query.dstWarehouseId;
     let reqult = await warehouseModel.getRequisitionTemplateInwarehouse(db, srcWarehouseId, dstWarehouseId);
     res.send({ ok: true, rows: reqult[0] });
   } catch (error) {
@@ -605,9 +699,6 @@ router.delete('/:warehouseId', (req, res, next) => {
 
   warehouseModel.remove(db, warehouseId)
     .then((results: any) => {
-      return warehouseModel.removeWarehouseType(db, warehouseId)
-    })
-    .then(() => {
       res.send({ ok: true });
     })
     .catch(error => {
@@ -894,7 +985,8 @@ router.get('/export/excel', wrap(async (req, res, next) => {
   let templateId = req.query.templateId;
   let db = req.db;
 
-  fse.ensureDirSync(process.env.TMP_PATH);
+  const pathTmp = path.join(process.env.MMIS_DATA, 'temp');
+  fse.ensureDirSync(pathTmp);
 
   if (templateId) {
     try {
@@ -920,7 +1012,7 @@ router.get('/export/excel', wrap(async (req, res, next) => {
 
       // create tmp file
       let tmpFile = `${_tableName}-${moment().format('x')}.xls`;
-      tmpFile = path.join(process.env.TMP_PATH, tmpFile);
+      tmpFile = path.join(pathTmp, tmpFile);
       let excel = json2xls(r);
       fs.writeFileSync(tmpFile, excel, 'binary');
       res.download(tmpFile, (err) => {
@@ -967,7 +1059,7 @@ router.put('/products/lot-expired', wrap(async (req, res, next) => {
         history_time: moment().format('HH:mm:ss'),
         create_by: peopleId
       }
-      
+
       await warehouseModel.insertProductHistory(db, history);
 
       await warehouseModel.updateProduct(db, data.product_id, oldData, newData);
