@@ -1476,9 +1476,10 @@ router.post('/borrow-notes', async (req, res, next) => {
   let db = req.db;
   let genericIds = req.body.genericIds;
   let warehouseId = req.body.warehouseId;
-
+  let requisitionId = req.body.requisitionId;
+  genericIds = Array.isArray(genericIds) ? genericIds: [genericIds];
   try {
-    let rs: any = await borrowNoteModel.getItemsWithGenerics(db, warehouseId, genericIds);
+    let rs: any = await borrowNoteModel.getItemsWithGenerics(db, warehouseId, genericIds, requisitionId);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });

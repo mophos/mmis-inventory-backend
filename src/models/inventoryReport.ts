@@ -841,7 +841,7 @@ WHERE
 
     getGenericType(knex: Knex) {
         return knex('mm_generic_types')
-            .select('generic_type_id')
+            .select('generic_type_id', 'generic_type_code')
             .orderBy('generic_type_id')
     }
 
@@ -850,7 +850,8 @@ WHERE
         SELECT
             q.generic_type_name,
             q.account_name,
-            sum( q.cost ) AS cost 
+            sum( q.cost ) AS cost,
+            q.generic_type_code
         FROM
             (
         SELECT
@@ -862,7 +863,8 @@ WHERE
             mga.account_name,
             mg.generic_type_id,
             mga.account_id,
-            mgt.generic_type_name
+            mgt.generic_type_name,
+            mgt.generic_type_code
         FROM
             view_stock_card_warehouse AS vscw
             JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
@@ -877,6 +879,50 @@ WHERE
             ) AS q 
         GROUP BY
             q.account_id,
+            q.generic_type_id
+        `
+        return (knex.raw(sql))
+    }
+
+    listCostExcel(knex: Knex, genericTypeId, startDate, warehouseId) {
+        let sql = `
+        SELECT
+            q.generic_type_name,
+            q.account_name,
+            sum( q.cost ) AS cost,
+            q.generic_type_code
+        FROM
+            (
+        SELECT
+            mg.working_code,
+            sum( vscw.in_qty ) - sum( vscw.out_qty ) AS qty,
+            vscw.conversion_qty,
+            avg( vscw.balance_unit_cost ) AS unit_cost,
+            ( sum( vscw.in_qty ) - sum( vscw.out_qty ) ) * avg( vscw.balance_unit_cost ) AS cost,
+            mga.account_name,
+            mg.generic_type_id,
+            mga.account_id,
+            mgt.generic_type_name,
+            mgt.generic_type_code
+        FROM
+            view_stock_card_warehouse AS vscw
+            JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
+            JOIN mm_generic_accounts AS mga ON mg.account_id = mga.account_id
+            LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+        WHERE
+            vscw.warehouse_id LIKE '${warehouseId}'
+            AND vscw.stock_date <= '${startDate} 23:59:59'
+            `
+        if (genericTypeId !== 'all') {
+            sql += `AND mg.generic_type_id = '${genericTypeId}'`
+        }
+        sql += `GROUP BY
+            vscw.generic_id 
+            ) AS q 
+        GROUP BY
+            q.account_id,
+            q.generic_type_id
+        ORDER BY
             q.generic_type_id
         `
         return (knex.raw(sql))
@@ -1267,7 +1313,7 @@ FROM
             .leftJoin('mm_units as mus', 'mus.unit_id', 'mug.to_unit_id')
             .where('adjust_generic_id', adGId);
     }
-    receiveOrthorCost(knex:Knex, startDate: any, endDate: any, warehouseId:any, receiveTpyeId:any) {
+    receiveOrthorCost(knex: Knex, startDate: any, endDate: any, warehouseId: any, receiveTpyeId: any) {
 
         let sql = `
         SELECT
@@ -1295,18 +1341,18 @@ FROM
         wro.receive_date BETWEEN '${startDate}'
         AND '${endDate}'
         AND wro.receive_type_id in (${receiveTpyeId})`
-        
+
 
         if (warehouseId !== '0') {
-          sql +=`  and wrod.warehouse_id = ${warehouseId}`
+            sql += `  and wrod.warehouse_id = ${warehouseId}`
         }
         sql += ` GROUP BY mg.generic_id, wro.receive_other_id`;
 
         return knex.raw(sql);
 
     }
-        
-        
+
+
     async hospital(knex: Knex) {
         let array = [];
         let result = await settingModel.getValue(knex, 'SYS_HOSPITAL');
@@ -1875,23 +1921,25 @@ OR sc.ref_src like ?
         ppo.purchase_order_book_number,
         ppo.purchase_order_number,
         ppo.chief_id,
-        (
-            SELECT
-                COUNT( mg.generic_id )
-            FROM
-                wm_receives wrr
-                JOIN wm_receive_detail wrd ON wrd.receive_id = wrr.receive_id
-                LEFT JOIN pc_purchasing_order ppo ON ppo.purchase_order_id = wrr.purchase_order_id
-                LEFT JOIN mm_products mp ON mp.product_id = wrd.product_id
-                LEFT JOIN mm_generics mg ON mg.generic_id = mp.generic_id 
-                WHERE
-               wrr.receive_id = wr.receive_id
-        ) as amount_qty,
+        subq.amount_qty,
         mgt.generic_type_name
         FROM wm_receives wr
         JOIN wm_receive_detail wrd ON wrd.receive_id=wr.receive_id
         LEFT JOIN wm_receive_approve waa ON waa.receive_id = wr.receive_id
-        LEFT JOIN wm_warehouses wh ON wh.warehouse_id=wrd.warehouse_id
+        LEFT JOIN (SELECT q.receive_id, count(q.product_id) as amount_qty from (
+            SELECT
+               wrr.receive_id, wrdd.product_id
+            FROM
+                wm_receives wrr
+                JOIN wm_receive_detail wrdd ON wrdd.receive_id = wrr.receive_id
+                LEFT JOIN pc_purchasing_order ppoo ON ppoo.purchase_order_id = wrr.purchase_order_id
+                LEFT JOIN mm_products mp ON mp.product_id = wrdd.product_id
+                LEFT JOIN mm_generics mg ON mg.generic_id = mp.generic_id 
+                WHERE
+               wrr.receive_id in (${receiveID})
+							 GROUP BY wrr.receive_id ,wrdd.product_id , wrdd.is_free ) as q
+							 group by q.receive_id
+        ) as subq ON subq.receive_id = wr.receive_id
         LEFT JOIN mm_labelers ml ON ml.labeler_id=wrd.vendor_labeler_id
         LEFT JOIN wm_receive_types wrt ON wrt.receive_type_id=wr.receive_type_id
         LEFT JOIN pc_purchasing_order ppo ON ppo.purchase_order_id=wr.purchase_order_id
@@ -2383,7 +2431,7 @@ OR sc.ref_src like ?
         return knex.raw(sql);
     }
 
-    summaryDisbursement(knex: Knex, startDate: any, endDate: any) {
+    summaryDisbursement(knex: Knex, startDate: any, endDate: any, warehouseId: any) {
         let sql = `SELECT
         ro.wm_requisition,
         (
@@ -2408,8 +2456,11 @@ OR sc.ref_src like ?
        JOIN wm_products wp ON rci.wm_product_id = wp.wm_product_id
        JOIN wm_warehouses ww ON ww.warehouse_id = ro.wm_requisition
        where ro.requisition_date BETWEEN '${startDate}' and '${endDate}'
-       GROUP BY
-        ro.wm_requisition`
+       `
+        if (warehouseId != '0') {
+            sql += `AND ww.warehouse_id = '${warehouseId}'`
+        }
+        sql += ` GROUP BY ro.wm_requisition`
         return knex.raw(sql);
     }
 

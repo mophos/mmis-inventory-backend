@@ -1117,6 +1117,41 @@ router.get('/report/list/cost/:startDate/:endDate/:warehouseId/:warehouseName', 
   });
 }));//ตรวจสอบแล้ว 14-9-60
 
+router.get('/report/list/cost/type/:startDate/:endDate/:warehouseId/:warehouseName/:genericType', wrap(async (req, res, next) => {
+  let db = req.db;
+  let startDate = req.params.startDate
+  let endDate = req.params.endDate
+  let warehouseId = req.params.warehouseId
+  let warehouseName = req.params.warehouseName
+  let genericTypeId = req.params.genericType
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let sumt: any = 0
+
+  if (warehouseId == 0) { warehouseId = '%%'; }
+  else { warehouseId = '%' + warehouseId + '%'; }
+
+  let list_cost: any = await inventoryReportModel.list_cost(db, genericTypeId, startDate, endDate, warehouseId);
+  list_cost = list_cost[0];
+  let _sun = _.sumBy(list_cost, 'cost')
+
+  _.forEach(list_cost, (v: any, index: any) => {
+    sumt += +v.cost
+    v.generic_type_name = index === 0 ? v.generic_type_name : null;
+    v.cost = inventoryReportModel.comma(v.cost)
+    v.sum = index === list_cost.length - 1 ? inventoryReportModel.comma(_sun) : null;
+    console.log(v.sum);
+  });
+
+  startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
+  endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+  sumt = inventoryReportModel.comma(sumt)
+  // res.send({ sumt: sumt, list_cost: list_cost, startDate: startDate, endDate: endDate, warehouseName: warehouseName })
+  res.render('list_cost_type', {
+    sumt: sumt, startDate: startDate, endDate: endDate, list_cost: list_cost, hospitalName: hospitalName, warehouseName: warehouseName, printDate: printDate(req.decoded.SYS_PRINT_DATE)
+  });
+}));
+
 router.get('/report/list/receiveOther', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID = req.query.receiveOtherID;
@@ -2351,9 +2386,10 @@ router.get('/report/summary/disbursement', wrap(async (req, res, next) => {
   let db = req.db;
   let startDate = req.query.startDate
   let endDate = req.query.endDate
+  let warehouseId = req.query.warehouseId
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate);
+  let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate, warehouseId);
   if (rs[0].length == 0) { res.render('error404'); }
   let summary = rs[0]
   let warehouse_id = []
@@ -2391,9 +2427,10 @@ router.get('/report/summary/disbursement/excel', wrap(async (req, res, next) => 
   let db = req.db;
   let startDate = req.query.startDate
   let endDate = req.query.endDate
+  let warehouseId = req.query.warehouseId
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate);
+  let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate, warehouseId);
   let summary = rs[0];
   // let summary_list = [];
   let data = []
@@ -2515,6 +2552,48 @@ router.get('/report/receive/export/:startdate/:enddate', async (req, res, next) 
   // force download
   res.download(filePath, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
 });
+
+router.get('/report/list/cost/excel/:startDate/:warehouseId/:warehouseName/:genericTypeId', wrap(async (req, res, next) => {
+  let db = req.db;
+  let startDate = req.params.startDate;
+  let warehouseId = req.params.warehouseId;
+  let warehouseName = req.params.warehouseName;
+  let genericTypeId = req.params.genericTypeId;
+
+  let rs: any = await inventoryReportModel.listCostExcel(db, genericTypeId, startDate, warehouseId)
+  rs = rs[0];
+  let json = [];
+  let sum = 0;
+
+  rs.forEach(v => {
+    let obj: any = {};
+    sum += +v.cost;
+    obj.generic_type_name = v.generic_type_name;
+    if (v.generic_type_code == 'MEDICINE') {
+      obj.account_name = v.account_name;
+    } else {
+      obj.account_name = '';
+    }
+    obj.cost = inventoryReportModel.comma(v.cost)
+    obj.generic_type_code = v.generic_type_code;
+    obj.sum = '';
+    json.push(obj);
+  });
+
+  let sumText = inventoryReportModel.comma(sum)
+  json[json.length - 1].sum = sumText
+
+  // res.send(json)
+
+  const xls = json2xls(json);
+  const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+  // create directory
+  fse.ensureDirSync(exportDirectory);
+  const filePath = path.join(exportDirectory, 'รายงานมูลค่ายาและเวชภัณฑ์คงคลัง.xlsx');
+  fs.writeFileSync(filePath, xls, 'binary');
+  // force download
+  res.download(filePath, 'รายงานมูลค่ายาและเวชภัณฑ์คงคลัง.xlsx');
+}));
 
 
 export default router;
