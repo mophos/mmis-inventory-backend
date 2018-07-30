@@ -424,6 +424,8 @@ router.get('/generic-requisition/:requisitionId', async (req, res, next) => {
       obj.unit_generic_id = v.unit_generic_id;
       obj.small_remain_qty = v.remain_qty;
       obj.temp_confirm_id = v.temp_confirm_id;
+      obj.requisition_order_item_id = v.requisition_order_item_id;
+      obj.requisition_order_id = v.requisition_order_id;
       obj.products = [];
 
       // rsProducts.forEach(x => {
