@@ -12,7 +12,7 @@ export class ToolModel {
     from wm_receives as r
     inner join wm_receive_approve as ra on ra.receive_id=r.receive_id
     inner join pc_purchasing_order as po on po.purchase_order_id=r.purchase_order_id
-    where r.receive_code like ?
+    where r.receive_code like '${_query}'
 
     union
 
@@ -20,10 +20,9 @@ export class ToolModel {
     rt.receive_other_id as receive_id, '' as purchase_order_id, '' as purchase_order_number, 'OT' as receive_type
     from wm_receive_other as rt
     inner join wm_receive_approve as ra on ra.receive_other_id=rt.receive_other_id
-    where rt.receive_code like ?
-    `;
+    where rt.receive_code like '${_query}'`;
 
-    return db.raw(sql, [_query, _query]);
+    return db.raw(sql);
   }
 
   searchRequisitions(db: Knex, query: any) {
@@ -33,8 +32,20 @@ export class ToolModel {
     join wm_warehouses w on ro.wm_requisition = w.warehouse_id
     where rc.is_approve='Y' and 
     rc.is_cancel='N' and
-    ro.requisition_code like '${_query}'
-    `;
+    ro.requisition_code like '${_query}'`;
+    return db.raw(sql);
+  }
+
+  searchTranfers(db: Knex, query: any) {
+    let _query = `%${query}%`;
+    let sql = `SELECT
+    t.transfer_id,t.transfer_date,t.transfer_code,w.warehouse_name AS src_warehouse_name,w2.warehouse_name as dst_warehouse_name
+    FROM wm_transfer t
+    JOIN wm_warehouses w ON t.src_warehouse_id = w.warehouse_id
+    JOIN wm_warehouses w2 on t.dst_warehouse_id = w2.warehouse_id
+    where t.approved = 'Y' and 
+    t.mark_deleted ='N' and 
+    t.transfer_code like '${_query}'`;
     return db.raw(sql);
   }
 
@@ -95,7 +106,7 @@ export class ToolModel {
 
 
   updateReceive(db: Knex, receiveId: any, summary: any) {
-    return db('wm_receive_other')
+    return db('wm_receives')
       .where('receive_id', receiveId)
       .update(summary);
   }
@@ -267,6 +278,30 @@ export class ToolModel {
       .update({
         'confirm_qty': qty
       })
+  }
+
+  updateTransfer(db: Knex, transferId: any, summary: any) {
+    return db('wm_transfer')
+      .where('transfer_id', transferId)
+      .update({
+        'transfer_date': summary.transfer_date
+      });
+  }
+
+  updateTransferGeneric(db: Knex, transferGenericId: any, qty: any) {
+    return db('wm_transfer_generic')
+      .where('transfer_generic_id', transferGenericId)
+      .update({
+        'transfer_qty': qty
+      });
+  }
+
+  updateTransferProduct(db: Knex, transferProductId: any, qty: any) {
+    return db('wm_transfer_product')
+      .where('transfer_product_id', transferProductId)
+      .update({
+        'product_qty': qty
+      });
   }
 
 }

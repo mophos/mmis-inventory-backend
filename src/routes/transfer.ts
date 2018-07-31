@@ -100,6 +100,28 @@ router.get('/info-detail/:transferId', co(async (req, res, next) => {
 
 }));
 
+router.get('/info-detail-edit/:transferId', co(async (req, res, next) => {
+  let db = req.db;
+  let transferId = req.params.transferId;
+  let srcWarehouseId = req.decoded.warehouseId;
+
+  try {
+    const rsGenerics = await transferModel.getGenericInfo(db, transferId, srcWarehouseId);
+    let _generics = rsGenerics[0];
+    for (const g of _generics) {
+      const rsProducts = await transferModel.getProductsInfoEdit(db, transferId, g.transfer_generic_id);
+      let _products = rsProducts[0];
+      g.products = _products;
+    }
+    res.send({ ok: true, rows: _generics });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
 router.get('/detail/:transferId', co(async (req, res, next) => {
   let db = req.db;
   let transferId = req.params.transferId;
