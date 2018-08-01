@@ -1,0 +1,47 @@
+include css.pug
+style(media='print').
+  @page { size: landscape; }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table(style="font-size: 13pt;")
+      thead
+        tr 
+          td.center(colspan='9') รายงานการตรวจสอบการรับ-จ่ายยา#{hospitalName}ประจำปีงบประมาณ #{year}(1 ตุลาคม #{year} - 30 กันยายน #{year})
+        tr
+          th.center.bold(style="border: 1px solid black;") รายการ
+          th.center.bold(style="border: 1px solid black;") ขนาดบรรจุ
+          th.center.bold(style="border: 1px solid black;") ราคาต่อขนาดบรรจุ
+          th.center.bold(style="border: 1px solid black;") ยอดยกมา
+          th.center.bold(style="border: 1px solid black;") รับ
+          th.center.bold(style="border: 1px solid black;") จ่าย
+          th.center.bold(style="border: 1px solid black;") คงเหลือ
+          th.center.bold(style="border: 1px solid black;") มูลค่าคงเหลือ
+      tbody
+      - y=0
+      for a in rs
+        - y++
+        tr
+          td.left(style="border: 1px solid black;") #{a.product_name}
+          td.center(style="border: 1px solid black;") #{a.pack}
+          td.center(style="border: 1px solid black;") #{a.unit_price}
+          td.right(style="border: 1px solid black;") #{a.summit_qty}
+          td.right(style="border: 1px solid black;") #{a.in_qty}
+          td.right(style="border: 1px solid black;") #{a.out_qty}
+          td.right(style="border: 1px solid black;") #{a.balance_qty}
+          td.right(style="border: 1px solid black;") #{a.amount_qty}
+    //-   tfoot 
+    //-     tr.tbfooter
+    //-       td.center(colspan='9')
+    //-         div(style='width:33%;float:left;') ลงชื่อ......................................................ประธานกรรมการ
+    //-         div(style='width:33%;float:left;') ลงชื่อ......................................................กรรมการ
+    //-         div(style='width:33%;float:left;') ลงชื่อ......................................................กรรมการ
+    //-     tr
+    //-       td.center(colspan='9')
+    //-         div(style='width:33%;float:left;') (......................................................)
+    //-         div(style='width:33%;float:left;') (......................................................)
+    //-         div(style='width:33%;float:left;') (......................................................)

@@ -100,6 +100,28 @@ router.get('/info-detail/:transferId', co(async (req, res, next) => {
 
 }));
 
+router.get('/info-detail-edit/:transferId', co(async (req, res, next) => {
+  let db = req.db;
+  let transferId = req.params.transferId;
+  let srcWarehouseId = req.decoded.warehouseId;
+
+  try {
+    const rsGenerics = await transferModel.getGenericInfo(db, transferId, srcWarehouseId);
+    let _generics = rsGenerics[0];
+    for (const g of _generics) {
+      const rsProducts = await transferModel.getProductsInfoEdit(db, transferId, g.transfer_generic_id);
+      let _products = rsProducts[0];
+      g.products = _products;
+    }
+    res.send({ ok: true, rows: _generics });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
 router.get('/detail/:transferId', co(async (req, res, next) => {
   let db = req.db;
   let transferId = req.params.transferId;
@@ -180,16 +202,16 @@ router.post('/save', co(async (req, res, next) => {
 
           let products = [];
           g.products.forEach(p => {
-            if (p.product_qty != 0) {
-              products.push({
-                transfer_id: transferId,
-                transfer_generic_id: rsTransferGeneric[0],
-                wm_product_id: p.wm_product_id,
-                product_qty: p.product_qty * p.conversion_qty,
-                create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-                create_by: req.decoded.people_user_id
-              });
-            }
+            // if (p.product_qty != 0) { // เอาออกเพื่อให้แก้ไขแล้วเปลี่ยน lot ได้
+            products.push({
+              transfer_id: transferId,
+              transfer_generic_id: rsTransferGeneric[0],
+              wm_product_id: p.wm_product_id,
+              product_qty: p.product_qty * p.conversion_qty,
+              create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+              create_by: req.decoded.people_user_id
+            });
+            // }
 
           });
           await transferModel.saveTransferProduct(db, products);

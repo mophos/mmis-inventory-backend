@@ -348,7 +348,35 @@ export class TransferModel {
     JOIN mm_units AS tu ON tu.unit_id = ug.to_unit_id 
   WHERE
     tp.transfer_id = ? 
-    AND tp.transfer_generic_id = ?
+    and tp.transfer_generic_id = ?
+    `;
+    return knex.raw(sql, [transferId, transferGenericId]);
+  }
+
+  getProductsInfoEdit(knex: Knex, transferId: any, transferGenericId: any) {
+    let sql = `SELECT
+    tp.*,
+    tp.product_qty / ug.qty as product_qty,
+    FLOOR((wp.qty+tp.product_qty) / ug.qty) as pack_remain_qty,
+    wp.qty+tp.product_qty AS small_remain_qty,
+    wp.lot_no,
+    wp.expired_date,
+    mp.product_name,
+    fu.unit_name AS from_unit_name,
+    ug.qty AS conversion_qty,
+    tu.unit_name AS to_unit_name,
+    wp.product_id 
+  FROM
+    wm_transfer_product AS tp
+    JOIN wm_products AS wp ON wp.wm_product_id = tp.wm_product_id
+    JOIN mm_unit_generics AS ug ON ug.unit_generic_id = wp.unit_generic_id
+    JOIN mm_products AS mp ON mp.product_id = wp.product_id
+    JOIN mm_units AS fu ON fu.unit_id = ug.from_unit_id
+    JOIN mm_units AS tu ON tu.unit_id = ug.to_unit_id 
+  WHERE
+    tp.transfer_id = ? 
+    and tp.transfer_generic_id = ?
+    and tp.product_qty > 0
     `;
     return knex.raw(sql, [transferId, transferGenericId]);
   }
