@@ -33,10 +33,10 @@ router.get('/getall/:year', wrap(async (req, res, next) => {
     rs.forEach(v => {
       temp = v.period_year + '-' + v.period_month;
       temp = moment(temp).format('YYYY-MM');
-      if(today<=temp){
-        v.disabled=true
+      if (today <= temp) {
+        v.disabled = true
       } else {
-        v.disabled=false;
+        v.disabled = false;
       }
     });
     res.send({ ok: true, rows: rs });
@@ -182,10 +182,10 @@ router.post('/log', (req, res, next) => {
   let date = req.body.date;
   let user_id = req.decoded.id;
   let people_id = req.decoded.people_id;
-  let status_close =req.body.status === 'open' ? 'N': 'Y';
-  periodModel.log(db, period_id, budget_year, period_year, period_month, status,status_close, date, user_id, people_id)
+  let status_close = req.body.status === 'open' ? 'N' : 'Y';
+  periodModel.log(db, period_id, budget_year, period_year, period_month, status, status_close, date, user_id, people_id)
     .then((results: any) => {
-     
+
       res.send({ ok: true });
     })
     .catch(error => {
@@ -215,15 +215,15 @@ router.put('/finalclose', (req, res, next) => {
 router.get('/status', (async (req, res, next) => {
   let db = req.db;
   let date = req.query.date;
-  const month = moment(date).get('month')+1;
-  let year = moment(date).get('year');
+  const month = moment(date, 'YYYY-MM-dd').get('month') + 1;
+  let year = moment(date, 'YYYY-MM-dd').get('year');
   if (month >= 10) {
-    year+=1;
+    year += 1;
   }
-  
+
   try {
-    let rs = await periodModel.getStatus(db,month,year);
-      res.send({ ok: true, rows: rs });
+    let rs = await periodModel.getStatus(db, month, year);
+    res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
