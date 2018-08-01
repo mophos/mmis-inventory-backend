@@ -94,6 +94,29 @@ router.get('/test-stockcard', wrap(async (req, res, next) => {
 // export default router;
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
+
+router.get('/report/getBudgetYear', wrap(async (req, res, next)=>{
+  const db = req.db;
+  try {
+    const rs:any = await inventoryReportModel.getBudgetYear(db);
+    res.send({ok:true, row:rs})
+  } catch (error) {
+    res.send({ ok: false , error:error.message })
+  }
+}))
+router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next)=>{ //กัน
+  const db = req.db;
+  const year = req.params.year-543
+  console.log(year);
+  
+  try {
+    const rs:any = await inventoryReportModel.receiveIssueYear(db, year);
+    
+    res.send({ok:true, row:rs[0]})
+  } catch (error) {
+    res.send({ ok: false , error:error.message })
+  }
+}))
 router.get('/report/adjust-stockcard', wrap(async (req, res, next) => {
   const db = req.db;
   let adjustId = req.query.adjustId;
