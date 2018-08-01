@@ -2431,7 +2431,7 @@ OR sc.ref_src like ?
         return knex.raw(sql);
     }
 
-    summaryDisbursement(knex: Knex, startDate: any, endDate: any) {
+    summaryDisbursement(knex: Knex, startDate: any, endDate: any, warehouseId: any) {
         let sql = `SELECT
         ro.wm_requisition,
         (
@@ -2456,8 +2456,11 @@ OR sc.ref_src like ?
        JOIN wm_products wp ON rci.wm_product_id = wp.wm_product_id
        JOIN wm_warehouses ww ON ww.warehouse_id = ro.wm_requisition
        where ro.requisition_date BETWEEN '${startDate}' and '${endDate}'
-       GROUP BY
-        ro.wm_requisition`
+       `
+        if (warehouseId != '0') {
+            sql += `AND ww.warehouse_id = '${warehouseId}'`
+        }
+        sql += ` GROUP BY ro.wm_requisition`
         return knex.raw(sql);
     }
 
