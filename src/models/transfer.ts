@@ -376,6 +376,7 @@ export class TransferModel {
   WHERE
     tp.transfer_id = ? 
     and tp.transfer_generic_id = ?
+    and tp.product_qty > 0
     `;
     return knex.raw(sql, [transferId, transferGenericId]);
   }

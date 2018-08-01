@@ -1,6 +1,6 @@
 import * as express from 'express';
 import * as crypto from 'crypto';
-
+import * as moment from 'moment';
 import { ToolModel } from '../models/tool';
 import * as _ from 'lodash';
 const router = express.Router();
@@ -98,6 +98,7 @@ router.put('/stockcard/receives', async (req, res, next) => {
   let summary = req.body.summary;
   let products = req.body.products;
   let warehouseId = req.decoded.warehouseId;
+  let peopleUserId = req.decoded.people_user_id;
   try {
     await toolModel.updateReceive(db, receiveId, summary);
     for (const v of products) {
@@ -132,20 +133,22 @@ router.put('/stockcard/receives', async (req, res, next) => {
       ///////////////save log/////////////////
       if (qtyOld != qtyNew || v.lot_no_old != v.lot_no || v.expired_date_old != v.expired_date) {
         const logs = {
+          stock_card_log_date: moment().format('YYYY-MM-DD HH:mm:ss'),
           stock_card_id: stockCardId[0].stock_card_id,
           in_qty_old: qtyOld,
           in_unit_cost_old: costOld,
-          out_qty_old: 0,
-          out_unit_cost_old: 0,
+          out_qty_old: null,
+          out_unit_cost_old: null,
           lot_no_old: v.lot_no_old,
           expired_date_old: v.expired_date_old,
 
           in_qty_new: qtyNew,
           in_unit_cost_new: costNew,
-          out_qty_new: 0,
-          out_unit_cost_new: 0,
+          out_qty_new: null,
+          out_unit_cost_new: null,
           lot_no_new: v.lot_no,
-          expired_date_new: v.expired_date
+          expired_date_new: v.expired_date,
+          people_user_id: peopleUserId
         }
         await toolModel.saveLogs(db, logs);
       }
@@ -205,6 +208,7 @@ router.put('/stockcard/receive-others', async (req, res, next) => {
   let products = req.body.products;
   let summary = req.body.summary;
   let warehouseId = req.decoded.warehouseId;
+  let peopleUserId = req.decoded.people_user_id;
   try {
     await toolModel.updateReceiveOther(db, receiveOtherId, summary);
     for (const v of products) {
@@ -240,6 +244,7 @@ router.put('/stockcard/receive-others', async (req, res, next) => {
       ///////////////save log/////////////////
       if (qtyOld != qtyNew || v.lot_no_old != v.lot_no || v.expired_date_old != v.expired_date) {
         const logs = {
+          stock_card_log_date: moment().format('YYYY-MM-DD HH:mm:ss'),
           stock_card_id: stockCardId[0].stock_card_id,
           in_qty_old: qtyOld,
           in_unit_cost_old: costOld,
@@ -253,7 +258,8 @@ router.put('/stockcard/receive-others', async (req, res, next) => {
           out_qty_new: 0,
           out_unit_cost_new: 0,
           lot_no_new: v.lot_no,
-          expired_date_new: v.expired_date
+          expired_date_new: v.expired_date,
+          people_user_id: peopleUserId
         }
         await toolModel.saveLogs(db, logs);
       }
@@ -313,7 +319,7 @@ router.put('/stockcard/requisitions', async (req, res, next) => {
   let confirmId: any = req.body.confirmId;
   let summary: any = req.body.summary;
   let products = req.body.products;
-  let warehouseId = req.decoded.warehouseId;
+  let peopleUserId = req.decoded.people_user_id;
   try {
     await toolModel.updateRequisitionOrder(db, requisitionId, summary);
     for (const v of products) {
@@ -352,12 +358,11 @@ router.put('/stockcard/requisitions', async (req, res, next) => {
         const stockCardIdIn = await toolModel.getStockCardIdIn(db, requisitionId, i.product_id, i.lot_no, 'REQ_IN', qtyOld);
         await toolModel.updateStockcard(db, dataStockOut, stockCardIdOut[0].stock_card_id);
         await toolModel.updateStockcard(db, dataStockIn, stockCardIdIn[0].stock_card_id);
-        console.log('stockCardIdOut', stockCardIdOut[0].stock_card_id);
-        console.log('stockCardIdIn', stockCardIdIn[0].stock_card_id);
 
         // ############ save log ###############
         if (qtyOld != qtyNew) {
           const logIn = {
+            stock_card_log_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             stock_card_id: stockCardIdIn[0].stock_card_id,
             in_qty_old: qtyOld,
             in_unit_cost_old: null,
@@ -371,9 +376,11 @@ router.put('/stockcard/requisitions', async (req, res, next) => {
             out_qty_new: null,
             out_unit_cost_new: null,
             lot_no_new: null,
-            expired_date_new: null
+            expired_date_new: null,
+            people_user_id: peopleUserId
           }
           const logOut = {
+            stock_card_log_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             stock_card_id: stockCardIdOut[0].stock_card_id,
             in_qty_old: null,
             in_unit_cost_old: null,
@@ -387,8 +394,10 @@ router.put('/stockcard/requisitions', async (req, res, next) => {
             out_qty_new: qtyNew,
             out_unit_cost_new: null,
             lot_no_new: null,
-            expired_date_new: null
+            expired_date_new: null,
+            people_user_id: peopleUserId
           }
+          await toolModel.saveLogs(db, logIn);
           await toolModel.saveLogs(db, logOut);
           // #####################################
         }
@@ -486,14 +495,13 @@ router.put('/stockcard/transfers', async (req, res, next) => {
   let transferId: any = req.body.transferId;
   let summary: any = req.body.summary;
   let generics = req.body.generics;
+  let peopleUserId = req.decoded.people_user_id;
   // let warehouseId = req.decoded.warehouseId;
   try {
     await toolModel.updateTransfer(db, transferId, summary);
     for (const v of generics) {
       await toolModel.updateTransferGeneric(db, v.transfer_generic_id, v.transfer_qty);
       for (const i of v.products) {
-        console.log('iiii', i.product_qty_old, i.conversion_qty_old);
-
         const qtyNew = i.product_qty * i.conversion_qty;
         const qtyOld = i.product_qty_old * i.conversion_qty_old;
         // ############ ปรับคงคลัง ###############
@@ -523,8 +531,6 @@ router.put('/stockcard/transfers', async (req, res, next) => {
         const dataStockIn = {
           in_qty: qtyNew
         }
-        console.log('....', transferId, i.product_id, i.lot_no, qtyOld);
-
         const stockCardIdOut = await toolModel.getStockCardIdOut(db, transferId, i.product_id, i.lot_no, 'TRN_OUT', qtyOld);
         const stockCardIdIn = await toolModel.getStockCardIdIn(db, transferId, i.product_id, i.lot_no, 'TRN_IN', qtyOld);
         await toolModel.updateStockcard(db, dataStockOut, stockCardIdOut[0].stock_card_id);
@@ -535,6 +541,7 @@ router.put('/stockcard/transfers', async (req, res, next) => {
         // ############ save log ###############
         if (qtyOld != qtyNew) {
           const logIn = {
+            stock_card_log_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             stock_card_id: stockCardIdIn[0].stock_card_id,
             in_qty_old: qtyOld,
             in_unit_cost_old: null,
@@ -548,9 +555,11 @@ router.put('/stockcard/transfers', async (req, res, next) => {
             out_qty_new: null,
             out_unit_cost_new: null,
             lot_no_new: null,
-            expired_date_new: null
+            expired_date_new: null,
+            people_user_id: peopleUserId
           }
           const logOut = {
+            stock_card_log_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             stock_card_id: stockCardIdOut[0].stock_card_id,
             in_qty_old: null,
             in_unit_cost_old: null,
@@ -564,8 +573,10 @@ router.put('/stockcard/transfers', async (req, res, next) => {
             out_qty_new: qtyNew,
             out_unit_cost_new: null,
             lot_no_new: null,
-            expired_date_new: null
+            expired_date_new: null,
+            people_user_id: peopleUserId
           }
+          await toolModel.saveLogs(db, logIn);
           await toolModel.saveLogs(db, logOut);
           // #####################################
         }
@@ -648,6 +659,21 @@ router.put('/stockcard/transfers', async (req, res, next) => {
       // #####################################
     }
     res.send({ ok: true });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+});
+
+router.get('/stockcard/history', async (req, res, next) => {
+
+  let db = req.db;
+  try {
+    let rs: any = await toolModel.getHistory(db);
+    res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     console.log(error);
     res.send({ ok: false, error: error.message });
