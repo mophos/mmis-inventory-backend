@@ -95,26 +95,26 @@ router.get('/test-stockcard', wrap(async (req, res, next) => {
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
 
-router.get('/report/getBudgetYear', wrap(async (req, res, next)=>{
+router.get('/report/getBudgetYear', wrap(async (req, res, next) => {
   const db = req.db;
   try {
-    const rs:any = await inventoryReportModel.getBudgetYear(db);
-    res.send({ok:true, row:rs})
+    const rs: any = await inventoryReportModel.getBudgetYear(db);
+    res.send({ ok: true, row: rs })
   } catch (error) {
-    res.send({ ok: false , error:error.message })
+    res.send({ ok: false, error: error.message })
   }
 }))
-router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next)=>{ //กัน
+router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => { //กัน
   const db = req.db;
-  const year = req.params.year-543
+  const year = req.params.year - 543
   console.log(year);
-  
+
   try {
-    const rs:any = await inventoryReportModel.receiveIssueYear(db, year);
-    
-    res.send({ok:true, row:rs[0]})
+    const rs: any = await inventoryReportModel.receiveIssueYear(db, year);
+
+    res.send({ ok: true, row: rs[0] })
   } catch (error) {
-    res.send({ ok: false , error:error.message })
+    res.send({ ok: false, error: error.message })
   }
 }))
 router.get('/report/adjust-stockcard', wrap(async (req, res, next) => {
@@ -229,7 +229,9 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
           value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
           value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
           value.today = printDate(req.decoded.SYS_PRINT_DATE);
-          value.today += (value.updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) + moment(value.updated_at).format(', HH:mm') + ' น.' : ''
+          if (req.decoded.SYS_PRINT_DATE_EDIT === 'Y') {
+            value.today += (value.updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) + moment(value.updated_at).format(', HH:mm') + ' น.' : '';
+          }
         })
       })
     }
@@ -334,6 +336,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
+    const printDateEdit = req.decoded.SYS_PRINT_DATE_EDIT;
 
     let _list_requis = [];
     for (let i in requisId) {
