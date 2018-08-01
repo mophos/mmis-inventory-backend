@@ -2617,37 +2617,37 @@ OR sc.ref_src like ?
 
     getBudgetYear(knex: Knex) {
         return knex('bm_budget_detail')
-          .distinct('bg_year')
-          .select(knex.raw('bg_year + 543 as bg_year'));
-      }
+            .distinct('bg_year')
+            .select(knex.raw('bg_year + 543 as bg_year'));
+    }
 
-    receiveIssueYear(knex:Knex, year:any){
-       let sql = `
+    receiveIssueYear(knex: Knex, year: any, wareHouseId: any) {
+        let sql = `
        SELECT
 	mp.product_name,
 	concat( mu1.unit_name, '(', mug.qty, ' ', mu.unit_name, ')' ) AS pack,
-	q3.cost * mug.qty AS unit_price,
-	q1.balance_qty / mug.qty AS balance_qty,
-	q2.in_qty / mug.qty AS in_qty,
-	q2.out_qty / mug.qty AS out_qty,
+	ROUND(q3.cost * mug.qty,2) AS unit_price,
+	q1.balance_qty AS balance_qty,
+	q2.in_qty AS in_qty,
+    q2.out_qty AS out_qty,
+    q4.summit_qty,
 	( ( q1.balance_qty / mug.qty + q2.in_qty / mug.qty ) - q2.out_qty / mug.qty ) * ( q3.cost * mug.qty ) AS amount_qty 
 FROM
 	mm_products AS mp
 	JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
 	LEFT JOIN mm_unit_generics AS mug ON mug.generic_id = mg.generic_id
 	LEFT JOIN (
-	SELECT
-		wsc1.product_id,
-		wsc1.unit_generic_id,
-		sum( wsc1.in_qty ) - sum( wsc1.out_qty ) AS balance_qty 
+        SELECT
+		ws.product_id,
+		ws.unit_generic_id,
+		ROUND(SUM(ws.in_qty)-SUM(ws.out_qty),2) AS balance_qty 
 	FROM
-		view_stock_card_warehouse AS wsc1 
+		view_stock_card_warehouse AS ws 
 	WHERE
-		wsc1.warehouse_id = 505 
-		AND wsc1.stock_date < '${year-1}-10-01 00:00:00'
+		ws.warehouse_id = ${wareHouseId}
 	GROUP BY
-		wsc1.product_id,
-		wsc1.unit_generic_id 
+		ws.product_id,
+		ws.unit_generic_id
 	) AS q1 ON q1.product_id = mp.product_id
 	AND q1.unit_generic_id = mug.unit_generic_id
 	LEFT JOIN (
@@ -2659,8 +2659,8 @@ FROM
 	FROM
 		view_stock_card_warehouse AS wsc1 
 	WHERE
-		wsc1.warehouse_id = 505 
-		AND wsc1.stock_date BETWEEN  '${year-1}-10-01 00:00:00' 
+		wsc1.warehouse_id = ${wareHouseId} 
+		AND wsc1.stock_date BETWEEN  '${year - 1}-10-01 00:00:00' 
 		AND '${year}-09-30 23:59:59'  
 	GROUP BY
 		wsc1.product_id,
@@ -2678,13 +2678,28 @@ FROM
 		wp.product_id,
 		wp.unit_generic_id 
 	) AS q3 ON q3.product_id = mp.product_id 
-	AND q3.unit_generic_id = mug.unit_generic_id
+    AND q3.unit_generic_id = mug.unit_generic_id
+    LEFT JOIN (
+    SELECT
+        vs.product_id,
+        vs.unit_generic_id,
+        vs.in_qty as summit_qty 
+    FROM
+        view_stock_card_warehouse AS vs 
+    WHERE
+        vs.warehouse_id = ${wareHouseId}
+        AND vs.transaction_type = 'SUMMIT'
+    GROUP BY
+        vs.product_id,
+        vs.unit_generic_id 
+    ) AS q4 ON q4.product_id = mp.product_id 
+    AND q4.unit_generic_id = mug.unit_generic_id
 	LEFT JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
 	LEFT JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id 
 ORDER BY
 	mp.product_name
        `
-       return knex.raw(sql)
+        return knex.raw(sql)
     }
-    
+
 }

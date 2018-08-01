@@ -95,26 +95,41 @@ router.get('/test-stockcard', wrap(async (req, res, next) => {
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
 
-router.get('/report/getBudgetYear', wrap(async (req, res, next)=>{
+router.get('/report/getBudgetYear', wrap(async (req, res, next) => {
   const db = req.db;
   try {
-    const rs:any = await inventoryReportModel.getBudgetYear(db);
-    res.send({ok:true, row:rs})
+    const rs: any = await inventoryReportModel.getBudgetYear(db);
+    res.send({ ok: true, row: rs })
   } catch (error) {
-    res.send({ ok: false , error:error.message })
+    res.send({ ok: false, error: error.message })
   }
 }))
-router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next)=>{ //กัน
+router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
   const db = req.db;
-  const year = req.params.year-543
-  console.log(year);
-  
+  const year = req.params.year - 543
+  const warehouseId: any = req.decoded.warehouseId
+
   try {
-    const rs:any = await inventoryReportModel.receiveIssueYear(db, year);
-    
-    res.send({ok:true, row:rs[0]})
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+
+    const rs: any = await inventoryReportModel.receiveIssueYear(db, year, warehouseId);
+    rs[0].forEach(v => {
+      v.unit_price = inventoryReportModel.comma(v.unit_price);
+      v.balance_qty = inventoryReportModel.commaQty(v.balance_qty);
+      v.in_qty = inventoryReportModel.commaQty(v.in_qty);
+      v.out_qty = inventoryReportModel.commaQty(v.out_qty);
+      v.summit_qty = inventoryReportModel.commaQty(v.summit_qty);
+      v.amount_qty = inventoryReportModel.comma(v.amount_qty);
+    });
+
+    res.render('issue_year', {
+      rs: rs[0],
+      hospitalName: hospitalName,
+      year: year + 543
+    });
   } catch (error) {
-    res.send({ ok: false , error:error.message })
+    res.send({ ok: false, error: error.message })
   }
 }))
 router.get('/report/adjust-stockcard', wrap(async (req, res, next) => {
@@ -2618,5 +2633,37 @@ router.get('/report/list/cost/excel/:startDate/:warehouseId/:warehouseName/:gene
   res.download(filePath, 'รายงานมูลค่ายาและเวชภัณฑ์คงคลัง.xlsx');
 }));
 
+router.get('/report/receive-issue/year/export/:year', async (req, res, next) => {
+  const db = req.db;
+  const year = req.params.year - 543
+  const warehouseId: any = req.decoded.warehouseId
 
+  try {
+    const rs: any = await inventoryReportModel.receiveIssueYear(db, year, warehouseId);
+    let json = [];
+    
+    rs[0].forEach(v => {
+      let obj: any = {};
+      obj.PRODUCT_NAME = v.product_name;
+      obj.PACK = v.pack;
+      obj.UNIT_PRICE = v.unit_price;
+      obj.SUMMIT_QTY = v.summit_qty;
+      obj.IN_QTY = v.out_qty;
+      obj.BALANCE_QTY = v.balance_qty;
+      obj.AMOUNT_QTY = v.amount_qty;
+      json.push(obj);
+    });
+
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'receive-issue.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'receive-issue.xlsx');
+  } catch (error) {
+    res.send({ ok: false, message: error.message })
+  }
+});
 export default router;
