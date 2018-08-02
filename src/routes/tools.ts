@@ -123,8 +123,8 @@ router.put('/stockcard/receives', async (req, res, next) => {
         qty = qtyOld - qtyNew;
         await toolModel.decreaseQty(db, v.product_id, v.lot_no_old, warehouseId, qty) // ลดลง
       }
-      if (v.lot_no != v.lot_no_old) {
-        await toolModel.changeLot(db, v.product_id, v.lot_no_old, v.lot_no, warehouseId) // เพิ่มขึ้น
+      if (v.lot_no != v.lot_no_old || v.expired_date != v.expired_date_old) {
+        await toolModel.changeLot(db, v.product_id, v.lot_no_old, v.lot_no, v.expired_date_old, v.expired_date, warehouseId) // เพิ่มขึ้น
       }
       await toolModel.updateReceiveDetail(db, receiveId, v);
       const stockCardId = await toolModel.getStockCardId(db, receiveId, v.product_id, v.lot_no_old, 'REV');
@@ -233,10 +233,9 @@ router.put('/stockcard/receive-others', async (req, res, next) => {
         qty = qtyOld - qtyNew;
         await toolModel.decreaseQty(db, v.product_id, v.lot_no_old, warehouseId, qty) // ลดลง
       }
-      if (v.lot_no != v.lot_no_old) {
-        await toolModel.changeLot(db, v.product_id, v.lot_no_old, v.lot_no, warehouseId) // เพิ่มขึ้น
+      if (v.lot_no != v.lot_no_old || v.expired_date != v.expired_date_old) {
+        await toolModel.changeLot(db, v.product_id, v.lot_no_old, v.lot_no, v.expired_date_old, v.expired_date, warehouseId) // เพิ่มขึ้น
       }
-
       await toolModel.updateReceiveOtherDetail(db, receiveOtherId, v);
       const stockCardId = await toolModel.getStockCardId(db, receiveOtherId, v.product_id, v.lot_no_old, 'REV_OTHER');
       await toolModel.updateStockcard(db, dataStock, stockCardId[0].stock_card_id);
