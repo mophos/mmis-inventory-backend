@@ -68,6 +68,18 @@ export class ShippingNetworkModel {
       .leftJoin('mm_transfer_types as tt', 'tt.transfer_code', 's.transfer_type')
       .orderBy('s.shipping_network_id')
   }
+  getSearchList(knex: Knex,query:any) {
+    query = '%'+ query +'%'
+    return knex('mm_shipping_networks as s')
+      .select('s.*', 'ws.warehouse_name as src_warehouse_name', 'wd.warehouse_name as dst_warehouse_name',
+      'tt.transfer_desc')
+      .leftJoin('wm_warehouses as ws', 'ws.warehouse_id', 's.source_warehouse_id')
+      .leftJoin('wm_warehouses as wd', 'wd.warehouse_id', 's.destination_warehouse_id')
+      .leftJoin('mm_transfer_types as tt', 'tt.transfer_code', 's.transfer_type')
+      .where('ws.warehouse_name' ,'like',query )
+      .orWhere('wd.warehouse_name' ,'like',query )
+      .orderBy('s.shipping_network_id')
+  }
 
   getListEdit(knex: Knex, warehouseId: any) {
     return knex('mm_shipping_networks as s')
