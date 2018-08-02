@@ -92,6 +92,7 @@ import versionRoute from './routes/version';
 import borrowNoteRoute from './routes/borrowNote';
 
 import toolsRoute from './routes/tools';
+import returnBudgetRoute from "./routes/returnBudget";
 
 const app: express.Express = express();
 
@@ -247,6 +248,7 @@ app.use('/shipping-networks', checkAuth, adminAuth, shippingNetworkRoute)
 app.use('/issues', checkAuth, adminAuth, issueRoute)
 app.use('/his-transaction', checkAuth, adminAuth, hisTransactionRoute)
 app.use('/adjust-stock', checkAuth, adminAuth, AdjustStockRoute)
+app.use('/return-budget', checkAuth, adminAuth, returnBudgetRoute);
 // common route
 app.use('/requisition', checkAuth, adminAuth, requisitionRoute);
 
