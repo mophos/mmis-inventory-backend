@@ -231,10 +231,18 @@ export class ToolModel {
     return knex.raw(sql);;
   }
 
-  changeLot(knex: Knex, productId, lotNoOld, lotNoNew, expiredOld, expiredNew, warehouseId) {
+  changeLotWmProduct(knex: Knex, productId, lotNoOld, lotNoNew, expiredOld, expiredNew, warehouseId) {
     const sql = `UPDATE wm_products 
     set lot_no = '${lotNoNew}',expired_date = '${expiredNew}'
-    WHERE product_id = '${productId}' AND warehouse_id = '${warehouseId}' AND lot_no = '${lotNoOld}' AND expired_date = '${expiredOld}'`
+    WHERE product_id = '${productId}' AND lot_no = '${lotNoOld}' AND expired_date = '${expiredOld}'`
+    console.log(sql.toString());
+    return knex.raw(sql);
+  }
+
+  changeLotStockcard(knex: Knex, productId, lotNoOld, lotNoNew, expiredOld, expiredNew, warehouseId) {
+    const sql = `UPDATE wm_stock_card 
+    set lot_no = '${lotNoNew}',expired_date = '${expiredNew}'
+    WHERE product_id = '${productId}'  AND lot_no = '${lotNoOld}' AND expired_date = '${expiredOld}'`
     console.log(sql.toString());
     return knex.raw(sql);
   }
