@@ -1689,15 +1689,17 @@ router.get('/report/requis/day/:date', wrap(async (req, res, next) => {
 
 router.get('/report/un-receive', wrap(async (req, res, next) => {
   let db = req.db;
+  let date = req.query.date
 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let unReceive = await inventoryReportModel.unReceive(db);
+  let unReceive = await inventoryReportModel.unReceive(db, date);
   unReceive = unReceive[0];
 
   unReceive.forEach(value => {
     value.order_date = moment(value.order_date).format('D MMMM ') + (moment(value.order_date).get('year') + 543);
+    value.canReceive = value.qty - value.receive_qty + ' ' + value.u1 + ' ' + '(' + value.mugQty + value.u2 + ')'
   });
 
   res.render('un-receive', {
@@ -2644,7 +2646,7 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
   try {
     const rs: any = await inventoryReportModel.receiveIssueYear(db, year, warehouseId);
     let json = [];
-    
+
     rs[0].forEach(v => {
       let obj: any = {};
       obj.PRODUCT_NAME = v.product_name;
