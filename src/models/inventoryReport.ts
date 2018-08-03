@@ -1572,40 +1572,36 @@ FROM
         return knex.raw(sql, date)
     }
 
-    unReceive(knex: Knex) {
-        let sql = `SELECT
-        pc.purchase_order_book_number,
-        pc.purchase_order_id,
-        pc.purchase_order_number,
-        pc.order_date,
+    unReceive(knex: Knex, date: any) {
+        let q = '%' + date + '%';
+        let sql = `SELECT 
+        po.purchase_order_book_number,
+        po.purchase_order_id,
+        po.purchase_order_number,
+        po.order_date,
         ml.labeler_name,
         ml.labeler_name_po,
-        ( SELECT mp.product_name FROM mm_products AS mp WHERE mp.product_id = pci.product_id ) AS product_name,
-        (
-    SELECT
-        CONCAT( pci.qty - wrd.receive_qty, ' ', uu.unit_name, '( ', mug.qty, ' ', u.unit_name, ' )' ) 
-    FROM
-        mm_unit_generics AS mug
-        JOIN mm_units AS u ON mug.to_unit_id = u.unit_id
-        JOIN mm_units AS uu ON mug.from_unit_id = uu.unit_id 
-    WHERE
-        pci.unit_generic_id = mug.unit_generic_id 
-        ) AS unit 
-    FROM
-        pc_purchasing_order AS pc
-        JOIN pc_purchasing_order_item AS pci ON pci.purchase_order_id = pc.purchase_order_id
-        JOIN wm_receive_detail AS wrd ON wrd.product_id = pci.product_id
-        JOIN mm_labelers AS ml ON ml.labeler_id = pc.labeler_id
-        JOIN l_bid_process AS cmp ON cmp.id = pc.purchase_method_id 
-    WHERE
-        pc.purchase_order_status = 'APPROVED' 
-        AND pc.is_cancel != 'Y' 
-        AND pci.qty - wrd.receive_qty > 0 
-    GROUP BY
-        pci.product_id,
-        pc.purchase_order_number 
-    ORDER BY
-        pc.purchase_order_number DESC`;
+        mp.product_name,
+        rd.receive_qty,
+        poi.qty,
+        u1.unit_name as u1,
+        u2.unit_name as u2,
+        mug.qty as mugQty
+        FROM 
+        pc_purchasing_order po 
+        JOIN pc_purchasing_order_item poi on poi.purchase_order_id = po.purchase_order_id
+        JOIN mm_products mp on mp.product_id = poi.product_id
+        JOIN mm_generics mg on mg.generic_id = mp.generic_id
+        JOIN mm_unit_generics mug on mug.generic_id = mg.generic_id
+        JOIN mm_units u1 on u1.unit_id = mug.from_unit_id
+        JOIN mm_units u2 on u2.unit_id = mug.to_unit_id
+        JOIN mm_labelers ml on ml.labeler_id = mp.v_labeler_id
+        LEFT JOIN wm_receives r on r.purchase_order_id = po.purchase_order_id
+        LEFT JOIN wm_receive_detail rd on rd.receive_id = r.receive_id AND poi.product_id = rd.product_id
+        WHERE po.purchase_order_status = 'APPROVED' and po.order_date = '${date}'
+        GROUP BY po.purchase_order_id,poi.product_id
+        ORDER BY
+        po.purchase_order_number DESC`;
         return knex.raw(sql);
     }
 
