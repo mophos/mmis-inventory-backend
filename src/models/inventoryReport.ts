@@ -873,12 +873,14 @@ WHERE
         WHERE
             vscw.warehouse_id LIKE '${warehouseId}' 
             AND vscw.stock_date <= '${startDate} 23:59:59' 
-            AND mg.generic_type_id = '${genericTypeId}' 
+            AND mg.generic_type_id in (${genericTypeId}) 
         GROUP BY
             vscw.generic_id 
             ) AS q 
         GROUP BY
             q.account_id,
+            q.generic_type_id
+        ORDER BY
             q.generic_type_id
         `
         return (knex.raw(sql))
@@ -912,11 +914,8 @@ WHERE
         WHERE
             vscw.warehouse_id LIKE '${warehouseId}'
             AND vscw.stock_date <= '${startDate} 23:59:59'
-            `
-        if (genericTypeId !== 'all') {
-            sql += `AND mg.generic_type_id = '${genericTypeId}'`
-        }
-        sql += `GROUP BY
+            AND mg.generic_type_id in (${genericTypeId})
+            GROUP BY
             vscw.generic_id 
             ) AS q 
         GROUP BY
