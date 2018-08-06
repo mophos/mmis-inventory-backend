@@ -2616,7 +2616,7 @@ OR sc.ref_src like ?
             .select(knex.raw('bg_year + 543 as bg_year'));
     }
 
-    receiveIssueYear(knex: Knex, year: any, wareHouseId: any) {
+    receiveIssueYear(knex: Knex, year: any, wareHouseId: any, genericType: any) {
         let sql = `
        SELECT
 	mp.product_name,
@@ -2690,7 +2690,9 @@ FROM
     ) AS q4 ON q4.product_id = mp.product_id 
     AND q4.unit_generic_id = mug.unit_generic_id
 	LEFT JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
-	LEFT JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id 
+    LEFT JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id
+    WHERE
+        mg.generic_type_id in (${genericType})
 ORDER BY
 	mp.product_name
        `
