@@ -108,12 +108,13 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
   const db = req.db;
   const year = req.params.year - 543
   const warehouseId: any = req.decoded.warehouseId
+  const genericType = req.query.genericType
 
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
 
-    const rs: any = await inventoryReportModel.receiveIssueYear(db, year, warehouseId);
+    const rs: any = await inventoryReportModel.receiveIssueYear(db, year, warehouseId, genericType);
     rs[0].forEach(v => {
       v.unit_price = inventoryReportModel.comma(v.unit_price);
       v.balance_qty = inventoryReportModel.commaQty(v.balance_qty);
@@ -2623,7 +2624,7 @@ router.get('/report/list/cost/excel', wrap(async (req, res, next) => {
     obj.sum = '';
     json.push(obj);
   });
-  
+
   let sumText = inventoryReportModel.comma(sum)
   json[json.length - 1].sum = sumText
 
@@ -2641,9 +2642,10 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
   const db = req.db;
   const year = req.params.year - 543
   const warehouseId: any = req.decoded.warehouseId
+  const genericType = req.query.genericType
 
   try {
-    const rs: any = await inventoryReportModel.receiveIssueYear(db, year, warehouseId);
+    const rs: any = await inventoryReportModel.receiveIssueYear(db, year, warehouseId, genericType);
     let json = [];
 
     rs[0].forEach(v => {
