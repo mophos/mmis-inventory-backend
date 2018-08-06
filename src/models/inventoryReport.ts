@@ -873,12 +873,14 @@ WHERE
         WHERE
             vscw.warehouse_id LIKE '${warehouseId}' 
             AND vscw.stock_date <= '${startDate} 23:59:59' 
-            AND mg.generic_type_id = '${genericTypeId}' 
+            AND mg.generic_type_id in (${genericTypeId}) 
         GROUP BY
             vscw.generic_id 
             ) AS q 
         GROUP BY
             q.account_id,
+            q.generic_type_id
+        ORDER BY
             q.generic_type_id
         `
         return (knex.raw(sql))
@@ -912,11 +914,8 @@ WHERE
         WHERE
             vscw.warehouse_id LIKE '${warehouseId}'
             AND vscw.stock_date <= '${startDate} 23:59:59'
-            `
-        if (genericTypeId !== 'all') {
-            sql += `AND mg.generic_type_id = '${genericTypeId}'`
-        }
-        sql += `GROUP BY
+            AND mg.generic_type_id in (${genericTypeId})
+            GROUP BY
             vscw.generic_id 
             ) AS q 
         GROUP BY
@@ -2617,7 +2616,7 @@ OR sc.ref_src like ?
             .select(knex.raw('bg_year + 543 as bg_year'));
     }
 
-    receiveIssueYear(knex: Knex, year: any, wareHouseId: any) {
+    receiveIssueYear(knex: Knex, year: any, wareHouseId: any, genericType: any) {
         let sql = `
        SELECT
 	mp.product_name,
@@ -2691,7 +2690,9 @@ FROM
     ) AS q4 ON q4.product_id = mp.product_id 
     AND q4.unit_generic_id = mug.unit_generic_id
 	LEFT JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
-	LEFT JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id 
+    LEFT JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id
+    WHERE
+        mg.generic_type_id in (${genericType})
 ORDER BY
 	mp.product_name
        `

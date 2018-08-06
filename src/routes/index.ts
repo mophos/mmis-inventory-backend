@@ -108,12 +108,13 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
   const db = req.db;
   const year = req.params.year - 543
   const warehouseId: any = req.decoded.warehouseId
+  const genericType = req.query.genericType
 
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
 
-    const rs: any = await inventoryReportModel.receiveIssueYear(db, year, warehouseId);
+    const rs: any = await inventoryReportModel.receiveIssueYear(db, year, warehouseId, genericType);
     rs[0].forEach(v => {
       v.unit_price = inventoryReportModel.comma(v.unit_price);
       v.balance_qty = inventoryReportModel.commaQty(v.balance_qty);
@@ -1158,13 +1159,13 @@ router.get('/report/list/cost/:startDate/:endDate/:warehouseId/:warehouseName', 
   });
 }));//ตรวจสอบแล้ว 14-9-60
 
-router.get('/report/list/cost/type/:startDate/:endDate/:warehouseId/:warehouseName/:genericType', wrap(async (req, res, next) => {
+router.get('/report/list/cost/type/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
   let db = req.db;
   let startDate = req.params.startDate
   let endDate = req.params.endDate
   let warehouseId = req.params.warehouseId
   let warehouseName = req.params.warehouseName
-  let genericTypeId = req.params.genericType
+  let genericTypeId = Array.isArray(req.query.genericType) ? req.query.genericType : [req.query.genericType];
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let sumt: any = 0
@@ -1178,10 +1179,11 @@ router.get('/report/list/cost/type/:startDate/:endDate/:warehouseId/:warehouseNa
 
   _.forEach(list_cost, (v: any, index: any) => {
     sumt += +v.cost
-    v.generic_type_name = index === 0 ? v.generic_type_name : null;
+    if (index !== 0 && v.generic_type_name === list_cost[index - 1].generic_type_name) {
+      v.generic_type_name = null
+    }
     v.cost = inventoryReportModel.comma(v.cost)
     v.sum = index === list_cost.length - 1 ? inventoryReportModel.comma(_sun) : null;
-    console.log(v.sum);
   });
 
   startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
@@ -2596,12 +2598,12 @@ router.get('/report/receive/export/:startdate/:enddate', async (req, res, next) 
   res.download(filePath, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
 });
 
-router.get('/report/list/cost/excel/:startDate/:warehouseId/:warehouseName/:genericTypeId', wrap(async (req, res, next) => {
+router.get('/report/list/cost/excel', wrap(async (req, res, next) => {
   let db = req.db;
-  let startDate = req.params.startDate;
-  let warehouseId = req.params.warehouseId;
-  let warehouseName = req.params.warehouseName;
-  let genericTypeId = req.params.genericTypeId;
+  let startDate = req.query.startDate;
+  let warehouseId = req.query.warehouseId;
+  let warehouseName = req.query.warehouseName;
+  let genericTypeId = Array.isArray(req.query.genericType) ? req.query.genericType : [req.query.genericType];
 
   let rs: any = await inventoryReportModel.listCostExcel(db, genericTypeId, startDate, warehouseId)
   rs = rs[0];
@@ -2626,8 +2628,6 @@ router.get('/report/list/cost/excel/:startDate/:warehouseId/:warehouseName/:gene
   let sumText = inventoryReportModel.comma(sum)
   json[json.length - 1].sum = sumText
 
-  // res.send(json)
-
   const xls = json2xls(json);
   const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
   // create directory
@@ -2642,9 +2642,10 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
   const db = req.db;
   const year = req.params.year - 543
   const warehouseId: any = req.decoded.warehouseId
+  const genericType = req.query.genericType
 
   try {
-    const rs: any = await inventoryReportModel.receiveIssueYear(db, year, warehouseId);
+    const rs: any = await inventoryReportModel.receiveIssueYear(db, year, warehouseId, genericType);
     let json = [];
 
     rs[0].forEach(v => {
