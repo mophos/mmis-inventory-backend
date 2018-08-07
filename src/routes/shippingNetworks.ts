@@ -88,6 +88,16 @@ router.get('/', co(async (req, res, next) => {
     res.send({ ok: false, error: error.message });
   }
 }));
+router.post('/search', co(async (req, res, next) => {
+  let db = req.db;
+  let query = req.body.query
+  try {
+    let rs = await shippingNetworks.getSearchList(db,query);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+}));
 router.get('/getlist/:warehouseId', co(async (req, res, next) => {
   let db = req.db;
   let warehouseId = req.params.warehouseId

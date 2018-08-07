@@ -873,12 +873,14 @@ WHERE
         WHERE
             vscw.warehouse_id LIKE '${warehouseId}' 
             AND vscw.stock_date <= '${startDate} 23:59:59' 
-            AND mg.generic_type_id = '${genericTypeId}' 
+            AND mg.generic_type_id in (${genericTypeId}) 
         GROUP BY
             vscw.generic_id 
             ) AS q 
         GROUP BY
             q.account_id,
+            q.generic_type_id
+        ORDER BY
             q.generic_type_id
         `
         return (knex.raw(sql))
@@ -912,11 +914,8 @@ WHERE
         WHERE
             vscw.warehouse_id LIKE '${warehouseId}'
             AND vscw.stock_date <= '${startDate} 23:59:59'
-            `
-        if (genericTypeId !== 'all') {
-            sql += `AND mg.generic_type_id = '${genericTypeId}'`
-        }
-        sql += `GROUP BY
+            AND mg.generic_type_id in (${genericTypeId})
+            GROUP BY
             vscw.generic_id 
             ) AS q 
         GROUP BY
@@ -1573,40 +1572,36 @@ FROM
         return knex.raw(sql, date)
     }
 
-    unReceive(knex: Knex) {
-        let sql = `SELECT
-        pc.purchase_order_book_number,
-        pc.purchase_order_id,
-        pc.purchase_order_number,
-        pc.order_date,
+    unReceive(knex: Knex, date: any) {
+        let q = '%' + date + '%';
+        let sql = `SELECT 
+        po.purchase_order_book_number,
+        po.purchase_order_id,
+        po.purchase_order_number,
+        po.order_date,
         ml.labeler_name,
         ml.labeler_name_po,
-        ( SELECT mp.product_name FROM mm_products AS mp WHERE mp.product_id = pci.product_id ) AS product_name,
-        (
-    SELECT
-        CONCAT( pci.qty - wrd.receive_qty, ' ', uu.unit_name, '( ', mug.qty, ' ', u.unit_name, ' )' ) 
-    FROM
-        mm_unit_generics AS mug
-        JOIN mm_units AS u ON mug.to_unit_id = u.unit_id
-        JOIN mm_units AS uu ON mug.from_unit_id = uu.unit_id 
-    WHERE
-        pci.unit_generic_id = mug.unit_generic_id 
-        ) AS unit 
-    FROM
-        pc_purchasing_order AS pc
-        JOIN pc_purchasing_order_item AS pci ON pci.purchase_order_id = pc.purchase_order_id
-        JOIN wm_receive_detail AS wrd ON wrd.product_id = pci.product_id
-        JOIN mm_labelers AS ml ON ml.labeler_id = pc.labeler_id
-        JOIN l_bid_process AS cmp ON cmp.id = pc.purchase_method_id 
-    WHERE
-        pc.purchase_order_status = 'APPROVED' 
-        AND pc.is_cancel != 'Y' 
-        AND pci.qty - wrd.receive_qty > 0 
-    GROUP BY
-        pci.product_id,
-        pc.purchase_order_number 
-    ORDER BY
-        pc.purchase_order_number DESC`;
+        mp.product_name,
+        rd.receive_qty,
+        poi.qty,
+        u1.unit_name as u1,
+        u2.unit_name as u2,
+        mug.qty as mugQty
+        FROM 
+        pc_purchasing_order po 
+        JOIN pc_purchasing_order_item poi on poi.purchase_order_id = po.purchase_order_id
+        JOIN mm_products mp on mp.product_id = poi.product_id
+        JOIN mm_generics mg on mg.generic_id = mp.generic_id
+        JOIN mm_unit_generics mug on mug.generic_id = mg.generic_id
+        JOIN mm_units u1 on u1.unit_id = mug.from_unit_id
+        JOIN mm_units u2 on u2.unit_id = mug.to_unit_id
+        JOIN mm_labelers ml on ml.labeler_id = mp.v_labeler_id
+        LEFT JOIN wm_receives r on r.purchase_order_id = po.purchase_order_id
+        LEFT JOIN wm_receive_detail rd on rd.receive_id = r.receive_id AND poi.product_id = rd.product_id
+        WHERE po.purchase_order_status = 'APPROVED' and po.order_date = '${date}'
+        GROUP BY po.purchase_order_id,poi.product_id
+        ORDER BY
+        po.purchase_order_number DESC`;
         return knex.raw(sql);
     }
 
@@ -2617,37 +2612,37 @@ OR sc.ref_src like ?
 
     getBudgetYear(knex: Knex) {
         return knex('bm_budget_detail')
-          .distinct('bg_year')
-          .select(knex.raw('bg_year + 543 as bg_year'));
-      }
+            .distinct('bg_year')
+            .select(knex.raw('bg_year + 543 as bg_year'));
+    }
 
-    receiveIssueYear(knex:Knex, year:any){
-       let sql = `
+    receiveIssueYear(knex: Knex, year: any, wareHouseId: any, genericType: any) {
+        let sql = `
        SELECT
 	mp.product_name,
 	concat( mu1.unit_name, '(', mug.qty, ' ', mu.unit_name, ')' ) AS pack,
-	q3.cost * mug.qty AS unit_price,
-	q1.balance_qty / mug.qty AS balance_qty,
-	q2.in_qty / mug.qty AS in_qty,
-	q2.out_qty / mug.qty AS out_qty,
+	ROUND(q3.cost * mug.qty,2) AS unit_price,
+	q1.balance_qty AS balance_qty,
+	q2.in_qty AS in_qty,
+    q2.out_qty AS out_qty,
+    q4.summit_qty,
 	( ( q1.balance_qty / mug.qty + q2.in_qty / mug.qty ) - q2.out_qty / mug.qty ) * ( q3.cost * mug.qty ) AS amount_qty 
 FROM
 	mm_products AS mp
 	JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
 	LEFT JOIN mm_unit_generics AS mug ON mug.generic_id = mg.generic_id
 	LEFT JOIN (
-	SELECT
-		wsc1.product_id,
-		wsc1.unit_generic_id,
-		sum( wsc1.in_qty ) - sum( wsc1.out_qty ) AS balance_qty 
+        SELECT
+		ws.product_id,
+		ws.unit_generic_id,
+		ROUND(SUM(ws.in_qty)-SUM(ws.out_qty),2) AS balance_qty 
 	FROM
-		view_stock_card_warehouse AS wsc1 
+		view_stock_card_warehouse AS ws 
 	WHERE
-		wsc1.warehouse_id = 505 
-		AND wsc1.stock_date < '${year-1}-10-01 00:00:00'
+		ws.warehouse_id = ${wareHouseId}
 	GROUP BY
-		wsc1.product_id,
-		wsc1.unit_generic_id 
+		ws.product_id,
+		ws.unit_generic_id
 	) AS q1 ON q1.product_id = mp.product_id
 	AND q1.unit_generic_id = mug.unit_generic_id
 	LEFT JOIN (
@@ -2659,8 +2654,8 @@ FROM
 	FROM
 		view_stock_card_warehouse AS wsc1 
 	WHERE
-		wsc1.warehouse_id = 505 
-		AND wsc1.stock_date BETWEEN  '${year-1}-10-01 00:00:00' 
+		wsc1.warehouse_id = ${wareHouseId} 
+		AND wsc1.stock_date BETWEEN  '${year - 1}-10-01 00:00:00' 
 		AND '${year}-09-30 23:59:59'  
 	GROUP BY
 		wsc1.product_id,
@@ -2678,13 +2673,55 @@ FROM
 		wp.product_id,
 		wp.unit_generic_id 
 	) AS q3 ON q3.product_id = mp.product_id 
-	AND q3.unit_generic_id = mug.unit_generic_id
+    AND q3.unit_generic_id = mug.unit_generic_id
+    LEFT JOIN (
+    SELECT
+        vs.product_id,
+        vs.unit_generic_id,
+        vs.in_qty as summit_qty 
+    FROM
+        view_stock_card_warehouse AS vs 
+    WHERE
+        vs.warehouse_id = ${wareHouseId}
+        AND vs.transaction_type = 'SUMMIT'
+    GROUP BY
+        vs.product_id,
+        vs.unit_generic_id 
+    ) AS q4 ON q4.product_id = mp.product_id 
+    AND q4.unit_generic_id = mug.unit_generic_id
 	LEFT JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
-	LEFT JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id 
+    LEFT JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id
+    WHERE
+        mg.generic_type_id in (${genericType})
 ORDER BY
 	mp.product_name
        `
-       return knex.raw(sql)
+        return knex.raw(sql)
     }
-    
+
+    exportRemainQty(knex: Knex, warehouseId: any) {
+        return knex('wm_products as wp')
+            .select('mg.working_code', 'mg.generic_name', 'mg.min_qty', 'mg.max_qty', 'u2.unit_name')
+            .sum('wp.qty as qty')
+            .join('mm_products as mp', 'mp.product_id', 'wp.product_id')
+            .join('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
+            .join('mm_unit_generics as mug', 'mug.generic_id', 'mg.generic_id')
+            .join('mm_units as u1', 'u1.unit_id', 'mug.from_unit_id')
+            .join('mm_units as u2', 'u2.unit_id', 'mug.to_unit_id')
+            .where('wp.warehouse_id', warehouseId)
+            .groupBy('mg.generic_id')
+            .orderBy('mg.generic_name')
+    }
+
+    exportRemainQtyByTrade(knex: Knex, warehouseId: any) {
+        return knex('wm_products as wp')
+            .select('mg.working_code', 'mg.generic_name', 'mp.product_name', 'wp.lot_no', 'mg.min_qty', 'mg.max_qty', 'wp.qty', 'u2.unit_name')
+            .join('mm_products as mp', 'mp.product_id', 'wp.product_id')
+            .join('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
+            .join('mm_unit_generics as mug', 'mug.generic_id', 'mg.generic_id')
+            .join('mm_units as u1', 'u1.unit_id', 'mug.from_unit_id')
+            .join('mm_units as u2', 'u2.unit_id', 'mug.to_unit_id')
+            .where('wp.warehouse_id', warehouseId)
+            .orderBy('mg.generic_name')
+    }
 }
