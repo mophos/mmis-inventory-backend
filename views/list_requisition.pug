@@ -6,17 +6,18 @@ html
     title report
   body
     button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table
+      tr 
+        td.center.bold(colspan='9') #{hospitalName} 
+      tr 
+        td.center.bold(colspan='9') ใบรายการค้างจ่าย
+      tr 
+        td.center(colspan='9') ณ วันที่ #{today}
     - var ss=0
       for i in unPaid
         .page
         table.table
           thead
-            tr 
-              td.center.bold(colspan='9') #{hospitalName} 
-            tr 
-              td.center.bold(colspan='9') ใบรายการค้างจ่าย
-            tr 
-              td.center(colspan='9') ณ วันที่ #{today}
             tr 
               td.left(colspan='9') ใบเบิกเลขที่ #{i.requisition_code}
             tr 
@@ -44,6 +45,6 @@ html
                   td(colspan='4') 
                   td(colspan='4') 
                   td(colspan='4') 
-        .pagebreak
         - ++ss
+      .pagebreak
         
