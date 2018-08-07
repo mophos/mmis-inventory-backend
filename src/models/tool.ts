@@ -49,6 +49,18 @@ export class ToolModel {
     return db.raw(sql);
   }
 
+  searchIssues(db: Knex, query: any) {
+    let _query = `%${query}%`;
+    let sql = `SELECT
+    t.issue_id,t.issue_date,t.issue_code,w.warehouse_name,t.warehouse_id
+    FROM wm_issue_summary t
+    JOIN wm_warehouses w ON t.warehouse_id = w.warehouse_id
+    where t.approved = 'Y' and 
+    t.is_cancel ='N' and 
+    t.issue_code like '${_query}'`;
+    return db.raw(sql);
+  }
+
   getReceivesItems(db: Knex, receiveId: any) {
     let sql = `
       select rd.receive_detail_id, rd.receive_id, rd.product_id, rd.lot_no, rd.expired_date, rd.receive_qty, rd.unit_generic_id, rd.warehouse_id,
