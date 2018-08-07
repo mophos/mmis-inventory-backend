@@ -654,6 +654,17 @@ mgt.generic_type_id `
     mg.generic_id,
     wp.product_id,
 	( SELECT roi.requisition_qty FROM wm_requisition_order_items roi WHERE roi.requisition_order_id = r.requisition_order_id AND mg.generic_id = roi.generic_id ) AS requisition_qty,
+    ( SELECT mug.qty FROM wm_requisition_order_items roi 
+        LEFT JOIN mm_unit_generics AS mug ON roi.unit_generic_id = mug.unit_generic_id
+        WHERE roi.requisition_order_id = r.requisition_order_id AND mg.generic_id = roi.generic_id ) AS requisition_conversion_qty,
+    ( SELECT mu.unit_name FROM wm_requisition_order_items roi 
+        LEFT JOIN mm_unit_generics AS mug ON roi.unit_generic_id = mug.unit_generic_id
+        LEFT JOIN mm_units AS mu ON mug.from_unit_id = mu.unit_id
+        WHERE roi.requisition_order_id = r.requisition_order_id AND mg.generic_id = roi.generic_id ) AS requisition_large_unit,
+    ( SELECT mu.unit_name FROM wm_requisition_order_items roi 
+        LEFT JOIN mm_unit_generics AS mug ON roi.unit_generic_id = mug.unit_generic_id
+        LEFT JOIN mm_units AS mu ON mug.to_unit_id = mu.unit_id
+        WHERE roi.requisition_order_id = r.requisition_order_id AND mg.generic_id = roi.generic_id ) AS requisition_small_unit,
 	mul.unit_name AS large_unit,
 	mup.qty AS unit_qty,
 	mus.unit_name AS small_unit,
@@ -2724,5 +2735,11 @@ ORDER BY
             .join('mm_units as u2', 'u2.unit_id', 'mug.to_unit_id')
             .where('wp.warehouse_id', warehouseId)
             .orderBy('mg.generic_name')
+    }
+
+    getLine(knex: Knex, reportType) {
+        return knex('um_report_detail')
+            .where('report_type', reportType)
+            .where('is_active', 'Y')
     }
 }
