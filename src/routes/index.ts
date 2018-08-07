@@ -2726,4 +2726,69 @@ router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:wa
   // force download
   res.download(filePath, 'รายงานมูลค่าจากการรับอื่นๆ คลัง' + warehouseName + '.xlsx');
 });
+router.get('/report/remain/qty/export', async (req, res, next) => {
+  const db = req.db;
+  const warehouseId: any = req.decoded.warehouseId
+
+  try {
+    const rs: any = await inventoryReportModel.exportRemainQty(db, warehouseId);
+    let json = [];
+
+    rs.forEach(v => {
+      let obj: any = {};
+      obj.working_code = v.working_code;
+      obj.generic_name = v.generic_name;
+      obj.min_qty = v.min_qty;
+      obj.max_qty = v.max_qty;
+      obj.remain_qty = v.qty;
+      obj.unit_name = v.unit_name;
+      json.push(obj);
+    });
+
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'remainWarehouse.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'remainWarehouse.xlsx');
+  } catch (error) {
+    res.send({ ok: false, message: error.message })
+  }
+});
+
+router.get('/report/remain-trade/qty/export', async (req, res, next) => {
+  const db = req.db;
+  const warehouseId: any = req.decoded.warehouseId
+
+  try {
+    const rs: any = await inventoryReportModel.exportRemainQtyByTrade(db, warehouseId);
+    let json = [];
+
+    rs.forEach(v => {
+      let obj: any = {};
+      obj.working_code = v.working_code;
+      obj.generic_name = v.generic_name;
+      obj.product_name = v.product_name;
+      obj.lot_no = v.lot_no;
+      obj.min_qty = v.min_qty;
+      obj.max_qty = v.max_qty;
+      obj.remain_qty = v.qty;
+      obj.unit_name = v.unit_name;
+      json.push(obj);
+    });
+
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'remainWarehouseByTrade.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'remainWarehouseByTrade.xlsx');
+  } catch (error) {
+    res.send({ ok: false, message: error.message })
+  }
+});
 export default router;
