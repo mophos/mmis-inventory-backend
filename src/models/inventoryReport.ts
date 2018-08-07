@@ -2062,7 +2062,8 @@ OR sc.ref_src like ?
         ppoi.discount_percent,
         ppoi.qty AS reqty,
         wrd.cost * wrd.receive_qty AS total_cost,
-        bt.bgtype_name 
+        bt.bgtype_name,
+        wrd.lot_no
     FROM
         wm_receives AS r
         LEFT JOIN wm_receive_detail AS wrd ON r.receive_id = wrd.receive_id
