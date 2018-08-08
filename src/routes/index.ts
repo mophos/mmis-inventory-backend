@@ -104,6 +104,7 @@ router.get('/report/getBudgetYear', wrap(async (req, res, next) => {
     res.send({ ok: false, error: error.message })
   }
 }))
+
 router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
   const db = req.db;
   const year = req.params.year - 543
@@ -1055,6 +1056,7 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
   else { wareHouse = '%' + wareHouse + '%'; }
   if (genericId == 0) { genericId = '%%'; }
   else { genericId = '%' + genericId + '%'; }
+  if (typeof genericTypeId === 'string') genericTypeId = [genericTypeId];
 
   let product_expired = await inventoryReportModel.product_expired(db, startDate, endDate, wareHouse, genericId, genericTypeId);
   product_expired = product_expired[0];
@@ -2738,4 +2740,23 @@ router.get('/report/remain-trade/qty/export', async (req, res, next) => {
     res.send({ ok: false, message: error.message })
   }
 });
+
+router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
+  const db = req.db;
+  const genericTypeId = req.query.genericTypeId;
+  const warehouseId = req.query.warehouseId;
+
+  try {
+    const rs: any = await inventoryReportModel.productExpired(db, genericTypeId, warehouseId);
+    rs.forEach(element => {
+      element.expired_date = (moment(element.expired_date).get('year'))+moment(element.expired_date).format('/D/M');
+    });
+    res.render('alert-expired', {
+      rs: rs
+    })
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  }
+}))
+
 export default router;
