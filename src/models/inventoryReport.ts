@@ -541,7 +541,7 @@ mgt.generic_type_id `
         AND wp.qty != 0
         AND wp.warehouse_id LIKE ?
         AND mg.generic_id LIKE ?
-        AND mg.generic_type_id = '${genericTypeId}'
+        AND mg.generic_type_id in (${genericTypeId})
         GROUP BY
             wp.product_id
         ORDER BY
@@ -2737,6 +2737,17 @@ ORDER BY
             .orderBy('mg.generic_name')
     }
 
+    productExpired(knex: Knex, genericTypeId, warehouseId) {
+        return knex('wm_generic_expired_alert as xp')
+            .select('xp.generic_id', 'mg.working_code', 'mg.generic_name', 'mp.working_code as product_code', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', knex.raw('DATEDIFF(wp.expired_date, CURDATE()) AS diff'), 'xp.num_days', 'wp.warehouse_id', 'ww.warehouse_name')
+            .join('mm_generics as mg', 'xp.generic_id', 'mg.generic_id')
+            .join('mm_products as mp', 'mp.generic_id', 'mg.generic_id')
+            .join('wm_products as wp', 'wp.product_id', 'mp.product_id')
+            .join('wm_warehouses as ww', 'ww.warehouse_id', 'wp.warehouse_id')
+            .whereRaw(`DATEDIFF(wp.expired_date, CURDATE()) < xp.num_days and mg.generic_type_id in (${genericTypeId}) and ww.warehouse_id in (${warehouseId})`)
+            .groupBy('wp.product_id', 'wp.lot_no', 'wp.expired_date', 'wp.warehouse_id')
+    }
+    
     getLine(knex: Knex, reportType) {
         return knex('um_report_detail')
             .where('report_type', reportType)

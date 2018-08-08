@@ -7,6 +7,7 @@ import * as wrap from 'co-express';
 
 import { AlertExpiredModel } from '../models/alertExpired';
 import { SettingModel } from '../models/settings';
+import { awaitExpression } from 'babel-types';
 
 const router = express.Router();
 
@@ -168,14 +169,18 @@ router.post('/all', async (req, res, next) => {
 router.get('/products/expired', (req, res, next) => {
   let db = req.db;
   let genericTypeId = req.query.genericTypeId;
+  let wId = req.query.warehouseId;
+
   if (typeof genericTypeId === 'string') {
     genericTypeId = [genericTypeId];
   }
-  console.log(genericTypeId);
-  
-  alertModel.productExpired(db, genericTypeId)
+  if (typeof wId === 'string') {
+    wId = [wId];
+  }
+
+  alertModel.productExpired(db, genericTypeId, wId)
     .then((results: any) => {
-      res.send({ ok: true, rows: results[0] });
+      res.send({ ok: true, rows: results });
     })
     .catch(error => {
       res.send({ ok: false, error: error.message })
@@ -185,4 +190,3 @@ router.get('/products/expired', (req, res, next) => {
     });
 });
 export default router;
-
