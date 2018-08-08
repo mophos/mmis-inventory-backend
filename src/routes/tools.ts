@@ -52,6 +52,20 @@ router.post('/stockcard/tranfers/search', async (req, res, next) => {
   }
 });
 
+router.post('/stockcard/issues/search', async (req, res, next) => {
+  let db = req.db;
+  let query = req.body.query;
+  try {
+    let rs: any = await toolModel.searchIssues(db, query);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
 router.post('/stockcard/receives/items', async (req, res, next) => {
 
   let db = req.db;
@@ -663,6 +677,107 @@ router.put('/stockcard/transfers', async (req, res, next) => {
         }
       }
       // #####################################
+    }
+    res.send({ ok: true });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+});
+
+router.put('/stockcard/issues', async (req, res, next) => {
+
+  let db = req.db;
+  let issueId: any = req.body.issueId;
+  let summary = req.body.summary;
+  let products = req.body.products;
+  // let warehouseId = req.decoded.warehouseId;
+  let peopleUserId = req.decoded.people_user_id;
+  try {
+    await toolModel.updateIssue(db, issueId, summary);
+    for (const v of products) {
+      await toolModel.updateIssueGeneric(db, v);
+      for (const i of v.items) {
+        await toolModel.updateIssueProduct(db, i);
+        const dataStock = {
+          out_qty: i.product_qty,
+        }
+        let qty;
+        if (i.product_qty > i.product_qty_old) {
+          qty = i.product_qty - i.product_qty_old;
+          await toolModel.decreaseQtyWM(db, i.wm_product_id, i.product_qty) // ลดลง
+        } else if (i.product_qty < i.product_qty_old) {
+          qty = i.product_qty_old - i.product_qty;
+          await toolModel.increasingQtyWM(db, i.wm_product_id, i.product_qty) // เพิ่มขึ้น
+        }
+        const stockCardId = await toolModel.getStockCardId(db, issueId, i.product_id, i.lot_no, 'IST');
+        await toolModel.updateStockcard(db, dataStock, stockCardId[0].stock_card_id);
+
+        ///////////////save log/////////////////
+        // if (v.product_qty_old != v.product_qty ) {
+        const logs = {
+          stock_card_log_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+          stock_card_id: stockCardId[0].stock_card_id,
+          in_qty_old: null,
+          in_unit_cost_old: null,
+          out_qty_old: i.product_qty_old,
+          out_unit_cost_old: null,
+          lot_no_old: null,
+          expired_date_old: null,
+
+          in_qty_new: null,
+          in_unit_cost_new: null,
+          out_qty_new: i.product_qty,
+          out_unit_cost_new: null,
+          lot_no_new: null,
+          expired_date_new: null,
+          people_user_id: peopleUserId
+        }
+        await toolModel.saveLogs(db, logs);
+        // }
+      }
+      ////////////////////////////////
+      let product: any = [];
+      let lists = await toolModel.getStockcardList(db, summary.warehouse_id, v.generic_id); // รายการทั้งหทก
+      let productId = await toolModel.getStockcardProduct(db, summary.warehouse_id, v.generic_id); //product id
+      for (const pd of productId) {
+        const obj: any = {
+          generic_id: v.generic_id,
+          product_id: pd.product_id,
+          product_qty: 0,
+          generic_qty: 0
+        }
+        product.push(obj);
+      }
+      for (const pd of lists) {
+        const idxG = _.findIndex(product, { generic_id: v.generic_id });
+        if (idxG > -1) {
+          product[idxG].generic_qty += +pd.in_qty;
+          product[idxG].generic_qty -= +pd.out_qty;
+          const idx = _.findIndex(product, { product_id: pd.product_id });
+          if (idx > -1) {
+            product[idx].product_qty += +pd.in_qty;
+            product[idx].product_qty -= +pd.out_qty;
+
+          }
+          const obj: any = {
+            stock_card_id: pd.stock_card_id,
+            balance_qty: product[idx].product_qty,
+            balance_generic_qty: product[idxG].generic_qty
+          }
+          if (pd.balance_qty != obj.balance_qty || pd.balance_generic_qty != obj.balance_generic_qty) {
+            await toolModel.updateStockcardList(db, obj);
+          }
+        }
+      }
+      ////////////////////////////////
+
+
+
+      // await adjustStockcard(db, warehouseId, v.generic_id);
     }
     res.send({ ok: true });
   } catch (error) {

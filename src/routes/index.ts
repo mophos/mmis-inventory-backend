@@ -37,6 +37,66 @@ function checkNull(value) {
   }
 }
 
+function dateToDDMMYYYY(date) {
+  return moment(date).isValid() ? moment(date).format('DD MMMM ') + (+moment(date).get('year') + 543) : '-';
+}
+
+function dateToDMMYYYY(date) {
+  return moment(date).isValid() ? moment(date).format('D/MM/') + (moment(date).get('year')) : '-';
+}
+
+function comma(num) {
+  if (num === null) { return ('0.00'); }
+  let minus = false;
+  if (num < 0) {
+    minus = true;
+    num = Math.abs(num);
+  }
+  var number = +num
+  num = number.toFixed(2);
+  let deci = num.substr(num.length - 2, num.length);
+  num = num.substr(0, num.length - 3);
+
+  var l = num.toString().length
+  var num2 = '';
+  var c = 0;
+  for (var i = l - 1; i >= 0; i--) {
+    c++;
+    if (c == 3 && num[i - 1] != null) { c = 0; num2 = ',' + num[i] + num2 }
+    else num2 = num[i] + num2
+  }
+  if (minus) {
+    return '-' + num2 + '.' + deci;
+  } else {
+    return num2 + '.' + deci;
+  }
+
+}
+
+function commaQty(num) {
+  if (num === null) { return 0; }
+  let minus = false;
+  if (num < 0) {
+    minus = true;
+    num = Math.abs(num);
+  }
+  // num = num.toFixed(0);
+  num = '' + num;
+  var l = num.toString().length
+  var num2 = '';
+  var c = 0;
+  for (var i = l - 1; i >= 0; i--) {
+    c++;
+    if (c == 3 && num[i - 1] != null) { c = 0; num2 = ',' + num[i] + num2 }
+    else num2 = num[i] + num2
+  }
+  if (minus) {
+    return '-' + num2;
+  } else {
+    return num2;
+  }
+
+}
 router.get('/', (req, res, next) => {
   res.send({ ok: true, message: 'Welcome to Inventory API server' });
 });
@@ -219,7 +279,9 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
   let db = req.db;
   let approve_requis: any = []
   let sum: any = []
-  let page_re: any = req.decoded.WM_REQUISITION_REPORT_APPROVE;
+  const line = await inventoryReportModel.getLine(db, 'AR');
+  let page_re: any = line[0].line;
+
   let warehouse_id: any = req.decoded.warehouseId
   // console.log(req.decoded);
 
@@ -232,9 +294,13 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
       const _approve_requis = await inventoryReportModel.approve_requis2(db, requisId[i]);
       approve_requis.push(_approve_requis[0])
       approve_requis[i] = _.chunk(approve_requis[i], page_re)
+      let page = 0;
       _.forEach(approve_requis[i], values => {
         sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
+        page++;
         _.forEach(values, value => {
+          value.sPage = page;
+          value.nPage = approve_requis[i].length;
           value.full_name = warehouse_id === 505 ? '' : value.full_name
           value.total_cost = inventoryReportModel.comma(value.total_cost);
           value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
@@ -269,7 +335,8 @@ router.get('/report/approve2/requis', wrap(async (req, res, next) => {
   let db = req.db;
   let approve_requis: any = []
   let sum: any = []
-  let page_re: any = req.decoded.WM_REQUISITION_REPORT_APPROVE;
+  const line = await inventoryReportModel.getLine(db, 'AR');
+  let page_re: any = line[0].line;
   try {
     let requisId = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
@@ -349,105 +416,116 @@ router.get('/report/UnPaid/requis', wrap(async (req, res, next) => {
 router.get('/report/list/requis', wrap(async (req, res, next) => {
   let db = req.db;
   try {
+    let test;
     let requisId = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
-    const printDateEdit = req.decoded.SYS_PRINT_DATE_EDIT;
-
+    const rline = await inventoryReportModel.getLine(db, 'LR')
+    const line = rline[0].line;
+    // const printDateEdit = req.decoded.SYS_PRINT_DATE_EDIT;
     let _list_requis = [];
-    for (let i in requisId) {
-      let _list: any = [];
-      let requisition: any = [];
-      let header = await inventoryReportModel.getHeadRequis(db, requisId[i]);
+    for (let id of requisId) {
+      let sPage = 1;
+      let ePage = 1;
+      let array = [];
+      let num = 0;
+      let count = 0;
+      let header = await inventoryReportModel.getHeadRequis(db, id);
       header = header[0];
       if (header[0] === undefined) { res.render('error404'); }
-      let objHead: any = {};
-      objHead.requisition_date = header[0].requisition_date;
-      // header[0].updated_at ? objHead.requisition_date = header[0].updated_at : objHead.requisition_date = header[0].created_at;
-      objHead.requisition_code = header[0].requisition_code;
-      objHead.confirm_date = header[0].requisition_date;
-      // header[0].updated_at ? objHead.confirm_date = header[0].updated_at : objHead.confirm_date = header[0].created_at;
-      objHead.warehouse_name = header[0].warehouse_name;
-      objHead.withdraw_warehouse_name = header[0].withdraw_warehouse_name;
+      const objHead: any = {
+        sPage: sPage,
+        ePage: ePage,
+        requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+        requisition_code: header[0].requisition_code,
+        confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+        warehouse_name: header[0].warehouse_name,
+        withdraw_warehouse_name: header[0].withdraw_warehouse_name,
+        title: []
+      }
+      array[num] = _.clone(objHead);
+
       let title = await inventoryReportModel.list_requiAll(db, header[0].requisition_order_id);
-      title = title[0];
-      // res.send(title)
-      for (let tv of title) {
-        let objTitle: any = {};
-        objHead.title = {};
-        objTitle.generic_code = tv.working_code;
-        objTitle.generic_name = tv.generic_name;
-        objTitle.product_name = tv.product_name;
-        objTitle.generic_id = tv.generic_id;
-        objTitle.product_id = tv.product_id;
-        objTitle.requisition_qty = tv.requisition_qty;
-        objTitle.large_unit = tv.large_unit;
-        objTitle.unit_qty = tv.unit_qty;
-        objTitle.small_unit = tv.small_unit;
-        objTitle.confirm_qty = tv.confirm_qty;
-        objTitle.remain = tv.remain;
-        objTitle.dosage_name = tv.dosage_name;
+      let numTitle = 0;
+      // count += 7;
+      for (let tv of title[0]) {
         let rs = await inventoryReportModel.getDetailListRequis(db, tv.requisition_order_id, tv.withdraw_warehouse_id, tv.generic_id);
-        rs = rs[0];
-        let items = [];
-        rs.forEach(async (v: any) => {
-          let objItems: any = {};
-          // objItems = v
-          objItems.generic_name = v.generic_name;
-          objItems.product_name = v.product_name;
-          objItems.large_unit = v.large_unit;
-          objItems.small_unit = v.small_unit;
-          objItems.confirm_qty = v.confirm_qty;
-          objItems.remain = v.remain;
-          objItems.lot_no = v.lot_no;
-          objItems.expired_date = v.expired_date;
-          objItems.conversion_qty = v.conversion_qty;
-          objItems.is_approve = v.is_approve;
-          items.push(objItems)
-        });
-        objTitle.items = items;
-        objHead.title = objTitle;
-        let _objHead = _.clone(objHead);
-        requisition.push(_objHead);
-      }
-      if (requisition.length > 0) {
-        _list_requis.push(requisition);
-      } else if (requisition.length === 0) {
-        res.render('error404');
-      }
-    }
-    for (let page in _list_requis) {
-      for (let head in _list_requis[page]) {
-        _list_requis[page][head].confirm_date = moment(_list_requis[page][head].confirm_date).isValid() ? moment(_list_requis[page][head].confirm_date).format('DD MMMM ') + (+moment(_list_requis[page][head].confirm_date).get('year') + 543) : '-';
-        _list_requis[page][head].requisition_date = moment(_list_requis[page][head].requisition_date).isValid() ? moment(_list_requis[page][head].requisition_date).format('DD MMMM ') + (+moment(_list_requis[page][head].requisition_date).get('year') + 543) : '-';
-        _list_requis[page][head].title.requisition_qty = inventoryReportModel.commaQty(+_list_requis[page][head].title.requisition_qty / +_list_requis[page][head].title.unit_qty);
-        _list_requis[page][head].title.confirm_qty = inventoryReportModel.commaQty(+_list_requis[page][head].title.confirm_qty / +_list_requis[page][head].title.unit_qty);
-        for (let detail in _list_requis[page][head].title.items) {
-          if (_list_requis[page][head].title.items[detail].confirm_qty != 0) {
-            let old_confirm_qty = _list_requis[page][head].title.items[detail].confirm_qty;
-            let confirm_qty = inventoryReportModel.commaQty(+_list_requis[page][head].title.items[detail].confirm_qty / +_list_requis[page][head].title.items[detail].conversion_qty);
-            _list_requis[page][head].title.items[detail].confirm_qty = confirm_qty + ' ' + _list_requis[page][head].title.items[detail].large_unit + ' (' + _list_requis[page][head].title.items[detail].conversion_qty + ' ' + _list_requis[page][head].title.items[detail].small_unit + ' )'
-            if (_list_requis[page][head].title.items[detail].is_approve == "N") {
-              _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round((+_list_requis[page][head].title.items[detail].remain - +old_confirm_qty) / +_list_requis[page][head].title.items[detail].conversion_qty));
-            } else {
-              _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round(+_list_requis[page][head].title.items[detail].remain / +_list_requis[page][head].title.items[detail].conversion_qty));
-            }
-          } else {
-            _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round(+_list_requis[page][head].title.items[detail].remain / +_list_requis[page][head].title.items[detail].conversion_qty));
+        count += 5;
+        if (count + rs[0].length >= line) {
+          numTitle = 0;
+          count = 0;
+          sPage++;
+          ePage++;
+          count += 7;
+          for (const v of array) {
+            v.ePage = ePage;
           }
-          _list_requis[page][head].title.items[detail].location_name = _list_requis[page][head].title.items[detail].location_name !== null ? _list_requis[page][head].title.items[detail].location_name : '-';
-          _list_requis[page][head].title.items[detail].expired_date = moment(_list_requis[page][head].title.items[detail].expired_date).isValid() ? moment(_list_requis[page][head].title.items[detail].expired_date).format('D/MM/') + (moment(_list_requis[page][head].title.items[detail].expired_date).get('year')) : '-';
+          num++;
+          const objHead: any = {
+            sPage: sPage,
+            ePage: ePage,
+            requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+            requisition_code: header[0].requisition_code,
+            confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+            warehouse_name: header[0].warehouse_name,
+            withdraw_warehouse_name: header[0].withdraw_warehouse_name,
+            title: []
+          }
+          array[num] = _.clone(objHead);
         }
+        const objTitle = {
+          generic_code: tv.working_code,
+          generic_name: tv.generic_name,
+          product_name: tv.product_name,
+          generic_id: tv.generic_id,
+          product_id: tv.product_id,
+          requisition_qty: commaQty(+tv.requisition_qty / +tv.requisition_conversion_qty),
+          requisition_large_unit: tv.requisition_large_unit,
+          requisition_small_unit: tv.requisition_small_unit,
+          large_unit: tv.large_unit,
+          unit_qty: tv.unit_qty,
+          small_unit: tv.small_unit,
+          confirm_qty: commaQty(tv.confirm_qty / tv.unit_qty),
+          remain: tv.remain,
+          dosage_name: tv.dosage_name,
+          items: []
+        }
+        array[num].title[numTitle] = _.clone(objTitle);
+        for (const v of rs[0]) {
+          count++;
+          if (v.confirm_qty != 0) {
+            const objItems: any = {};
+            objItems.generic_name = v.generic_name;
+            objItems.product_name = v.product_name;
+            objItems.large_unit = v.large_unit;
+            objItems.small_unit = v.small_unit;
+            objItems.confirm_qty = (v.confirm_qty / v.conversion_qty) + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ' )';
+            objItems.remain = v.remain;
+            objItems.lot_no = v.lot_no;
+            objItems.expired_date = dateToDMMYYYY(v.expired_date);
+            objItems.conversion_qty = v.conversion_qty;
+            objItems.is_approve = v.is_approve;
+            objItems.location_name = v.location_name !== null ? v.location_name : '-';
+            if (v.is_approve == "N") {
+              objItems.remain = commaQty(Math.round((+v.remain - +v.confirm_qty) / +v.conversion_qty));
+            } else {
+              objItems.remain = commaQty(Math.round(+v.remain / +v.conversion_qty));
+            }
+            array[num].title[numTitle].items.push(_.clone(objItems));
+          }
+        }
+        numTitle++;
       }
+      _list_requis.push(array);
     }
-    // res.send( _list_requis)
     res.render('list_requis', {
       hospitalName: hospitalName,
       printDate: printDate(req.decoded.SYS_PRINT_DATE),
-      list_requis: _list_requis
+      list_requis: _list_requis,
     });
   } catch (error) {
+    // console.log(error);
     res.send({ ok: false, error: error.message })
   } finally {
     db.destroy();
@@ -1745,7 +1823,8 @@ router.get('/report/tranfers', wrap(async (req, res, next) => {
   let _sum: any = [];
   let _tmpSum: any = [];
   let _tmpTranfer: any = []
-  let page: any = req.decoded.WM_TRANSFER_REPORT_APPROVE;
+  const line = await inventoryReportModel.getLine(db, 'AT');
+  let page: any = line[0].line;
 
   // console.log(page);
 
@@ -2675,6 +2754,59 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
   }
 });
 
+router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:warehouseName', async (req, res, next) => {
+
+  const db = req.db;
+  let startDate = req.params.startDate;
+  let endDate = req.params.endDate;
+  let warehouseId = req.params.warehouseId;
+  let warehouseName = req.params.warehouseName;
+  let receiveTpyeId = Array.isArray(req.query.receiveTpyeId) ? req.query.receiveTpyeId : [req.query.receiveTpyeId];
+
+  // get tmt data
+  let hosdetail = await inventoryReportModel.hospital(db);
+
+  let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId, receiveTpyeId);
+  let hospitalName = hosdetail[0].hospname;
+  //  res.send(data[0])
+  let sum = inventoryReportModel.comma(_.sumBy(data[0], (o: any) => { return o.receive_qty * o.cost; }));
+
+  for (let tmp of data[0]) {
+    tmp.receive_date = moment(tmp.receive_date).isValid() ? moment(tmp.receive_date).format('DD MMM ') + (moment(tmp.receive_date).get('year') + 543) : '';
+    tmp.receive_qty = inventoryReportModel.commaQty(tmp.receive_qty);
+    tmp.cost = inventoryReportModel.comma(tmp.cost);
+    tmp.costAmount = inventoryReportModel.comma(tmp.costAmount);
+  }
+  let json = [];
+  let i = 0;
+  data[0].forEach(v => {
+    i++;
+    let obj: any = {};
+    obj.order = i;
+    obj.receive_date = v.receive_date;
+    obj.receive_code = v.receive_code;
+    obj.generic_id = v.generic_id;
+    obj.generic_name = v.generic_name;
+    obj.receive_qty = v.receive_qty;
+    obj.small_unit_name = v.small_unit_name;
+    obj.cost = v.cost;
+    obj.costAmount = v.costAmount;
+    obj.receive_type_name = v.receive_type_name;
+    obj.sum = '';
+    json.push(obj);
+  });
+
+  json[json.length - 1].sum = sum
+
+  const xls = json2xls(json);
+  const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+  // create directory
+  fse.ensureDirSync(exportDirectory);
+  const filePath = path.join(exportDirectory, 'รายงานมูลค่าจากการรับอื่นๆ คลัง' + warehouseName + '.xlsx');
+  fs.writeFileSync(filePath, xls, 'binary');
+  // force download
+  res.download(filePath, 'รายงานมูลค่าจากการรับอื่นๆ คลัง' + warehouseName + '.xlsx');
+});
 router.get('/report/remain/qty/export', async (req, res, next) => {
   const db = req.db;
   const warehouseId: any = req.decoded.warehouseId
