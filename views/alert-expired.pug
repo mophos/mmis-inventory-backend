@@ -1,0 +1,33 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    span.page
+    p(style="text-align: center;").bold รายการแจ้งเตือนวันหมดอายุ
+    table.table
+        tr
+            td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").center #
+            td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").center Trade Code
+            td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").center Trade Name
+            td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").center Lot No.
+            td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").center วันหมดอายุ
+            td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").center วันที่ต่าง
+            td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").center จำนวนแจ้งเตือนวันหมดอายุ
+            td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").center คลัง
+        - var b = 0
+            for a in rs
+                - ++b
+                    tr
+                        td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;") #{b} 
+                        td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;") #{a.working_code} 
+                        td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;") #{a.product_name}
+                        td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;") #{a.lot_no}
+                        td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;") #{a.expired_date}
+                        td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").right #{a.diff}
+                        td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").right #{a.num_days}
+                        td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;") #{a.warehouse_name}
+    .pagebreak

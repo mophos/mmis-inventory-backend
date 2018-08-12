@@ -164,6 +164,7 @@ router.get('/report/getBudgetYear', wrap(async (req, res, next) => {
     res.send({ ok: false, error: error.message })
   }
 }))
+
 router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
   const db = req.db;
   const year = req.params.year - 543
@@ -1133,6 +1134,7 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
   else { wareHouse = '%' + wareHouse + '%'; }
   if (genericId == 0) { genericId = '%%'; }
   else { genericId = '%' + genericId + '%'; }
+  if (typeof genericTypeId === 'string') genericTypeId = [genericTypeId];
 
   let product_expired = await inventoryReportModel.product_expired(db, startDate, endDate, wareHouse, genericId, genericTypeId);
   product_expired = product_expired[0];
@@ -2765,45 +2767,49 @@ router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:wa
   let hosdetail = await inventoryReportModel.hospital(db);
 
   let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId, receiveTpyeId);
-  let hospitalName = hosdetail[0].hospname;
-  //  res.send(data[0])
-  let sum = inventoryReportModel.comma(_.sumBy(data[0], (o: any) => { return o.receive_qty * o.cost; }));
+  if (!data[0].length || data[0] === []) {
+    res.render('error404')
+  } else {
+    let hospitalName = hosdetail[0].hospname;
+    //  res.send(data[0])
+    let sum = inventoryReportModel.comma(_.sumBy(data[0], (o: any) => { return o.receive_qty * o.cost; }));
 
-  for (let tmp of data[0]) {
-    tmp.receive_date = moment(tmp.receive_date).isValid() ? moment(tmp.receive_date).format('DD MMM ') + (moment(tmp.receive_date).get('year') + 543) : '';
-    tmp.receive_qty = inventoryReportModel.commaQty(tmp.receive_qty);
-    tmp.cost = inventoryReportModel.comma(tmp.cost);
-    tmp.costAmount = inventoryReportModel.comma(tmp.costAmount);
+    for (let tmp of data[0]) {
+      tmp.receive_date = moment(tmp.receive_date).isValid() ? moment(tmp.receive_date).format('DD MMM ') + (moment(tmp.receive_date).get('year') + 543) : '';
+      tmp.receive_qty = inventoryReportModel.commaQty(tmp.receive_qty);
+      tmp.cost = inventoryReportModel.comma(tmp.cost);
+      tmp.costAmount = inventoryReportModel.comma(tmp.costAmount);
+    }
+    let json = [];
+    let i = 0;
+    data[0].forEach(v => {
+      i++;
+      let obj: any = {};
+      obj.order = i;
+      obj.receive_date = v.receive_date;
+      obj.receive_code = v.receive_code;
+      obj.generic_id = v.generic_id;
+      obj.generic_name = v.generic_name;
+      obj.receive_qty = v.receive_qty;
+      obj.small_unit_name = v.small_unit_name;
+      obj.cost = v.cost;
+      obj.costAmount = v.costAmount;
+      obj.receive_type_name = v.receive_type_name;
+      obj.sum = '';
+      json.push(obj);
+    });
+
+    json[json.length - 1].sum = sum
+
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'รายงานมูลค่าจากการรับอื่นๆ คลัง' + warehouseName + '.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'รายงานมูลค่าจากการรับอื่นๆ คลัง' + warehouseName + '.xlsx');
   }
-  let json = [];
-  let i = 0;
-  data[0].forEach(v => {
-    i++;
-    let obj: any = {};
-    obj.order = i;
-    obj.receive_date = v.receive_date;
-    obj.receive_code = v.receive_code;
-    obj.generic_id = v.generic_id;
-    obj.generic_name = v.generic_name;
-    obj.receive_qty = v.receive_qty;
-    obj.small_unit_name = v.small_unit_name;
-    obj.cost = v.cost;
-    obj.costAmount = v.costAmount;
-    obj.receive_type_name = v.receive_type_name;
-    obj.sum = '';
-    json.push(obj);
-  });
-
-  json[json.length - 1].sum = sum
-
-  const xls = json2xls(json);
-  const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
-  // create directory
-  fse.ensureDirSync(exportDirectory);
-  const filePath = path.join(exportDirectory, 'รายงานมูลค่าจากการรับอื่นๆ คลัง' + warehouseName + '.xlsx');
-  fs.writeFileSync(filePath, xls, 'binary');
-  // force download
-  res.download(filePath, 'รายงานมูลค่าจากการรับอื่นๆ คลัง' + warehouseName + '.xlsx');
 });
 router.get('/report/remain/qty/export', async (req, res, next) => {
   const db = req.db;
@@ -2870,4 +2876,23 @@ router.get('/report/remain-trade/qty/export', async (req, res, next) => {
     res.send({ ok: false, message: error.message })
   }
 });
+
+router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
+  const db = req.db;
+  const genericTypeId = req.query.genericTypeId;
+  const warehouseId = req.query.warehouseId;
+
+  try {
+    const rs: any = await inventoryReportModel.productExpired(db, genericTypeId, warehouseId);
+    rs.forEach(element => {
+      element.expired_date = (moment(element.expired_date).get('year')) + moment(element.expired_date).format('/D/M');
+    });
+    res.render('alert-expired', {
+      rs: rs
+    })
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  }
+}))
+
 export default router;
