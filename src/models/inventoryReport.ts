@@ -2820,4 +2820,12 @@ ORDER BY
             .where('report_type', reportType)
             .where('is_active', 'Y')
     }
+
+    peopleFullName(knex: Knex, people_id:any) {
+        return knex('um_people as u')
+            .select('*', 'p.position_name as pname')
+            .leftJoin('um_positions as p', 'p.position_id', 'u.position_id')
+            .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
+            .where('u.people_id', people_id);
+    }
 }
