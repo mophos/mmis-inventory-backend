@@ -34,5 +34,22 @@ router.get('/getList', async (req, res, next) => {
     }
   });
 
+  router.get('/gerReceiveItem', async (req, res, next) => {
+    let db = req.db;
+  let receiveId = req.query.receiveId;
+  if (receiveId) {
+    try {
+      let results = await pickModel.getReceiveProducts(db, receiveId);
+      res.send({ ok: true, rows: results });
+    } catch (error) {
+      res.send({ ok: false, errror: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'กรุณาระบุเลขที่ใบรับ' });
+  }
+  });
+
 export default router;
 
