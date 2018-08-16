@@ -2425,11 +2425,8 @@ OR sc.ref_src like ?
         JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id 
     WHERE
         vscw.warehouse_id = '${warehouseId}'
-        AND vscw.stock_date <= '${statusDate} 23:59:59'`
-        if (genericTypeId != 0) {
-            sql = sql + ` AND mg.generic_type_id = ${genericTypeId}`
-        }
-        sql = sql + `
+        AND vscw.stock_date <= '${statusDate} 23:59:59'
+        AND mg.generic_type_id in (${genericTypeId})
     GROUP BY
         vscw.generic_id 
     ORDER BY

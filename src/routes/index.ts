@@ -2465,20 +2465,21 @@ router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req
   });
 }));
 
-router.get('/report/inventorystatus/:warehouseId/:genericTypeId/:statusDate', wrap(async (req, res, next) => {
+router.get('/report/inventorystatus', wrap(async (req, res, next) => {
   let db = req.db;
-  let warehouseId = req.params.warehouseId
-  let genericTypeId = req.params.genericTypeId
-  let statusDate = req.params.statusDate
+  let warehouseId = req.query.warehouseId
+  let statusDate = req.query.statusDate
+  let genericType = req.query.genericType
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.inventoryStatus(db, warehouseId, genericTypeId, statusDate);
+  let rs = await inventoryReportModel.inventoryStatus(db, warehouseId, genericType, statusDate);
   let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
   let list = rs[0]
   let sumlist = [];
   let sum = 0
   let totalsum = 0;
   let totalsumShow: any;
+  console.log('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
   list = _.chunk(list, 35)
   // res.send({list:list});
   for (let i in list) {
