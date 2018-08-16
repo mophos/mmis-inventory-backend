@@ -168,6 +168,35 @@ export class GenericModel {
       ) AS a`
     return knex.raw(sql);
   }
+  searchGenericSetZeroWarehouse(knex: Knex, query: any, warehouseId: any) {
+    let _query = `%${query}%`;
+    // let _warehouseId = `%${warehouseId}%`;
+    let sql = `
+    select p.unit_generic_id,sum(p.qty) as qty, g.generic_name, g.generic_id
+    , g.working_code, g.primary_unit_id, u.unit_name as primary_unit_name,
+    (select sum(vp.reserve_qty) from view_product_reserve as vp where vp.generic_id = g.generic_id and vp.warehouse_id = p.warehouse_id GROUP BY vp.generic_id) as reserve_qty
+    from wm_products as p
+    inner join mm_products as mp on mp.product_id=p.product_id
+    left join mm_generics as g on g.generic_id=mp.generic_id
+    left join mm_labelers as l on l.labeler_id=mp.v_labeler_id
+    left join mm_units as u on u.unit_id = g.primary_unit_id
+    where (
+      g.keywords like '%${query}%' or 
+      g.generic_name like '${query}%'  or 
+      g.working_code='${query}'
+    )
+    and mp.mark_deleted='N' `;
+    if (warehouseId != 'undefined') {
+      sql += `and p.warehouse_id='${warehouseId}'`;
+    }
+    sql += ` and mp.is_active='Y'
+    AND p.qty > -1
+    and p.is_actived = 'Y'
+    group by g.generic_id
+    limit 10
+    `;
+    return knex.raw(sql);
+  }
   searchGenericZeroWarehouse(knex: Knex, query: any, warehouseId: any) {
     let _query = `%${query}%`;
     // let _warehouseId = `%${warehouseId}%`;
