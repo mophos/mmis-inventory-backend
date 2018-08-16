@@ -170,7 +170,10 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
   const year = req.params.year - 543
   const warehouseId: any = req.decoded.warehouseId
   const genericType = req.query.genericType
-
+  const people1 = req.query.people1
+  const people2 = req.query.people2
+  const people3 = req.query.people3
+  let people = [people1,people2,people3]
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
@@ -184,11 +187,17 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
       v.summit_qty = inventoryReportModel.commaQty(v.summit_qty);
       v.amount_qty = inventoryReportModel.comma(v.amount_qty);
     });
-
+    let committee:any = []
+    for(let peopleId of people){
+      console.log(peopleId);
+      let pe:any = await inventoryReportModel.peopleFullName(db,peopleId)
+      committee.push(pe[0])
+    }
     res.render('issue_year', {
       rs: rs[0],
       hospitalName: hospitalName,
-      year: year + 543
+      year: year + 543,
+      committee:committee
     });
   } catch (error) {
     res.send({ ok: false, error: error.message })
