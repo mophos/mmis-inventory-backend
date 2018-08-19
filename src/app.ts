@@ -1,4 +1,3 @@
-
 import * as path from 'path';
 let envPath = path.join(__dirname, '../../mmis-config');
 require('dotenv').config(({ path: envPath }));
@@ -87,6 +86,8 @@ import hisTransactionRoute from './routes/hisTransaction';
 import additionRoute from './routes/addition';
 
 import staffRoute from './routes/staff';
+import payRequisitionRoute from './routes/payRequisition';
+
 import settingRoute from './routes/setting';
 import versionRoute from './routes/version';
 import borrowNoteRoute from './routes/borrowNote';
@@ -260,6 +261,7 @@ app.use('/reports/internalissue', reportInternalissueRoute);
 app.use('/staff/borrow-notes', checkAuth, staffAuth, borrowNoteRoute);
 app.use('/borrow-notes', checkAuth, adminAuth, borrowNoteRoute);
 // staff
+app.use('/staff/pay-requisition', checkAuth, staffAuth, payRequisitionRoute);
 app.use('/staff', checkAuth, staffAuth, staffRoute);
 
 app.use('/users', checkAuth, userRoute);
