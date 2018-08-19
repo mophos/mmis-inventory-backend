@@ -78,6 +78,7 @@ export class IssueModel {
   getProductDetail(knex: Knex, issueId: any) {
     let sql = `
     SELECT
+      sp.issue_product_id,
       sg.generic_id,
       sp.product_id,
       sp.wm_product_id,
@@ -86,7 +87,8 @@ export class IssueModel {
       mug.qty AS product_conversion,
       wp.qty AS product_remain_qty,
       mu.unit_name AS from_unit_name,
-      mu2.unit_name AS to_unit_name
+      mu2.unit_name AS to_unit_name,
+      wp.lot_no
     FROM
       wm_issue_generics sg
     JOIN wm_issue_summary ss ON ss.issue_id = sg.issue_id
@@ -102,6 +104,7 @@ export class IssueModel {
   }
   getGenericsDetail(knex: Knex, issueId: any) {
     let sql = `SELECT
+    sg.issue_generic_id,
     mg.working_code,
     sg.generic_id,
     sg.qty / mug.qty AS generic_qty,
@@ -478,6 +481,6 @@ WHERE
       .where('wm.product_id', productId)
   }
 
-  
+
 
 }
