@@ -50,7 +50,7 @@ export class ProductModel {
     WHERE
       wp.warehouse_id = '${warehouseId}'
       AND mg.generic_id = '${genericId}'
-      and wp.qty > 0
+      and wp.qty > -1
     ORDER BY
     wp.qty DESC
     `;

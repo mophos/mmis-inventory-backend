@@ -32,7 +32,8 @@ html
           td.left เลขที่ใบสั่งซื้อ
           td.left เลขที่ใบส่งของ
           td.left บริษัทผู้จำหน่าย
-          td(colspan='2').right ส่วนลด
+          td Lot.
+          td.right ส่วนลด
           td.right วิธีจัดซื้อ
           td.right ประเภทงบ
         tr.dash-bottom(style="font-size: 13pt;")
@@ -40,7 +41,7 @@ html
           td.left รหัสยา
           td
           td(colspan='2').left รายการยา
-          td
+          td 
           td.right จำนวนที่รับ
           td.right มูลค่า
           td.right วันหมดอายุ
@@ -54,7 +55,7 @@ html
                 td.left #{b.purchase_order_number}
                 td.left #{b.delivery_code}
                 td.left #{b.labeler_name_po}
-                td
+                td #{b.lot_no}
                 td.right(style='font-size: 10pt;') #{b.discount_cash}
                 td.right &nbsp;#{b.bid_name}
                 td.right #{b.bgtype_name}
@@ -62,7 +63,7 @@ html
                 td
                 td #{b.generic_id}
                 td.left(colspan='3')  #{b.generic_name}
-                td
+                td 
                 td.right #{b.receive_qty} x #{b.qty} (#{b.unit_name})
                 td.right #{b.total_cost}
                 td.right #{b.expired_date}

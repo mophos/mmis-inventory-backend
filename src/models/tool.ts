@@ -243,6 +243,20 @@ export class ToolModel {
     return knex.raw(sql);;
   }
 
+  increasingQtyWM(knex: Knex, wmProductId, qty) {
+    const sql = `UPDATE wm_products 
+    set qty = qty+${qty}
+    WHERE wm_product_id = '${wmProductId}'`
+    return knex.raw(sql);
+  }
+
+  decreaseQtyWM(knex: Knex, wmProductId, qty) {
+    const sql = `UPDATE wm_products 
+    set qty = qty-${qty}
+    WHERE wm_product_id = '${wmProductId}'`
+    return knex.raw(sql);;
+  }
+
   changeLotWmProduct(knex: Knex, productId, lotNoOld, lotNoNew, expiredOld, expiredNew, warehouseId) {
     const sql = `UPDATE wm_products 
     set lot_no = '${lotNoNew}',expired_date = '${expiredNew}'
@@ -323,6 +337,31 @@ export class ToolModel {
         'product_qty': qty
       });
   }
+
+  updateIssue(db: Knex, issueId: any, summary: any) {
+    return db('wm_issue_summary')
+      .where('issue_id', issueId)
+      .update(summary);
+  }
+
+  updateIssueGeneric(db: Knex, products: any) {
+    return db('wm_issue_generics')
+      .where('issue_generic_id', products.issue_generic_id)
+      .update({
+        'qty': products.issue_qty * products.conversion_qty,
+        'unit_generic_id': products.unit_generic_id
+      });
+  }
+
+  updateIssueProduct(db: Knex, products: any) {
+    return db('wm_issue_products')
+      .where('issue_product_id', products.issue_product_id)
+      .update({
+        'qty': products.product_qty
+      });
+  }
+
+
 
   getHistory(db: Knex) {
     let sql = `SELECT s.stock_date,s.document_ref,mp.working_code,mp.product_name,sl.in_qty_old,sl.stock_card_log_date,
