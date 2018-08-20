@@ -232,43 +232,34 @@ export class RequisitionOrderModel {
   totalListWaitingApprove(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, query, fillterCancel) {
     let _q = `%${query}%`;
     let sqlSrc = `
-      select count(*) total
-      from (
-        select count(*) as total
-        from wm_requisition_confirms as rc
-        inner join wm_requisition_orders as ro on ro.requisition_order_id=rc.requisition_order_id
-        inner join wm_warehouses as wh on wh.warehouse_id=ro.wm_withdraw
-        where ro.wm_requisition='${srcWarehouseId}' and rc.is_approve<>'Y'`
-    if (query) {
-      sqlSrc += ` and (ro.requisition_code like '${_q}' or
-          wh.warehouse_name like '${_q}') `
-    }
-    if (fillterCancel === 'nCancel') {
-      sqlSrc += ` and rc.is_cancel = 'N' `;
-    } else if (fillterCancel === 'cancel') {
-      sqlSrc += ` and rc.is_cancel = 'Y' `;
-    }
-    sqlSrc += `group by rc.requisition_order_id) t`;
-
-    let sqlDst = `
-    select count(*) total
-    from (
-      select count(*) as total
+      select
+      rc.confirm_id, rc.confirm_date, rc.requisition_order_id, rc.is_cancel, 
+      ro.requisition_code, ro.requisition_date, rt.requisition_type, wh.warehouse_name as withdraw_warehouse_name,
+      (select ifnull(sum(rci.confirm_qty), 0) from wm_requisition_confirm_items as rci where rci.confirm_id=rc.confirm_id) as confirm_qty
       from wm_requisition_confirms as rc
       inner join wm_requisition_orders as ro on ro.requisition_order_id=rc.requisition_order_id
+      left join wm_requisition_type as rt on rt.requisition_type_id=ro.requisition_type_id
       inner join wm_warehouses as wh on wh.warehouse_id=ro.wm_withdraw
-      where ro.wm_withdraw='${dstWarehouseId}' and rc.is_approve<>'Y'`
+      where ro.wm_requisition='${srcWarehouseId}' and rc.is_approve<>'Y'`
+    sqlSrc += `and rc.is_cancel = 'N' group by rc.requisition_order_id
+      having confirm_qty>0
+      order by ro.requisition_code desc
+    `;
 
-    if (query) {
-      sqlDst += ` and (ro.requisition_code like '${_q}' or
-          wh.warehouse_name like '${_q}') `
-    }
-    if (fillterCancel === 'nCancel') {
-      sqlDst += ` and rc.is_cancel = 'N' `;
-    } else if (fillterCancel === 'cancel') {
-      sqlDst += ` and rc.is_cancel = 'Y' `;
-    }
-    sqlDst += `group by rc.requisition_order_id ) t`;
+    let sqlDst = `
+      select
+      rc.confirm_id, rc.confirm_date, rc.requisition_order_id, rc.is_cancel, ro.requisition_date,
+      ro.requisition_code, rt.requisition_type, wh.warehouse_name as requisition_warehouse_name,
+      (select ifnull(sum(rci.confirm_qty), 0) from wm_requisition_confirm_items as rci where rci.confirm_id=rc.confirm_id) as confirm_qty
+      from wm_requisition_confirms as rc
+      inner join wm_requisition_orders as ro on ro.requisition_order_id=rc.requisition_order_id
+      left join wm_requisition_type as rt on rt.requisition_type_id=ro.requisition_type_id
+      inner join wm_warehouses as wh on wh.warehouse_id=ro.wm_requisition
+      where ro.wm_withdraw='${dstWarehouseId}' and rc.is_approve<>'Y'`;
+    sqlDst += `and rc.is_cancel = 'N' group by rc.requisition_order_id
+      having confirm_qty>0
+      order by ro.requisition_code desc
+    `;
 
     return srcWarehouseId ? db.raw(sqlSrc) : db.raw(sqlDst);
   }
