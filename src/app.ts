@@ -53,6 +53,7 @@ import productLots from './routes/productLots';
 import abcVenRoute from './routes/abcVen';
 import periodRoute from "./routes/period";
 import minMaxRoute from "./routes/minMax";
+import borrowRoute from './routes/borrow'
 
 import transferRoute from './routes/transfer';
 import requisitionRoute from "./routes/requisition";
@@ -237,6 +238,7 @@ app.use('/transectiontype', checkAuth, adminAuth, transectionTypeRoute);
 app.use('/receiveothertype', checkAuth, adminAuth, receiveotherTypeRoute);
 // app.use('/borrows', checkAuth, adminAuth, borrowRoute);
 app.use('/transfer', checkAuth, adminAuth, transferRoute);
+app.use('/borrow', checkAuth, adminAuth, borrowRoute);
 app.use('/production-units', checkAuth, adminAuth, productionUnitRoute);
 app.use('/unitissue', checkAuth, adminAuth, unitissue)
 
