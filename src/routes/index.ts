@@ -490,6 +490,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
           generic_id: tv.generic_id,
           product_id: tv.product_id,
           requisition_qty: commaQty(+tv.requisition_qty / +tv.requisition_conversion_qty),
+          requisition_conversion_qty: tv.requisition_conversion_qty,
           requisition_large_unit: tv.requisition_large_unit,
           requisition_small_unit: tv.requisition_small_unit,
           large_unit: tv.large_unit,

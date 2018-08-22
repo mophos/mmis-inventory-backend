@@ -1616,6 +1616,7 @@ router.get('/requisition/orders/waiting', async (req, res, next) => {
 
 });
 
+
 router.get('/requisition/orders/waiting-approve', async (req, res, next) => {
 
   let db = req.db;
@@ -2118,7 +2119,7 @@ router.get('/warehouse/tranfer/dst', async (req, res, next) => {
   let warehouseId = req.query.warehouseId;
   try {
     let rs: any = await warehouseModel.getTranferWarehouseDst(db, warehouseId);
-    if(rs.length){
+    if (rs.length) {
       res.send({ ok: true, rows: rs[0] });
     } else {
       res.send({ ok: true, rows: [] });
@@ -2822,28 +2823,6 @@ router.get('/receives/other/product-list/:receiveOtherId', co(async (req, res, n
   }
 }));
 
-router.post('/basic/checkApprove', async (req, res, next) => {
-  let db = req.db;
-  try {
-    let username = req.body.username;
-    let password = req.body.password;
-    let action = req.body.action;
-    password = crypto.createHash('md5').update(password).digest('hex');
-    const isCheck = await basicModel.checkApprove(db, username, password);
-    console.log(isCheck[0]);
-    let rights = isCheck[0].access_right.split(',');
-
-    if (_.indexOf(rights, action) > -1) {
-      res.send({ ok: true })
-    } else {
-      res.send({ ok: false });
-    }
-  } catch (error) {
-    res.send({ ok: false, error: error });
-  }
-
-});
-
 router.post('/receives/other/approve', co(async (req, res, next) => {
   let db = req.db;
   let userId = req.decoded.id;
@@ -3024,7 +3003,7 @@ router.post('/receives/other', co(async (req, res, next) => {
   if (summary.receiveDate && summary.receiveTypeId && summary.donatorId && products.length) {
     try {
       let receiveCode = await serialModel.getSerialSatff(db, 'RO');
-      console.log(receiveCode,'******************************');
+      console.log(receiveCode, '******************************');
       // let receiveId = moment().format('x');
 
       const data: any = {

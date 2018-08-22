@@ -244,7 +244,7 @@ router.get('/orders/waiting-approve', async (req, res, next) => {
   try {
     let rs: any = await orderModel.getListWaitingApprove(db, null, warehouseId, limit, offset, query, fillterCancel);
     let total: any = await orderModel.totalListWaitingApprove(db, null, warehouseId, query, fillterCancel);
-    res.send({ ok: true, rows: rs[0], total: total[0] });
+    res.send({ ok: true, rows: rs[0], total: [{ total: total[0].length }] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -1477,7 +1477,7 @@ router.post('/borrow-notes', async (req, res, next) => {
   let genericIds = req.body.genericIds;
   let warehouseId = req.body.warehouseId;
   let requisitionId = req.body.requisitionId;
-  genericIds = Array.isArray(genericIds) ? genericIds: [genericIds];
+  genericIds = Array.isArray(genericIds) ? genericIds : [genericIds];
   try {
     let rs: any = await borrowNoteModel.getItemsWithGenerics(db, warehouseId, genericIds, requisitionId);
     res.send({ ok: true, rows: rs });
