@@ -91,8 +91,8 @@ sum(wp.qty) as amtqty
 
     return knex('wm_requisition as re')
       .select('re.requisition_id', 'wh1.warehouse_name as wm_requisition_name', 'wh2.warehouse_name as wm_withdraw_name',
-      're.confirm_requisition', 're.requisition_status', queryTotalRequisition,
-      're.requisition_date')
+        're.confirm_requisition', 're.requisition_status', queryTotalRequisition,
+        're.requisition_date')
       .leftJoin('wm_warehouses as wh1', 're.wm_requisition', 'wh1.warehouse_id')
       .leftJoin('wm_warehouses as wh2', 'wh2.warehouse_id', 're.wm_withdraw')
       .where('re.confirm_requisition', 'N')
@@ -102,7 +102,7 @@ sum(wp.qty) as amtqty
   getRequisitionInfo(knex: Knex, requisitionId: any) {
     return knex('wm_requisition as re')
       .select('re.requisition_id', 're.requisition_type_id', 're.requisition_date', 're.wm_requisition'
-      , 'wh1.warehouse_name as wm_requisition_name', 'wh2.warehouse_name as wm_withdraw_name', 're.wm_withdraw', 'rt.requisition_type')
+        , 'wh1.warehouse_name as wm_requisition_name', 'wh2.warehouse_name as wm_withdraw_name', 're.wm_withdraw', 'rt.requisition_type')
       .leftJoin('wm_warehouses as wh1', 're.wm_requisition', 'wh1.warehouse_id')
       .leftJoin('wm_warehouses as wh2', 'wh2.warehouse_id', 're.wm_withdraw')
       .leftJoin('wm_requisition_type as rt', 're.requisition_type_id', 'rt.requisition_type_id')
@@ -234,7 +234,7 @@ having total_requisition != total_confirm
       inner join wm_warehouses as wh2 on r.wm_withdraw = wh2.warehouse_id
       inner join documents as d on d.document_code = concat('REQ-',r.requisition_id)
       where r.confirm_requisition = 'Y' and r.requisition_status = 'Y' `;
-    
+
     if (wmRequisition) sql += `and r.wm_requisition = ? `;
     sql += `group by r.requisition_id`;
 
@@ -282,7 +282,7 @@ having total_requisition != total_confirm
   doCancel(knex: Knex, requisitionId: string) {
     return knex('wm_requisition')
       .where('requisition_id', requisitionId)
-      .update('requisition_status','C');
+      .update('requisition_status', 'C');
   }
 
 
