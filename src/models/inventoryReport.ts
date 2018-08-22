@@ -2630,91 +2630,90 @@ OR sc.ref_src like ?
     receiveIssueYear(knex: Knex, year: any, wareHouseId: any, genericType: any) {
         let sql = `
         SELECT
-    mp.product_name,
-    mg.working_code,
-    mg.generic_name,
-    mug.qty as conversion,
-    mu.unit_name as baseunit,
-    mga.account_name,
-    mgd.dosage_name,
-    mgh.name as generic_hosp_name,
-    ibt.bid_name,
-    mgt.generic_type_name,
-    mg.standard_cost,
-    mg.min_qty,
-    mg.max_qty,
-    concat( IFNULL(mgg1.group_name_1 + ' ','' ) + mgg2.group_name_2 + ' ' + mgg3.group_name_3 + ' ' + mgg4.group_name_4 ) as group_name,
-    concat( mu1.unit_name, '(', mug.qty, ' ', mu.unit_name, ')' ) AS pack,
-    ROUND(IFNULL(q3.cost,0) * mug.qty,2) AS unit_price,
-    ROUND(IFNULL(q1.balance_qty,0) / mug.qty,2) AS balance_qty,
-    ROUND(IFNULL(q2.in_qty,0) / mug.qty,2) AS in_qty,
-    ROUND(IFNULL(q2.out_qty,0) / mug.qty,2) AS out_qty,
-    ROUND(( ( (IFNULL(q1.balance_qty,0) / mug.qty )+(IFNULL(q2.in_qty,0) / mug.qty) ))- (IFNULL(q2.out_qty,0) / mug.qty),2) as summit_qty,
-    ROUND(( ( (IFNULL(q1.balance_qty,0) / mug.qty )+(IFNULL(q2.in_qty,0) / mug.qty) ) - (IFNULL(q2.out_qty,0) / mug.qty) ) * ( IFNULL(q3.cost,0) * mug.qty ),2) AS amount_qty 
+	mp.product_name,
+	mg.working_code,
+	mg.generic_name,
+	mug.qty AS conversion,
+	mu.unit_name AS baseunit,
+	mga.account_name,
+	mgd.dosage_name,
+	mgh.NAME AS generic_hosp_name,
+	ibt.bid_name,
+	mgt.generic_type_name,
+	mg.standard_cost,
+	mg.min_qty,
+	mg.max_qty,
+	concat( IFNULL( mgg1.group_name_1 + ' ', '' ) + mgg2.group_name_2 + ' ' + mgg3.group_name_3 + ' ' + mgg4.group_name_4 ) AS group_name,
+	concat( mu1.unit_name, '(', mug.qty, ' ', mu.unit_name, ')' ) AS pack,
+	ROUND(IFNULL(q3.cost,0) * mug.qty,2) AS unit_price,
+	ROUND(IFNULL(q1.balance_qty,0) / mug.qty,2) AS balance_qty,
+	ROUND(IFNULL(q2.in_qty,0) / mug.qty,2) AS in_qty,
+	ROUND(IFNULL(q2.out_qty,0) / mug.qty,2) AS out_qty,
+	ROUND(( ( (IFNULL(q1.balance_qty,0) / mug.qty )+(IFNULL(q2.in_qty,0) / mug.qty) ))- (IFNULL(q2.out_qty,0) / mug.qty),2) as summit_qty,
+	ROUND(( ( (IFNULL(q1.balance_qty,0) / mug.qty )+(IFNULL(q2.in_qty,0) / mug.qty) ) - (IFNULL(q2.out_qty,0) / mug.qty) ) * ( IFNULL(q3.cost,0) * mug.qty ),2) AS amount_qty 
 FROM
-    mm_products AS mp
-    JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
-    LEFT JOIN mm_unit_generics AS mug ON mug.generic_id = mg.generic_id
-    left join mm_generic_accounts as mga on mga.account_id = mg.account_id
-    left join mm_generic_group_1 as mgg1 on mgg1.group_code_1 = mg.group_code_1
-    left join mm_generic_group_2 as mgg2 on mgg2.group_code_2 = mg.group_code_2
-    left join mm_generic_group_3 as mgg3 on mgg3.group_code_3 = mg.group_code_3
-    left join mm_generic_group_4 as mgg4 on mgg4.group_code_4 = mg.group_code_4
-    left join mm_generic_dosages as mgd on mgd.dosage_id = mg.dosage_id
-    left join mm_generic_hosp as mgh on mgh.id = mg.generic_hosp_id
-    left join l_bid_type as ibt on ibt.bid_id = mg.purchasing_method
-    left join mm_generic_types as mgt on mgt.generic_type_id = mg.generic_type_id
-    LEFT JOIN (
-    SELECT
-        wsc1.product_id,
-        wsc1.unit_generic_id,
-        (sum( IFNULL(wsc1.in_qty,0) ) - sum( IFNULL(wsc1.out_qty,0))) AS balance_qty 
-    FROM
-        view_stock_card_warehouse AS wsc1 
-    WHERE
-        wsc1.warehouse_id = ${wareHouseId}
-        AND wsc1.stock_date < '${year - 1}-10-01 00:00:00'
-    GROUP BY
-        wsc1.product_id,
-        wsc1.unit_generic_id 
-    ) AS q1 ON q1.product_id = mp.product_id
-    AND q1.unit_generic_id = mug.unit_generic_id
-    LEFT JOIN (
-    SELECT
-        wsc1.product_id,
-        wsc1.unit_generic_id,
-        sum( IFNULL(wsc1.in_qty ,0)) AS in_qty,
-        sum( IFNULL(wsc1.out_qty ,0)) AS out_qty 
-    FROM
-        view_stock_card_warehouse AS wsc1 
-    WHERE
-        wsc1.warehouse_id = ${wareHouseId} 
-        AND wsc1.stock_date BETWEEN  '${year - 1}-10-01 00:00:00' 
-        AND '${year}-09-30 23:59:59'  
-    GROUP BY
-        wsc1.product_id,
-        wsc1.unit_generic_id 
-    ) AS q2 ON q2.product_id = mp.product_id 
-    AND q2.unit_generic_id = mug.unit_generic_id
-    LEFT JOIN (
-    SELECT
-        wp.product_id,
-        wp.unit_generic_id,
-            ROUND(avg( IFNULL(wp.cost,0) ),2) AS cost 
-    FROM
-        wm_products AS wp 
-    GROUP BY
-        wp.product_id,
-        wp.unit_generic_id 
-    ) AS q3 ON q3.product_id = mp.product_id 
-    AND q3.unit_generic_id = mug.unit_generic_id
-    LEFT JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
-    LEFT JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id 
-    WHERE
-    mg.generic_type_id IN ( ${genericType} ) 
+mm_products AS mp
+JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
+LEFT JOIN mm_unit_generics AS mug ON mug.generic_id = mg.generic_id
+LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id
+LEFT JOIN mm_generic_group_1 AS mgg1 ON mgg1.group_code_1 = mg.group_code_1
+LEFT JOIN mm_generic_group_2 AS mgg2 ON mgg2.group_code_2 = mg.group_code_2
+LEFT JOIN mm_generic_group_3 AS mgg3 ON mgg3.group_code_3 = mg.group_code_3
+LEFT JOIN mm_generic_group_4 AS mgg4 ON mgg4.group_code_4 = mg.group_code_4
+LEFT JOIN mm_generic_dosages AS mgd ON mgd.dosage_id = mg.dosage_id
+LEFT JOIN mm_generic_hosp AS mgh ON mgh.id = mg.generic_hosp_id
+LEFT JOIN l_bid_type AS ibt ON ibt.bid_id = mg.purchasing_method
+LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+	LEFT JOIN (
+	SELECT
+		wsc1.product_id,
+		wsc1.unit_generic_id,
+		(sum( IFNULL(wsc1.in_qty,0) ) - sum( IFNULL(wsc1.out_qty,0))) AS balance_qty 
+	FROM
+		view_stock_card_warehouse AS wsc1 
+	WHERE
+		wsc1.warehouse_id = ${wareHouseId}
+		AND wsc1.stock_date < '${year - 1}-10-01 00:00:00'
+	GROUP BY
+		wsc1.product_id,
+		wsc1.unit_generic_id 
+	) AS q1 ON q1.product_id = mp.product_id
+	AND q1.unit_generic_id = mug.unit_generic_id
+	LEFT JOIN (
+	SELECT
+		wsc1.product_id,
+		wsc1.unit_generic_id,
+		sum( IFNULL(wsc1.in_qty ,0)) AS in_qty,
+		sum( IFNULL(wsc1.out_qty ,0)) AS out_qty 
+	FROM
+		view_stock_card_warehouse AS wsc1 
+	WHERE
+		wsc1.warehouse_id = ${wareHouseId} 
+		AND wsc1.stock_date BETWEEN  '${year - 1}-10-01 00:00:00' 
+		AND '${year}-09-30 23:59:59'  
+	GROUP BY
+		wsc1.product_id,
+		wsc1.unit_generic_id 
+	) AS q2 ON q2.product_id = mp.product_id 
+	AND q2.unit_generic_id = mug.unit_generic_id
+	LEFT JOIN (
+	SELECT
+		wp.product_id,
+		wp.unit_generic_id,
+			ROUND(avg( IFNULL(wp.cost,0) ),2) AS cost 
+	FROM
+		wm_products AS wp 
+	GROUP BY
+		wp.product_id,
+		wp.unit_generic_id 
+	) AS q3 ON q3.product_id = mp.product_id 
+	AND q3.unit_generic_id = mug.unit_generic_id
+	LEFT JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
+	LEFT JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id 
+	WHERE
+	mg.generic_type_id IN ( ${genericType} ) 
 ORDER BY
-    mp.product_name
-       `
+    mp.product_name`
 
         return knex.raw(sql)
     }

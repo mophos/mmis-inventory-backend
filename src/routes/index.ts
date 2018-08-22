@@ -2760,7 +2760,8 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
       obj.PACK = v.pack;
       obj.UNIT_PRICE = v.unit_price;
       obj.SUMMIT_QTY = v.summit_qty;
-      obj.IN_QTY = v.out_qty;
+      obj.IN_QTY = v.in_qty;
+      obj.OUT_QTY = v.out_qty;
       obj.BALANCE_QTY = v.balance_qty;
       obj.AMOUNT_QTY = v.amount_qty;
       json.push(obj);
