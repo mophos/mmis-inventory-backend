@@ -173,7 +173,7 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
   const people1 = req.query.people1
   const people2 = req.query.people2
   const people3 = req.query.people3
-  let people = [people1,people2,people3]
+  let people = [people1, people2, people3]
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
@@ -187,17 +187,17 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
       v.summit_qty = inventoryReportModel.commaQty(v.summit_qty);
       v.amount_qty = inventoryReportModel.comma(v.amount_qty);
     });
-    let committee:any = []
-    for(let peopleId of people){
+    let committee: any = []
+    for (let peopleId of people) {
       console.log(peopleId);
-      let pe:any = await inventoryReportModel.peopleFullName(db,peopleId)
+      let pe: any = await inventoryReportModel.peopleFullName(db, peopleId)
       committee.push(pe[0])
     }
     res.render('issue_year', {
       rs: rs[0],
       hospitalName: hospitalName,
       year: year + 543,
-      committee:committee
+      committee: committee
     });
   } catch (error) {
     res.send({ ok: false, error: error.message })
@@ -490,6 +490,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
           generic_id: tv.generic_id,
           product_id: tv.product_id,
           requisition_qty: commaQty(+tv.requisition_qty / +tv.requisition_conversion_qty),
+          requisition_conversion_qty: tv.requisition_conversion_qty,
           requisition_large_unit: tv.requisition_large_unit,
           requisition_small_unit: tv.requisition_small_unit,
           large_unit: tv.large_unit,
@@ -2474,14 +2475,15 @@ router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req
   });
 }));
 
-router.get('/report/inventorystatus/:warehouseId/:genericTypeId/:statusDate', wrap(async (req, res, next) => {
+router.get('/report/inventorystatus', wrap(async (req, res, next) => {
   let db = req.db;
-  let warehouseId = req.params.warehouseId
-  let genericTypeId = req.params.genericTypeId
-  let statusDate = req.params.statusDate
+  let warehouseId = req.query.warehouseId
+  let statusDate = req.query.statusDate
+  let genericType = req.query.genericType
+  let warehouseName = req.query.warehouseName
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.inventoryStatus(db, warehouseId, genericTypeId, statusDate);
+  let rs = await inventoryReportModel.inventoryStatus(db, warehouseId, genericType, statusDate);
   let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
   let list = rs[0]
   let sumlist = [];
@@ -2511,6 +2513,7 @@ router.get('/report/inventorystatus/:warehouseId/:genericTypeId/:statusDate', wr
     printDate: printDate(req.decoded.SYS_PRINT_DATE),
     hospitalName: hospitalName,
     list: list,
+    warehouseName: warehouseName,
     sumlist: sumlist,
     totalsum: totalsum,
     totalsumShow: totalsumShow
@@ -2740,11 +2743,25 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
 
     rs[0].forEach(v => {
       let obj: any = {};
+      obj.WORKING_CODE = v.working_code;
+      obj.GENERIC_CODE = v.generic_name;
       obj.PRODUCT_NAME = v.product_name;
+      obj.CONVERSION = v.conversion
+      obj.BASEUNIT = v.baseunit;
+      obj.ACCOUNT_NAME = v.account_name;
+      obj.DOSAGE_NAME = v.dosage_name;
+      obj.GENERIC_HOSP_NAME = v.generic_hosp_name;
+      obj.GENERIC_TYPE_NAME = v.generic_type_name;
+      obj.STANDARD_COST = v.standard_cost
+      obj.BID_NAME = v.bid_name;
+      obj.GROUP_NAME = v.group_name;
+      obj.MIN_QTY = v.min_qty;
+      obj.MAX_QTY = v.max_qty;
       obj.PACK = v.pack;
       obj.UNIT_PRICE = v.unit_price;
       obj.SUMMIT_QTY = v.summit_qty;
-      obj.IN_QTY = v.out_qty;
+      obj.IN_QTY = v.in_qty;
+      obj.OUT_QTY = v.out_qty;
       obj.BALANCE_QTY = v.balance_qty;
       obj.AMOUNT_QTY = v.amount_qty;
       json.push(obj);
@@ -2903,5 +2920,45 @@ router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
     res.send({ ok: false, error: error.message })
   }
 }))
+
+router.get('/report/inventoryStatus/excel', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.query.warehouseId
+  let statusDate = req.query.statusDate
+  let genericType = req.query.genericType
+  let warehouseName = req.query.warehouseName
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let rs = await inventoryReportModel.inventoryStatus(db, warehouseId, genericType, statusDate);
+  let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
+  let json = [];
+  let sum = 0;
+  rs = rs[0];
+
+  rs.forEach(v => {
+    let obj: any = {};
+    sum += v.cost;
+    obj.generic_code = v.working_code;
+    obj.generic_name = v.generic_name;
+    obj.qty = v.qty;
+    obj.conversion_qty = v.conversion_qty;
+    obj.small_unit = v.small_unit;
+    obj.unit_cost = v.unit_cost;
+    obj.cost = v.cost;
+    obj.sum = '';
+    json.push(obj);
+  });
+  let sumText = inventoryReportModel.comma(sum)
+  json[json.length - 1].sum = sumText
+
+  const xls = json2xls(json);
+  const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+  // create directory
+  fse.ensureDirSync(exportDirectory);
+  const filePath = path.join(exportDirectory, 'รายงานสถานะเวชภัณฑ์คงคลัง ' + warehouseName + 'ณ วันที่' + statusDate_text + '.xlsx');
+  fs.writeFileSync(filePath, xls, 'binary');
+  // force download
+  res.download(filePath, 'รายงานสถานะเวชภัณฑ์คงคลัง ' + warehouseName + 'ณ วันที่' + statusDate_text + '.xlsx');
+}));
 
 export default router;

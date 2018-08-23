@@ -105,6 +105,26 @@ router.get('/search-warehouse-zero-autocomplete', co(async (req, res, next) => {
   }
 
 }));
+router.get('/search-warehouse-setzero-autocomplete', co(async (req, res, next) => {
+
+  let db = req.db;
+  let query = req.query.q;
+  let warehouseId = req.query.warehouseId;
+
+  try {
+    let rs = await genericModel.searchGenericSetZeroWarehouse(db, query, warehouseId);
+    if (rs[0].length) {
+      res.send(rs[0]);
+    } else {
+      res.send([]);
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
 
 // router.post('/allocate', async (req, res, next) => {
 

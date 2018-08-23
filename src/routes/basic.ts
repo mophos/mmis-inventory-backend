@@ -17,7 +17,7 @@ const genericModel = new GenericModel();
 const requisitionModel = new RequisitionModel();
 const productModel = new ProductModel();
 
-router.get('/product-vendors/:genericId', co(async(req, res, next) => {
+router.get('/product-vendors/:genericId', co(async (req, res, next) => {
 
   let db = req.db;
   let genericId = req.params.genericId;
@@ -27,13 +27,13 @@ router.get('/product-vendors/:genericId', co(async(req, res, next) => {
     res.send({ ok: true, rows: rows });
   } catch (error) {
     res.send({ ok: false, error: error.message });
-  }  finally {
+  } finally {
     db.destroy();
   }
 
 }));
 
-router.get('/product-manufactures/:genericId', co(async(req, res, next) => {
+router.get('/product-manufactures/:genericId', co(async (req, res, next) => {
 
   let db = req.db;
   let genericId = req.params.genericId;
@@ -49,7 +49,7 @@ router.get('/product-manufactures/:genericId', co(async(req, res, next) => {
 
 }));
 
-router.get('/product-lots/:productId', co(async(req, res, next) => {
+router.get('/product-lots/:productId', co(async (req, res, next) => {
 
   let db = req.db;
   let productId = req.params.productId;
@@ -65,7 +65,7 @@ router.get('/product-lots/:productId', co(async(req, res, next) => {
 
 }));
 
-router.get('/product-lots-warehouse/:productId/:warehouseId', co(async(req, res, next) => {
+router.get('/product-lots-warehouse/:productId/:warehouseId', co(async (req, res, next) => {
 
   let db = req.db;
   let productId = req.params.productId;
@@ -82,7 +82,7 @@ router.get('/product-lots-warehouse/:productId/:warehouseId', co(async(req, res,
 
 }));
 
-router.get('/product-warehouses/:productId', co(async(req, res, next) => {
+router.get('/product-warehouses/:productId', co(async (req, res, next) => {
 
   let db = req.db;
   let productId = req.params.productId;
@@ -98,7 +98,7 @@ router.get('/product-warehouses/:productId', co(async(req, res, next) => {
 
 }));
 
-router.get('/generic-warehouses/:genericId', co(async(req, res, next) => {
+router.get('/generic-warehouses/:genericId', co(async (req, res, next) => {
 
   let db = req.db;
   let genericId = req.params.genericId;
@@ -114,7 +114,7 @@ router.get('/generic-warehouses/:genericId', co(async(req, res, next) => {
 
 }));
 
-router.get('/warehouse-location/:warehouseId', co(async(req, res, next) => {
+router.get('/warehouse-location/:warehouseId', co(async (req, res, next) => {
 
   let db = req.db;
   let warehouseId = req.params.warehouseId;
@@ -130,7 +130,7 @@ router.get('/warehouse-location/:warehouseId', co(async(req, res, next) => {
 
 }));
 
-router.get('/search-manufacture', co(async(req, res, next) => {
+router.get('/search-manufacture', co(async (req, res, next) => {
 
   let db = req.db;
   let query = req.query.q;
@@ -146,7 +146,7 @@ router.get('/search-manufacture', co(async(req, res, next) => {
 
 }));
 
-router.get('/search-vendor', co(async(req, res, next) => {
+router.get('/search-vendor', co(async (req, res, next) => {
 
   let db = req.db;
   let query = req.query.q;
@@ -162,13 +162,13 @@ router.get('/search-vendor', co(async(req, res, next) => {
 
 }));
 
-router.get('/people-list', co(async(req, res, next) => {
+router.get('/people-list', co(async (req, res, next) => {
 
   let db = req.db;
 
   try {
     let rows = await basicModel.getPeopleList(db);
-    res.send({ok: true, rows: rows});
+    res.send({ ok: true, rows: rows });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -177,7 +177,7 @@ router.get('/people-list', co(async(req, res, next) => {
 
 }));
 
-router.get('/search-people-autocomplete', co(async(req, res, next) => {
+router.get('/search-people-autocomplete', co(async (req, res, next) => {
 
   let db = req.db;
   let query = req.query.q;
@@ -193,13 +193,13 @@ router.get('/search-people-autocomplete', co(async(req, res, next) => {
 
 }));
 
-router.get('/warehouses', co(async(req, res, next) => {
+router.get('/warehouses', co(async (req, res, next) => {
 
   let db = req.db;
 
   try {
     let rows = await basicModel.getWarehouses(db);
-    res.send({ok: true, rows: rows});
+    res.send({ ok: true, rows: rows });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -208,13 +208,13 @@ router.get('/warehouses', co(async(req, res, next) => {
 
 }));
 
-router.get('/network-types', co(async(req, res, next) => {
+router.get('/network-types', co(async (req, res, next) => {
 
   let db = req.db;
 
   try {
     let rows = await basicModel.getNetworkTypes(db);
-    res.send({ok: true, rows: rows});
+    res.send({ ok: true, rows: rows });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -222,13 +222,13 @@ router.get('/network-types', co(async(req, res, next) => {
   }
 }))
 
-router.get('/transaction-issues', co(async(req, res, next) => {
+router.get('/transaction-issues', co(async (req, res, next) => {
 
   let db = req.db;
 
   try {
     let rows = await basicModel.getTransactionIssue(db);
-    res.send({ok: true, rows: rows});
+    res.send({ ok: true, rows: rows });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -237,11 +237,11 @@ router.get('/transaction-issues', co(async(req, res, next) => {
 
 }));
 
-router.get('/search-donator', co(async(req, res, next) => {
+router.get('/search-donator', co(async (req, res, next) => {
 
   let db = req.db;
   let query = req.query.q;
-  
+
   try {
     let rows = await basicModel.searchDonator(db, query);
     res.send(rows);
@@ -253,8 +253,8 @@ router.get('/search-donator', co(async(req, res, next) => {
 
 }));
 
-router.get('/generic-types', co(async(req, res, next) => {
-let db = req.db;
+router.get('/generic-types', co(async (req, res, next) => {
+  let db = req.db;
 
   try {
     let productGroups = req.decoded.generic_type_id;
@@ -267,7 +267,7 @@ let db = req.db;
       });
     }
 
-    let rs = await genericModel.getGenericTypes(db,_pgs);
+    let rs = await genericModel.getGenericTypes(db, _pgs);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     console.log(error);
@@ -278,7 +278,7 @@ let db = req.db;
 
 }));
 
-router.get('/generic-group-list', co(async(req, res, next) => {
+router.get('/generic-group-list', co(async (req, res, next) => {
   let db = req.db;
 
   try {
@@ -309,7 +309,7 @@ router.get('/generic-group-list', co(async(req, res, next) => {
 
 // }));
 
-router.get('/generic-in-group', co(async(req, res, next) => {
+router.get('/generic-in-group', co(async (req, res, next) => {
   let db = req.db;
   let groupId = req.query.groupId;
 
@@ -366,7 +366,7 @@ router.get('/get-generic-warehouse-remain/:warehouseId/:genericId', async (req, 
   try {
     let rs: any = await genericModel.getRemainQtyInWarehouse(db, warehouseId, genericId);
     // console.log(rs);
-    res.send({ ok: true, remain_qty: rs[0].remain_qty});
+    res.send({ ok: true, remain_qty: rs[0].remain_qty });
   } catch (error) {
     console.log(error);
     res.send({ ok: false, error: error.messgae });
@@ -381,17 +381,25 @@ router.post('/checkApprove', async (req, res, next) => {
     let username = req.body.username;
     let password = req.body.password;
     let action = req.body.action;
+    const warehouseId = req.decoded.warehouseId;
     password = crypto.createHash('md5').update(password).digest('hex');
-    const isCheck = await basicModel.checkApprove(db, username, password);
-    console.log(isCheck[0]);
-    let rights = isCheck[0].access_right.split(',');
-
-    if (_.indexOf(rights, action) > -1) {
-      res.send({ ok: true })
+    const isCheck = await basicModel.checkApprove(db, username, password, warehouseId);
+    if (isCheck.length) {
+      let access_right;
+      isCheck.forEach(v => {
+        access_right = v.access_right + ',';
+      });
+      let rights = access_right.split(',');
+      if (_.indexOf(rights, action) > -1) {
+        res.send({ ok: true })
+      } else {
+        res.send({ ok: false });
+      }
     } else {
       res.send({ ok: false });
     }
   } catch (error) {
+    console.log(error);
     res.send({ ok: false, error: error });
   }
 
