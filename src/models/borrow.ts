@@ -97,7 +97,6 @@ export class BorrowModel {
       .where('wmt.src_warehouse_id', warehouseId)
       .andWhereNot('wmt.mark_deleted', 'Y')
       .andWhereNot('wmt.approved', 'Y')
-      .andWhere('wmt.confirmed', 'Y')
       .limit(limit)
       .offset(offset)
       .orderBy('wmt.borrow_id', 'DESC')
@@ -108,7 +107,6 @@ export class BorrowModel {
       .where('wmt.src_warehouse_id', warehouseId)
       .andWhereNot('wmt.mark_deleted', 'Y')
       .andWhereNot('wmt.approved', 'Y')
-      .andWhere('wmt.confirmed', 'Y')
       .count('* as total');
   }
 
@@ -240,7 +238,7 @@ export class BorrowModel {
       .groupByRaw('d.wm_product_id, d.lot_no, d.expired_date');
   }
 
-  getProductListIds(knex: Knex, transferIds: any[]) {
+  getProductListIds(knex: Knex, borrowIds: any[]) {
     let subBalanceSrc = knex('wm_products as wp')
       .sum('wp.qty')
       .as('balance_src')
@@ -250,18 +248,18 @@ export class BorrowModel {
     let subBalanceDst = knex('wm_products as wp')
       .sum('wp.qty')
       .as('balance_dst')
-      .whereRaw('wp.warehouse_id=t.dst_warehouse_id and wp.product_id=p.product_id and wp.lot_no<=>p.lot_no and wp.expired_date<=>p.expired_date')
+      .whereRaw('wp.warehouse_id=b.dst_warehouse_id and wp.product_id=p.product_id and wp.lot_no<=>p.lot_no and wp.expired_date<=>p.expired_date')
     // .whereRaw('wp.product_id=d.product_id and wp.warehouse_id=t.dst_warehouse_id and wp.lot_no=d.lot_no and wp.expired_date=d.expired_date');
 
     return knex('wm_borrow_detail as d')
       .select('d.*', 'ug.qty as conversion_qty', 'p.lot_no',
         'p.expired_date', 'p.cost', 'p.price', 'p.product_id',
-        'mp.generic_id', 't.*', subBalanceSrc, subBalanceDst, 'p.unit_generic_id')
-      .innerJoin('wm_transfer as t', 't.transfer_id', 'd.borrow_id')
+        'mp.generic_id', 'b.*', subBalanceSrc, subBalanceDst, 'p.unit_generic_id')
+      .innerJoin('wm_borrow as b', 'b.borrow_id', 'd.borrow_id')
       .joinRaw(`inner join wm_products as p on p.wm_product_id=d.wm_product_id`)
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
       .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'p.unit_generic_id')
-      .whereIn('d.borrow_id', transferIds)
+      .whereIn('d.borrow_id', borrowIds)
       .groupByRaw('d.wm_product_id');
   }
 
@@ -281,13 +279,13 @@ export class BorrowModel {
       });
   }
 
-  changeApproveStatusIds(knex: Knex, transferIds: any[], peopleUserId: any) {
-    return knex('wm_transfer')
-      .whereIn('transfer_id', transferIds)
+  changeApproveStatusIds(knex: Knex, borrowIds: any[], peopleUserId: any) {
+    return knex('wm_borrow')
+      .whereIn('borrow_id', borrowIds)
       .update({
         approved: 'Y',
-        approve_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-        approve_people_user_id: peopleUserId
+        approved_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+        approved_people_user_id: peopleUserId
       });
   }
 
@@ -409,7 +407,7 @@ export class BorrowModel {
     return knex.raw(sql, [transferId]);
   }
 
-  getProductRemainByTransferIds(knex: Knex, productId: any, warehouseId: any) {
+  getProductRemainByBorrowIds(knex: Knex, productId: any, warehouseId: any) {
     let sql = `SELECT
       wp.product_id,
       sum(wp.qty) AS balance,
@@ -478,8 +476,8 @@ export class BorrowModel {
   }
 
   checkStatus(knex: Knex, borrowId: any[]) {
-    return knex('wm_borrow as wmt')
-      .select('wmt.mark_deleted', 'wmt.approved', 'wmt.confirmed')
-      .whereIn('wmt.borrow_id', borrowId);
+    return knex('wm_borrow as b')
+      .select('b.mark_deleted', 'b.approved', 'b.confirmed')
+      .whereIn('b.borrow_id', borrowId);
   }
 }

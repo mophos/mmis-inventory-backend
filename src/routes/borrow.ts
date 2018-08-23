@@ -41,9 +41,6 @@ router.get('/list', co(async (req, res, next) => {
       rows = await borrowModel.notApproved(db, warehouseId, limit, offset);
       total = await borrowModel.totalNotApproved(db, warehouseId);
     } else if (type === 4) {
-      rows = await borrowModel.notConfirmed(db, warehouseId, limit, offset);
-      total = await borrowModel.totalNotConfirmed(db, warehouseId);
-    } else if (type === 5) {
       rows = await borrowModel.markDeleted(db, warehouseId, limit, offset);
       total = await borrowModel.totalMarkDelete(db, warehouseId);
     } else {
@@ -278,13 +275,13 @@ router.post('/approve-all', co(async (req, res, next) => {
   try {
     let isValid = true;
     const rs = await borrowModel.checkStatus(db, borrowIds);
+    
     for (const i of rs) {
       if (i.mark_deleted === 'Y') {
         isValid = false;
       }
     }
     if (isValid) {
-      await borrowModel.changeConfirmStatusIds(db, borrowIds, peopleUserId);
       await approve(db, borrowIds, warehouseId, peopleUserId);
       res.send({ ok: true });
     } else {
@@ -334,6 +331,7 @@ router.get('/product-warehouse-lots/:productId/:warehouseId', co(async (req, res
 
 const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUserId: any) => {
   let results = await borrowModel.getProductListIds(db, borrowIds);
+  
   let dstProducts = [];
   let srcProducts = [];
   let srcWarehouseId = null;
@@ -351,8 +349,8 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       obj.product_id = v.product_id;
       obj.generic_id = v.generic_id;
       obj.unit_generic_id = v.unit_generic_id;
-      obj.transfer_code = v.transfer_code;
-      obj.transfer_id = v.transfer_id;
+      obj.borrow_code = v.borrow_code;
+      obj.borrow_id = v.borrow_id;
       obj.qty = +v.product_qty;
       obj.price = v.price;
       obj.cost = v.cost;
@@ -366,7 +364,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       // get balance 
       let obj_remaint_dst: any = {}
       let obj_remain_src: any = {}
-      let remain_dst = await borrowModel.getProductRemainByTransferIds(db, v.product_id, v.dst_warehouse_id);
+      let remain_dst = await borrowModel.getProductRemainByBorrowIds(db, v.product_id, v.dst_warehouse_id);
       for (let v of remain_dst[0]) {
         obj_remaint_dst.product_id = v.product_id;
         obj_remaint_dst.warehouse_id = v.warehouse_id;
@@ -374,7 +372,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
         obj_remaint_dst.unit_generic_id = v.unit_generic_id;
         obj_remaint_dst.balance_generic = v.balance_generic;
       }
-      let remain_src = await borrowModel.getProductRemainByTransferIds(db, v.product_id, v.src_warehouse_id);
+      let remain_src = await borrowModel.getProductRemainByBorrowIds(db, v.product_id, v.src_warehouse_id);
       for (let v of remain_src[0]) {
         obj_remain_src.product_id = v.product_id;
         obj_remain_src.warehouse_id = v.warehouse_id;
@@ -392,7 +390,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
 
   srcProducts = _.clone(dstProducts);
 
-  // =================================== TRANSFER IN ========================
+  // =================================== BORROW IN ========================
   let data = [];
 
   dstProducts.forEach(v => {
@@ -403,8 +401,8 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       objIn.generic_id = v.generic_id;
       objIn.unit_generic_id = v.unit_generic_id;
       objIn.transaction_type = TransactionType.TRANSFER_IN;
-      objIn.document_ref_id = v.transfer_id;
-      objIn.document_ref = v.transfer_code;
+      objIn.document_ref_id = v.borrow_id;
+      objIn.document_ref = v.borrow_code;
       objIn.in_qty = v.qty;
       objIn.in_unit_cost = v.cost;
       let dstBalance = 0;
@@ -439,8 +437,8 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       objOut.generic_id = v.generic_id;
       objOut.unit_generic_id = v.unit_generic_id;
       objOut.transaction_type = TransactionType.TRANSFER_OUT;
-      objOut.document_ref = v.transfer_code;
-      objOut.document_ref_id = v.transfer_id;
+      objOut.document_ref = v.borrow_code;
+      objOut.document_ref_id = v.borrow_id;
       objOut.out_qty = v.qty;
       objOut.out_unit_cost = v.cost;
       let srcBalance = 0;
