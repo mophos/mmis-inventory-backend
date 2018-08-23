@@ -2632,7 +2632,22 @@ OR sc.ref_src like ?
         SELECT
 	mp.product_name,
 	mg.working_code,
-	mg.generic_name,
+    mg.generic_name,
+    (
+        SELECT
+            ml.labeler_name 
+        FROM
+            pc_purchasing_order_item AS ppoi1
+            LEFT JOIN mm_products AS mps ON mps.product_id = ppoi1.product_id
+            LEFT JOIN mm_labelers AS ml ON ml.labeler_id = mps.m_labeler_id
+        WHERE
+            ppoi1.generic_id = mg.generic_id 
+            AND ppoi1.product_id = mp.product_id 
+            AND ppoi1.unit_generic_id = mug.unit_generic_id 
+        ORDER BY
+            ppoi1.purchase_order_item_id DESC 
+            LIMIT 1 
+        ) AS m_labeler_name ,
 	mug.qty AS conversion,
 	mu.unit_name AS baseunit,
 	mga.account_name,
@@ -2657,9 +2672,9 @@ JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
 LEFT JOIN mm_unit_generics AS mug ON mug.generic_id = mg.generic_id
 LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id
 LEFT JOIN mm_generic_group_1 AS mgg1 ON mgg1.group_code_1 = mg.group_code_1
-LEFT JOIN mm_generic_group_2 AS mgg2 ON mgg2.group_code_2 = mg.group_code_2
-LEFT JOIN mm_generic_group_3 AS mgg3 ON mgg3.group_code_3 = mg.group_code_3
-LEFT JOIN mm_generic_group_4 AS mgg4 ON mgg4.group_code_4 = mg.group_code_4
+LEFT JOIN mm_generic_group_2 AS mgg2 ON mgg2.group_code_2 = mg.group_code_2 and mgg2.group_code_1 = mg.group_code_1
+LEFT JOIN mm_generic_group_3 AS mgg3 ON mgg3.group_code_3 = mg.group_code_3 and mgg3.group_code_2 = mg.group_code_2 and mgg3.group_code_1 = mg.group_code_1
+LEFT JOIN mm_generic_group_4 AS mgg4 ON mgg4.group_code_4 = mg.group_code_4 and mgg4.group_code_3 = mg.group_code_3 and mgg4.group_code_2 = mg.group_code_2 and mgg4.group_code_1 = mg.group_code_1
 LEFT JOIN mm_generic_dosages AS mgd ON mgd.dosage_id = mg.dosage_id
 LEFT JOIN mm_generic_hosp AS mgh ON mgh.id = mg.generic_hosp_id
 LEFT JOIN l_bid_type AS ibt ON ibt.bid_id = mg.purchasing_method
