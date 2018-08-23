@@ -57,12 +57,12 @@ router.get('/list', co(async (req, res, next) => {
 
 }));
 
-router.get('/info-summary/:transferId', co(async (req, res, next) => {
+router.get('/info-summary/:borrowId', co(async (req, res, next) => {
   let db = req.db;
-  let transferId = req.params.transferId;
+  let borrowId = req.params.borrowId;
 
   try {
-    let rows = await borrowModel.getSummaryInfo(db, transferId);
+    let rows = await borrowModel.getSummaryInfo(db, borrowId);
     res.send({ ok: true, info: rows[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -72,16 +72,16 @@ router.get('/info-summary/:transferId', co(async (req, res, next) => {
 
 }));
 
-router.get('/info-detail/:transferId', co(async (req, res, next) => {
+router.get('/info-detail/:borrowId', co(async (req, res, next) => {
   let db = req.db;
-  let transferId = req.params.transferId;
+  let borrowId = req.params.borrowId;
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
-    const rsGenerics = await borrowModel.getGenericInfo(db, transferId, srcWarehouseId);
+    const rsGenerics = await borrowModel.getGenericInfo(db, borrowId, srcWarehouseId);
     let _generics = rsGenerics[0];
     for (const g of _generics) {
-      const rsProducts = await borrowModel.getProductsInfo(db, transferId, g.transfer_generic_id);
+      const rsProducts = await borrowModel.getProductsInfo(db, borrowId, g.borrow_generic_id);
       let _products = rsProducts[0];
       g.products = _products;
       // g.transfer_qty = _.sumBy(_products, function (e: any) {
@@ -134,18 +134,18 @@ router.get('/detail/:borrowId', co(async (req, res, next) => {
 
 }));
 
-router.delete('/:transferId', co(async (req, res, next) => {
+router.delete('/:borrowId', co(async (req, res, next) => {
   let db = req.db;
-  let transferId = req.params.transferId;
+  let borrowId = req.params.borrowId;
 
   try {
-    const rs = await borrowModel.checkStatus(db, [transferId]);
+    const rs = await borrowModel.checkStatus(db, [borrowId]);
     const status = rs[0];
     if (status.approved === 'Y') {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
     } else {
-      let rows = await borrowModel.removeTransfer(db, transferId);
-      res.send({ ok: true });
+      let rows = await borrowModel.removeTransfer(db, borrowId);
+      res.send({ ok: true ,row:[]});
     }
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -159,7 +159,6 @@ router.post('/save', co(async (req, res, next) => {
   let db = req.db;
   let _summary = req.body.summary;
   let _generics = req.body.generics;
-  // const approveAuto = req.decoded.WM_TRANSFER_APPROVE === 'N' ? true : false;
 
   if (_generics.length && _summary) {
     try {
@@ -177,19 +176,35 @@ router.post('/save', co(async (req, res, next) => {
       let borrowId = rsBorrow[0];
 
       for (const g of _generics) {
+        let generics = {
+          borrow_id: borrowId,
+          generic_id: g.generic_id,
+          qty: g.borrow_qty,
+          primary_unit_id: g.primary_unit_id,
+          location_id: g.location_id,
+          unit_generic_id: g.unit_generic_id,
+          // conversion_qty: g.conversion_qty,
+          create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+          create_by: req.decoded.people_user_id
+        };
+        let rsBorrowGeneric = await borrowModel.saveBorrowGeneric(db, generics);
+
         let products = [];
-        for (const p of g.products) {
+        g.products.forEach(p => {
+          // if (p.product_qty != 0) { // เอาออกเพื่อให้แก้ไขแล้วเปลี่ยน lot ได้
           products.push({
             borrow_id: borrowId,
+            borrow_generic_id: rsBorrowGeneric[0],
             wm_product_id: p.wm_product_id,
             qty: p.product_qty * p.conversion_qty,
-            created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-            created_by: req.decoded.people_user_id
+            create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+            create_by: req.decoded.people_user_id
           });
-        }
+          // }
+
+        });
         await borrowModel.saveBorrowProduct(db, products);
       }
-
       res.send({ ok: true });
 
     } catch (error) {
@@ -203,48 +218,48 @@ router.post('/save', co(async (req, res, next) => {
   }
 }));
 
-router.put('/save/:transferId', co(async (req, res, next) => {
+router.put('/save/:borrowId', co(async (req, res, next) => {
   let db = req.db;
   let _summary = req.body.summary;
   let _generics = req.body.generics;
-  let transferId = req.params.transferId;
+  let borrowId = req.params.borrowId;
 
   if (_generics.length && _summary) {
-    const rs = await borrowModel.checkStatus(db, [transferId]);
+    const rs = await borrowModel.checkStatus(db, [borrowId]);
     const status = rs[0];
     if (status.confirmed === 'Y' || status.approved === 'Y' || status.mark_deleted === 'Y') {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
     } else {
       try {
-        let transfer = {
-          transfer_date: _summary.transferDate,
+        let borrow = {
+          borrow_date: _summary.borrowDate,
           people_user_id: req.decoded.people_user_id
         }
 
-        await borrowModel.deleteTransferGeneric(db, transferId);
-        await borrowModel.deleteTransferProduct(db, transferId);
-        await borrowModel.updateTransferSummary(db, transferId, transfer);
+        await borrowModel.deleteBorrowGeneric(db, borrowId);
+        await borrowModel.deleteBorrowProduct(db, borrowId);
+        await borrowModel.updateBorrowSummary(db, borrowId, borrow);
 
         for (const g of _generics) {
           let generics = {
-            transfer_id: transferId,
+            borrow_id: borrowId,
             generic_id: g.generic_id,
-            transfer_qty: g.transfer_qty,
+            qty: g.borrow_qty,
             unit_generic_id: g.unit_generic_id,
             primary_unit_id: g.primary_unit_id,
             location_id: g.location_id,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
           };
-          let rsTransferGeneric = await borrowModel.saveTransferGeneric(db, generics);
+          let rsBorrowGeneric = await borrowModel.saveBorrowGeneric(db, generics);
 
           let products = [];
           g.products.forEach(p => {
             products.push({
-              transfer_id: transferId,
-              transfer_generic_id: rsTransferGeneric[0],
+              borrow_id: borrowId,
+              borrow_generic_id: rsBorrowGeneric[0],
               wm_product_id: p.wm_product_id,
-              product_qty: p.product_qty * p.conversion_qty,
+              qty: p.product_qty * p.conversion_qty,
               create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
               create_by: req.decoded.people_user_id
             });
@@ -275,7 +290,7 @@ router.post('/approve-all', co(async (req, res, next) => {
   try {
     let isValid = true;
     const rs = await borrowModel.checkStatus(db, borrowIds);
-    
+
     for (const i of rs) {
       if (i.mark_deleted === 'Y') {
         isValid = false;
@@ -331,32 +346,32 @@ router.get('/product-warehouse-lots/:productId/:warehouseId', co(async (req, res
 
 const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUserId: any) => {
   let results = await borrowModel.getProductListIds(db, borrowIds);
-  
+
   let dstProducts = [];
   let srcProducts = [];
   let srcWarehouseId = null;
   let balances = [];
   for (let v of results) {
-    if (+v.product_qty != 0) {
+    if (+v.qty != 0) {
       let obj: any = {};
       let id = uuid();
 
       obj.wm_product_id = id;
       obj.dst_warehouse_id = v.dst_warehouse_id;
       obj.src_warehouse_id = v.src_warehouse_id;
-      obj.current_balance_dst = v.balance_dst;
+      obj.current_balance_dst = v.balance_dst === null ? 0 : v.balance_dst;
       obj.current_balance_src = v.balance_src;
       obj.product_id = v.product_id;
       obj.generic_id = v.generic_id;
       obj.unit_generic_id = v.unit_generic_id;
       obj.borrow_code = v.borrow_code;
       obj.borrow_id = v.borrow_id;
-      obj.qty = +v.product_qty;
+      obj.qty = +v.qty;
       obj.price = v.price;
       obj.cost = v.cost;
       obj.lot_no = v.lot_no;
       obj.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
-      obj.location_id = v.location_id;
+      // obj.location_id = v.location_id;
       obj.people_user_id = v.people_user_id;
       obj.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
       dstProducts.push(obj);
@@ -424,7 +439,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       objIn.ref_dst = v.dst_warehouse_id;
       objIn.lot_no = v.lot_no;
       objIn.expired_date = v.expired_date;
-      objIn.comment = 'รับโอน';
+      objIn.comment = 'รับยืม';
       data.push(objIn);
     }
   });
@@ -458,13 +473,13 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       objOut.ref_src = v.src_warehouse_id;
       objOut.ref_dst = v.dst_warehouse_id;
       objOut.balance_generic_qty = srcBalanceGeneric;
-      objOut.comment = 'โอน';
+      objOut.comment = 'ยืม';
       objOut.lot_no = v.lot_no;
       objOut.expired_date = v.expired_date;
       data.push(objOut);
     }
-  });
 
+  });
   await borrowModel.saveDstProducts(db, dstProducts);
   await borrowModel.decreaseQty(db, dstProducts);
   await borrowModel.changeApproveStatusIds(db, borrowIds, peopleUserId);

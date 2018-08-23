@@ -8,27 +8,27 @@ export class BorrowModel {
       .insert(data, 'borrow_id');
   }
 
-  updateTransferSummary(knex: Knex, transferId: any, data: any) {
-    return knex('wm_transfer')
-      .where('transfer_id', transferId)
+  updateBorrowSummary(knex: Knex, borrowId: any, data: any) {
+    return knex('wm_borrow')
+      .where('borrow_id', borrowId)
       .update(data);
   }
 
-  deleteTransferGeneric(knex: Knex, transferId: any) {
-    return knex('wm_transfer_generic')
-      .where('transfer_id', transferId)
+  deleteBorrowGeneric(knex: Knex, borrowId: any) {
+    return knex('wm_borrow_generic')
+      .where('borrow_id', borrowId)
       .delete();
   }
 
-  deleteTransferProduct(knex: Knex, transferId: any) {
-    return knex('wm_transfer_product')
-      .where('transfer_id', transferId)
+  deleteBorrowProduct(knex: Knex, borrowId: any) {
+    return knex('wm_borrow_product')
+      .where('borrow_id', borrowId)
       .delete();
   }
 
-  removeTransferDetail(knex: Knex, transferId: any) {
-    return knex('wm_transfer_detail')
-      .where('transfer_id', transferId)
+  removeTransferDetail(knex: Knex, borrowId: any) {
+    return knex('wm_borrow_detail')
+      .where('borrow_id', borrowId)
       .del();
   }
 
@@ -37,13 +37,13 @@ export class BorrowModel {
       .insert(data);
   }
 
-  saveTransferGeneric(knex: Knex, data) {
-    return knex('wm_transfer_generic')
-      .insert(data);
+  saveBorrowGeneric(knex: Knex, data) {
+    return knex('wm_borrow_generic')
+      .insert(data, 'borrrow_generic_id');
   }
 
   saveBorrowProduct(knex: Knex, data) {
-    return knex('wm_borrow_detail')
+    return knex('wm_borrow_product')
       .insert(data);
   }
 
@@ -156,26 +156,18 @@ export class BorrowModel {
 
   detail(knex: Knex, borrowId: string) {
     let sql = `
-    SELECT
-    mp.product_name,
-    mg.generic_name,
-    wp.lot_no,
-    wp.expired_date,
-    bd.qty AS product_qty,
-    tu.unit_name AS to_unit_name,
-    fu.unit_name AS from_unit_name,
-    mug.qty AS conversion_qty,
-    FLOOR(bd.qty/mug.qty) AS product_pack_qty
-    FROM
-    wm_borrow b 
-    JOIN wm_borrow_detail bd ON bd.borrow_id = b.borrow_id
-    JOIN wm_products wp ON wp.wm_product_id = bd.wm_product_id
-    JOIN mm_products mp ON mp.product_id = wp.product_id
-    JOIN mm_generics mg ON mg.generic_id = mp.generic_id
-    JOIN mm_unit_generics mug ON mug.unit_generic_id = wp.unit_generic_id
-    JOIN mm_units tu ON tu.unit_id = mug.to_unit_id
-    JOIN mm_units fu ON fu.unit_id = mug.from_unit_id
-    where b.borrow_id = ? and bd.qty != 0
+    select bp.*
+    , FLOOR(bp.qty/ug.qty) as product_pack_qty
+    , mp.product_name, mg.generic_name, wp.lot_no, wp.expired_date
+    , fu.unit_name as from_unit_name, ug.qty as conversion_qty, tu.unit_name as to_unit_name
+    from wm_borrow_product as bp
+    join wm_products as wp on wp.wm_product_id = bp.wm_product_id
+    join mm_products as mp on mp.product_id = wp.product_id
+    join mm_generics as mg on mg.generic_id = mp.generic_id
+    join mm_unit_generics as ug on ug.unit_generic_id = wp.unit_generic_id
+    join mm_units as fu on fu.unit_id = ug.from_unit_id
+    join mm_units as tu on tu.unit_id = ug.to_unit_id
+    where bp.borrow_id = ? and bp.qty != 0
     order by mp.product_name`;
     return knex.raw(sql, [borrowId]);
   }
@@ -186,7 +178,7 @@ export class BorrowModel {
       let sql = `
           INSERT INTO wm_products
           (wm_product_id, warehouse_id, product_id, qty, cost
-            , lot_no, expired_date, location_id, unit_generic_id, people_user_id
+            , lot_no, expired_date, unit_generic_id, people_user_id
             , created_at)
           VALUES('${v.wm_product_id}', '${v.dst_warehouse_id}', '${v.product_id}', ${v.qty}, ${v.cost}
           , '${v.lot_no}',`
@@ -195,7 +187,7 @@ export class BorrowModel {
       } else {
         sql += `'${v.expired_date}'`;
       }
-      sql += `, ${v.location_id}, ${v.unit_generic_id}, '${v.people_user_id}'
+      sql += `, ${v.unit_generic_id}, '${v.people_user_id}'
           , '${v.created_at}')
           ON DUPLICATE KEY UPDATE
           qty=qty+${v.qty}
@@ -248,14 +240,15 @@ export class BorrowModel {
     let subBalanceDst = knex('wm_products as wp')
       .sum('wp.qty')
       .as('balance_dst')
-      .whereRaw('wp.warehouse_id=b.dst_warehouse_id and wp.product_id=p.product_id and wp.lot_no<=>p.lot_no and wp.expired_date<=>p.expired_date')
+      .whereRaw('wp.warehouse_id=t.dst_warehouse_id and wp.product_id=p.product_id and wp.lot_no<=>p.lot_no and wp.expired_date<=>p.expired_date')
     // .whereRaw('wp.product_id=d.product_id and wp.warehouse_id=t.dst_warehouse_id and wp.lot_no=d.lot_no and wp.expired_date=d.expired_date');
 
-    return knex('wm_borrow_detail as d')
+    return knex('wm_borrow_product as d')
       .select('d.*', 'ug.qty as conversion_qty', 'p.lot_no',
         'p.expired_date', 'p.cost', 'p.price', 'p.product_id',
-        'mp.generic_id', 'b.*', subBalanceSrc, subBalanceDst, 'p.unit_generic_id')
-      .innerJoin('wm_borrow as b', 'b.borrow_id', 'd.borrow_id')
+        'mp.generic_id', 't.*', 'tg.*', subBalanceSrc, subBalanceDst, 'p.unit_generic_id')
+      .innerJoin('wm_borrow as t', 't.borrow_id', 'd.borrow_id')
+      .joinRaw('join wm_borrow_generic as tg on tg.borrow_id = d.borrow_id and tg.borrow_generic_id = d.borrow_generic_id')
       .joinRaw(`inner join wm_products as p on p.wm_product_id=d.wm_product_id`)
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
       .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'p.unit_generic_id')
@@ -263,17 +256,17 @@ export class BorrowModel {
       .groupByRaw('d.wm_product_id');
   }
 
-  removeTransfer(knex: Knex, transferId: any) {
-    return knex('wm_transfer')
-      .where('transfer_id', transferId)
+  removeTransfer(knex: Knex, borrowId: any) {
+    return knex('wm_borrow')
+      .where('borrow_id', borrowId)
       .update({
         mark_deleted: 'Y'
       });
   }
 
-  changeApproveStatus(knex: Knex, transferId: any) {
+  changeApproveStatus(knex: Knex, borrowId: any) {
     return knex('wm_transfer')
-      .where('transfer_id', transferId)
+      .where('borrow_id', borrowId)
       .update({
         approved: 'Y'
       });
@@ -299,9 +292,9 @@ export class BorrowModel {
       });
   }
 
-  changeDeleteStatus(knex: Knex, transferId: any) {
+  changeDeleteStatus(knex: Knex, borrowId: any) {
     return knex('wm_transfer')
-      .where('transfer_id', transferId)
+      .where('borrow_id', borrowId)
       .update({
         mark_deleted: 'N'
       });
@@ -327,15 +320,15 @@ export class BorrowModel {
       .orderBy('wpl.expired_date', 'asc');
   }
 
-  getSummaryInfo(knex: Knex, transferId: any) {
-    return knex('wm_transfer')
-      .where('transfer_id', transferId);
+  getSummaryInfo(knex: Knex, borrowId: any) {
+    return knex('wm_borrow')
+      .where('borrow_id', borrowId);
   }
 
-  getProductsInfo(knex: Knex, transferId: any, transferGenericId: any) {
+  getProductsInfo(knex: Knex, borrowId: any, transferGenericId: any) {
     let sql = `SELECT
-    tp.*,
-    tp.product_qty / ug.qty as product_qty,
+    bp.*,
+    bp.qty / ug.qty as product_qty,
     FLOOR(wp.qty / ug.qty) as pack_remain_qty,
     wp.qty AS small_remain_qty,
     wp.lot_no,
@@ -345,20 +338,20 @@ export class BorrowModel {
     ug.qty AS conversion_qty,
     tu.unit_name AS to_unit_name 
   FROM
-    wm_transfer_product AS tp
-    JOIN wm_products AS wp ON wp.wm_product_id = tp.wm_product_id
+    wm_borrow_product AS bp
+    JOIN wm_products AS wp ON wp.wm_product_id = bp.wm_product_id
     JOIN mm_unit_generics AS ug ON ug.unit_generic_id = wp.unit_generic_id
     JOIN mm_products AS mp ON mp.product_id = wp.product_id
     JOIN mm_units AS fu ON fu.unit_id = ug.from_unit_id
     JOIN mm_units AS tu ON tu.unit_id = ug.to_unit_id 
   WHERE
-    tp.transfer_id = ? 
-    and tp.transfer_generic_id = ?
+    bp.borrow_id = ? 
+    and bp.borrow_generic_id = ?
     `;
-    return knex.raw(sql, [transferId, transferGenericId]);
+    return knex.raw(sql, [borrowId, transferGenericId]);
   }
 
-  getProductsInfoEdit(knex: Knex, transferId: any, transferGenericId: any) {
+  getProductsInfoEdit(knex: Knex, borrowId: any, transferGenericId: any) {
     let sql = `SELECT
     tp.*,
     tp.product_qty / ug.qty as product_qty,
@@ -379,32 +372,32 @@ export class BorrowModel {
     JOIN mm_units AS fu ON fu.unit_id = ug.from_unit_id
     JOIN mm_units AS tu ON tu.unit_id = ug.to_unit_id 
   WHERE
-    tp.transfer_id = ? 
+    tp.borrow_id = ? 
     and tp.transfer_generic_id = ?
     and tp.product_qty > 0
     `;
-    return knex.raw(sql, [transferId, transferGenericId]);
+    return knex.raw(sql, [borrowId, transferGenericId]);
   }
 
-  getGenericInfo(knex: Knex, transferId: any, srcWarehouseId: any) {
+  getGenericInfo(knex: Knex, borrowId: any, srcWarehouseId: any) {
     let sql = `
-    select tg.*
-    , tg.transfer_qty as transfer_qty
+    select b.*
+    , b.qty as borrow_qty
     , mg.working_code, mg.generic_name
     , sg.remain_qty
     , mg.primary_unit_id, mu.unit_name as primary_unit_name
-    from wm_transfer_generic as tg
-    left join mm_unit_generics as ug on ug.unit_generic_id = tg.unit_generic_id
-    join mm_generics as mg on mg.generic_id = tg.generic_id
+    from wm_borrow_generic as b
+    left join mm_unit_generics as ug on ug.unit_generic_id = b.unit_generic_id
+    join mm_generics as mg on mg.generic_id = b.generic_id
     join mm_units as mu on mu.unit_id = mg.primary_unit_id
     join (
       select pr.warehouse_id, pr.generic_id, sum(pr.remain_qty) as remain_qty
       from view_product_reserve pr
       group by pr.warehouse_id, pr.generic_id
-    ) sg on sg.generic_id = tg.generic_id and sg.warehouse_id = ${srcWarehouseId}
-    where tg.transfer_id = ?
+    ) sg on sg.generic_id = b.generic_id and sg.warehouse_id = ${srcWarehouseId}
+    where b.borrow_id = ?
     `;
-    return knex.raw(sql, [transferId]);
+    return knex.raw(sql, [borrowId]);
   }
 
   getProductRemainByBorrowIds(knex: Knex, productId: any, warehouseId: any) {
@@ -447,7 +440,7 @@ export class BorrowModel {
 
   transferRequest(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_transfer as wmt')
-      .select('wmt.transfer_id', 'wmt.transfer_code', 'wmt.mark_deleted', 'wmt.transfer_date',
+      .select('wmt.borrow_id', 'wmt.transfer_code', 'wmt.mark_deleted', 'wmt.transfer_date',
         'src.warehouse_name as src_warehouse_name',
         'dst.warehouse_name as dst_warehouse_name', 'wmt.approved')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
