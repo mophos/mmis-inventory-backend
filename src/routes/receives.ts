@@ -322,7 +322,10 @@ router.put('/:receiveId', co(async (req, res, next) => {
 
   let products: any = [];
   products = req.body.products;
-
+  console.log('+++++++');
+  
+  console.log(products);
+  
   if (receiveId && summary.deliveryCode && summary.deliveryDate &&
     summary.supplierId && summary.receiveDate && products.length) {
 
@@ -380,43 +383,43 @@ router.put('/:receiveId', co(async (req, res, next) => {
         res.send({ ok: false, error: 'บัญชีถูกปิดแล้ว' });
       } else {
 
-        let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId); // 100
-        let rsReceived = await receiveModel.getTotalPricePurcehaseReceivedWithoutOwner(db, summary.purchaseOrderId, receiveId);
-
-        let totalPrice = +rsReceived[0].total + totalPriceReceive;
-        if (+totalPrice > +rsPo[0].total) {
-          res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
-        } else {
           // product is in PO 
 
           if (summary.purchaseOrderId) {
-
-            let temp = summary.receiveCode.split('-');
-            if (temp[0] === 'RT') {
-              let receiveCode = await serialModel.getSerial(db, 'RV');
-              data.receive_code = receiveCode;
-            }
-
-            let rsProduct = await receiveModel.getProductInPurchase(db, summary.purchaseOrderId);
-            let isInPurchase = true;
-            productsData.forEach(v => {
-              let idx = _.findIndex(rsProduct, { product_id: v.product_id });
-              if (idx === -1) isInPurchase = false;
-            });
-
-            if (isInPurchase) {
-              await receiveModel.updateReceiveSummary(db, receiveId, data);
-              // remove old data
-              await receiveModel.removeReceiveDetail(db, receiveId);
-              // insert new data
-              await receiveModel.saveReceiveDetail(db, productsData);
-
-              if (closePurchase === 'Y') {
-                await receiveModel.updatePurchaseCompletedStatus(db, summary.purchaseOrderId);
-              }
-              res.send({ ok: true });
+            let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId); // 100
+            let rsReceived = await receiveModel.getTotalPricePurcehaseReceivedWithoutOwner(db, summary.purchaseOrderId, receiveId);
+    
+            let totalPrice = +rsReceived[0].total + totalPriceReceive;
+            if (+totalPrice > +rsPo[0].total) {
+              res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
             } else {
-              res.send({ ok: false, error: 'มีรายการสินค้าบางรายการไม่ได้อยู่ในใบสั่งซื้อ' })
+              let temp = summary.receiveCode.split('-');
+              if (temp[0] === 'RT') {
+                let receiveCode = await serialModel.getSerial(db, 'RV');
+                data.receive_code = receiveCode;
+              }
+
+              let rsProduct = await receiveModel.getProductInPurchase(db, summary.purchaseOrderId);
+              let isInPurchase = true;
+              productsData.forEach(v => {
+                let idx = _.findIndex(rsProduct, { product_id: v.product_id });
+                if (idx === -1) isInPurchase = false;
+              });
+
+              if (isInPurchase) {
+                await receiveModel.updateReceiveSummary(db, receiveId, data);
+                // remove old data
+                await receiveModel.removeReceiveDetail(db, receiveId);
+                // insert new data
+                await receiveModel.saveReceiveDetail(db, productsData);
+
+                if (closePurchase === 'Y') {
+                  await receiveModel.updatePurchaseCompletedStatus(db, summary.purchaseOrderId);
+                }
+                res.send({ ok: true });
+              } else {
+                res.send({ ok: false, error: 'มีรายการสินค้าบางรายการไม่ได้อยู่ในใบสั่งซื้อ' })
+              }
             }
           } else {
             await receiveModel.updateReceiveSummary(db, receiveId, data);
@@ -431,7 +434,7 @@ router.put('/:receiveId', co(async (req, res, next) => {
             res.send({ ok: true });
           }
 
-        }
+        
       }
 
     } catch (error) {

@@ -539,7 +539,7 @@ export class ReceiveModel {
     //   .as('total_received_qty')
 
     return knex('wm_receive_detail as rd')
-      .select('rd.product_id', 'p.product_name', 'rd.unit_generic_id', 'rd.lot_no', 'rd.discount',
+      .select('rd.receive_detail_id','rd.product_id', 'p.product_name', 'rd.unit_generic_id', 'rd.lot_no', 'rd.discount',
         'p.m_labeler_id', 'p.is_lot_control', 'p.v_labeler_id', 'g.generic_name', 'g.generic_id', 'rd.is_free',
         'rd.warehouse_id', 'rd.location_id', 'ww.warehouse_name', 'll.location_name',
         'rd.receive_qty', 'rd.cost', 'mu.from_unit_id', 'mu.to_unit_id as base_unit_id',
