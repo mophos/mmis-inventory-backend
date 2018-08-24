@@ -2742,14 +2742,52 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
     let json = [];
 
     rs[0].forEach(v => {
-      let obj: any = {};
-      obj.PRODUCT_NAME = v.product_name;
-      obj.PACK = v.pack;
-      obj.UNIT_PRICE = v.unit_price;
-      obj.SUMMIT_QTY = v.summit_qty;
-      obj.IN_QTY = v.out_qty;
-      obj.BALANCE_QTY = v.balance_qty;
-      obj.AMOUNT_QTY = v.amount_qty;
+      let obj: any = {
+        'ชื่อทางการค้า': v.product_name,
+        'รหัส_Generics': v.working_code,
+        'ชื่อสามัญ': v.generic_name,
+        'ผู้จำหน่าย': v.m_labeler_name,
+        'CONVERSION': v.conversion,
+        'หน่วยเล็กสุด': v.baseunit,
+        'บัญชียา': v.account_name,
+        'ขนาด': v.dosage_name,
+        'ประเภทยา': v.generic_hosp_name,
+        'ประเภทสินค้า': v.generic_type_name,
+        'ราคากลาง': v.standard_cost,
+        'รูปแบบการจัดซื้อ': v.bid_name,
+        'กลุ่มยา': v.group_name,
+        'MIN_QTY': v.min_qty,
+        'MAX_QTY': v.max_qty,
+        'แพ็ค': v.pack,
+        'ราคาต่อแพ็ค': v.unit_price,
+        'ยอดยกมา': v.balance_qty,
+        'รับ': v.in_qty,
+        'จ่าย': v.out_qty,
+        'คงเหลือ': v.summit_qty,
+        'มูลค่า': v.amount_qty
+        // WORKING_CODE: v.working_code,
+        // GENERIC_CODE: v.generic_name,
+        // PRODUCT_NAME: v.product_name,
+        // CONVERSION: v.conversion,
+        // BASEUNIT: v.baseunit,
+        // ACCOUNT_NAME: v.account_name,
+        // DOSAGE_NAME: v.dosage_name,
+        // GENERIC_HOSP_NAME: v.generic_hosp_name,
+        // GENERIC_TYPE_NAME: v.generic_type_name,
+        // STANDARD_COST: v.standard_cost,
+        // BID_NAME: v.bid_name,
+        // GROUP_NAME: v.group_name,
+        // MIN_QTY: v.min_qty,
+        // MAX_QTY: v.max_qty,
+        // PACK: v.pack,
+        // UNIT_PRICE: v.unit_price,
+        // BALANCE_QTY: v.balance_qty,
+        // IN_QTY: v.in_qty,
+        // OUT_QTY: v.out_qty,
+        // SUMMIT_QTY: v.summit_qty,
+        // AMOUNT_QTY: v.amount_qty
+      };
+      
       json.push(obj);
     });
 
