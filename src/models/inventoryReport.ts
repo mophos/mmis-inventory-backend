@@ -2658,7 +2658,7 @@ OR sc.ref_src like ?
 	mg.standard_cost,
 	mg.min_qty,
 	mg.max_qty,
-	concat( IFNULL( mgg1.group_name_1 + ' ', '' ) + mgg2.group_name_2 + ' ' + mgg3.group_name_3 + ' ' + mgg4.group_name_4 ) AS group_name,
+	concat( IFNULL( mgg1.group_name_1 , '' ), ' ', IFNULL( mgg2.group_name_2 , '' ),' ' , IFNULL( mgg3.group_name_3 , '' ), ' ' , IFNULL( mgg4.group_name_4, '' ) ) AS group_name,
 	concat( mu1.unit_name, '(', mug.qty, ' ', mu.unit_name, ')' ) AS pack,
 	ROUND(IFNULL(q3.cost,0) * mug.qty,2) AS unit_price,
 	ROUND(IFNULL(q1.balance_qty,0) / mug.qty,2) AS balance_qty,
