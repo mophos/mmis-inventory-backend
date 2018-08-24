@@ -74,7 +74,7 @@ router.post('/approvePick', async (req, res, next) => {
     } else if (_.find(receiveError, (o: any) => { return o.receive_qty - o.remain_qty - o.pick_qty < 0 })) {
       res.send({ ok: false, error: 'มีรายการหยิบเกินจำนวนรับ' });
     } else {
-      await pickModel.approve(db,pick_id)
+      await pickModel.approve(db, pick_id)
       res.send({ ok: true });
     }
   } catch (error) {
@@ -142,42 +142,54 @@ router.put('/savePick', async (req, res, next) => {
   try {
     let update = pickId ? true : false
     let pick_id = pickId || null
+    console.log(pickDate);
     let headPick = {
       people_id: people_id,
       wm_pick: wmPick,
+
+
       pick_date: moment(pickDate).isValid() ? moment(pickDate).format('YYYY-MM-DD') : null,
       created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
       user_create_id: user_create_id,
       remark: remark
     }
     let receiveError: any = []
+    console.log(headPick);
+
     for (let detail of products) {
       let rs: any = await pickModel.checkReceive(db, detail.receive_id)
+      console.log('------');
+      
+      console.log(rs);
       if (rs.length)
         receiveError.push(rs[0].receive_code)
     }
     if (receiveError.length) {
       res.send({ ok: false, error: 'ไม่สามารถหยิบจากรายการรับ ' + _.join(_.uniq(receiveError), ',') + ' นี้ได้' });
-    } else if (update) {
-      await pickModel.gerSaveEditPick(db, headPick, pick_id);
-      await pickModel.gerRemovePickDetail(db, pick_id);
     } else {
-      let rs: any = await pickModel.savePick(db, headPick);
-      pick_id = rs[0]
-    }
-    for (let detail of products) {
-      let _detail = {
-        pick_id: pick_id,
-        product_id: detail.product_id,
-        unit_generic_id: detail.unit_generic_id,
-        lot_no: detail.lot_no,
-        receive_id: detail.receive_id,
-        pick_qty: detail.pick_qty
+      if (update) {
+        await pickModel.gerSaveEditPick(db, headPick, pick_id);
+        await pickModel.gerRemovePickDetail(db, pick_id);
+      } else {
+        let rs: any = await pickModel.savePick(db, headPick);
+        pick_id = rs[0]
       }
-      await pickModel.savePickDetail(db, _detail);
+      for (let detail of products) {
+        let _detail = {
+          pick_id: pick_id,
+          product_id: detail.product_id,
+          unit_generic_id: detail.unit_generic_id,
+          lot_no: detail.lot_no,
+          receive_id: detail.receive_id,
+          pick_qty: detail.pick_qty
+        }
+        await pickModel.savePickDetail(db, _detail);
+      }
     }
     res.send({ ok: true });
   } catch (error) {
+    console.log('eeeeeeee');
+
     res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
