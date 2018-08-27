@@ -1629,7 +1629,7 @@ router.get('/requisition/orders/waiting-approve', async (req, res, next) => {
   try {
     let rs: any = await orderModel.getListWaitingApprove(db, warehouseId, null, limit, offset, query, fillterCancel);
     let total: any = await orderModel.totalListWaitingApprove(db, warehouseId, null, query, fillterCancel);
-    res.send({ ok: true, rows: rs[0], total: total[0] });
+    res.send({ ok: true, rows: rs[0], total: [{ total: total[0].length }] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
