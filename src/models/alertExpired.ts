@@ -8,7 +8,18 @@ export class AlertExpiredModel {
       .leftJoin('wm_generic_expired_alert as ge', 'ge.generic_id', 'mg.generic_id')
       .orderBy('mg.generic_name');
   }
-
+  getAllSearchGenerics(knex: Knex, data: any, query:any) {
+    return knex('mm_generics as mg')
+      .select('mg.*', 'ge.num_days', 'gt.*')
+      .leftJoin('wm_generic_expired_alert as ge', 'ge.generic_id', 'mg.generic_id')
+      .leftJoin('mm_generic_types as gt', 'gt.generic_type_id', 'mg.generic_type_id')
+      .whereIn('gt.generic_type_id', data)
+      .where((w)=>{
+        w.where('mg.working_code','like','%'+query+'%')
+        .orWhere('mg.generic_name','like','%'+query+'%')
+      })
+      .orderBy('mg.generic_name')
+  }
   getAllGenerics(knex: Knex, data: any) {
     return knex('mm_generics as mg')
       .select('mg.*', 'ge.num_days', 'gt.*')
