@@ -2628,87 +2628,37 @@ OR sc.ref_src like ?
     }
 
     receiveIssueYear(knex: Knex, year: any, wareHouseId: any, genericType: any) {
-        //     let q = ` SELECT
-        //     mp.product_name,
-        //     concat( mu1.unit_name, '(', mug.qty, ' ', mu.unit_name, ')' ) AS pack,
-        //     ROUND(q3.cost * mug.qty,2) AS unit_price,
-        //     q1.balance_qty AS balance_qty,
-        //     q2.in_qty AS in_qty,
-        //     q2.out_qty AS out_qty,
-        //     q4.summit_qty,
-        //     ( ( q1.balance_qty / mug.qty + q2.in_qty / mug.qty ) - q2.out_qty / mug.qty ) * ( q3.cost * mug.qty ) AS amount_qty 
-        // FROM
-        //     mm_products AS mp
-        //     JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
-        //     LEFT JOIN mm_unit_generics AS mug ON mug.generic_id = mg.generic_id
-        //     LEFT JOIN (
-        //         SELECT
-        //         ws.product_id,
-        //         ws.unit_generic_id,
-        //         ROUND(SUM(ws.in_qty)-SUM(ws.out_qty),2) AS balance_qty 
-        //     FROM
-        //         view_stock_card_warehouse AS ws 
-        //     WHERE
-        //         ws.warehouse_id = ${wareHouseId}
-        //     GROUP BY
-        //         ws.product_id,
-        //         ws.unit_generic_id
-        //     ) AS q1 ON q1.product_id = mp.product_id
-        //     AND q1.unit_generic_id = mug.unit_generic_id
-        //     LEFT JOIN (
-        //     SELECT
-        //         wsc1.product_id,
-        //         wsc1.unit_generic_id,
-        //         sum( wsc1.in_qty ) AS in_qty,
-        //         sum( wsc1.out_qty ) AS out_qty 
-        //     FROM
-        //         view_stock_card_warehouse AS wsc1 
-        //     WHERE
-        //         wsc1.warehouse_id = ${wareHouseId} 
-        //         AND wsc1.stock_date BETWEEN  '${year - 1}-10-01 00:00:00' 
-        //         AND '${year}-09-30 23:59:59'  
-        //     GROUP BY
-        //         wsc1.product_id,
-        //         wsc1.unit_generic_id 
-        //     ) AS q2 ON q2.product_id = mp.product_id 
-        //     AND q2.unit_generic_id = mug.unit_generic_id
-        //     LEFT JOIN (
-        //     SELECT
-        //         wp.product_id,
-        //         wp.unit_generic_id,
-        //         avg( wp.cost ) AS cost 
-        //     FROM
-        //         wm_products AS wp 
-        //     GROUP BY
-        //         wp.product_id,
-        //         wp.unit_generic_id 
-        //     ) AS q3 ON q3.product_id = mp.product_id 
-        //     AND q3.unit_generic_id = mug.unit_generic_id
-        //     LEFT JOIN (
-        //     SELECT
-        //         vs.product_id,
-        //         vs.unit_generic_id,
-        //         vs.in_qty as summit_qty 
-        //     FROM
-        //         view_stock_card_warehouse AS vs 
-        //     WHERE
-        //         vs.warehouse_id = ${wareHouseId}
-        //         AND vs.transaction_type = 'SUMMIT'
-        //     GROUP BY
-        //         vs.product_id,
-        //         vs.unit_generic_id 
-        //     ) AS q4 ON q4.product_id = mp.product_id 
-        //     AND q4.unit_generic_id = mug.unit_generic_id
-        //     LEFT JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
-        //     LEFT JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id
-        //     WHERE
-        //         mg.generic_type_id in (${genericType})
-        // ORDER BY
-        //     mp.product_name`
         let sql = `
-
         SELECT
 	mp.product_name,
+	mg.working_code,
+    mg.generic_name,
+    (
+        SELECT
+            ml.labeler_name 
+        FROM
+            pc_purchasing_order_item AS ppoi1
+            LEFT JOIN mm_products AS mps ON mps.product_id = ppoi1.product_id
+            LEFT JOIN mm_labelers AS ml ON ml.labeler_id = mps.m_labeler_id
+        WHERE
+            ppoi1.generic_id = mg.generic_id 
+            AND ppoi1.product_id = mp.product_id 
+            AND ppoi1.unit_generic_id = mug.unit_generic_id 
+        ORDER BY
+            ppoi1.purchase_order_item_id DESC 
+            LIMIT 1 
+        ) AS m_labeler_name ,
+	mug.qty AS conversion,
+	mu.unit_name AS baseunit,
+	mga.account_name,
+	mgd.dosage_name,
+	mgh.NAME AS generic_hosp_name,
+	ibt.bid_name,
+	mgt.generic_type_name,
+	mg.standard_cost,
+	mg.min_qty,
+	mg.max_qty,
+	concat( IFNULL( mgg1.group_name_1 , '' ), ' ', IFNULL( mgg2.group_name_2 , '' ),' ' , IFNULL( mgg3.group_name_3 , '' ), ' ' , IFNULL( mgg4.group_name_4, '' ) ) AS group_name,
 	concat( mu1.unit_name, '(', mug.qty, ' ', mu.unit_name, ')' ) AS pack,
 	ROUND(IFNULL(q3.cost,0) * mug.qty,2) AS unit_price,
 	ROUND(IFNULL(q1.balance_qty,0) / mug.qty,2) AS balance_qty,
@@ -2717,9 +2667,18 @@ OR sc.ref_src like ?
 	ROUND(( ( (IFNULL(q1.balance_qty,0) / mug.qty )+(IFNULL(q2.in_qty,0) / mug.qty) ))- (IFNULL(q2.out_qty,0) / mug.qty),2) as summit_qty,
 	ROUND(( ( (IFNULL(q1.balance_qty,0) / mug.qty )+(IFNULL(q2.in_qty,0) / mug.qty) ) - (IFNULL(q2.out_qty,0) / mug.qty) ) * ( IFNULL(q3.cost,0) * mug.qty ),2) AS amount_qty 
 FROM
-	mm_products AS mp
-	JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
-	LEFT JOIN mm_unit_generics AS mug ON mug.generic_id = mg.generic_id
+mm_products AS mp
+JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
+LEFT JOIN mm_unit_generics AS mug ON mug.generic_id = mg.generic_id
+LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id
+LEFT JOIN mm_generic_group_1 AS mgg1 ON mgg1.group_code_1 = mg.group_code_1
+LEFT JOIN mm_generic_group_2 AS mgg2 ON mgg2.group_code_2 = mg.group_code_2 and mgg2.group_code_1 = mg.group_code_1
+LEFT JOIN mm_generic_group_3 AS mgg3 ON mgg3.group_code_3 = mg.group_code_3 and mgg3.group_code_2 = mg.group_code_2 and mgg3.group_code_1 = mg.group_code_1
+LEFT JOIN mm_generic_group_4 AS mgg4 ON mgg4.group_code_4 = mg.group_code_4 and mgg4.group_code_3 = mg.group_code_3 and mgg4.group_code_2 = mg.group_code_2 and mgg4.group_code_1 = mg.group_code_1
+LEFT JOIN mm_generic_dosages AS mgd ON mgd.dosage_id = mg.dosage_id
+LEFT JOIN mm_generic_hosp AS mgh ON mgh.id = mg.generic_hosp_id
+LEFT JOIN l_bid_type AS ibt ON ibt.bid_id = mg.purchasing_method
+LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
 	LEFT JOIN (
 	SELECT
 		wsc1.product_id,
@@ -2769,11 +2728,8 @@ FROM
 	WHERE
 	mg.generic_type_id IN ( ${genericType} ) 
 ORDER BY
-    mp.product_name
-    
+    mp.product_name`
 
-      
-       `
         return knex.raw(sql)
     }
 
