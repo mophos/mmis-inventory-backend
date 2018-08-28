@@ -46,6 +46,19 @@ router.get('/warehouse', wrap(async (req, res, next) => {
     db.destroy();
   }
 }));
+router.get('/search', wrap(async (req, res, next) => {
+
+  let db = req.db;
+  let query = req.query.query || '';
+  try {
+    let rs: any = await warehouseModel.listSearch(db, query);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error });
+  } finally {
+    db.destroy();
+  }
+}));
 
 router.get('/listall', (req, res, next) => {
   let db = req.db;
