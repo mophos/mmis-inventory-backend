@@ -504,13 +504,13 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         array[num].title[numTitle] = _.clone(objTitle);
         for (const v of rs[0]) {
           count++;
-          if (v.confirm_qty != 0) {
+          if (v.generic_code == 0 ||  v.confirm_qty != 0) {
             const objItems: any = {};
             objItems.generic_name = v.generic_name;
             objItems.product_name = v.product_name;
             objItems.large_unit = v.large_unit;
             objItems.small_unit = v.small_unit;
-            objItems.confirm_qty = (v.confirm_qty / v.conversion_qty) + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ' )';
+            objItems.confirm_qty = v.generic_code == 0 ? '' : (v.confirm_qty / v.conversion_qty) + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ' )';
             objItems.remain = v.remain;
             objItems.lot_no = v.lot_no;
             objItems.expired_date = dateToDMMYYYY(v.expired_date);
