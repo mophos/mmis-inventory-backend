@@ -396,27 +396,38 @@ router.delete('/mapping/remove/:mmis', wrap(async (req, res, next) => {
   }
 }));
 
-// router.post('/products/search', wrap(async (req, res, next) => {
-//   let warehouseId = req.body.warehouseId;
-//   let query = req.body.query;
-//   let db = req.db;
+router.post('/products/search', wrap(async (req, res, next) => {
+  let warehouseId = req.body.warehouseId;
+  let query = req.body.query;
+  let db = req.db;
+  let genericType = null;
 
-//   if (warehouseId && query) {
-//     try {
-//       let results = await warehouseModel.searchProductsWarehouse(db, warehouseId, query);
-//       res.send({ ok: true, rows: results });
-//       // res.send( results );
-//     } catch (error) {
-//       console.log(error);
-//       res.send({ ok: false, error: error.message })
-//     } finally {
-//       db.destroy();
-//     }
+  let productGroups = req.decoded.generic_type_id;
+  let _pgs = [];
 
-//   } else {
-//     res.send({ ok: false, error: 'กรุณาระบุเงื่อนไขในการค้นหา' })
-//   } 
-// }));
+  if (productGroups) {
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+  if (warehouseId && query) {
+    try {
+      let results = await warehouseModel.searchProductsWarehouse(db, warehouseId, _pgs, genericType, query);
+      res.send({ ok: true, rows: results });
+      // res.send( results );
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message })
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  }
+  } else {
+    res.send({ ok: false, error: 'กรุณาระบุเงื่อนไขในการค้นหา' })
+  } 
+}));
 
 
 router.get('/search-select2', (req, res, next) => {

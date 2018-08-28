@@ -177,6 +177,30 @@ export class WarehouseModel {
     return query;
   }
 
+  searchProductsWarehouse(knex: Knex, warehouseId: string, productGroups: any[], genericType: any, search:any) {
+    let query = knex('wm_products as wp')
+      .select('wp.*', 'mug.cost as packcost', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', 'mg.working_code', 'mg.generic_id', 'mg.generic_name',
+        'l.location_name', 'l.location_desc', 'u.unit_name as base_unit_name', 'mug.qty as conversion', 'uu.unit_name as large_unit', 'mp.is_lot_control')
+      .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
+      .leftJoin('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
+      .leftJoin('wm_locations as l', 'l.location_id', 'wp.location_id')
+      .leftJoin('mm_units as u', 'u.unit_id', 'mp.primary_unit_id')
+      .leftJoin('mm_unit_generics as mug', 'mug.unit_generic_id', 'wp.unit_generic_id')
+      .leftJoin('mm_units as uu', 'uu.unit_id', 'mug.from_unit_id')
+      .where('wp.warehouse_id', warehouseId)
+      .whereIn('mg.generic_type_id', productGroups)
+      .where((w)=>{
+        w.where('mp.product_name','like','%'+search+'%')
+        .orWhere('mp.working_code','like','%'+search+'%')
+      })
+    if (genericType) {
+      query.andWhere('mg.generic_type_id', genericType);
+    }
+    query.groupBy('wp.product_id')
+      .orderByRaw('wp.qty DESC');
+    return query;
+  }
+
   getProductsWarehouseStaff(knex: Knex, warehouseId: string, productGroups: any[], genericType: any) {
     let query = knex('wm_products as wp')
       .select('wp.wm_product_id', 'mp.product_id', 'mug.cost as packcost', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', 'mp.working_code as trade_code', 'mg.working_code as generic_code', 'mg.generic_id', 'mg.generic_name',
