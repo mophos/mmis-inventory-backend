@@ -2985,4 +2985,37 @@ router.get('/report/inventoryStatus/excel', wrap(async (req, res, next) => {
   res.download(filePath, 'รายงานสถานะเวชภัณฑ์คงคลัง ' + warehouseName + 'ณ วันที่' + statusDate_text + '.xlsx');
 }));
 
+router.get('/report/returnBudget/export', async (req, res, next) => {
+  const db = req.db;
+
+  try {
+    const rs: any = await inventoryReportModel.getreturnBudgetList(db);
+    let json = [];
+
+    rs[0].forEach(v => {
+      let obj: any = {};
+      obj.purchase_order_number = v.purchase_order_number;
+      obj.order_date = v.order_date;
+      obj.purchase_price = v.purchase_price;
+      obj.labeler_name = v.labeler_name;
+      obj.budget_name = v.budget_name;
+      obj.receive_price = v.receive_price;
+      obj.differ_price = v.differ_price;
+      obj.return_price = v.return_price;
+      json.push(obj);
+    });
+
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'รายงานใบสั่งซื้อที่ตรวจสอบแล้ว.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'รายงานใบสั่งซื้อที่ตรวจสอบแล้ว.xlsx');
+  } catch (error) {
+    res.send({ ok: false, message: error.message })
+  }
+});
+
 export default router;
