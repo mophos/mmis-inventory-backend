@@ -52,6 +52,12 @@ export class PickModel {
                 .whereRaw('wr.receive_id = ra.receive_id'))
             .andWhere('wr.purchase_order_id', null)
             .andWhere('wr.is_cancel', 'N')
+            .where((w)=>{
+                w.where('mg.generic_name','like','%'+query+'%')
+                .orWhere('mg.working_code','like','%'+query+'%')
+                .orWhere('wr.receive_code','=',query)
+            })
+            .orderByRaw('wr.receive_date,mp.product_name desc')
 
     }
     getReceiveProducts(knex: Knex, receiveId: any) {
