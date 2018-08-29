@@ -84,9 +84,9 @@ router.post('/approvePick', async (req, res, next) => {
   }
 });
 
-router.get('/gerProductReceiveNotPO/:query', async (req, res, next) => {
+router.get('/gerProductReceiveNotPO', async (req, res, next) => {
   let db = req.db;
-  let query = req.params.query
+  let query = req.query.query
   try {
     let rs: any = await pickModel.gerProductReceiveNotPO(db, query);
     res.send({ ok: true, rows: rs });
