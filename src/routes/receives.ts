@@ -322,7 +322,6 @@ router.put('/:receiveId', co(async (req, res, next) => {
 
   let products: any = [];
   products = req.body.products;
-
   if (receiveId && summary.deliveryCode && summary.deliveryDate &&
     summary.supplierId && summary.receiveDate && products.length) {
 
@@ -380,58 +379,79 @@ router.put('/:receiveId', co(async (req, res, next) => {
         res.send({ ok: false, error: 'บัญชีถูกปิดแล้ว' });
       } else {
 
-        let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId); // 100
-        let rsReceived = await receiveModel.getTotalPricePurcehaseReceivedWithoutOwner(db, summary.purchaseOrderId, receiveId);
-
-        let totalPrice = +rsReceived[0].total + totalPriceReceive;
-        if (+totalPrice > +rsPo[0].total) {
-          res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
-        } else {
           // product is in PO 
-
-          if (summary.purchaseOrderId) {
-
-            let temp = summary.receiveCode.split('-');
-            if (temp[0] === 'RT') {
-              let receiveCode = await serialModel.getSerial(db, 'RV');
-              data.receive_code = receiveCode;
+          let rsProductPick = await receiveModel.getPickDetailCheck(db, receiveId);
+          let passPick = true;
+          console.log(rsProductPick);
+          console.log(productsData);
+          
+          for(let item of rsProductPick){
+            let idx = _.findIndex(productsData,{ product_id: item.product_id, lot_no: item.lot_no, unit_generic_id: item.unit_generic_id });
+           console.log(idx);
+            if ( idx > -1 ){
+              if(productsData[idx].receive_qty < item.pick_qty){
+                passPick = false;
+              }
+            } else {
+              passPick = false;
             }
-
-            let rsProduct = await receiveModel.getProductInPurchase(db, summary.purchaseOrderId);
-            let isInPurchase = true;
-            productsData.forEach(v => {
-              let idx = _.findIndex(rsProduct, { product_id: v.product_id });
-              if (idx === -1) isInPurchase = false;
-            });
-
-            if (isInPurchase) {
+          }
+          if(passPick){
+            if (summary.purchaseOrderId) {
+              let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId); // 100
+              let rsReceived = await receiveModel.getTotalPricePurcehaseReceivedWithoutOwner(db, summary.purchaseOrderId, receiveId);
+      
+              let totalPrice = +rsReceived[0].total + totalPriceReceive;
+              if (+totalPrice > +rsPo[0].total) {
+                res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
+              } else {
+                let temp = summary.receiveCode.split('-');
+                if (temp[0] === 'RT') {
+                  let receiveCode = await serialModel.getSerial(db, 'RV');
+                  data.receive_code = receiveCode;
+                }
+  
+                let rsProduct = await receiveModel.getProductInPurchase(db, summary.purchaseOrderId);
+                let isInPurchase = true;
+                productsData.forEach(v => {
+                  let idx = _.findIndex(rsProduct, { product_id: v.product_id });
+                  if (idx === -1) isInPurchase = false;
+                });
+  
+                if (isInPurchase) {
+                  await receiveModel.updateReceiveSummary(db, receiveId, data);
+                  // remove old data
+                  await receiveModel.removeReceiveDetail(db, receiveId);
+                  // insert new data
+                  await receiveModel.saveReceiveDetail(db, productsData);
+  
+                  if (closePurchase === 'Y') {
+                    await receiveModel.updatePurchaseCompletedStatus(db, summary.purchaseOrderId);
+                  }
+                  res.send({ ok: true });
+                } else {
+                  res.send({ ok: false, error: 'มีรายการสินค้าบางรายการไม่ได้อยู่ในใบสั่งซื้อ' })
+                }
+              }
+            } else {
               await receiveModel.updateReceiveSummary(db, receiveId, data);
               // remove old data
               await receiveModel.removeReceiveDetail(db, receiveId);
               // insert new data
               await receiveModel.saveReceiveDetail(db, productsData);
-
+  
               if (closePurchase === 'Y') {
                 await receiveModel.updatePurchaseCompletedStatus(db, summary.purchaseOrderId);
               }
               res.send({ ok: true });
-            } else {
-              res.send({ ok: false, error: 'มีรายการสินค้าบางรายการไม่ได้อยู่ในใบสั่งซื้อ' })
             }
-          } else {
-            await receiveModel.updateReceiveSummary(db, receiveId, data);
-            // remove old data
-            await receiveModel.removeReceiveDetail(db, receiveId);
-            // insert new data
-            await receiveModel.saveReceiveDetail(db, productsData);
-
-            if (closePurchase === 'Y') {
-              await receiveModel.updatePurchaseCompletedStatus(db, summary.purchaseOrderId);
-            }
-            res.send({ ok: true });
           }
+          else {
+            res.send({ ok: false, push: true , error: 'มีรายการรับที่ถูกยืนยันการหยิบแล้ว' });
+          }
+          
 
-        }
+        
       }
 
     } catch (error) {
@@ -447,6 +467,24 @@ router.put('/:receiveId', co(async (req, res, next) => {
 
 }));
 
+router.post('/checkDeleteProductWithPick',co(async(req, res, next) => {
+  let db = req.db;
+  let products = req.body.products;
+  let receiveId = req.body.receiveId;
+  try {
+
+    let rsProductPick = await receiveModel.getPickDetailCheck(db, receiveId);
+            let idx = _.findIndex(rsProductPick,{ product_id: products.product_id, lot_no: products.lot_no, unit_generic_id: products.unit_generic_id });
+           console.log(idx);
+            if ( idx == -1 ){
+              res.send({ok:true}); 
+            } else {
+              res.send({ok:false , error:'ไม่สามารลบได้เนื่องจากถูกใช้ในการหยิบ'});
+            }
+  } catch (error) {
+    
+  }
+}))
 router.post('/other/expired/list', co(async (req, res, next) => {
   let db = req.db;
   let limit = req.body.limit;
