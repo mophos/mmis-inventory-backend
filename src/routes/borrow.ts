@@ -57,6 +57,42 @@ router.get('/list', co(async (req, res, next) => {
 
 }));
 
+router.get('/list/other', co(async (req, res, next) => {
+  let db = req.db;
+  let type = +req.query.t || 1;
+  let limit = +req.query.limit || 15;
+  let offset = +req.query.offset || 0;
+  let warehouseId = req.decoded.warehouseId;
+
+  try {
+    let rows;
+    let total;
+    if (type === 1) { // all
+      rows = await borrowModel.allOther(db, warehouseId, limit, offset);
+      total = await borrowModel.totalAllOther(db, warehouseId);
+    } else if (type === 2) {
+      rows = await borrowModel.approvedOther(db, warehouseId, limit, offset);
+      total = await borrowModel.totalApprovedOther(db, warehouseId);
+    } else if (type === 3) {
+      rows = await borrowModel.notApprovedOther(db, warehouseId, limit, offset);
+      total = await borrowModel.totalNotApprovedOther(db, warehouseId);
+    } else if (type === 4) {
+      rows = await borrowModel.markDeletedOther(db, warehouseId, limit, offset);
+      total = await borrowModel.totalMarkDeleteOther(db, warehouseId);
+    } else {
+      rows = await borrowModel.allOther(db, warehouseId, limit, offset);
+      total = await borrowModel.totalAllOther(db, warehouseId);
+    }
+
+    res.send({ ok: true, rows: rows, total: total[0].total });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
 router.get('/info-summary/:borrowId', co(async (req, res, next) => {
   let db = req.db;
   let borrowId = req.params.borrowId;
@@ -144,8 +180,29 @@ router.delete('/:borrowId', co(async (req, res, next) => {
     if (status.approved === 'Y') {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
     } else {
-      let rows = await borrowModel.removeTransfer(db, borrowId);
-      res.send({ ok: true ,row:[]});
+      let rows = await borrowModel.removeBorrow(db, borrowId);
+      res.send({ ok: true, row: [] });
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.delete('/other/:borrowId', co(async (req, res, next) => {
+  let db = req.db;
+  let borrowId = req.params.borrowId;
+
+  try {
+    const rs = await borrowModel.checkStatusOther(db, [borrowId]);
+    const status = rs[0];
+    if (status.approved === 'Y') {
+      res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
+    } else {
+      let rows = await borrowModel.removeBorrowOther(db, borrowId);
+      res.send({ ok: true, row: [] });
     }
   } catch (error) {
     res.send({ ok: false, error: error.message });

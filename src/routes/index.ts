@@ -2810,18 +2810,18 @@ router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:wa
     let i = 0;
     data[0].forEach(v => {
       i++;
-      let obj: any = {};
-      obj.order = i;
-      obj.receive_date = v.receive_date;
-      obj.receive_code = v.receive_code;
-      obj.generic_id = v.generic_id;
-      obj.generic_name = v.generic_name;
-      obj.receive_qty = v.receive_qty;
-      obj.small_unit_name = v.small_unit_name;
-      obj.cost = v.cost;
-      obj.costAmount = v.costAmount;
-      obj.receive_type_name = v.receive_type_name;
-      obj.sum = '';
+      let obj: any = {
+        "ลำดับ": i,
+        "วันที่รับ": v.receive_date,
+        "เลขที่ใบรับ": v.receive_code,
+        "รหัส Generics": v.generic_id,
+        "ชื่อสามัญ": v.generic_name,
+        "จำนวนรับ": v.receive_qty,
+        "หน่วยเล็กสุด": v.small_unit_name,
+        "ราคาต่อหน่วย": v.cost,
+        "ราคารวม": v.costAmount,
+        "ประเภทการรับ": v.receive_type_name,
+       };
       json.push(obj);
     });
 

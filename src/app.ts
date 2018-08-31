@@ -92,6 +92,7 @@ import payRequisitionRoute from './routes/payRequisition';
 import settingRoute from './routes/setting';
 import versionRoute from './routes/version';
 import borrowNoteRoute from './routes/borrowNote';
+import borrowOtherRoute from './routes/borrow-other';
 
 import toolsRoute from './routes/tools';
 import returnBudgetRoute from "./routes/returnBudget";
@@ -249,6 +250,7 @@ app.use('/donators', checkAuth, adminAuth, donatorRoute)
 app.use('/counting', checkAuth, adminAuth, countingRoute)
 app.use('/shipping-networks', checkAuth, adminAuth, shippingNetworkRoute)
 app.use('/issues', checkAuth, adminAuth, issueRoute)
+app.use('/borrow-other', checkAuth, adminAuth, borrowOtherRoute)
 app.use('/his-transaction', checkAuth, adminAuth, hisTransactionRoute)
 app.use('/adjust-stock', checkAuth, adminAuth, AdjustStockRoute)
 app.use('/return-budget', checkAuth, adminAuth, returnBudgetRoute);
