@@ -417,7 +417,8 @@ mgt.generic_type_id `
     AND vscw.generic_id = '${genericId}'
     AND vscw.stock_date < '${endDate} 23:59:59'
     GROUP BY
-        vscw.unit_generic_id`
+        vscw.unit_generic_id,
+        vscw.lot_no`
         return knex.raw(sql)
     }
 
@@ -2782,5 +2783,53 @@ ORDER BY
             .leftJoin('um_positions as p', 'p.position_id', 'u.position_id')
             .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
             .where('u.people_id', people_id);
+    }
+
+    getreturnBudgetList(knex: Knex) {
+        let sql = `SELECT
+        pc.purchase_order_number,
+        pc.purchase_order_id,
+        pc.order_date,
+        po_price.purchase_price,
+        ml.labeler_name,
+        concat( bs.bgtype_name, ' - ', bs.bgtypesub_name ) AS budget_name,
+        rc_price.receive_price,
+        po_price.purchase_price - IFNULL( rc_price.receive_price, 0 ) differ_price,
+        pc.return_price,
+        pc.is_return 
+    FROM
+        pc_purchasing_order AS pc
+        JOIN (
+    SELECT
+        cast( sum( pci.qty * pci.unit_price ) AS DECIMAL ( 32, 4 ) ) purchase_price,
+        pci.purchase_order_id 
+    FROM
+        pc_purchasing_order_item AS pci 
+    WHERE
+        pci.giveaway = 'N' 
+    GROUP BY
+        pci.purchase_order_id 
+        ) AS po_price ON po_price.purchase_order_id = pc.purchase_order_id 
+        AND pc.is_cancel = 'N'
+        JOIN mm_labelers AS ml ON ml.labeler_id = pc.labeler_id
+        JOIN view_budget_subtype bs ON bs.bgdetail_id = pc.budget_detail_id
+        LEFT JOIN (
+    SELECT
+        cast( sum( rd.receive_qty * rd.cost ) AS DECIMAL ( 32, 4 ) ) receive_price,
+        r.purchase_order_id 
+    FROM
+        wm_receive_detail AS rd
+        INNER JOIN wm_receives AS r ON r.receive_id = rd.receive_id 
+    WHERE
+        rd.is_free = 'N' 
+        AND r.is_cancel = 'N' 
+    GROUP BY
+        r.purchase_order_id 
+        ) AS rc_price ON rc_price.purchase_order_id = pc.purchase_order_id 
+    WHERE
+        pc.purchase_order_status = 'COMPLETED' 
+        AND po_price.purchase_price > IFNULL( rc_price.receive_price, 0 ) 
+        AND pc.is_return IS NOT NULL`
+        return knex.raw(sql)
     }
 }

@@ -504,7 +504,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
         array[num].title[numTitle] = _.clone(objTitle);
         for (const v of rs[0]) {
           count++;
-          if (v.generic_code == 0 ||  v.confirm_qty != 0) {
+          if (v.generic_code == 0 || v.confirm_qty != 0) {
             const objItems: any = {};
             objItems.generic_name = v.generic_name;
             objItems.product_name = v.product_name;
@@ -2787,7 +2787,7 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
         // SUMMIT_QTY: v.summit_qty,
         // AMOUNT_QTY: v.amount_qty
       };
-      
+
       json.push(obj);
     });
 
@@ -2834,22 +2834,22 @@ router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:wa
     let i = 0;
     data[0].forEach(v => {
       i++;
-      let obj: any = {};
-      obj.order = i;
-      obj.receive_date = v.receive_date;
-      obj.receive_code = v.receive_code;
-      obj.generic_id = v.generic_id;
-      obj.generic_name = v.generic_name;
-      obj.receive_qty = v.receive_qty;
-      obj.small_unit_name = v.small_unit_name;
-      obj.cost = v.cost;
-      obj.costAmount = v.costAmount;
-      obj.receive_type_name = v.receive_type_name;
-      obj.sum = '';
+      let obj: any = {
+        'ลำดับ': i,
+        'วันที่รับเข้า': v.receive_date,
+        'เลขที่ใบรับ': v.receive_code,
+        'ชื่อเวชภัณฑ์': v.generic_name,
+        'จำนวนที่รับ': v.receive_qty,
+        'หน่วย': v.small_unit_name,
+        'ราคาต่อหน่วย': v.cost,
+        'มูลค่า': v.costAmount,
+        'ประเภทการรับ': v.receive_type_name,
+        'รวม': ''
+      };
       json.push(obj);
     });
 
-    json[json.length - 1].sum = sum
+    json[json.length - 1]['รวม'] = sum
 
     const xls = json2xls(json);
     const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
@@ -2960,20 +2960,20 @@ router.get('/report/inventoryStatus/excel', wrap(async (req, res, next) => {
   rs = rs[0];
 
   rs.forEach(v => {
-    let obj: any = {};
+    let obj: any = {
+      'รหัสเวชภัณฑ์': v.working_code,
+      'รายการเวชภัณฑ์': v.generic_name,
+      'จำนวน': v.qty,
+      'หน่วย': v.small_unit,
+      'ราคาต่อหน่วย': v.unit_cost,
+      'มูลค่า': v.cost,
+      'รวม': ''
+    };
     sum += v.cost;
-    obj.generic_code = v.working_code;
-    obj.generic_name = v.generic_name;
-    obj.qty = v.qty;
-    obj.conversion_qty = v.conversion_qty;
-    obj.small_unit = v.small_unit;
-    obj.unit_cost = v.unit_cost;
-    obj.cost = v.cost;
-    obj.sum = '';
     json.push(obj);
   });
   let sumText = inventoryReportModel.comma(sum)
-  json[json.length - 1].sum = sumText
+  json[json.length - 1]['รวม'] = sumText
 
   const xls = json2xls(json);
   const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
@@ -2984,5 +2984,39 @@ router.get('/report/inventoryStatus/excel', wrap(async (req, res, next) => {
   // force download
   res.download(filePath, 'รายงานสถานะเวชภัณฑ์คงคลัง ' + warehouseName + 'ณ วันที่' + statusDate_text + '.xlsx');
 }));
+
+router.get('/report/returnBudget/export', async (req, res, next) => {
+  const db = req.db;
+
+  try {
+    const rs: any = await inventoryReportModel.getreturnBudgetList(db);
+    let json = [];
+
+    rs[0].forEach(v => {
+      let obj: any = {
+        'เลขที่ใบสั่งซื้อ': v.purchase_order_number,
+        'วันที่จัดซื้อ': v.order_date,
+        'ผู้จำหน่าย': v.labeler_name,
+        'หมวดงบประมาณ': v.budget_name,
+        'มูลค่าจัดซื้อ': v.purchase_price,
+        'มูลค่ารับ': v.receive_price,
+        'มูลค่าแตกต่าง': v.differ_price,
+        'มูลค่าคืนงบ': v.return_price
+      };
+      json.push(obj);
+    });
+
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'รายงานใบสั่งซื้อที่ตรวจสอบแล้ว.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'รายงานใบสั่งซื้อที่ตรวจสอบแล้ว.xlsx');
+  } catch (error) {
+    res.send({ ok: false, message: error.message })
+  }
+});
 
 export default router;
