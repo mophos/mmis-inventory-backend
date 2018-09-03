@@ -49,8 +49,8 @@ router.get('/orders/waiting', async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
 
   try {
-    let rs: any = await orderModel.getListWaiting(db, null, warehouseId, limit, offset, query, fillterCancel);
-    let total: any = await orderModel.totalListWaiting(db, null, warehouseId, query, fillterCancel);
+    let rs: any = await orderModel.getListWaiting(db, warehouseId, null, limit, offset, query, fillterCancel);
+    let total: any = await orderModel.totalListWaiting(db, warehouseId, null, query, fillterCancel);
     res.send({ ok: true, rows: rs[0], total: total[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
