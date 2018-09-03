@@ -3,9 +3,10 @@ import * as moment from 'moment';
 import * as wrap from 'co-express';
 import { PickModel } from './../models/pick';
 import * as _ from 'lodash'
+import { SerialModel } from './../models/serial'
 const router = express.Router();
 const pickModel = new PickModel();
-
+const serialModel = new SerialModel();
 router.get('/', (req, res, next) => {
   res.send({ ok: true });
 });
@@ -143,11 +144,9 @@ router.put('/savePick', async (req, res, next) => {
     let update = pickId ? true : false
     let pick_id = pickId || null
     console.log(pickDate);
-    let headPick = {
+    let headPick: any = {
       people_id: people_id,
       wm_pick: wmPick,
-
-
       pick_date: moment(pickDate).isValid() ? moment(pickDate).format('YYYY-MM-DD') : null,
       created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
       user_create_id: user_create_id,
@@ -159,7 +158,7 @@ router.put('/savePick', async (req, res, next) => {
     for (let detail of products) {
       let rs: any = await pickModel.checkReceive(db, detail.receive_id)
       console.log('------');
-      
+
       console.log(rs);
       if (rs.length)
         receiveError.push(rs[0].receive_code)
@@ -171,6 +170,8 @@ router.put('/savePick', async (req, res, next) => {
         await pickModel.gerSaveEditPick(db, headPick, pick_id);
         await pickModel.gerRemovePickDetail(db, pick_id);
       } else {
+        let pickCode = await serialModel.getSerial(db, 'PI');
+        headPick.pick_code = pickCode;
         let rs: any = await pickModel.savePick(db, headPick);
         pick_id = rs[0]
       }
