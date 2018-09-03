@@ -884,6 +884,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
   let balance: any = [];
   let inventory_stock: any = [];
   let _inventory_stock: any = [];
+  let genericCode = [];
   genericId = Array.isArray(genericId) ? genericId : [genericId]
   Array.isArray(genericId)
 
@@ -900,6 +901,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
       _genericId.push(generic_stock[0][0].generic_id)
       _generic_name.push(generic_stock[0][0].generic_name)
       _dosage_name.push(generic_stock[0][0].dosage_name)
+      genericCode.push(generic_stock[0][0].working_code)
       if (generic_stock[0][0].conversion_qty) {
         _unit.push(generic_stock[0][0].large_unit + ' (' + generic_stock[0][0].conversion_qty + ' ' + generic_stock[0][0].small_unit + ')')
       } else {
@@ -1005,6 +1007,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
     generic_stock: generic_stock,
     _generic_stock: _generic_stock,
     _summit: _summit,
+    genericCode: genericCode,
     _inventory_stock: _inventory_stock,
     hospitalName: hospitalName,
     warehouseName: warehouseName,
