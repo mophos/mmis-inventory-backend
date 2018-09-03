@@ -687,7 +687,12 @@ export class ReceiveModel {
     let queries = sqls.join(';');
     return knex.raw(queries);
   }
-
+  checkPickApprove(knex: Knex, receiveId: string) {
+    return knex('wm_pick_detail as pd')
+    .join('wm_pick as p','p.pick_id','pd.pick_id')
+      .where('pd.receive_id', receiveId)
+      .andWhere('p.is_approve','Y')
+    }
   removeReceive(knex: Knex, receiveId: string, peopleUserId: any) {
     return knex('wm_receives')
       .where('receive_id', receiveId)

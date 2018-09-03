@@ -380,22 +380,41 @@ router.put('/:receiveId', co(async (req, res, next) => {
       } else {
 
           // product is in PO 
-          let rsProductPick = await receiveModel.getPickDetailCheck(db, receiveId);
+          // let rsProductPick = await receiveModel.getPickDetailCheck(db, receiveId);
           let passPick = true;
-          console.log(rsProductPick);
+          let proSum:any = [];
           console.log(productsData);
           
-          for(let item of rsProductPick){
-            let idx = _.findIndex(productsData,{ product_id: item.product_id, lot_no: item.lot_no, unit_generic_id: item.unit_generic_id });
-           console.log(idx);
-            if ( idx > -1 ){
-              if(productsData[idx].receive_qty < item.pick_qty){
-                passPick = false;
-              }
-            } else {
-              passPick = false;
-            }
-          }
+          let tmp:any[]
+          // tmp = _.clone(productsData)
+          //  for(let p of tmp){
+          //    if(proSum.length < 1){ proSum.push(p); console.log('++++++');
+          //    } 
+          //    else {
+          //      let i = _.findIndex(proSum, { product_id: p.product_id,lot_no: p.lot_no, unit_generic_id: p.unit_generic_id })
+          //      console.log(i);
+          //      if(i !== -1) {
+          //       proSum[i].receive_qty =  101
+          //      } else {
+          //       proSum.push(p)
+          //      }
+          //    }
+          //  }
+          //  console.log('-----');
+           
+          //  console.log(sumP);
+           
+
+          // for(let item of rsProductPick){
+          //   let idx = _.findIndex(proSum,{ product_id: item.product_id, lot_no: item.lot_no, unit_generic_id: item.unit_generic_id });
+          //   if ( idx > -1 ){
+          //     if(proSum[idx].receive_qty < item.pick_qty){
+          //       passPick = false;
+          //     }
+          //   } else {
+          //     passPick = false;
+          //   }
+          // }
           if(passPick){
             if (summary.purchaseOrderId) {
               let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId); // 100
@@ -1151,20 +1170,30 @@ router.delete('/remove', co(async (req, res, next) => {
   if (receiveId) {
     try {
       let peopleUserId: any = req.decoded.people_user_id;
-      await receiveModel.removeReceive(db, receiveId, peopleUserId);
-
-      if (purchaseOrderId) {
-        let rsCurrent = await receiveModel.getCurrentPurchaseStatus(db, purchaseOrderId);
-        if (rsCurrent) {
-          if (rsCurrent[0].purchase_order_status === 'COMPLETED') {
-            await receiveModel.updatePurchaseStatus2(db, purchaseOrderId, 'APPROVED');
+      // let rs:any = await receiveModel.checkPickApprove(db,receiveId);
+      // if(!rs){
+        await receiveModel.removeReceive(db, receiveId, peopleUserId);
+        if (purchaseOrderId) {
+          console.log('------');
+          
+          console.log(typeof req.query.purchaseOrderId);
+          
+          let rsCurrent = await receiveModel.getCurrentPurchaseStatus(db, purchaseOrderId);
+          if (rsCurrent) {
+            if (rsCurrent[0].purchase_order_status === 'COMPLETED') {
+              await receiveModel.updatePurchaseStatus2(db, purchaseOrderId, 'APPROVED');
+            }
           }
         }
-      }
-
-      res.send({ ok: true });
-
+        res.send({ ok: true });
+      // } else {
+      //   res.send({ ok: false, error: 'มีัรายการหยิบที่อนุมัติแล้ว' });
+      // }
     } catch (error) {
+      console.log('--------');
+      
+      console.log(error.message );
+      
       res.send({ ok: false, error: error.message });
     } finally {
       db.destroy();

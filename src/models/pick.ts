@@ -17,7 +17,7 @@ export class PickModel {
             .join('wm_warehouses as ww', 'ww.warehouse_id', 'p.wm_pick')
             .leftJoin('um_people as up', 'up.people_id', 'p.people_id')
             .leftJoin('um_titles as t', 't.title_id', 'up.title_id')
-            .orderBy('p.pick_date', 'desc')
+            .orderBy('p.pick_code', 'desc')
             .limit(limit)
             .offset(offset)
     }
@@ -34,13 +34,13 @@ export class PickModel {
                 'wr.receive_code',
                 'wr.receive_date',
                 'mp.product_name',
-                'wrd.receive_qty',
+                knex.raw('sum(wrd.receive_qty) as receive_qty'),
                 'mp.product_id',
                 'u1.unit_name as large_unit',
                 'u2.unit_name as small_unit',
                 'ug.qty as base_unit',
                 'wrd.unit_generic_id',
-                knex.raw(`ifnull((select sum(pd.pick_qty) from wm_pick_detail as pd join wm_pick as p on p.pick_id = pd.pick_id  where p.is_approve = 'Y' and  pd.product_id = wrd.product_id and pd.lot_no = wrd.lot_no and pd.receive_id = wrd.receive_id group by pd.product_id,pd.lot_no,pd.receive_id) ,0) as remain_qty`)
+                knex.raw(`ifnull((select sum(pd.pick_qty) from wm_pick_detail as pd join wm_pick as p on p.pick_id = pd.pick_id  where p.is_approve = 'Y' and  pd.unit_generic_id = wrd.unit_generic_id and pd.product_id = wrd.product_id and pd.lot_no = wrd.lot_no and pd.receive_id = wrd.receive_id group by pd.unit_generic_id, pd.product_id,pd.lot_no,pd.receive_id) ,0) as remain_qty`)
             )
             .join('wm_receives as wr', 'wrd.receive_id', 'wr.receive_id')
             .join('mm_products as mp', 'mp.product_id', 'wrd.product_id')
@@ -57,6 +57,8 @@ export class PickModel {
                 .orWhere('mg.working_code','like','%'+query+'%')
                 .orWhere('wr.receive_code','=',query)
             })
+            .groupBy('wrd.product_id','wrd.lot_no','wrd.unit_generic_id','wrd.receive_id')
+            .having(knex.raw('receive_qty - remain_qty > 0'))
             .orderByRaw('wr.receive_date,mp.product_name desc')
 
     }
@@ -101,14 +103,15 @@ export class PickModel {
     }
     checkApprove(knex: Knex, detail: any) {
         return knex('wm_pick_detail as wpd')
-            .select(knex.raw(`rd.receive_detail_id, wpd.pick_detail_id, wpd.receive_id , rd.receive_qty ,wpd.pick_qty`),
-                knex.raw(`IFNULL((select sum(pd.pick_qty) from wm_pick_detail as pd join wm_pick as p on p.pick_id = pd.pick_id  where p.is_approve = 'Y' and  pd.product_id = wpd.product_id and pd.lot_no = wpd.lot_no and pd.receive_id = wpd.receive_id group by pd.product_id,pd.lot_no,pd.receive_id),0) as remain_qty`))
+            .select(knex.raw(`wpd.pick_detail_id, wpd.receive_id , sum(rd.receive_qty) as receive_qty ,wpd.pick_qty`),
+                knex.raw(`IFNULL((select sum(pd.pick_qty) from wm_pick_detail as pd join wm_pick as p on p.pick_id = pd.pick_id  where p.is_approve = 'Y' and  pd.product_id = wpd.product_id and pd.lot_no = wpd.lot_no and pd.receive_id = wpd.receive_id and pd.unit_generic_id = wpd.unit_generic_id group by pd.unit_generic_id,pd.product_id,pd.lot_no,pd.receive_id),0) as remain_qty`))
             .join('wm_receives as wr', 'wr.receive_id', 'wpd.receive_id')
             .join(knex.raw(`wm_receive_detail as rd on rd.receive_id = wpd.receive_id and rd.product_id = wpd.product_id and rd.lot_no = wpd.lot_no and rd.unit_generic_id = wpd.unit_generic_id`))
             .whereNotExists(knex.select('*').from('wm_receive_approve as ra')
                 .whereRaw('wr.receive_id = ra.receive_id'))
             .andWhere('wpd.pick_detail_id', detail.pick_detail_id)
             .andWhere(`wr.is_cancel`, 'N')
+            .groupBy('wpd.product_id','wpd.lot_no','wpd.unit_generic_id','wpd.receive_id')
 
     }
     gerRemovePickDetail(knex: Knex, pdId: any) {
@@ -133,16 +136,16 @@ export class PickModel {
     getDetail(knex: Knex, pickId: any) {
         return knex('wm_pick_detail as wpd')
             .select(
-                knex.raw(`(select sum(pd.pick_qty) from wm_pick_detail as pd join wm_pick as p on p.pick_id = pd.pick_id  where p.is_approve = 'Y' and pd.product_id = wpd.product_id and pd.lot_no = wpd.lot_no and pd.receive_id = wpd.receive_id group by pd.product_id,pd.lot_no,pd.receive_id) as remain_qty`),
-                'wpd.*', 'p.product_name', 'wpd.lot_no', 'u1.unit_name as small_unit', 'u2.unit_name as large_unit', 'mu.qty as base_unit', 'r.receive_code', 'rd.receive_qty', 'rd.receive_id', 'r.is_cancel')
+                knex.raw(`(select sum(pd.pick_qty) from wm_pick_detail as pd join wm_pick as p on p.pick_id = pd.pick_id  where p.is_approve = 'Y' and pd.product_id = wpd.product_id and pd.lot_no = wpd.lot_no and pd.receive_id = wpd.receive_id and pd.unit_generic_id = wpd.unit_generic_id group by pd.unit_generic_id, pd.product_id,pd.lot_no,pd.receive_id) as remain_qty`),
+                'wpd.*', 'p.product_name', 'wpd.lot_no', 'u1.unit_name as small_unit', 'u2.unit_name as large_unit', 'mu.qty as base_unit', 'r.receive_code', 'wpd.receive_id', 'r.is_cancel'
+            ,knex.raw(`(select sum(rd.receive_qty) as receive_qty from wm_receive_detail as rd where rd.receive_id = wpd.receive_id and rd.product_id = wpd.product_id and rd.lot_no = wpd.lot_no and rd.unit_generic_id = wpd.unit_generic_id group by rd.product_id,rd.unit_generic_id,rd.lot_no,rd.receive_id ) as receive_qty`))
             .innerJoin('wm_receives as r', 'r.receive_id', 'wpd.receive_id')
-            .innerJoin(
-                knex.raw(`wm_receive_detail as rd on rd.receive_id = wpd.receive_id and rd.product_id = wpd.product_id and rd.lot_no = wpd.lot_no and rd.unit_generic_id = wpd.unit_generic_id `))
             .innerJoin('mm_products as p', 'p.product_id', 'wpd.product_id')
             .leftJoin('mm_generics as g', 'g.generic_id', 'p.generic_id')
             .leftJoin('mm_unit_generics as mu', 'mu.unit_generic_id', 'wpd.unit_generic_id')
             .leftJoin('mm_units as u1', 'u1.unit_id', 'mu.to_unit_id')
             .leftJoin('mm_units as u2', 'u2.unit_id', 'mu.from_unit_id')
+            
             .where('wpd.pick_id', pickId)
     }
 }
