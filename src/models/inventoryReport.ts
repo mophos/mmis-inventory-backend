@@ -2832,4 +2832,12 @@ ORDER BY
         AND pc.is_return IS NOT NULL`
         return knex.raw(sql)
     }
+
+    getGenericInStockcrad(knex: Knex, warehouseId: string, startDate: any, endDate: any) {
+        return knex('view_stock_card_warehouse as vscw')
+          .select('vscw.generic_id', 'vscw.generic_name')
+          .where('vscw.warehouse_id', warehouseId)
+          .andWhereBetween('vscw.stock_date', [startDate, endDate])
+          .groupBy('vscw.generic_id')
+      }
 }
