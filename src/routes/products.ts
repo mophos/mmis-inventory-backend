@@ -589,6 +589,31 @@ router.get('/mapping/search-product-tmt', async (req, res, next) => {
 
 });
 
+router.get('/mapping/search-product/:query', async (req, res, next) => {
+  let db = req.db;
+  let query = req.params.query;
+
+  try {
+    let rs: any = await productModel.getSearchProduct(db, query);
+
+    let mappings = [];
+    rs.forEach(v => {
+      let obj: any = {};
+      obj.working_code = v.working_code;
+      obj.product_name = v.product_name;
+      obj.product_id = v.product_id;
+      obj.tmtid = v.TMTID;
+      // obj.fsn = v.FSN;
+      mappings.push(obj);
+    });
+    res.send({ ok: true, rows: mappings });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
 router.get('/mapping/all-product', async (req, res, next) => {
   let db = req.db;
 

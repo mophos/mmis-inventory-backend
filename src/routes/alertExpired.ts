@@ -18,6 +18,7 @@ const receiveModel = new ReceiveModel();
 router.get('/generics', async (req, res, next) => {
   let db = req.db;
   let gid = req.decoded.generic_type_id;
+  let query = req.query.query || ''
   let _data: any = [];
   if (gid) {
     let pgs = gid.split(',');
@@ -26,7 +27,7 @@ router.get('/generics', async (req, res, next) => {
     });
   }
   try {
-    let rs: any = await alertModel.getAllGenerics(db, _data);
+    let rs: any = await alertModel.getAllSearchGenerics(db, _data, query);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
