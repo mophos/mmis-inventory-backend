@@ -482,7 +482,8 @@ router.get('/orders/waiting-approve', async (req, res, next) => {
   try {
     let rs: any = await orderModel.getListWaitingApprove(db, null, warehouseId, limit, offset, query, fillterCancel);
     let total: any = await orderModel.totalListWaitingApprove(db, null, warehouseId, query, fillterCancel);
-    res.send({ ok: true, rows: rs[0], total: total[0] });
+    const _total = total.length;
+    res.send({ ok: true, rows: rs[0], total: [{ total: _total }] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
