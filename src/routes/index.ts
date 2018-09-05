@@ -952,26 +952,38 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
           // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
           v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
           v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
+          v.in_base = inventoryReportModel.commaQty(Math.floor(_in_qty % _conversion_qty));
+          v.out_base = inventoryReportModel.commaQty(Math.floor(_out_qty % _conversion_qty));
           v.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
-          if (v.in_qty != 0) {
+          //in_qty_show
+          if (v.in_qty != 0 && v.in_base != 0) {
+            v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' ' + v.in_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.in_qty != 0) {
             v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.in_base != 0) {
+            v.in_qty_show = v.in_base + ' ' + v.small_unit
           } else {
             v.in_qty_show = '-';
           }
-          if (v.out_qty != 0) {
+          //out_qty_show
+          if (v.out_qty != 0 && v.out_base != 0) {
+            v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' ' + v.out_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.out_qty != 0) {
             v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.out_base != 0) {
+            v.out_qty_show = v.out_base + ' ' + v.small_unit
           } else {
             v.out_qty_show = '-';
           }
         }//ไม่มี unit_generic_id จะโชว์เป็น base
         else {
           if (v.in_qty != 0) {
-            v.in_qty_show = v.in_qty;
+            v.in_qty_show = v.in_qty + ' ' + v.small_unit;
           } else {
             v.in_qty_show = '-';
           }
           if (v.out_qty != 0) {
-            v.out_qty_show = v.out_qty;
+            v.out_qty_show = v.out_qty + ' ' + v.small_unit;
           } else {
             v.out_qty_show = '-';
           }
@@ -986,8 +998,16 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
       inventory_stock[0].forEach(e => {
         //มี unit_generic_id จะโชว์เป็น pack
         if (e.unit_generic_id) {
-          e.in_qty = +e.in_qty - +e.out_qty
-          e.in_qty = inventoryReportModel.commaQty(Math.floor(e.in_qty / e.conversion_qty));
+          e.qty = +e.in_qty - +e.out_qty
+          e.qty_pack = inventoryReportModel.commaQty(Math.floor(e.qty / e.conversion_qty));
+          e.qty_base = inventoryReportModel.commaQty(Math.floor(e.qty % e.conversion_qty));
+          if (e.qty_pack != 0 && e.qty_base != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          } else if (e.qty_pack != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          } else if (e.qty_base != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          }
         }
         //ไม่มี unit_generic_id จะโชว์เป็น base
         else {
@@ -3051,7 +3071,7 @@ router.get('/report/genericStock/haveMovement/', wrap(async (req, res, next) => 
   rs.forEach(v => {
     genericId.push(v.generic_id)
   });
-  
+
   let warehouseName = await inventoryReportModel.getWarehouse(db, warehouseId)
   warehouseName = warehouseName[0].warehouse_name
 
@@ -3119,26 +3139,38 @@ router.get('/report/genericStock/haveMovement/', wrap(async (req, res, next) => 
           // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
           v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
           v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
+          v.in_base = inventoryReportModel.commaQty(Math.floor(_in_qty % _conversion_qty));
+          v.out_base = inventoryReportModel.commaQty(Math.floor(_out_qty % _conversion_qty));
           v.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
-          if (v.in_qty != 0) {
+          //in_qty_show
+          if (v.in_qty != 0 && v.in_base != 0) {
+            v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' ' + v.in_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.in_qty != 0) {
             v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.in_base != 0) {
+            v.in_qty_show = v.in_base + ' ' + v.small_unit
           } else {
             v.in_qty_show = '-';
           }
-          if (v.out_qty != 0) {
+          //out_qty_show
+          if (v.out_qty != 0 && v.out_base != 0) {
+            v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' ' + v.out_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.out_qty != 0) {
             v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.out_base != 0) {
+            v.out_qty_show = v.out_base + ' ' + v.small_unit
           } else {
             v.out_qty_show = '-';
           }
         }//ไม่มี unit_generic_id จะโชว์เป็น base
         else {
           if (v.in_qty != 0) {
-            v.in_qty_show = v.in_qty;
+            v.in_qty_show = v.in_qty + ' ' + v.small_unit;
           } else {
             v.in_qty_show = '-';
           }
           if (v.out_qty != 0) {
-            v.out_qty_show = v.out_qty;
+            v.out_qty_show = v.out_qty + ' ' + v.small_unit;
           } else {
             v.out_qty_show = '-';
           }
@@ -3153,8 +3185,16 @@ router.get('/report/genericStock/haveMovement/', wrap(async (req, res, next) => 
       inventory_stock[0].forEach(e => {
         //มี unit_generic_id จะโชว์เป็น pack
         if (e.unit_generic_id) {
-          e.in_qty = +e.in_qty - +e.out_qty
-          e.in_qty = inventoryReportModel.commaQty(Math.floor(e.in_qty / e.conversion_qty));
+          e.qty = +e.in_qty - +e.out_qty
+          e.qty_pack = inventoryReportModel.commaQty(Math.floor(e.qty / e.conversion_qty));
+          e.qty_base = inventoryReportModel.commaQty(Math.floor(e.qty % e.conversion_qty));
+          if (e.qty_pack != 0 && e.qty_base != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          } else if (e.qty_pack != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          } else if (e.qty_base != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          }
         }
         //ไม่มี unit_generic_id จะโชว์เป็น base
         else {
