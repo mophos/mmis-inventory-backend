@@ -2729,7 +2729,8 @@ LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
 	LEFT JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
 	LEFT JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id 
 	WHERE
-	mg.generic_type_id IN ( ${genericType} ) 
+    mg.generic_type_id IN ( ${genericType} ) 
+    HAVING ( balance_qty > 0 or in_qty > 0 or out_qty > 0)
 ORDER BY
     mp.product_name`
 
