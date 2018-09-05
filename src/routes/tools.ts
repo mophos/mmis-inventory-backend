@@ -141,7 +141,7 @@ router.put('/stockcard/receives', async (req, res, next) => {
       }
       console.log(v.expired_date, v.expired_date_old);
       if (v.lot_no != v.lot_no_old || v.expired_date != v.expired_date_old || v.unit_generic_id != v.unit_generic_id_old) {
-        await toolModel.changeLotWmProduct(db, v.product_id, v.lot_no_old, v.lot_no, v.expired_date_old, v.expired_date, warehouseId, v.unit_generic_id);
+        await toolModel.changeLotWmProduct(db, v.product_id, v.lot_no_old, v.lot_no, v.expired_date_old, v.expired_date, warehouseId, v.unit_generic_id_old, v.unit_generic_id);
         await toolModel.changeLotStockcard(db, v.product_id, v.lot_no_old, v.lot_no, v.expired_date_old, v.expired_date, warehouseId);
       }
       await toolModel.updateReceiveDetail(db, receiveId, v);
@@ -254,7 +254,7 @@ router.put('/stockcard/receive-others', async (req, res, next) => {
         await toolModel.decreaseQty(db, v.product_id, v.lot_no_old, warehouseId, qty) // ลดลง
       }
       if (v.lot_no != v.lot_no_old || v.expired_date != v.expired_date_old || v.unit_generic_id != v.unit_generic_id_old) {
-        await toolModel.changeLotWmProduct(db, v.product_id, v.lot_no_old, v.lot_no, v.expired_date_old, v.expired_date, warehouseId, v.unit_generic_id) // เพิ่มขึ้น
+        await toolModel.changeLotWmProduct(db, v.product_id, v.lot_no_old, v.lot_no, v.expired_date_old, v.expired_date, warehouseId, v.unit_generic_id_old, v.unit_generic_id) // เพิ่มขึ้น
         await toolModel.changeLotStockcard(db, v.product_id, v.lot_no_old, v.lot_no, v.expired_date_old, v.expired_date, warehouseId);
       }
       await toolModel.updateReceiveOtherDetail(db, receiveOtherId, v);
