@@ -384,27 +384,25 @@ router.put('/:receiveId', co(async (req, res, next) => {
           let passPick = true;
           let proSum:any = [];
           console.log(productsData);
-          
-          let tmp:any[]
-          tmp = _.clone(productsData)
-           for(let p of tmp){
-             if(proSum.length < 1){ proSum.push(p); console.log('++++++');
-             } 
+           for(let p of productsData){
+             let item = {  
+               receive_id: p.receive_id,
+               product_id: p.product_id,
+               receive_qty: p.receive_qty,
+               unit_generic_id: p.unit_generic_id,
+               lot_no: p.lot_no 
+              }
+             if(proSum.length < 1){ proSum.push(item);} 
              else {
                let i = _.findIndex(proSum, { product_id: p.product_id,lot_no: p.lot_no, unit_generic_id: p.unit_generic_id })
                console.log(i);
                if(i !== -1) {
-                proSum[i].receive_qty =  101
+                proSum[i].receive_qty += p.receive_qty
                } else {
-                proSum.push(p)
+                proSum.push(item)
                }
              }
            }
-           console.log('-----');
-           
-           console.log(proSum);
-           
-
           for(let item of rsProductPick){
             let idx = _.findIndex(proSum,{ product_id: item.product_id, lot_no: item.lot_no, unit_generic_id: item.unit_generic_id });
             if ( idx > -1 ){
@@ -493,15 +491,15 @@ router.post('/checkDeleteProductWithPick',co(async(req, res, next) => {
   try {
 
     let rsProductPick = await receiveModel.getPickDetailCheck(db, receiveId);
-            let idx = _.findIndex(rsProductPick,{ product_id: products.product_id, lot_no: products.lot_no, unit_generic_id: products.unit_generic_id });
-           console.log(idx);
-            if ( idx == -1 ){
-              res.send({ok:true}); 
-            } else {
-              res.send({ok:false , error:'ไม่สามารลบได้เนื่องจากถูกใช้ในการหยิบ'});
-            }
+    let idx = _.findIndex(rsProductPick,{ product_id: products.product_id, lot_no: products.lot_no, unit_generic_id: products.unit_generic_id });
+    console.log(idx);
+    if ( idx == -1 ){
+      res.send({ok:true}); 
+    } else {
+      res.send({ok:false , error:'ไม่สามารลบได้เนื่องจากถูกใช้ในการหยิบ'});
+    }
   } catch (error) {
-    
+    res.send({ok:false , error:error})
   }
 }))
 router.post('/other/expired/list', co(async (req, res, next) => {
@@ -1174,10 +1172,6 @@ router.delete('/remove', co(async (req, res, next) => {
       if(!rs){
         await receiveModel.removeReceive(db, receiveId, peopleUserId);
         if (purchaseOrderId) {
-          console.log('------');
-          
-          console.log(typeof req.query.purchaseOrderId);
-          
           let rsCurrent = await receiveModel.getCurrentPurchaseStatus(db, purchaseOrderId);
           if (rsCurrent) {
             if (rsCurrent[0].purchase_order_status === 'COMPLETED') {
@@ -1190,10 +1184,6 @@ router.delete('/remove', co(async (req, res, next) => {
         res.send({ ok: false, error: 'มีัรายการหยิบที่อนุมัติแล้ว' });
       }
     } catch (error) {
-      console.log('--------');
-      
-      console.log(error.message );
-      
       res.send({ ok: false, error: error.message });
     } finally {
       db.destroy();
