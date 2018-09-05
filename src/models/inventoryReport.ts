@@ -2718,7 +2718,9 @@ LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
 		wp.unit_generic_id,
 			ROUND(avg( IFNULL(wp.cost,0) ),2) AS cost 
 	FROM
-		wm_products AS wp 
+        wm_products AS wp 
+    where 
+        wp.warehouse_id = ${wareHouseId}
 	GROUP BY
 		wp.product_id,
 		wp.unit_generic_id 
