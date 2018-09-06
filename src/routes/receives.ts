@@ -818,8 +818,8 @@ router.post('/approve', co(async (req, res, next) => {
 
     // }
 
-    await receiveModel.removeOldApprove(db, receiveIds);
-    await receiveModel.saveApprove(db, approveDatas);
+    //// await receiveModel.removeOldApprove(db, receiveIds);
+    //// await receiveModel.saveApprove(db, approveDatas);
     // get product
     let _rproducts = await receiveModel.getReceiveProductsImport(db, receiveIds);
     let adjust_price = []; // ปรับราคาต่อแพค
@@ -901,12 +901,22 @@ router.post('/approve', co(async (req, res, next) => {
     });
 
     // stock card receive
-    await receiveModel.saveProducts(db, products);
-    await stockcard.saveFastStockTransaction(db, data);
-    await receiveModel.adjustCost(db, adjust_price);
+    //// await receiveModel.saveProducts(db, products);
+    //// await stockcard.saveFastStockTransaction(db, data);
+    //// await receiveModel.adjustCost(db, adjust_price);
     console.log(adjust_price);
 
-    res.send({ ok: true });
+    let rdPick:any = await receiveModel.getPickCheck(db,receiveIds)
+    let rsWp = []
+    console.log(rdPick);
+    
+    for(let item of rdPick){
+      let _rsWp:any =  await receiveModel.getWmProduct(db,item)
+      rsWp.push(_rsWp)
+    }
+   
+    res.send({ ok: false, error:JSON.stringify( [''] )});
+    // res.send({ ok: true });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
