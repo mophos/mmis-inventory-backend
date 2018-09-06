@@ -99,6 +99,7 @@ export class BorrowOther {
     sp.wm_product_id,
     wp.lot_no,
     wp.expired_date,  
+    ss.src_warehouse_name,
     (
       SELECT
         sum(wp2.qty)

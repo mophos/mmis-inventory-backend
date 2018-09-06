@@ -93,6 +93,41 @@ router.get('/list/other', co(async (req, res, next) => {
 
 }));
 
+router.get('/returned/list', co(async (req, res, next) => {
+  let db = req.db;
+  let type = +req.query.t || 1;
+  let limit = +req.query.limit || 15;
+  let offset = +req.query.offset || 0;
+  let warehouseId = req.decoded.warehouseId;
+
+  try {
+    let rows;
+    let total;
+    if (type === 1) { // all
+      rows = await borrowModel.allReturned(db, warehouseId, limit, offset);
+      total = await borrowModel.totalAllReturned(db, warehouseId);
+    } else if (type === 2) {
+      rows = await borrowModel.approvedReturned(db, warehouseId, limit, offset);
+      total = await borrowModel.totalApprovedReturned(db, warehouseId);
+    } else if (type === 3) {
+      rows = await borrowModel.notApprovedReturned(db, warehouseId, limit, offset);
+      total = await borrowModel.totalNotApprovedReturned(db, warehouseId);
+    } else if (type === 4) {
+      rows = await borrowModel.markDeletedReturned(db, warehouseId, limit, offset);
+      total = await borrowModel.totalMarkDeleteReturned(db, warehouseId);
+    } else {
+      rows = await borrowModel.allReturned(db, warehouseId, limit, offset);
+      total = await borrowModel.totalAllReturned(db, warehouseId);
+    }
+
+    res.send({ ok: true, rows: rows, total: total[0].total });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
 router.get('/info-summary/:borrowId', co(async (req, res, next) => {
   let db = req.db;
   let borrowId = req.params.borrowId;
@@ -367,6 +402,103 @@ router.post('/approve-all', co(async (req, res, next) => {
 
 }));
 
+router.post('/returned/approved', co(async (req, res, next) => {
+  let db = req.db;
+  let returnedIds = req.body.returnedIds;
+  let peopleUserId = req.decoded.people_user_id;
+
+  try {
+    let _rproducts = await borrowModel.getReturnedProductsImport(db, returnedIds);
+
+    let products: any = [];
+    _rproducts.forEach((v: any) => {
+      // let id = moment().add(10, 'ms').format('x');
+      let id = uuid();
+
+      let obj: any = {
+        wm_product_id: id,
+        warehouse_id: v.warehouse_id,
+        product_id: v.product_id,
+        generic_id: v.generic_id,
+        returned_code: v.returned_code,
+        returned_id: v.returned_id,
+        balance: v.balance,
+        qty: (v.returned_qty * v.conversion_qty),
+        price: (v.cost * v.returned_qty) / (v.returned_qty * v.conversion_qty),
+        cost: (v.cost * v.returned_qty) / (v.returned_qty * v.conversion_qty),
+        lot_no: v.lot_no,
+        expired_date: moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date, 'YYYY-MM-DD').format('YYYY-MM-DD') : null,
+        unit_generic_id: v.unit_generic_id,
+        location_id: +v.location_id,
+        people_user_id: req.decoded.people_user_id,
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss')
+      };
+      // add product
+      products.push(obj);
+    });
+
+    //   // get balance
+    let warehouseId = req.decoded.warehouseId;
+    let balances = await borrowModel.getProductRemainByReturnedIds(db, returnedIds, warehouseId);
+    balances = balances[0];
+
+    console.log('******************************');
+    console.log(balances);
+    console.log('******************************');
+
+    // save stockcard
+    let data = [];
+
+    products.forEach(v => {
+      let obj: any = {};
+      obj.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+      obj.product_id = v.product_id;
+      obj.generic_id = v.generic_id;
+      obj.unit_generic_id = v.unit_generic_id;
+      obj.transaction_type = TransactionType.RECEIVE_OTHER;
+      obj.document_ref_id = v.returned_id;
+      obj.document_ref = v.returned_code;
+      obj.in_qty = v.qty;
+      obj.in_unit_cost = v.cost;
+
+      let balance = 0;
+      let balance_generic = 0;
+      let idx = _.findIndex(balances, {
+        product_id: v.product_id,
+        warehouse_id: v.warehouse_id
+      });
+
+      if (idx > -1) {
+        balance = balances[idx].balance + v.qty;
+        balance_generic = balances[idx].balance_generic + v.qty;
+        balances[idx].balance += v.qty;
+        balances[idx].balance_generic += v.qty;
+      }
+
+      obj.balance_qty = balance;
+      obj.balance_generic_qty = balance_generic;
+      obj.balance_unit_cost = v.cost;
+      obj.ref_src = v.donator_id;
+      obj.ref_dst = v.warehouse_id;
+      obj.comment = 'คืนสินค้า';
+      obj.lot_no = v.lot_no;
+      obj.expired_date = v.expired_date;
+      data.push(obj);
+    });
+
+    await borrowModel.changeApproveStatusReturned(db, returnedIds, peopleUserId);
+    await borrowModel.saveProducts(db, products);
+    await stockCard.saveFastStockTransaction(db, data);
+
+    res.send({ ok: true });
+
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
 router.post('/active', co(async (req, res, next) => {
   let db = req.db;
   let transferId = req.body.transferId;
@@ -585,6 +717,94 @@ router.get('/request', co(async (req, res, next) => {
     res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
+  }
+
+}));
+
+router.post('/returned-product', co(async (req, res, next) => {
+  let db = req.db;
+  let summary = req.body.summary;
+  let products = req.body.products;
+
+  if (products.length) {
+    let productsData = [];
+    try {
+      let _returnedCode: null;
+
+      _returnedCode = await serialModel.getSerial(db, 'BT');
+      await borrowModel.updateBorrowReturnedCode(db, summary.borrowCode, summary.borrowType, _returnedCode);
+
+      const data: any = {
+        returned_code: _returnedCode,
+        returned_date: summary.returnedDate,
+        people_user_id: req.decoded.people_user_id,
+        comment: summary.comment,
+        warehouse_id: req.decoded.warehouseId,
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss')
+      }
+
+      let rsSummary = await borrowModel.saveReturnedSummary(db, data);
+
+      products.forEach((v: any) => {
+        let pdata: any = {
+          returned_id: rsSummary[0],
+          product_id: v.product_id,
+          returned_qty: +v.returned_qty,
+          unit_generic_id: v.unit_generic_id,
+          location_id: v.location_id,
+          cost: +v.cost,
+          lot_no: v.lot_no,
+          expired_date: moment(v.expired_date, 'DD/MM/YYYY').isValid() ? moment(v.expired_date, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
+        }
+        productsData.push(pdata);
+      });
+      await borrowModel.saveReturnedDetail(db, productsData);
+      res.send({ ok: true });
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
+  }
+}));
+
+router.get('/returned/product-list/:returnedId', co(async (req, res, next) => {
+  let db = req.db;
+  let returnedId = req.params.returnedId;
+
+  try {
+    let rs = await borrowModel.getReturnedProductList(db, returnedId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/returned/detail/:returnedId', co(async (req, res, next) => {
+
+  let db = req.db;
+  let returnedId = req.params.returnedId;
+
+  if (returnedId) {
+    try {
+      let rs = await borrowModel.getReturnedDetail(db, returnedId);
+
+      let returnedCode = await borrowModel.getReturnedCode(db, rs[0].returned_code);
+      let returnedOtherCode = await borrowModel.getOtherReturnedCode(db, rs[0].returned_code);
+
+      res.send({ ok: true, detail: rs, borrow: returnedCode, borrowOther: returnedOtherCode });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการ' });
   }
 
 }));

@@ -14,6 +14,18 @@ export class BorrowModel {
       .update(data);
   }
 
+  updateBorrowReturnedCode(knex: Knex, borrowCode: any, borrowType: any, returnedCode: any) {
+    if (borrowType === 1) {
+      return knex('wm_borrow')
+        .where('borrow_code', borrowCode)
+        .update({ 'returned_code': returnedCode });
+    } else {
+      return knex('wm_borrow_other_summary')
+        .where('borrow_other_code', borrowCode)
+        .update({ 'returned_code': returnedCode });
+    }
+  }
+
   deleteBorrowGeneric(knex: Knex, borrowId: any) {
     return knex('wm_borrow_generic')
       .where('borrow_id', borrowId)
@@ -69,6 +81,15 @@ export class BorrowModel {
       .limit(limit).offset(offset);
   }
 
+  allReturned(knex: Knex, warehouseId: any, limit: number = 15, offset: number = 0) {
+    return knex('wm_returned as r')
+      .select('r.*', 'ww.warehouse_name')
+      .join('wm_warehouses as ww', 'ww.warehouse_id', 'r.warehouse_id')
+      .where('r.warehouse_id', warehouseId)
+      .orderBy('r.returned_id', 'desc')
+      .limit(limit).offset(offset);
+  }
+
   totalAll(knex: Knex, warehouseId: any) {
     return knex('wm_borrow as b')
       .where('b.src_warehouse_id', warehouseId)
@@ -78,6 +99,12 @@ export class BorrowModel {
   totalAllOther(knex: Knex, warehouseId: any) {
     return knex('wm_borrow_other_summary as b')
       .where('b.warehouse_id', warehouseId)
+      .count('* as total');
+  }
+
+  totalAllReturned(knex: Knex, warehouseId: any) {
+    return knex('wm_returned as r')
+      .where('r.warehouse_id', warehouseId)
       .count('* as total');
   }
 
@@ -94,6 +121,7 @@ export class BorrowModel {
       .offset(offset)
       .orderBy('wmt.borrow_id', 'DESC')
   }
+
   approvedOther(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_borrow_other_summary as bo')
       .select('bo.*', 'ww.warehouse_name')
@@ -101,6 +129,16 @@ export class BorrowModel {
       .where('bo.warehouse_id', warehouseId)
       .andWhere('bo.approved', 'Y')
       .orderBy('bo.borrow_other_id', 'desc')
+      .limit(limit).offset(offset);
+  }
+
+  approvedReturned(knex: Knex, warehouseId: any, limit: number, offset: number) {
+    return knex('wm_returned as r')
+      .select('r.*', 'ww.warehouse_name')
+      .join('wm_warehouses as ww', 'ww.warehouse_id', 'r.warehouse_id')
+      .where('r.warehouse_id', warehouseId)
+      .andWhere('r.is_approved', 'Y')
+      .orderBy('r.returned_id', 'desc')
       .limit(limit).offset(offset);
   }
 
@@ -115,6 +153,13 @@ export class BorrowModel {
     return knex('wm_borrow_other_summary as b')
       .where('b.warehouse_id', warehouseId)
       .andWhere('b.approved', 'Y')
+      .count('* as total');
+  }
+
+  totalApprovedReturned(knex: Knex, warehouseId: any) {
+    return knex('wm_returned as r')
+      .where('r.warehouse_id', warehouseId)
+      .andWhere('r.is_approved', 'Y')
       .count('* as total');
   }
 
@@ -143,6 +188,16 @@ export class BorrowModel {
       .limit(limit).offset(offset);
   }
 
+  notApprovedReturned(knex: Knex, warehouseId: any, limit: number, offset: number) {
+    return knex('wm_returned as r')
+      .select('r.*', 'ww.warehouse_name')
+      .join('wm_warehouses as ww', 'ww.warehouse_id', 'r.warehouse_id')
+      .where('r.warehouse_id', warehouseId)
+      .andWhere('r.is_approved', 'N')
+      .orderBy('r.returned_id', 'desc')
+      .limit(limit).offset(offset);
+  }
+
   totalNotApproved(knex: Knex, warehouseId: any) {
     return knex('wm_borrow as wmt')
       .where('wmt.src_warehouse_id', warehouseId)
@@ -155,6 +210,13 @@ export class BorrowModel {
     return knex('wm_borrow_other_summary as b')
       .where('b.warehouse_id', warehouseId)
       .andWhere('b.approved', 'N')
+      .count('* as total');
+  }
+
+  totalNotApprovedReturned(knex: Knex, warehouseId: any) {
+    return knex('wm_returned as r')
+      .where('r.warehouse_id', warehouseId)
+      .andWhere('r.is_approved', 'N')
       .count('* as total');
   }
 
@@ -189,101 +251,29 @@ export class BorrowModel {
       .limit(limit).offset(offset);
   }
 
-  totalMarkDeleteOther(knex: Knex, warehouseId: any) {
-    console.log('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', knex('wm_borrow_other_summary as b')
-      .where('b.warehouse_id', warehouseId)
-      .andWhere('b.is_cancel', 'N')
-      .count('* as s').toString());
+  markDeletedReturned(knex: Knex, warehouseId: any, limit: number, offset: number) {
+    return knex('wm_returned as r')
+      .select('r.*', 'ww.warehouse_name')
+      .join('wm_warehouses as ww', 'ww.warehouse_id', 'r.warehouse_id')
+      .where('r.warehouse_id', warehouseId)
+      .andWhere('r.is_cancel', 'Y')
+      .orderBy('r.returned_id', 'desc')
+      .limit(limit).offset(offset);
+  }
 
+  totalMarkDeleteOther(knex: Knex, warehouseId: any) {
     return knex('wm_borrow_other_summary as b')
       .where('b.warehouse_id', warehouseId)
       .andWhere('b.is_cancel', 'N')
       .count('* as s');
   }
 
-  // all(knex: Knex, warehouseId: any, limit: number, offset: number) {
-  //   return knex('wm_borrow as wmt')
-  //     .select('wmt.borrow_id', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
-  //       'src.warehouse_name as src_warehouse_name', 'src.short_code as src_warehouse_code', 'wmt.mark_deleted',
-  //       'dst.warehouse_name as dst_warehouse_name', 'dst.short_code as dst_warehouse_code', 'wmt.approved', 'wmt.confirmed')
-  //     .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
-  //     .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
-  //     .where('wmt.src_warehouse_id', warehouseId)
-  //     .orderBy('wmt.borrow_id', 'DESC')
-  //     .limit(limit)
-  //     .offset(offset);
-  // }
-
-  // totalAll(knex: Knex, warehouseId: any) {
-  //   return knex('wm_borrow as b')
-  //     .where('b.src_warehouse_id', warehouseId)
-  //     .count('* as total');
-  // }
-
-  // approved(knex: Knex, warehouseId: any, limit: number, offset: number) {
-  //   return knex('wm_borrow as wmt')
-  //     .select('wmt.borrow_id', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
-  //       'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code',
-  //       'dst.warehouse_name as dst_warehouse_name', 'wmt.approved')
-  //     .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
-  //     .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
-  //     .where('wmt.src_warehouse_id', warehouseId)
-  //     .andWhere('wmt.approved', 'Y')
-  //     .limit(limit)
-  //     .offset(offset)
-  //     .orderBy('wmt.borrow_id', 'DESC')
-  // }
-
-  // totalApproved(knex: Knex, warehouseId: any) {
-  //   return knex('wm_borrow as wmt')
-  //     .where('wmt.src_warehouse_id', warehouseId)
-  //     .andWhere('wmt.approved', 'Y')
-  //     .count('* as total');
-  // }
-
-  // notApproved(knex: Knex, warehouseId: any, limit: number, offset: number) {
-  //   return knex('wm_borrow as wmt')
-  //     .select('wmt.borrow_id', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
-  //       'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'wmt.confirmed',
-  //       'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code')
-  //     .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
-  //     .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
-  //     .where('wmt.src_warehouse_id', warehouseId)
-  //     .andWhereNot('wmt.mark_deleted', 'Y')
-  //     .andWhereNot('wmt.approved', 'Y')
-  //     .limit(limit)
-  //     .offset(offset)
-  //     .orderBy('wmt.borrow_id', 'DESC')
-  // }
-
-  // totalNotApproved(knex: Knex, warehouseId: any) {
-  //   return knex('wm_borrow as wmt')
-  //     .where('wmt.src_warehouse_id', warehouseId)
-  //     .andWhereNot('wmt.mark_deleted', 'Y')
-  //     .andWhereNot('wmt.approved', 'Y')
-  //     .count('* as total');
-  // }
-
-  // markDeleted(knex: Knex, warehouseId: any, limit: number, offset: number) {
-  //   return knex('wm_borrow as wmt')
-  //     .select('wmt.borrow_id', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
-  //       'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'wmt.confirmed',
-  //       'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code')
-  //     .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
-  //     .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
-  //     .where('wmt.src_warehouse_id', warehouseId)
-  //     .andWhere('wmt.mark_deleted', 'Y')
-  //     .limit(limit)
-  //     .offset(offset)
-  //     .orderBy('wmt.borrow_id', 'DESC')
-  // }
-
-  // totalMarkDelete(knex: Knex, warehouseId: any) {
-  //   return knex('wm_borrow as wmt')
-  //     .where('wmt.src_warehouse_id', warehouseId)
-  //     .andWhere('wmt.mark_deleted', 'Y')
-  //     .count('* as total');
-  // }
+  totalMarkDeleteReturned(knex: Knex, warehouseId: any) {
+    return knex('wm_returned as r')
+      .where('r.warehouse_id', warehouseId)
+      .andWhere('r.is_cancel', 'N')
+      .count('* as s');
+  }
 
   detail(knex: Knex, borrowId: string) {
     let sql = `
@@ -404,10 +394,20 @@ export class BorrowModel {
   }
 
   changeApproveStatus(knex: Knex, borrowId: any) {
-    return knex('wm_transfer')
+    return knex('wm_borrow')
       .where('borrow_id', borrowId)
       .update({
         approved: 'Y'
+      });
+  }
+
+  changeApproveStatusReturned(knex: Knex, returnedId: any, peopleUserId: any) {
+    return knex('wm_returned')
+      .whereIn('returned_id', returnedId)
+      .update({
+        is_approved: 'Y',
+        approved_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+        approved_people_user_id: peopleUserId
       });
   }
 
@@ -619,4 +619,219 @@ export class BorrowModel {
       .whereIn('b.borrow_other_id', borrowId);
   }
 
+  saveReturnedSummary(knex: Knex, data: any) {
+    return knex('wm_returned')
+      .insert(data, 'returned_id');
+  }
+
+  saveReturnedDetail(knex: Knex, products: any[]) {
+    return knex('wm_returned_detail')
+      .insert(products);
+  }
+
+  getReturnedOtherStatus(knex: Knex, limit: number, offset: number, warehouseId, status, sort: any = {}) {
+    let sql = `
+    select rt.*, rt.is_cancel, (select count(*) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as total,
+  (select sum(rtd.cost * rtd.receive_qty) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as cost,
+  rtt.receive_type_name, d.donator_name, ra.approve_id
+  from wm_receive_other as rt
+  left join wm_receive_types as rtt on rtt.receive_type_id=rt.receive_type_id
+  left join wm_donators as d on d.donator_id=rt.donator_id
+  left join wm_receive_approve as ra on ra.receive_other_id=rt.receive_other_id
+  WHERE rt.receive_other_id in (
+    SELECT
+      rod.receive_other_id
+    FROM
+      wm_receive_other_detail rod
+    WHERE
+      rod.warehouse_id = ${warehouseId}
+    AND rod.receive_other_id = rt.receive_other_id
+  )`;
+    if (status == 'approve') {
+      sql += ` and ra.receive_other_id is not null`
+    } else if (status == 'Napprove') {
+      sql += ` and ra.receive_other_id is null`
+    }
+
+    if (sort.by) {
+      let reverse = sort.reverse ? 'DESC' : 'ASC';
+      if (sort.by === 'receive_date') {
+        sql += ` order by rt.receive_date ${reverse}`;
+      }
+
+      if (sort.by === 'receive_code') {
+        sql += ` order by rt.receive_code ${reverse}`;
+      }
+
+      if (sort.by === 'donator_name') {
+        sql += ` order by d.donator_name ${reverse}`;
+      }
+
+    } else {
+      sql += ` order by rt.receive_code desc`;
+    }
+
+    sql += ` limit ${limit} offset ${offset}`;
+
+    return knex.raw(sql);
+  }
+
+  getReturnedOtherStatusTotal(knex: Knex, warehouseId, status) {
+    let sql = `
+    select count(*) as total from wm_returned as rt
+    where rt.returned_id in (
+      SELECT
+      rod.returned_id
+    FROM
+      wm_returned_detail rod
+    WHERE
+      rod.warehouse_id = '${warehouseId}'
+    AND rod.returned_id = rt.returned_id
+    ) `;
+    if (status == 'approve') {
+      sql += ` and ra.returned_id is not null`
+    } else if (status == 'Napprove') {
+      sql += ` and ra.returned_id is null`
+    }
+    return knex.raw(sql);
+  }
+
+  getReturnedProductList(knex: Knex, returnedId: any) {
+    let sql = `
+    select 
+    rotd.*, 
+    up.qty as conversion_qty, 
+    p.product_name, 
+    g.generic_name, 
+    rotd.lot_no, 
+    rotd.expired_date, 
+    w.warehouse_name,
+    lc.location_name, 
+    lc.location_desc, 
+    u1.unit_name as from_unit_name, 
+    u2.unit_name as to_unit_name
+    from wm_returned_detail as rotd
+    join wm_returned as r on r.returned_id = rotd.returned_id
+    inner join mm_products as p on p.product_id = rotd.product_id
+    left join mm_generics as g on g.generic_id = p.generic_id
+    left join wm_warehouses as w on w.warehouse_id = r.warehouse_id
+    left join wm_locations as lc on lc.location_id = rotd.location_id
+    left join mm_unit_generics as up on up.unit_generic_id = rotd.unit_generic_id
+    left join mm_units as u1 on u1.unit_id = up.from_unit_id
+    left join mm_units as u2 on u2.unit_id = up.to_unit_id
+    where rotd.returned_id =?
+      `;
+    return knex.raw(sql, [returnedId]);
+
+  }
+
+  getReturnedDetail(knex: Knex, returnedId: any) {
+    return knex('wm_returned as r')
+      .where('r.returned_id', returnedId);
+  }
+
+  getReturnedCode(knex: Knex, returnedCode: any) {
+    return knex('wm_borrow as b')
+      .where('b.returned_code', returnedCode);
+  }
+
+  getOtherReturnedCode(knex: Knex, returnedCode: any) {
+    return knex('wm_borrow_other_summary as b')
+      .where('b.returned_code', returnedCode);
+  }
+
+  getReturnedProductsImport(knex: Knex, returnedIds: any) {
+    let subBalance = knex('wm_products as wp')
+      .sum('wp.qty')
+      .as('balance')
+      .whereRaw('wp.product_id=rd.product_id and wp.lot_no=rd.lot_no and wp.expired_date=rd.expired_date');
+
+    return knex('wm_returned_detail as rd')
+      .select(
+        'rd.returned_detail_id', 'rd.returned_id', 'rd.product_id',
+        'rd.lot_no', 'rd.expired_date', knex.raw('sum(rd.returned_qty) as returned_qty'),
+        'rd.cost', 'rd.unit_generic_id',
+        'rt.warehouse_id', 'rd.location_id',
+        'ug.qty as conversion_qty', 'mp.generic_id', 'rt.returned_code', subBalance)
+      .whereIn('rd.returned_id', returnedIds)
+      .innerJoin('wm_returned as rt', 'rt.returned_id', 'rd.returned_id')
+      .innerJoin('mm_products as mp', 'mp.product_id', 'rd.product_id')
+      .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'rd.unit_generic_id')
+      .groupByRaw('rd.product_id, rd.lot_no');
+  }
+
+  getProductRemainByReturnedIds(knex: Knex, returnedIds: any, warehouseId: any) {
+    let sql = `SELECT
+      rd.product_id,
+      r.warehouse_id,
+      IFNULL(
+        (
+          SELECT
+            sum(wp.qty)
+          FROM
+            wm_products wp
+          WHERE
+            wp.product_id = rd.product_id
+          AND wp.warehouse_id = r.warehouse_id
+          GROUP BY
+            wp.product_id
+        ),
+        0
+      ) AS balance,
+      (
+        SELECT
+          sum(wp.qty)
+        FROM
+          wm_products wp
+        WHERE
+          wp.product_id IN (
+            SELECT
+              mp.product_id
+            FROM
+              mm_products mp
+            WHERE
+              mp.generic_id IN (
+                SELECT
+                  generic_id
+                FROM
+                  mm_products mp
+                WHERE
+                  mp.product_id = rd.product_id
+              )
+          )
+        AND wp.warehouse_id = r.warehouse_id
+        GROUP BY
+          wp.warehouse_id
+      ) AS balance_generic
+    FROM
+      wm_returned_detail rd
+    JOIN wm_returned r ON r.returned_id = rd.returned_id
+    WHERE
+      rd.returned_id IN (${returnedIds})
+    AND r.warehouse_id = ${warehouseId}`;
+    return knex.raw(sql);
+  }
+
+  saveProducts(knex: Knex, data: any[]) {
+    let sqls = [];
+    data.forEach(v => {
+      let totalCost = v.cost * v.qty;
+      let sql = `
+        INSERT INTO wm_products(wm_product_id, warehouse_id, product_id, qty,
+      cost, price, lot_no, expired_date, location_id, unit_generic_id, people_user_id, created_at)
+    VALUES('${v.wm_product_id}', '${v.warehouse_id}', '${v.product_id}', ${v.qty}, ${v.cost},
+      ${ v.price}, '${v.lot_no}', '${v.expired_date}', ${v.location_id},
+      ${ v.unit_generic_id}, ${v.people_user_id}, '${v.created_at}')
+    ON DUPLICATE KEY UPDATE qty = qty + ${ v.qty}, cost = (
+      select(sum(w.qty * w.cost) + ${ totalCost}) / (sum(w.qty) + ${v.qty})
+    from wm_products as w
+    where w.product_id = '${v.product_id}' and w.lot_no = '${v.lot_no}'
+    group by w.product_id)
+    `;
+      sqls.push(sql);
+    });
+
+    let queries = sqls.join(';');
+    return knex.raw(queries);
+  }
 }

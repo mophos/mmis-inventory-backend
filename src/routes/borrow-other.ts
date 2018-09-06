@@ -275,12 +275,12 @@ router.get('/generic-list/:borrowId', co(async (req, res, next) => {
 router.post('/approve-all', co(async (req, res, next) => {
 
   let db = req.db;
-  let borrowIds = req.body.borrowIds;
+  let borrowOtherIds = req.body.borrowOtherIds;
   try {
     const decoded = req.decoded;
     const warehouseId = decoded.warehouseId;
 
-    for (let v of borrowIds) {
+    for (let v of borrowOtherIds) {
       let summary = {
         approved: 'Y',
         approve_date: moment().format('YYYY-MM-DD'),
@@ -301,8 +301,8 @@ router.post('/approve-all', co(async (req, res, next) => {
           objStockcard.generic_id = e.generic_id;
           objStockcard.unit_generic_id = e.unit_generic_id;
           objStockcard.transaction_type = TransactionType.ISSUE_TRANSACTION;
-          objStockcard.document_ref_id = e.issue_id;
-          objStockcard.document_ref = e.issue_code;
+          objStockcard.document_ref_id = e.borrow_other_id;
+          objStockcard.document_ref = e.borrow_other_code;
           objStockcard.in_qty = 0;
           objStockcard.in_unit_cost = 0;
           objStockcard.out_qty = e.out_qty;
@@ -310,10 +310,11 @@ router.post('/approve-all', co(async (req, res, next) => {
           objStockcard.balance_qty = e.balance_qty;
           objStockcard.balance_unit_cost = e.balance_unit_cost;
           objStockcard.ref_src = warehouseId;
-          objStockcard.ref_dst = e.ref_src;
+          objStockcard.ref_dst = e.src_warehouse_name;
           objStockcard.balance_generic_qty = e.balance_generic;
           objStockcard.lot_no = e.lot_no;
           objStockcard.expired_date = e.expired_date;
+          objStockcard.comment = 'ยืมนอกหน่วยงาน';
           data.push(objStockcard)
           cutProduct.cutQty = e.out_qty;
           cutProduct.wm_product_id = e.wm_product_id;
