@@ -53,6 +53,7 @@ import abcVenRoute from './routes/abcVen';
 import periodRoute from "./routes/period";
 import minMaxRoute from "./routes/minMax";
 import borrowRoute from './routes/borrow'
+import pickRoute from './routes/pick';
 
 import transferRoute from './routes/transfer';
 import requisitionRoute from "./routes/requisition";
@@ -232,6 +233,7 @@ app.use('/receives', checkAuth, adminAuth, receiveRoute);
 app.use('/requisitiontype', checkAuth, adminAuth, requisitionType);
 app.use('/addition', checkAuth, adminAuth, additionRoute);
 
+app.use('/pick',checkAuth,adminAuth,pickRoute)
 app.use('/alert-expired', checkAuth, adminAuth, alertExpiredRoute);
 app.use('/productlots', checkAuth, adminAuth, productLots);
 app.use('/abc-ven', checkAuth, adminAuth, abcVenRoute);

@@ -17,7 +17,7 @@ html
           tr 
             td.center(colspan='12') ตั้งแต่วันที่ #{startDate} ถึง #{endDate}
           tr 
-            td.left(colspan='6') รหัสเวชภัณฑ์ #{genericId[i]}
+            td.left(colspan='6') รหัสเวชภัณฑ์ #{genericCode[i]}
             td.right(colspan='6') คลัง #{warehouseName}
             //- td.right(colspan='5') หน่วย #{unit[i]}
           tr 
@@ -132,8 +132,9 @@ html
         tr
           td(colspan='12') คงคลัง ณ วันที่ #{endDate}
         for s in _inventory_stock[i]
-          tr
-            td(colspan='12') #{s.lot_no} [ #{s.in_qty} #{s.large_unit} (#{s.conversion_qty} #{s.small_unit}) ]
+          if(s.in_qty > 0)
+            tr
+              td(colspan='12') #{s.show_qty}
         //- tfoot 
         //-   tr.tbfooter
         //-     td(colspan='10')

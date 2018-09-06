@@ -417,7 +417,8 @@ mgt.generic_type_id `
     AND vscw.generic_id = '${genericId}'
     AND vscw.stock_date < '${endDate} 23:59:59'
     GROUP BY
-        vscw.unit_generic_id`
+        vscw.unit_generic_id,
+        vscw.lot_no`
         return knex.raw(sql)
     }
 
@@ -2634,7 +2635,22 @@ OR sc.ref_src like ?
         SELECT
 	mp.product_name,
 	mg.working_code,
-	mg.generic_name,
+    mg.generic_name,
+    (
+        SELECT
+            ml.labeler_name 
+        FROM
+            pc_purchasing_order_item AS ppoi1
+            LEFT JOIN mm_products AS mps ON mps.product_id = ppoi1.product_id
+            LEFT JOIN mm_labelers AS ml ON ml.labeler_id = mps.m_labeler_id
+        WHERE
+            ppoi1.generic_id = mg.generic_id 
+            AND ppoi1.product_id = mp.product_id 
+            AND ppoi1.unit_generic_id = mug.unit_generic_id 
+        ORDER BY
+            ppoi1.purchase_order_item_id DESC 
+            LIMIT 1 
+        ) AS m_labeler_name ,
 	mug.qty AS conversion,
 	mu.unit_name AS baseunit,
 	mga.account_name,
@@ -2645,7 +2661,7 @@ OR sc.ref_src like ?
 	mg.standard_cost,
 	mg.min_qty,
 	mg.max_qty,
-	concat( IFNULL( mgg1.group_name_1 + ' ', '' ) + mgg2.group_name_2 + ' ' + mgg3.group_name_3 + ' ' + mgg4.group_name_4 ) AS group_name,
+	concat( IFNULL( mgg1.group_name_1 , '' ), ' ', IFNULL( mgg2.group_name_2 , '' ),' ' , IFNULL( mgg3.group_name_3 , '' ), ' ' , IFNULL( mgg4.group_name_4, '' ) ) AS group_name,
 	concat( mu1.unit_name, '(', mug.qty, ' ', mu.unit_name, ')' ) AS pack,
 	ROUND(IFNULL(q3.cost,0) * mug.qty,2) AS unit_price,
 	ROUND(IFNULL(q1.balance_qty,0) / mug.qty,2) AS balance_qty,
@@ -2659,9 +2675,9 @@ JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
 LEFT JOIN mm_unit_generics AS mug ON mug.generic_id = mg.generic_id
 LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id
 LEFT JOIN mm_generic_group_1 AS mgg1 ON mgg1.group_code_1 = mg.group_code_1
-LEFT JOIN mm_generic_group_2 AS mgg2 ON mgg2.group_code_2 = mg.group_code_2
-LEFT JOIN mm_generic_group_3 AS mgg3 ON mgg3.group_code_3 = mg.group_code_3
-LEFT JOIN mm_generic_group_4 AS mgg4 ON mgg4.group_code_4 = mg.group_code_4
+LEFT JOIN mm_generic_group_2 AS mgg2 ON mgg2.group_code_2 = mg.group_code_2 and mgg2.group_code_1 = mg.group_code_1
+LEFT JOIN mm_generic_group_3 AS mgg3 ON mgg3.group_code_3 = mg.group_code_3 and mgg3.group_code_2 = mg.group_code_2 and mgg3.group_code_1 = mg.group_code_1
+LEFT JOIN mm_generic_group_4 AS mgg4 ON mgg4.group_code_4 = mg.group_code_4 and mgg4.group_code_3 = mg.group_code_3 and mgg4.group_code_2 = mg.group_code_2 and mgg4.group_code_1 = mg.group_code_1
 LEFT JOIN mm_generic_dosages AS mgd ON mgd.dosage_id = mg.dosage_id
 LEFT JOIN mm_generic_hosp AS mgh ON mgh.id = mg.generic_hosp_id
 LEFT JOIN l_bid_type AS ibt ON ibt.bid_id = mg.purchasing_method
@@ -2704,7 +2720,9 @@ LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
 		wp.unit_generic_id,
 			ROUND(avg( IFNULL(wp.cost,0) ),2) AS cost 
 	FROM
-		wm_products AS wp 
+        wm_products AS wp 
+    where 
+        wp.warehouse_id = ${wareHouseId}
 	GROUP BY
 		wp.product_id,
 		wp.unit_generic_id 
@@ -2713,7 +2731,8 @@ LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
 	LEFT JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
 	LEFT JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id 
 	WHERE
-	mg.generic_type_id IN ( ${genericType} ) 
+    mg.generic_type_id IN ( ${genericType} ) 
+    HAVING ( balance_qty > 0 or in_qty > 0 or out_qty > 0)
 ORDER BY
     mp.product_name`
 
@@ -2770,4 +2789,60 @@ ORDER BY
             .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
             .where('u.people_id', people_id);
     }
+
+    getreturnBudgetList(knex: Knex) {
+        let sql = `SELECT
+        pc.purchase_order_number,
+        pc.purchase_order_id,
+        pc.order_date,
+        po_price.purchase_price,
+        ml.labeler_name,
+        concat( bs.bgtype_name, ' - ', bs.bgtypesub_name ) AS budget_name,
+        rc_price.receive_price,
+        po_price.purchase_price - IFNULL( rc_price.receive_price, 0 ) differ_price,
+        pc.return_price,
+        pc.is_return 
+    FROM
+        pc_purchasing_order AS pc
+        JOIN (
+    SELECT
+        cast( sum( pci.qty * pci.unit_price ) AS DECIMAL ( 32, 4 ) ) purchase_price,
+        pci.purchase_order_id 
+    FROM
+        pc_purchasing_order_item AS pci 
+    WHERE
+        pci.giveaway = 'N' 
+    GROUP BY
+        pci.purchase_order_id 
+        ) AS po_price ON po_price.purchase_order_id = pc.purchase_order_id 
+        AND pc.is_cancel = 'N'
+        JOIN mm_labelers AS ml ON ml.labeler_id = pc.labeler_id
+        JOIN view_budget_subtype bs ON bs.bgdetail_id = pc.budget_detail_id
+        LEFT JOIN (
+    SELECT
+        cast( sum( rd.receive_qty * rd.cost ) AS DECIMAL ( 32, 4 ) ) receive_price,
+        r.purchase_order_id 
+    FROM
+        wm_receive_detail AS rd
+        INNER JOIN wm_receives AS r ON r.receive_id = rd.receive_id 
+    WHERE
+        rd.is_free = 'N' 
+        AND r.is_cancel = 'N' 
+    GROUP BY
+        r.purchase_order_id 
+        ) AS rc_price ON rc_price.purchase_order_id = pc.purchase_order_id 
+    WHERE
+        pc.purchase_order_status = 'COMPLETED' 
+        AND po_price.purchase_price > IFNULL( rc_price.receive_price, 0 ) 
+        AND pc.is_return IS NOT NULL`
+        return knex.raw(sql)
+    }
+
+    getGenericInStockcrad(knex: Knex, warehouseId: string, startDate: any, endDate: any) {
+        return knex('view_stock_card_warehouse as vscw')
+          .select('vscw.generic_id', 'vscw.generic_name')
+          .where('vscw.warehouse_id', warehouseId)
+          .andWhereBetween('vscw.stock_date', [startDate, endDate])
+          .groupBy('vscw.generic_id')
+      }
 }
