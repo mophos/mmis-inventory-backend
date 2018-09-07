@@ -978,12 +978,12 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
         }//ไม่มี unit_generic_id จะโชว์เป็น base
         else {
           if (v.in_qty != 0) {
-            v.in_qty_show = v.in_qty + ' ' + v.small_unit;
+            v.in_qty_show = v.in_qty
           } else {
             v.in_qty_show = '-';
           }
           if (v.out_qty != 0) {
-            v.out_qty_show = v.out_qty + ' ' + v.small_unit;
+            v.out_qty_show = v.out_qty
           } else {
             v.out_qty_show = '-';
           }
@@ -3165,12 +3165,12 @@ router.get('/report/genericStock/haveMovement/', wrap(async (req, res, next) => 
         }//ไม่มี unit_generic_id จะโชว์เป็น base
         else {
           if (v.in_qty != 0) {
-            v.in_qty_show = v.in_qty + ' ' + v.small_unit;
+            v.in_qty_show = v.in_qty
           } else {
             v.in_qty_show = '-';
           }
           if (v.out_qty != 0) {
-            v.out_qty_show = v.out_qty + ' ' + v.small_unit;
+            v.out_qty_show = v.out_qty
           } else {
             v.out_qty_show = '-';
           }
