@@ -868,9 +868,9 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
   let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
-
   startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
   endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+  let beforeStartDate = moment(_startDate, 'YYYY-MM-DD').add(-1, 'day').format('DD/MM/') + (moment(_startDate).get('year') + 543);
 
   let _generic_stock: any = [];
   let _generic_name = [];
@@ -912,7 +912,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
         const _in_qty = +e.in_qty;
         const _out_qty = +e.out_qty;
         const _conversion_qty = +e.conversion_qty;
-        e.stock_date = moment(e.stock_date, 'YYYY-MM-DD').isValid() ? moment(e.stock_date).format('DD/MM/') + (moment(e.stock_date).get('year') + 543) : '-';
+        e.stock_date = beforeStartDate;
         e.expired_date = moment(e.expired_date, 'YYYY-MM-DD').isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year')) : '-';
         e.balance_generic_qty = inventoryReportModel.commaQty(e.balance_generic_qty);
         e.in_cost = inventoryReportModel.comma(_in_qty * +e.balance_unit_cost);
@@ -3052,6 +3052,7 @@ router.get('/report/genericStock/haveMovement/', wrap(async (req, res, next) => 
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
   let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
+  let beforeStartDate = moment(_startDate, 'YYYY-MM-DD').add(-1, 'day').format('DD/MM/') + (moment(_startDate).get('year') + 543);
 
   let _generic_stock: any = [];
   let _generic_name = [];
@@ -3099,7 +3100,7 @@ router.get('/report/genericStock/haveMovement/', wrap(async (req, res, next) => 
         const _in_qty = +e.in_qty;
         const _out_qty = +e.out_qty;
         const _conversion_qty = +e.conversion_qty;
-        e.stock_date = moment(e.stock_date, 'YYYY-MM-DD').isValid() ? moment(e.stock_date).format('DD/MM/') + (moment(e.stock_date).get('year') + 543) : '-';
+        e.stock_date = beforeStartDate;
         e.expired_date = moment(e.expired_date, 'YYYY-MM-DD').isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year')) : '-';
         e.balance_generic_qty = inventoryReportModel.commaQty(e.balance_generic_qty);
         e.in_cost = inventoryReportModel.comma(_in_qty * +e.balance_unit_cost);
