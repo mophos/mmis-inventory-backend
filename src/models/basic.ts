@@ -125,6 +125,7 @@ export class BasicModel {
 
   getWarehouses(knex: Knex) {
     return knex('wm_warehouses')
+      .where('is_deleted', 'N')
       .orderBy('short_code');
   }
 
