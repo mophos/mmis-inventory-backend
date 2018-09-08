@@ -172,7 +172,7 @@ router.put('/:warehouseId', wrap(async (req, res, next) => {
       let rs = await warehouseModel.update(db, warehouseId, datas);
       res.send({ ok: true });
     } catch (error) {
-      res.send({ ok: false, error: error.message });
+      res.send({ ok: false, error: error });
     }
   } else {
     res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' }) ;
@@ -410,23 +410,23 @@ router.post('/products/search', wrap(async (req, res, next) => {
     pgs.forEach(v => {
       _pgs.push(v);
     });
-  if (warehouseId && query) {
-    try {
-      let results = await warehouseModel.searchProductsWarehouse(db, warehouseId, _pgs, genericType, query);
-      res.send({ ok: true, rows: results });
-      // res.send( results );
-    } catch (error) {
-      console.log(error);
-      res.send({ ok: false, error: error.message })
-    } finally {
-      db.destroy();
+    if (warehouseId && query) {
+      try {
+        let results = await warehouseModel.searchProductsWarehouse(db, warehouseId, _pgs, genericType, query);
+        res.send({ ok: true, rows: results });
+        // res.send( results );
+      } catch (error) {
+        console.log(error);
+        res.send({ ok: false, error: error.message })
+      } finally {
+        db.destroy();
+      }
+    } else {
+      res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
     }
   } else {
-    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
-  }
-  } else {
     res.send({ ok: false, error: 'กรุณาระบุเงื่อนไขในการค้นหา' })
-  } 
+  }
 }));
 
 
