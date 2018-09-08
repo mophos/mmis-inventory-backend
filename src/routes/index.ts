@@ -868,9 +868,9 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
   let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
-
   startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
   endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+  let beforeStartDate = moment(_startDate, 'YYYY-MM-DD').add(-1, 'day').format('DD/MM/') + (moment(_startDate).get('year') + 543);
 
   let _generic_stock: any = [];
   let _generic_name = [];
@@ -912,7 +912,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
         const _in_qty = +e.in_qty;
         const _out_qty = +e.out_qty;
         const _conversion_qty = +e.conversion_qty;
-        e.stock_date = moment(e.stock_date, 'YYYY-MM-DD').isValid() ? moment(e.stock_date).format('DD/MM/') + (moment(e.stock_date).get('year') + 543) : '-';
+        e.stock_date = beforeStartDate;
         e.expired_date = moment(e.expired_date, 'YYYY-MM-DD').isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year')) : '-';
         e.balance_generic_qty = inventoryReportModel.commaQty(e.balance_generic_qty);
         e.in_cost = inventoryReportModel.comma(_in_qty * +e.balance_unit_cost);
@@ -952,26 +952,38 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
           // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
           v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
           v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
+          v.in_base = inventoryReportModel.commaQty(Math.floor(_in_qty % _conversion_qty));
+          v.out_base = inventoryReportModel.commaQty(Math.floor(_out_qty % _conversion_qty));
           v.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
-          if (v.in_qty != 0) {
+          //in_qty_show
+          if (v.in_qty != 0 && v.in_base != 0) {
+            v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' ' + v.in_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.in_qty != 0) {
             v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.in_base != 0) {
+            v.in_qty_show = v.in_base + ' ' + v.small_unit
           } else {
             v.in_qty_show = '-';
           }
-          if (v.out_qty != 0) {
+          //out_qty_show
+          if (v.out_qty != 0 && v.out_base != 0) {
+            v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' ' + v.out_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.out_qty != 0) {
             v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.out_base != 0) {
+            v.out_qty_show = v.out_base + ' ' + v.small_unit
           } else {
             v.out_qty_show = '-';
           }
         }//ไม่มี unit_generic_id จะโชว์เป็น base
         else {
           if (v.in_qty != 0) {
-            v.in_qty_show = v.in_qty;
+            v.in_qty_show = v.in_qty
           } else {
             v.in_qty_show = '-';
           }
           if (v.out_qty != 0) {
-            v.out_qty_show = v.out_qty;
+            v.out_qty_show = v.out_qty
           } else {
             v.out_qty_show = '-';
           }
@@ -986,8 +998,16 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
       inventory_stock[0].forEach(e => {
         //มี unit_generic_id จะโชว์เป็น pack
         if (e.unit_generic_id) {
-          e.in_qty = +e.in_qty - +e.out_qty
-          e.in_qty = inventoryReportModel.commaQty(Math.floor(e.in_qty / e.conversion_qty));
+          e.qty = +e.in_qty - +e.out_qty
+          e.qty_pack = inventoryReportModel.commaQty(Math.floor(e.qty / e.conversion_qty));
+          e.qty_base = inventoryReportModel.commaQty(Math.floor(e.qty % e.conversion_qty));
+          if (e.qty_pack != 0 && e.qty_base != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          } else if (e.qty_pack != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          } else if (e.qty_base != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          }
         }
         //ไม่มี unit_generic_id จะโชว์เป็น base
         else {
@@ -3021,5 +3041,194 @@ router.get('/report/returnBudget/export', async (req, res, next) => {
     res.send({ ok: false, message: error.message })
   }
 });
+
+router.get('/report/genericStock/haveMovement/', wrap(async (req, res, next) => {
+  let db = req.db;
+  let startDate = req.query.startDate;
+  let endDate = req.query.endDate;
+  let warehouseId = req.query.warehouseId;
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
+  let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
+  let beforeStartDate = moment(_startDate, 'YYYY-MM-DD').add(-1, 'day').format('DD/MM/') + (moment(_startDate).get('year') + 543);
+
+  let _generic_stock: any = [];
+  let _generic_name = [];
+  let _unit = [];
+  let _dosage_name = [];
+  let _conversion_qty = [];
+  let generic_stock: any = [];
+  let _genericId: any = [];
+  let summit: any = [];
+  let _summit: any = [];
+  let balance: any = [];
+  let inventory_stock: any = [];
+  let _inventory_stock: any = [];
+  let genericCode = [];
+  let genericId = [];
+  let rs = await inventoryReportModel.getGenericInStockcrad(db, warehouseId, startDate, endDate)
+  rs.forEach(v => {
+    genericId.push(v.generic_id)
+  });
+
+  let warehouseName = await inventoryReportModel.getWarehouse(db, warehouseId)
+  warehouseName = warehouseName[0].warehouse_name
+
+  startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
+  endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+
+  for (let id in genericId) {
+
+    summit = await inventoryReportModel.summit_stockcard(db, dateSetting, genericId[id], _startDate, warehouseId)
+    generic_stock = await inventoryReportModel.generic_stock(db, dateSetting, genericId[id], _startDate, _endDate, warehouseId);
+    inventory_stock = await inventoryReportModel.inventory_stockcard(db, dateSetting, genericId[id], _endDate, warehouseId)
+
+    if (generic_stock[0].length > 0) {
+      _genericId.push(generic_stock[0][0].generic_id)
+      _generic_name.push(generic_stock[0][0].generic_name)
+      _dosage_name.push(generic_stock[0][0].dosage_name)
+      genericCode.push(generic_stock[0][0].working_code)
+      if (generic_stock[0][0].conversion_qty) {
+        _unit.push(generic_stock[0][0].large_unit + ' (' + generic_stock[0][0].conversion_qty + ' ' + generic_stock[0][0].small_unit + ')')
+      } else {
+        _unit.push(generic_stock[0][0].small_unit)
+      }
+
+      summit[0].forEach(e => {
+        const _in_qty = +e.in_qty;
+        const _out_qty = +e.out_qty;
+        const _conversion_qty = +e.conversion_qty;
+        e.stock_date = beforeStartDate;
+        e.expired_date = moment(e.expired_date, 'YYYY-MM-DD').isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year')) : '-';
+        e.balance_generic_qty = inventoryReportModel.commaQty(e.balance_generic_qty);
+        e.in_cost = inventoryReportModel.comma(_in_qty * +e.balance_unit_cost);
+        e.out_cost = inventoryReportModel.comma(_out_qty * +e.balance_unit_cost);
+        e.balance_unit_cost = inventoryReportModel.comma(e.balance_unit_cost * _conversion_qty);
+        e.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
+        e.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
+        e.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
+        if (e.in_qty != 0) {
+          e.in_qty_show = e.in_qty + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')';
+        } else {
+          e.in_qty_show = '-';
+        }
+        if (e.out_qty != 0) {
+          e.out_qty_show = e.out_qty + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')';
+        } else {
+          e.out_qty_show = '-';
+        }
+
+        e.in_qty_base = inventoryReportModel.commaQty(_in_qty);
+        e.out_qty_base = inventoryReportModel.commaQty(_out_qty);
+      });
+
+      generic_stock[0].forEach(v => {
+        const _in_qty = +v.in_qty;
+        const _out_qty = +v.out_qty;
+        const _conversion_qty = +v.conversion_qty;
+
+        v.stock_date = moment(v.stock_date, 'YYYY-MM-DD').isValid() ? moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543) : '-';
+        v.expired_date = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('DD/MM/') + (moment(v.expired_date).get('year')) : '-';
+        v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
+
+        //มี unit_generic_id จะโชว์เป็น pack
+        if (v.small_unit && v.large_unit) {
+          v.in_cost = inventoryReportModel.comma(_in_qty * +v.balance_unit_cost);
+          v.out_cost = inventoryReportModel.comma(_out_qty * +v.balance_unit_cost);
+          // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
+          v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
+          v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
+          v.in_base = inventoryReportModel.commaQty(Math.floor(_in_qty % _conversion_qty));
+          v.out_base = inventoryReportModel.commaQty(Math.floor(_out_qty % _conversion_qty));
+          v.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
+          //in_qty_show
+          if (v.in_qty != 0 && v.in_base != 0) {
+            v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' ' + v.in_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.in_qty != 0) {
+            v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.in_base != 0) {
+            v.in_qty_show = v.in_base + ' ' + v.small_unit
+          } else {
+            v.in_qty_show = '-';
+          }
+          //out_qty_show
+          if (v.out_qty != 0 && v.out_base != 0) {
+            v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' ' + v.out_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.out_qty != 0) {
+            v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.out_base != 0) {
+            v.out_qty_show = v.out_base + ' ' + v.small_unit
+          } else {
+            v.out_qty_show = '-';
+          }
+        }//ไม่มี unit_generic_id จะโชว์เป็น base
+        else {
+          if (v.in_qty != 0) {
+            v.in_qty_show = v.in_qty
+          } else {
+            v.in_qty_show = '-';
+          }
+          if (v.out_qty != 0) {
+            v.out_qty_show = v.out_qty
+          } else {
+            v.out_qty_show = '-';
+          }
+        }
+
+        v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost * _conversion_qty);
+
+        v.in_qty_base = inventoryReportModel.commaQty(_in_qty);
+        v.out_qty_base = inventoryReportModel.commaQty(_out_qty);
+      });
+
+      inventory_stock[0].forEach(e => {
+        //มี unit_generic_id จะโชว์เป็น pack
+        if (e.unit_generic_id) {
+          e.qty = +e.in_qty - +e.out_qty
+          e.qty_pack = inventoryReportModel.commaQty(Math.floor(e.qty / e.conversion_qty));
+          e.qty_base = inventoryReportModel.commaQty(Math.floor(e.qty % e.conversion_qty));
+          if (e.qty_pack != 0 && e.qty_base != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          } else if (e.qty_pack != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          } else if (e.qty_base != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          }
+        }
+        //ไม่มี unit_generic_id จะโชว์เป็น base
+        else {
+          e.in_qty = inventoryReportModel.commaQty(+e.in_qty - +e.out_qty)
+        }
+      });
+
+      _inventory_stock.push(inventory_stock[0])
+      _summit.push(summit[0])
+      _generic_stock.push(generic_stock[0])
+    }
+  }
+  if (_generic_stock.length <= 0) {
+    res.render('error404');
+  }
+  res.render('generic_stock3', {
+    generic_stock: generic_stock,
+    _generic_stock: _generic_stock,
+    _summit: _summit,
+    genericCode: genericCode,
+    _inventory_stock: _inventory_stock,
+    hospitalName: hospitalName,
+    warehouseName: warehouseName,
+    genericId: genericId,
+    generic_name: _generic_name,
+    unit: _unit,
+    conversion_qty: _conversion_qty,
+    dosage_name: _dosage_name,
+    _genericId: _genericId,
+    startDate: startDate,
+    endDate: endDate,
+    printDate: printDate(req.decoded.SYS_PRINT_DATE)
+  });
+}));
 
 export default router;

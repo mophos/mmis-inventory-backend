@@ -2696,6 +2696,7 @@ router.post('/adjust-stock/', async (req, res, next) => {
                 ref_src: warehouseId,
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
+                unit_generic_id: p.unit_generic_id,
                 expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null,
               }
             }
