@@ -88,9 +88,10 @@ export class GenericModel {
                 FROM
                   mm_generics
                 WHERE
+              (
                   generic_name LIKE '${_q_}'
-                  and mark_deleted = 'N'
                 OR keywords LIKE '${_q_}'
+              )
                 and mark_deleted = 'N'
                 and is_active ='Y'
                 ORDER BY
