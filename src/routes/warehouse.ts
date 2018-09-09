@@ -121,7 +121,8 @@ router.post('/', wrap(async (req, res, next) => {
 
       res.send({ ok: true });
     } catch (error) {
-      throw error;
+      res.send({ ok: false, error: error }) ;
+      // throw error;
     }
 
   } else {
