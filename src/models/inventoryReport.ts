@@ -1585,35 +1585,37 @@ FROM
     }
 
     unReceive(knex: Knex, date: any) {
-        let q = '%' + date + '%';
-        let sql = `SELECT 
-        po.purchase_order_book_number,
-        po.purchase_order_id,
-        po.purchase_order_number,
-        po.order_date,
-        ml.labeler_name,
-        ml.labeler_name_po,
-        mp.product_name,
-        rd.receive_qty,
-        poi.qty,
-        u1.unit_name as u1,
-        u2.unit_name as u2,
-        mug.qty as mugQty
-        FROM 
-        pc_purchasing_order po 
-        JOIN pc_purchasing_order_item poi on poi.purchase_order_id = po.purchase_order_id
-        JOIN mm_products mp on mp.product_id = poi.product_id
-        JOIN mm_generics mg on mg.generic_id = mp.generic_id
-        JOIN mm_unit_generics mug on mug.generic_id = mg.generic_id
-        JOIN mm_units u1 on u1.unit_id = mug.from_unit_id
-        JOIN mm_units u2 on u2.unit_id = mug.to_unit_id
-        JOIN mm_labelers ml on ml.labeler_id = mp.v_labeler_id
-        LEFT JOIN wm_receives r on r.purchase_order_id = po.purchase_order_id
-        LEFT JOIN wm_receive_detail rd on rd.receive_id = r.receive_id AND poi.product_id = rd.product_id
-        WHERE po.purchase_order_status = 'APPROVED' and po.order_date = '${date}'
-        GROUP BY po.purchase_order_id,poi.product_id
-        ORDER BY
-        po.purchase_order_number DESC`;
+        let sql = `SELECT * FROM
+        (
+        SELECT 
+                po.purchase_order_book_number,
+                po.purchase_order_id,
+                po.purchase_order_number,
+                po.order_date,
+                ml.labeler_name,
+                ml.labeler_name_po,
+                mp.product_name,
+                IFNULL(rd.receive_qty,0) as receive_qty,
+                poi.qty,
+                u1.unit_name as u1,
+                u2.unit_name as u2,
+                mug.qty as mugQty
+                FROM 
+                pc_purchasing_order po 
+                JOIN pc_purchasing_order_item poi on poi.purchase_order_id = po.purchase_order_id
+                JOIN mm_products mp on mp.product_id = poi.product_id
+                JOIN mm_generics mg on mg.generic_id = mp.generic_id
+                JOIN mm_unit_generics mug on mug.generic_id = mg.generic_id
+                JOIN mm_units u1 on u1.unit_id = mug.from_unit_id
+                JOIN mm_units u2 on u2.unit_id = mug.to_unit_id
+                JOIN mm_labelers ml on ml.labeler_id = mp.v_labeler_id
+                LEFT JOIN wm_receives r on r.purchase_order_id = po.purchase_order_id
+                LEFT JOIN wm_receive_detail rd on rd.receive_id = r.receive_id AND poi.product_id = rd.product_id
+                WHERE po.purchase_order_status = 'APPROVED' and po.order_date = ${date}
+                GROUP BY po.purchase_order_id,poi.product_id
+                ORDER BY
+                po.purchase_order_number DESC
+        ) as ap WHERE ap.qty - ap.receive_qty > 0`;
         return knex.raw(sql);
     }
 
@@ -2718,7 +2720,9 @@ LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
 		wp.unit_generic_id,
 			ROUND(avg( IFNULL(wp.cost,0) ),2) AS cost 
 	FROM
-		wm_products AS wp 
+        wm_products AS wp 
+    where 
+        wp.warehouse_id = ${wareHouseId}
 	GROUP BY
 		wp.product_id,
 		wp.unit_generic_id 
@@ -2727,7 +2731,8 @@ LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
 	LEFT JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
 	LEFT JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id 
 	WHERE
-	mg.generic_type_id IN ( ${genericType} ) 
+    mg.generic_type_id IN ( ${genericType} ) 
+    HAVING ( balance_qty > 0 or in_qty > 0 or out_qty > 0)
 ORDER BY
     mp.product_name`
 
@@ -2832,4 +2837,12 @@ ORDER BY
         AND pc.is_return IS NOT NULL`
         return knex.raw(sql)
     }
+
+    getGenericInStockcrad(knex: Knex, warehouseId: string, startDate: any, endDate: any) {
+        return knex('view_stock_card_warehouse as vscw')
+          .select('vscw.generic_id', 'vscw.generic_name')
+          .where('vscw.warehouse_id', warehouseId)
+          .andWhereBetween('vscw.stock_date', [startDate, endDate])
+          .groupBy('vscw.generic_id')
+      }
 }

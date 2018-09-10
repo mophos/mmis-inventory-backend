@@ -134,7 +134,7 @@ html
         for s in _inventory_stock[i]
           if(s.in_qty > 0)
             tr
-              td(colspan='12') #{s.lot_no} [ #{s.in_qty} #{s.large_unit} (#{s.conversion_qty} #{s.small_unit}) ]
+              td(colspan='12') #{s.show_qty}
         //- tfoot 
         //-   tr.tbfooter
         //-     td(colspan='10')

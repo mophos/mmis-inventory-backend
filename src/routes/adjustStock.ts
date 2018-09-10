@@ -98,6 +98,7 @@ router.post('/', async (req, res, next) => {
             old_qty: p.old_qty,
             new_qty: p.qty || 0
           }
+          console.log(p.unit_generic_id,'xxxxxxxxxxxxxxxxxxxxxxx');
           await adjustStockModel.saveProduct(db, product);
           await adjustStockModel.updateQty(db, p.wm_product_id, p.qty);
           const balanceGeneric = await adjustStockModel.getBalanceGeneric(db, d.generic_id, warehouseId);
@@ -147,6 +148,7 @@ router.post('/', async (req, res, next) => {
                 ref_src: warehouseId,
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
+                unit_generic_id: p.unit_generic_id,
                 expired_date: p.expired_date
               }
             }
