@@ -642,7 +642,7 @@ WHERE
   getPickCheck(knex:Knex, receive_id:any){
     return knex('wm_pick_detail as pd')
     .select('p.pick_code','p.wm_pick','pd.*',knex.raw('pd.pick_qty as pick_qty'))
-      .whereIn('pd.receive_id' ,receive_id)
+      .whereIn('pd.receive_id' ,receive_id) 
       .join('wm_pick as p','p.pick_id','pd.pick_id')
       .where('p.is_approve','Y')
       // .groupBy('pd.product_id', 'pd.receive_id', 'pd.unit_generic_id', 'pd.lot_no') ;
