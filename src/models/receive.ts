@@ -568,21 +568,90 @@ export class ReceiveModel {
   }
   getPickDetailCheck(knex:Knex, receive_id:any){
 
-    let q1 = knex('wm_pick_detail as pd')
+    return knex('wm_pick_detail as pd')
     .select('pd.product_id', 'pd.receive_id', 'pd.unit_generic_id', 'pd.lot_no',knex.raw('sum (pd.pick_qty) as pick_qty'))
       .where('pd.receive_id' ,receive_id)
       .join('wm_pick as p','p.pick_id','pd.pick_id')
       .where('p.is_approve','Y')
       .groupBy('pd.product_id', 'pd.receive_id', 'pd.unit_generic_id', 'pd.lot_no') ;
 
-    return knex('wm_receive_detail as rd')
-    .select('q1.pick_qty','rd.receive_detail_id','rd.product_id', 'rd.receive_id', 'rd.unit_generic_id', 'rd.lot_no','rd.receive_qty')
-    .innerJoin(knex.raw(('(' + q1 + ')as q1 on q1.product_id = rd.product_id  and q1.receive_id = rd.receive_id and q1.unit_generic_id=rd.unit_generic_id and q1.lot_no=rd.lot_no')))
-    .where('rd.receive_id', receive_id)
+    // return knex('wm_receive_detail as rd')
+    // .select('q1.pick_qty','rd.receive_detail_id','rd.product_id', 'rd.receive_id', 'rd.unit_generic_id', 'rd.lot_no','rd.receive_qty')
+    // .innerJoin(knex.raw(('(' + q1 + ')as q1 on q1.product_id = rd.product_id  and q1.receive_id = rd.receive_id and q1.unit_generic_id=rd.unit_generic_id and q1.lot_no=rd.lot_no')))
+    // .where('rd.receive_id', receive_id)
 
   
   }
-  
+  getWmProduct(knex:Knex,item:any){
+    return knex('wm_products')
+    // .select('*')
+    .where('product_id',item.product_id)
+    .andWhere('lot_no',item.lot_no)
+    .andWhere('unit_generic_id',item.unit_generic_id)
+    .andWhere('warehouse_id',505)
+  }
+  getStockItem(knex: Knex,pick_id:any){
+    let sql =
+    `
+    SELECT
+p.pick_id,
+      p.pick_code,
+      pd.pick_detail_id,
+      wp.product_id,
+      mg.generic_id,
+      pd.unit_generic_id,
+      sum(pd.pick_qty*ug.qty) as confirm_qty, 
+      sum(wp.cost) as cost,
+      wp.lot_no,
+      wp.expired_date,
+      (
+        SELECT
+          sum(qty)
+        FROM
+          wm_products wmp
+        WHERE
+          wmp.product_id = wp.product_id and wmp.warehouse_id = 505
+        GROUP BY
+          wmp.product_id
+      ) AS src_balance_qty,
+    (
+        SELECT
+          sum(qty)
+        FROM
+          wm_products wmp
+        WHERE
+          wmp.product_id = wp.product_id and wmp.warehouse_id = p.wm_pick
+        GROUP BY
+          wmp.product_id
+      ) AS dst_balance_qty,
+      p.wm_pick as dst_warehouse,
+      505 as src_warehouse
+FROM
+	 wm_pick as p
+join 	wm_pick_detail as pd on p.pick_id = pd.pick_id
+join mm_unit_generics as ug on ug.unit_generic_id = pd.unit_generic_id
+JOIN wm_products wp ON wp.lot_no = pd.lot_no and wp.product_id = pd.product_id and wp.unit_generic_id = pd.unit_generic_id and wp.warehouse_id = 505
+JOIN mm_products as mp on mp.product_id = pd.product_id
+join mm_generics as mg on mg.generic_id = mp.generic_id
+WHERE
+	p.pick_id in (${pick_id})
+	GROUP BY wp.product_id,wp.lot_no,p.pick_id
+	`
+    return knex.raw(sql)
+  }
+  getPickCheck(knex:Knex, receive_id:any){
+    return knex('wm_pick_detail as pd')
+    .select('p.pick_code','p.wm_pick','pd.*',knex.raw('pd.pick_qty as pick_qty'))
+      .whereIn('pd.receive_id' ,receive_id) 
+      .join('wm_pick as p','p.pick_id','pd.pick_id')
+      .where('p.is_approve','Y')
+      // .groupBy('pd.product_id', 'pd.receive_id', 'pd.unit_generic_id', 'pd.lot_no') ;
+
+    // return knex('wm_receive_detail as rd')
+    // .select('q1.pick_qty','rd.receive_detail_id','rd.product_id', 'rd.receive_id', 'rd.unit_generic_id', 'rd.lot_no','rd.receive_qty')
+    // .innerJoin(knex.raw(('(' + q1 + ')as q1 on q1.product_id = rd.product_id  and q1.receive_id = rd.receive_id and q1.unit_generic_id=rd.unit_generic_id and q1.lot_no=rd.lot_no')))
+    // .whereIn('rd.receive_id', receive_id)
+  }
 
   getReceiveProductsImport(knex: Knex, receiveIds: any) {
     let subBalance = knex('wm_products as wp')
@@ -1191,6 +1260,56 @@ export class ReceiveModel {
       .whereIn('rc.requisition_id', requisitionIds)
       .groupBy('rcd.check_detail_id');
     // return knex.raw(sql, [requisitionIds]);
+  }
+  getBalance(knex: Knex, productId, warehouseId) {
+    let sql = `SELECT
+      wp.product_id,
+      sum(wp.qty) AS balance,
+      wp.warehouse_id,
+      wp.unit_generic_id,
+      (SELECT
+        sum(wp.qty)
+      FROM
+        wm_products wp
+      WHERE
+        wp.product_id in (
+          SELECT
+            mp.product_id
+          FROM
+            mm_products mp
+          WHERE
+            mp.generic_id in (
+              SELECT
+                generic_id
+              FROM
+                mm_products mp
+              WHERE
+                mp.product_id = '${productId}'
+            )
+        ) and wp.warehouse_id = '${warehouseId}'
+      GROUP BY wp.warehouse_id) as balance_generic
+    FROM
+      wm_products wp
+    WHERE
+      wp.product_id= '${productId}'
+    AND wp.warehouse_id = '${warehouseId}'
+    GROUP BY
+      wp.product_id,
+      wp.warehouse_id`;
+    return knex.raw(sql);
+  }
+  decreaseQtyPick(knex: Knex, data: any[]) {
+    let sql = [];
+    data.forEach(v => {
+      let _sql = `
+      UPDATE wm_products
+      SET qty=qty-${v.qty}
+      WHERE wm_product_id='${v.wm_product_id}'`;
+      sql.push(_sql);
+    });
+
+    let query = sql.join(';');
+    return knex.raw(query);
   }
 
   decreaseQty(knex: Knex, data: any[]) {
