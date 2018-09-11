@@ -903,9 +903,9 @@ router.post('/approve', co(async (req, res, next) => {
     await receiveModel.saveProducts(db, products);
     await stockcard.saveFastStockTransaction(db, data);
     await receiveModel.adjustCost(db, adjust_price);
+    res.send({ ok: true });
 
-
-    try {
+    try { // close pick
       let rdPick: any = await receiveModel.getPickCheck(db, receiveIds)
       let rsWp = []
       let dstProducts = []
@@ -1347,7 +1347,7 @@ router.delete('/remove', co(async (req, res, next) => {
           }
         }
         res.send({ ok: true });
-      } else {
+      } else { //  test pick
         res.send({ ok: false, error: 'มีัรายการหยิบที่อนุมัติแล้ว' });
       }
     } catch (error) {
