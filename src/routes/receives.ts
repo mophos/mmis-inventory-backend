@@ -492,7 +492,6 @@ router.post('/checkDeleteProductWithPick', co(async (req, res, next) => {
 
     let rsProductPick = await receiveModel.getPickDetailCheck(db, receiveId);
     let idx = _.findIndex(rsProductPick, { product_id: products.product_id, lot_no: products.lot_no, unit_generic_id: products.unit_generic_id });
-    console.log(idx);
     if (idx == -1) {
       res.send({ ok: true });
     } else {
@@ -1337,7 +1336,7 @@ router.delete('/remove', co(async (req, res, next) => {
     try {
       let peopleUserId: any = req.decoded.people_user_id;
       let rs: any = await receiveModel.checkPickApprove(db, receiveId);
-      if (!rs) {
+      if (!rs.length) {
         await receiveModel.removeReceive(db, receiveId, peopleUserId);
         if (purchaseOrderId) {
           let rsCurrent = await receiveModel.getCurrentPurchaseStatus(db, purchaseOrderId);
