@@ -818,8 +818,8 @@ router.post('/approve', co(async (req, res, next) => {
 
     // }
 
-    // await receiveModel.removeOldApprove(db, receiveIds);
-    // await receiveModel.saveApprove(db, approveDatas);
+    await receiveModel.removeOldApprove(db, receiveIds);
+    await receiveModel.saveApprove(db, approveDatas);
     // get product
     let _rproducts = await receiveModel.getReceiveProductsImport(db, receiveIds);
     let adjust_price = []; // ปรับราคาต่อแพค
@@ -914,7 +914,9 @@ router.post('/approve', co(async (req, res, next) => {
       let stockCard = []
       let rsStock: any = []
       let pickIds: any = [];
-      if (rdPick) {
+      if (!Array.isArray(rdPick) || !rdPick.length) {
+        res.send({ ok: true });
+      } else {
         for (let item of rdPick) {
           let _rsWp: any = await receiveModel.getWmProduct(db, item)
           if (_rsWp[0]) {
@@ -1067,8 +1069,6 @@ router.post('/approve', co(async (req, res, next) => {
         await stockcard.saveFastStockTransaction(db, stockCard);
         await productModel.saveProducts(db, products2);
         await receiveModel.decreaseQtyPick(db, dstProducts);
-        res.send({ ok: false, error: {pickIds:pickIds, rsWp: rsWp, items: items, dstProducts: dstProducts, rdPick: rdPick, products2: products2, rsStock: rsStock } });
-      } else {
         res.send({ ok: true });
       }
     } catch (error) {
