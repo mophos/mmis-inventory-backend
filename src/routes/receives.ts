@@ -224,7 +224,7 @@ router.post('/', co(async (req, res, next) => {
             totalPo = Math.round(+rsPo[0].total);
           }
 
-          if (+totalPrice > +totalPo) {
+          if (+totalPrice > +totalPo && summary.purchaseOrderId) {
             res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
           } else {
 
