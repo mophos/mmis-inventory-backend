@@ -5,7 +5,7 @@ style(type='text/css' media='print').
       margin-top: 0.7cm;
       margin-left: 1cm;
       margin-right: 1cm;
-      size: A5 landscape;
+      size:landscape;
     }
  }
 doctype html
@@ -20,22 +20,22 @@ html
       table.table
         thead
           tr 
-            td.center.bold(colspan='12',style="font-size:22px") #{hospitalName}
+            td.center.bold(colspan='12') #{hospitalName}
           tr 
-            td.center.bold(colspan='12',style="font-size:22px") บัญชีคุมคลังเวชภัณฑ์
+            td.center.bold(colspan='12') บัญชีคุมคลังเวชภัณฑ์
           tr 
-            td.center(colspan='12',style="font-size:22px") ตั้งแต่วันที่ #{startDate} ถึง #{endDate}
+            td.center(colspan='12') ตั้งแต่วันที่ #{startDate} ถึง #{endDate}
           tr 
-            td.left(colspan='6',style="font-size:22px") รหัสเวชภัณฑ์ #{genericCode[i]}
-            td.right(colspan='6',style="font-size:22px") คลัง #{warehouseName}
+            td.left(colspan='6') รหัสเวชภัณฑ์ #{genericCode[i]}
+            td.right(colspan='6') คลัง #{warehouseName}
             //- td.right(colspan='5') หน่วย #{unit[i]}
           tr 
-            td.left(colspan='6',style="font-size:22px") ชื่อสามัญ #{generic_name[i]}
-            td.right(colspan='6',style="font-size:22px") 
+            td.left(colspan='6') ชื่อสามัญ #{generic_name[i]}
+            td.right(colspan='6') 
               if(dosage_name[i])
                 | รูปแบบ #{dosage_name[i]}
           tr 
-            td.left(colspan='12',style="font-size:22px") #{printDate}
+            td.left(colspan='12') #{printDate}
           tr
             th(style="border-style: solid;border-width: 2px 1px 2px 1px;") วัน/เดือน/ปี
             th(style="border-style: solid;border-width: 2px 1px 2px 1px;") เลขที่เอกสาร
