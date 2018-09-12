@@ -903,7 +903,7 @@ router.post('/approve', co(async (req, res, next) => {
     await receiveModel.saveProducts(db, products);
     await stockcard.saveFastStockTransaction(db, data);
     await receiveModel.adjustCost(db, adjust_price);
-    res.send({ ok: true });
+    // res.send({ ok: true });
 
     try { // close pick
       let rdPick: any = await receiveModel.getPickCheck(db, receiveIds)
