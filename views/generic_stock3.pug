@@ -1,4 +1,13 @@
 include css.pug
+style(type='text/css' media='print').
+  @media print {
+    @page{
+      margin-top: 0.7cm;
+      margin-left: 1cm;
+      margin-right: 1cm;
+      size:landscape;
+    }
+ }
 doctype html
 html
   head

@@ -2683,24 +2683,32 @@ router.get('/report/receive/export/:startdate/:enddate', async (req, res, next) 
   let rs: any = await inventoryReportModel.productReceive(db, startdate, enddate);
 
   let json = [];
+  let i = 0;
+  for (let tmp of rs[0]) {
+    tmp.order_date = moment(tmp.order_date).isValid() ? moment(tmp.order_date).format('DD MMM ') + (moment(tmp.order_date).get('year') + 543) : '';
+    tmp.total_qty = inventoryReportModel.commaQty(tmp.total_qty);
+    tmp.cost = inventoryReportModel.comma(tmp.cost);
+    tmp.total_cost = inventoryReportModel.comma(tmp.total_cost);
+  }
   rs[0].forEach(v => {
-    let obj: any = {};
-    obj.purchase_order_number = v.purchase_order_number;
-    obj.order_date = v.order_date;
-    obj.generic_code = v.generic_code;
-    obj.generic_name = v.generic_name;
-    obj.product_code = v.product_code;
-    obj.product_name = v.product_name;
-    obj.unit_name = v.unit_name;
-    obj.conversion = v.conversion;
-    obj.package = v.package;
-    obj.cost = v.cost;
-    obj.total_qty = v.total_qty;
-    obj.total_cost = v.total_cost;
-    obj.generic_type_name = v.generic_type_name;
-    obj.account_name = v.account_name;
-    obj.generic_hosp_name = v.generic_hosp_name;
-    obj.labeler_name = v.labeler_name;
+    i++;
+    let obj: any = {
+      'ลำดับ': i,
+      'เลขที่ใบสั่งซื้อ': v.purchase_order_number,
+      'วันที่รับของ': v.order_date,
+      'รหัสเวชภัณฑ์': v.generic_code,
+      'ชื่อเวชภัณฑ์': v.generic_name,
+      'ชื่อทางการค้า': v.product_name,
+      'หน่วย': v.unit_name,
+      'Conversion': v.conversion,
+      'Package': v.package,
+      'ราคาต่อหน่วย': v.cost,
+      'จำนวนทั้งหมด(base)': v.total_qty,
+      'ราคารวม': v.total_cost,
+      'ประเภท': v.generic_type_name,
+      'ชนิด': v.account_name ? v.account_name : '',
+      'บริษัทผู้จำหน่าย': v.labeler_name,
+    };
     json.push(obj);
   });
 
