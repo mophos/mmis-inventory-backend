@@ -383,7 +383,6 @@ router.put('/:receiveId', co(async (req, res, next) => {
         let rsProductPick = await receiveModel.getPickDetailCheck(db, receiveId);
         let passPick = true;
         let proSum: any = [];
-        console.log(productsData);
         for (let p of productsData) {
           let item = {
             receive_id: p.receive_id,
@@ -395,7 +394,6 @@ router.put('/:receiveId', co(async (req, res, next) => {
           if (proSum.length < 1) { proSum.push(item); }
           else {
             let i = _.findIndex(proSum, { product_id: p.product_id, lot_no: p.lot_no, unit_generic_id: p.unit_generic_id })
-            console.log(i);
             if (i !== -1) {
               proSum[i].receive_qty += p.receive_qty
             } else {
@@ -417,7 +415,10 @@ router.put('/:receiveId', co(async (req, res, next) => {
           if (summary.purchaseOrderId) {
             let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId); // 100
             let rsReceived = await receiveModel.getTotalPricePurcehaseReceivedWithoutOwner(db, summary.purchaseOrderId, receiveId);
-
+            console.log('----');
+            console.log(+rsReceived[0].total )
+            console.log(totalPriceReceive);
+            console.log( +rsPo[0].total);
             let totalPrice = +rsReceived[0].total + totalPriceReceive;
             if (+totalPrice > +rsPo[0].total) {
               res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
@@ -926,12 +927,12 @@ router.post('/approve', co(async (req, res, next) => {
             if (item.pick_qty != 0) {
               // wmProductIds.push(v.wm_product_id);
               dstProducts.push({
-                qty: item.pick_qty,
+                qty: item.pick_qty * item.conversion_qty,
                 wm_product_id: item.wm_product_id,
                 warehouse_id: 505
               });
               items.push({
-                qty: item.pick_qty,
+                qty: item.pick_qty * item.conversion_qty,
                 wm_product_id: item.wm_product_id
               });
             }
