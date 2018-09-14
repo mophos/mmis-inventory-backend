@@ -363,8 +363,10 @@ router.put('/:receiveId', co(async (req, res, next) => {
       }
 
       // productIds.push(v.product_id);
-
+      
+      if (v.is_free === 'N') {
       totalPriceReceive += (v.receive_qty * v.cost);
+      }
       productsData.push(pdata);
     });
 
