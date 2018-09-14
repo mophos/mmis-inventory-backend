@@ -432,7 +432,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
     let hospitalName = hosdetail[0].hospname;
     const rline = await inventoryReportModel.getLine(db, 'LR')
     const line = rline[0].line;
-    // const printDateEdit = req.decoded.SYS_PRINT_DATE_EDIT;
+    const dateApprove = req.decoded.WM_REQUIS_LIST_DATE_APPROVE
     let _list_requis = [];
     for (let id of requisId) {
       let sPage = 1;
@@ -440,7 +440,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
       let array = [];
       let num = 0;
       let count = 0;
-      let header = await inventoryReportModel.getHeadRequis(db, id);
+      let header = await inventoryReportModel.getHeadRequis(db, id, dateApprove);
       header = header[0];
       if (header[0] === undefined) { res.render('error404'); }
       const objHead: any = {
