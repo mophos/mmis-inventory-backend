@@ -2587,6 +2587,7 @@ OR sc.ref_src like ?
         let sql = `SELECT
         ppo.purchase_order_number,
         ppo.order_date,
+        wr.receive_date,
         mg.working_code AS generic_code,
         mg.generic_name,
         mp.working_code AS product_code,
