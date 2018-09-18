@@ -2222,6 +2222,7 @@ router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, 
   productReceive.forEach(value => {
     allcost += value.total_cost;
     value.total_cost = inventoryReportModel.comma(value.total_cost);
+    value.cost = inventoryReportModel.comma(value.cost);
     value.receive_date = moment(value.receive_date).format('D/MM/YYYY');
     value.expired_date = moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543);
     if (value.discount_percent == null) value.discount_percent = '0.00%';
