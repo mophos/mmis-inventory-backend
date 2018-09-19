@@ -194,6 +194,7 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
       committee.push(pe[0])
     }
     res.render('issue_year', {
+      syear: year + 542,
       rs: rs[0],
       hospitalName: hospitalName,
       year: year + 543,
