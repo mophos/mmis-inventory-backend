@@ -2348,15 +2348,19 @@ OR sc.ref_src like ?
         ORDER BY a.generic_code desc, a.product_id asc`
         return knex.raw(sql);
     }
-    getHeadRequis(knex: Knex, requisId) {
+    getHeadRequis(knex: Knex, requisId, dateApprove: any) {
         let sql = `SELECT
         r.requisition_date,
         r.requisition_code,
         r.created_at,
         r.updated_at,
-        r.requisition_order_id,
-        rc.confirm_date,
-        wh.warehouse_name,
+        r.requisition_order_id,`
+        if (dateApprove == 'Y') {
+            sql += `r.requisition_date as confirm_date,`
+        } else {
+            sql += `rc.confirm_date,`
+        }
+        sql += `wh.warehouse_name,
         wh.warehouse_id,
         whs.warehouse_name AS withdraw_warehouse_name
     FROM
@@ -2583,6 +2587,7 @@ OR sc.ref_src like ?
         let sql = `SELECT
         ppo.purchase_order_number,
         ppo.order_date,
+        wr.receive_date,
         mg.working_code AS generic_code,
         mg.generic_name,
         mp.working_code AS product_code,
@@ -2840,9 +2845,9 @@ ORDER BY
 
     getGenericInStockcrad(knex: Knex, warehouseId: string, startDate: any, endDate: any) {
         return knex('view_stock_card_warehouse as vscw')
-          .select('vscw.generic_id', 'vscw.generic_name')
-          .where('vscw.warehouse_id', warehouseId)
-          .andWhereBetween('vscw.stock_date', [startDate, endDate])
-          .groupBy('vscw.generic_id')
-      }
+            .select('vscw.generic_id', 'vscw.generic_name')
+            .where('vscw.warehouse_id', warehouseId)
+            .andWhereBetween('vscw.stock_date', [startDate, endDate])
+            .groupBy('vscw.generic_id')
+    }
 }

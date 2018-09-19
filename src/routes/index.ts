@@ -433,7 +433,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
     let hospitalName = hosdetail[0].hospname;
     const rline = await inventoryReportModel.getLine(db, 'LR')
     const line = rline[0].line;
-    // const printDateEdit = req.decoded.SYS_PRINT_DATE_EDIT;
+    const dateApprove = req.decoded.WM_REQUIS_LIST_DATE_APPROVE
     let _list_requis = [];
     for (let id of requisId) {
       let sPage = 1;
@@ -441,7 +441,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
       let array = [];
       let num = 0;
       let count = 0;
-      let header = await inventoryReportModel.getHeadRequis(db, id);
+      let header = await inventoryReportModel.getHeadRequis(db, id, dateApprove);
       header = header[0];
       if (header[0] === undefined) { res.render('error404'); }
       const objHead: any = {
@@ -2225,6 +2225,7 @@ router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, 
   productReceive.forEach(value => {
     allcost += value.total_cost;
     value.total_cost = inventoryReportModel.comma(value.total_cost);
+    value.cost = inventoryReportModel.comma(value.cost);
     value.receive_date = moment(value.receive_date).format('D/MM/YYYY');
     value.expired_date = moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543);
     if (value.discount_percent == null) value.discount_percent = '0.00%';
@@ -2686,24 +2687,32 @@ router.get('/report/receive/export/:startdate/:enddate', async (req, res, next) 
   let rs: any = await inventoryReportModel.productReceive(db, startdate, enddate);
 
   let json = [];
+  let i = 0;
+  for (let tmp of rs[0]) {
+    tmp.order_date = moment(tmp.order_date).isValid() ? moment(tmp.order_date).format('DD MMM ') + (moment(tmp.order_date).get('year') + 543) : '';
+    tmp.total_qty = inventoryReportModel.commaQty(tmp.total_qty);
+    tmp.cost = inventoryReportModel.comma(tmp.cost);
+    tmp.total_cost = inventoryReportModel.comma(tmp.total_cost);
+  }
   rs[0].forEach(v => {
-    let obj: any = {};
-    obj.purchase_order_number = v.purchase_order_number;
-    obj.order_date = v.order_date;
-    obj.generic_code = v.generic_code;
-    obj.generic_name = v.generic_name;
-    obj.product_code = v.product_code;
-    obj.product_name = v.product_name;
-    obj.unit_name = v.unit_name;
-    obj.conversion = v.conversion;
-    obj.package = v.package;
-    obj.cost = v.cost;
-    obj.total_qty = v.total_qty;
-    obj.total_cost = v.total_cost;
-    obj.generic_type_name = v.generic_type_name;
-    obj.account_name = v.account_name;
-    obj.generic_hosp_name = v.generic_hosp_name;
-    obj.labeler_name = v.labeler_name;
+    i++;
+    let obj: any = {
+      'ลำดับ': i,
+      'เลขที่ใบสั่งซื้อ': v.purchase_order_number,
+      'วันที่รับของ': v.order_date,
+      'รหัสเวชภัณฑ์': v.generic_code,
+      'ชื่อเวชภัณฑ์': v.generic_name,
+      'ชื่อทางการค้า': v.product_name,
+      'หน่วย': v.unit_name,
+      'Conversion': v.conversion,
+      'Package': v.package,
+      'ราคาต่อหน่วย': v.cost,
+      'จำนวนทั้งหมด(base)': v.total_qty,
+      'ราคารวม': v.total_cost,
+      'ประเภท': v.generic_type_name,
+      'ชนิด': v.account_name ? v.account_name : '',
+      'บริษัทผู้จำหน่าย': v.labeler_name,
+    };
     json.push(obj);
   });
 
@@ -2782,14 +2791,14 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
         'ราคากลาง': v.standard_cost,
         'รูปแบบการจัดซื้อ': v.bid_name,
         'กลุ่มยา': v.group_name,
-        'MIN_QTY': v.min_qty,
-        'MAX_QTY': v.max_qty,
+        'MIN_QTY(หน่วยย่อย)': v.min_qty,
+        'MAX_QTY(หน่วยย่อย)': v.max_qty,
         'แพ็ค': v.pack,
         'ราคาต่อแพ็ค': v.unit_price,
-        'ยอดยกมา': v.balance_qty,
-        'รับ': v.in_qty,
-        'จ่าย': v.out_qty,
-        'คงเหลือ': v.summit_qty,
+        'ยอดยกมา(หน่วยใหญ่)': v.balance_qty,
+        'รับ(หน่วยใหญ่)': v.in_qty,
+        'จ่าย(หน่วยใหญ่)': v.out_qty,
+        'คงเหลือ(หน่วยใหญ่)': v.summit_qty,
         'มูลค่า': v.amount_qty
         // WORKING_CODE: v.working_code,
         // GENERIC_CODE: v.generic_name,
