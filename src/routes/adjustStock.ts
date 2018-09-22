@@ -104,7 +104,7 @@ router.post('/', async (req, res, next) => {
           const balanceGeneric = await adjustStockModel.getBalanceGeneric(db, d.generic_id, warehouseId);
           const balanceProduct = await adjustStockModel.getBalanceProduct(db, p.product_id, warehouseId);
           // let data = {};
-          if (p.qty > 0) {
+          if (p.qty > 0 || p.old_qty != p.qty) {
             if (p.old_qty > p.qty) {
               //     // ปรับยอดลดลง
               const adjQty = p.old_qty - p.qty;
@@ -126,7 +126,7 @@ router.post('/', async (req, res, next) => {
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
                 unit_generic_id: p.unit_generic_id,
-                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null,
+                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null
               }
               await adjustStockModel.saveStockCard(db, data);
             } else if (p.old_qty < p.qty) {
@@ -150,9 +150,13 @@ router.post('/', async (req, res, next) => {
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
                 unit_generic_id: p.unit_generic_id,
-                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null,
+                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null
               }
-              await adjustStockModel.saveStockCard(db, data);
+              console.log('data', data);
+
+              const r = await adjustStockModel.saveStockCard(db, data);
+              console.log('r', r);
+
             }
           }
         }
