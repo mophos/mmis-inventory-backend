@@ -126,7 +126,7 @@ router.post('/', async (req, res, next) => {
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
                 unit_generic_id: p.unit_generic_id,
-                expired_date: moment(p.expired_date).format('YYYY-MM-DD')
+                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null,
               }
               await adjustStockModel.saveStockCard(db, data);
             } else if (p.old_qty < p.qty) {
@@ -150,7 +150,7 @@ router.post('/', async (req, res, next) => {
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
                 unit_generic_id: p.unit_generic_id,
-                expired_date: moment(p.expired_date).format('YYYY-MM-DD')
+                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null,
               }
               await adjustStockModel.saveStockCard(db, data);
             }
