@@ -54,7 +54,6 @@ router.post('/check/password', async (req, res, next) => {
   try {
     let encPassword = crypto.createHash('md5').update(password).digest('hex');
     const rs = await adjustStockModel.checkPassword(db, peopleUserId, encPassword);
-    console.log(rs);
     if (rs.length) {
       res.send({ ok: true });
     } else {
@@ -90,26 +89,27 @@ router.post('/', async (req, res, next) => {
           old_qty: d.old_qty,
           new_qty: d.qty
         }
+
         const adjustGenericId = await adjustStockModel.saveGeneric(db, generic);
+
         for (const p of d.products) {
           const product = {
             adjust_generic_id: adjustGenericId,
             wm_product_id: p.wm_product_id,
             old_qty: p.old_qty,
-            new_qty: p.qty || 0
+            new_qty: +p.qty || 0
           }
-          console.log(p.unit_generic_id,'xxxxxxxxxxxxxxxxxxxxxxx');
           await adjustStockModel.saveProduct(db, product);
           await adjustStockModel.updateQty(db, p.wm_product_id, p.qty);
           const balanceGeneric = await adjustStockModel.getBalanceGeneric(db, d.generic_id, warehouseId);
           const balanceProduct = await adjustStockModel.getBalanceProduct(db, p.product_id, warehouseId);
-          let data = {};
+          // let data = {};
           if (p.qty > 0) {
             if (p.old_qty > p.qty) {
-              // ปรับยอดลดลง
+              //     // ปรับยอดลดลง
               const adjQty = p.old_qty - p.qty;
-              data = {
-                stock_date: moment.tz('Asia/Bangkok').format('YYYY-MM-DD HH:mm:ss'),
+              const data = {
+                stock_date: moment().format('YYYY-MM-DD HH:mm:ss'),
                 product_id: p.product_id,
                 generic_id: d.generic_id,
                 transaction_type: 'ADJUST',
@@ -126,13 +126,14 @@ router.post('/', async (req, res, next) => {
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
                 unit_generic_id: p.unit_generic_id,
-                expired_date: p.expired_date
+                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null,
               }
-            } else {
+              await adjustStockModel.saveStockCard(db, data);
+            } else if (p.old_qty < p.qty) {
               // ปรับยอดเพิ่มขึ้น
               const adjQty = p.qty - p.old_qty;
-              data = {
-                stock_date: moment.tz('Asia/Bangkok').format('YYYY-MM-DD HH:mm:ss'),
+              const data = {
+                stock_date: moment().format('YYYY-MM-DD HH:mm:ss'),
                 product_id: p.product_id,
                 generic_id: d.generic_id,
                 transaction_type: 'ADJUST',
@@ -149,10 +150,10 @@ router.post('/', async (req, res, next) => {
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
                 unit_generic_id: p.unit_generic_id,
-                expired_date: p.expired_date
+                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null,
               }
+              await adjustStockModel.saveStockCard(db, data);
             }
-            await adjustStockModel.saveStockCard(db, data);
           }
         }
       }
