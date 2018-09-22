@@ -194,6 +194,7 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
       committee.push(pe[0])
     }
     res.render('issue_year', {
+      syear: year + 542,
       rs: rs[0],
       hospitalName: hospitalName,
       year: year + 543,
@@ -937,6 +938,8 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
       });
 
       generic_stock[0].forEach(v => {
+        console.log('xxxxxxxxxxxxxxxxxxx', v);
+
         const _in_qty = +v.in_qty;
         const _out_qty = +v.out_qty;
         const _conversion_qty = +v.conversion_qty;
