@@ -2652,7 +2652,7 @@ router.post('/adjust-stock/', async (req, res, next) => {
           const balanceGeneric = await adjustStockModel.getBalanceGeneric(db, d.generic_id, warehouseId);
           const balanceProduct = await adjustStockModel.getBalanceProduct(db, p.product_id, warehouseId);
           let data = {};
-          if (p.qty > 0) {
+          if (p.qty > 0 || p.old_qty != p.qty) {
             if (p.old_qty > p.qty) {
               // ปรับยอดลดลง
               const adjQty = p.old_qty - p.qty;
