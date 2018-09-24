@@ -347,36 +347,38 @@ router.put('/stockcard/requisitions', async (req, res, next) => {
       for (const i of v.confirmItems) {
         const qtyNew = i.confirm_qty * i.conversion_qty;
         const qtyOld = i.confirm_qty_old * i.conversion_qty_old;
-        // ############ ปรับคงคลัง ###############
-        let qty = 0;
-        if (qtyNew > qtyOld) {
-          qty = qtyNew - qtyOld;
-          await toolModel.decreaseQty(db, i.product_id, i.lot_no, summary.withdrawWarehouseId, qty) // ลดลง
-        } else if (qtyNew < qtyOld) {
-          qty = qtyOld - qtyNew;
-          await toolModel.increasingQty(db, i.product_id, i.lot_no, summary.withdrawWarehouseId, qty) // เพิ่มขึ้น
-        }
-
-        if (qtyNew > qtyOld) {
-          qty = qtyNew - qtyOld;
-          await toolModel.increasingQty(db, i.product_id, i.lot_no, summary.requisitionWarehouseId, qty) // เพิ่มขึ้น
-        } else if (qtyNew < qtyOld) {
-          qty = qtyOld - qtyNew;
-          await toolModel.decreaseQty(db, i.product_id, i.lot_no, summary.requisitionWarehouseId, qty) // ลดลง
-        }
-        // #####################################
-        await toolModel.updateRequisitionConfirmItems(db, confirmId, i.wm_product_id, qtyNew);
-
-        const dataStockOut = {
-          out_qty: qtyNew
-        }
-
-        const dataStockIn = {
-          in_qty: qtyNew
-        }
         const stockCardIdOut = await toolModel.getStockCardIdOut(db, requisitionId, i.product_id, i.lot_no, 'REQ_OUT', qtyOld);
         const stockCardIdIn = await toolModel.getStockCardIdIn(db, requisitionId, i.product_id, i.lot_no, 'REQ_IN', qtyOld);
         if (stockCardIdOut.length && stockCardIdIn.length) {
+
+          // ############ ปรับคงคลัง ###############
+          let qty = 0;
+          if (qtyNew > qtyOld) {
+            qty = qtyNew - qtyOld;
+            await toolModel.decreaseQty(db, i.product_id, i.lot_no, summary.withdrawWarehouseId, qty) // ลดลง
+          } else if (qtyNew < qtyOld) {
+            qty = qtyOld - qtyNew;
+            await toolModel.increasingQty(db, i.product_id, i.lot_no, summary.withdrawWarehouseId, qty) // เพิ่มขึ้น
+          }
+
+          if (qtyNew > qtyOld) {
+            qty = qtyNew - qtyOld;
+            await toolModel.increasingQty(db, i.product_id, i.lot_no, summary.requisitionWarehouseId, qty) // เพิ่มขึ้น
+          } else if (qtyNew < qtyOld) {
+            qty = qtyOld - qtyNew;
+            await toolModel.decreaseQty(db, i.product_id, i.lot_no, summary.requisitionWarehouseId, qty) // ลดลง
+          }
+          // #####################################
+          await toolModel.updateRequisitionConfirmItems(db, confirmId, i.wm_product_id, qtyNew);
+
+          const dataStockOut = {
+            out_qty: qtyNew
+          }
+
+          const dataStockIn = {
+            in_qty: qtyNew
+          }
+
 
 
           await toolModel.updateStockcard(db, dataStockOut, stockCardIdOut[0].stock_card_id);
@@ -424,81 +426,84 @@ router.put('/stockcard/requisitions', async (req, res, next) => {
             await toolModel.saveLogs(db, logOut);
             // #####################################
           }
-        }
 
-        // ############ เกลี่ย stock card ###############
-        let product: any = [];
-        let lists = await toolModel.getStockcardList(db, summary.withdrawWarehouseId, v.generic_id); // รายการทั้งหทก
-        let productId = await toolModel.getStockcardProduct(db, summary.withdrawWarehouseId, v.generic_id); //product id
 
-        for (const pd of productId) {
-          const obj: any = {
-            generic_id: v.generic_id,
-            product_id: pd.product_id,
-            product_qty: 0,
-            generic_qty: 0
-          }
-          product.push(obj);
-        }
+          // ############ เกลี่ย stock card ###############
+          let product: any = [];
+          let lists = await toolModel.getStockcardList(db, summary.withdrawWarehouseId, v.generic_id); // รายการทั้งหทก
+          let productId = await toolModel.getStockcardProduct(db, summary.withdrawWarehouseId, v.generic_id); //product id
 
-        for (const pd of lists) {
-          const idxG = _.findIndex(product, { generic_id: v.generic_id });
-          if (idxG > -1) {
-            product[idxG].generic_qty += +pd.in_qty;
-            product[idxG].generic_qty -= +pd.out_qty;
-            const idx = _.findIndex(product, { product_id: pd.product_id });
-            if (idx > -1) {
-              product[idx].product_qty += +pd.in_qty;
-              product[idx].product_qty -= +pd.out_qty;
-
-            }
+          for (const pd of productId) {
             const obj: any = {
-              stock_card_id: pd.stock_card_id,
-              balance_qty: product[idx].product_qty,
-              balance_generic_qty: product[idxG].generic_qty
+              generic_id: v.generic_id,
+              product_id: pd.product_id,
+              product_qty: 0,
+              generic_qty: 0
             }
-            if (pd.balance_qty != obj.balance_qty || pd.balance_generic_qty != obj.balance_generic_qty) {
-              await toolModel.updateStockcardList(db, obj);
+            product.push(obj);
+          }
+
+          for (const pd of lists) {
+            const idxG = _.findIndex(product, { generic_id: v.generic_id });
+            if (idxG > -1) {
+              product[idxG].generic_qty += +pd.in_qty;
+              product[idxG].generic_qty -= +pd.out_qty;
+              const idx = _.findIndex(product, { product_id: pd.product_id });
+              if (idx > -1) {
+                product[idx].product_qty += +pd.in_qty;
+                product[idx].product_qty -= +pd.out_qty;
+
+              }
+              const obj: any = {
+                stock_card_id: pd.stock_card_id,
+                balance_qty: product[idx].product_qty,
+                balance_generic_qty: product[idxG].generic_qty
+              }
+              if (pd.balance_qty != obj.balance_qty || pd.balance_generic_qty != obj.balance_generic_qty) {
+                await toolModel.updateStockcardList(db, obj);
+              }
             }
           }
-        }
-        // #####################################
-        // ############ เกลี่ย stock card ###############
-        product = [];
-        lists = [];
-        productId = [];
+          // #####################################
+          // ############ เกลี่ย stock card ###############
+          product = [];
+          lists = [];
+          productId = [];
 
-        lists = await toolModel.getStockcardList(db, summary.requisitionWarehouseId, v.generic_id); // รายการทั้งหทก
-        productId = await toolModel.getStockcardProduct(db, summary.requisitionWarehouseId, v.generic_id); //product id
-        for (const pd of productId) {
-          const obj: any = {
-            generic_id: v.generic_id,
-            product_id: pd.product_id,
-            product_qty: 0,
-            generic_qty: 0
-          }
-          product.push(obj);
-        }
-        for (const pd of lists) {
-          const idxG = _.findIndex(product, { generic_id: v.generic_id });
-          if (idxG > -1) {
-            product[idxG].generic_qty += +pd.in_qty;
-            product[idxG].generic_qty -= +pd.out_qty;
-            const idx = _.findIndex(product, { product_id: pd.product_id });
-            if (idx > -1) {
-              product[idx].product_qty += +pd.in_qty;
-              product[idx].product_qty -= +pd.out_qty;
-
-            }
+          lists = await toolModel.getStockcardList(db, summary.requisitionWarehouseId, v.generic_id); // รายการทั้งหทก
+          productId = await toolModel.getStockcardProduct(db, summary.requisitionWarehouseId, v.generic_id); //product id
+          for (const pd of productId) {
             const obj: any = {
-              stock_card_id: pd.stock_card_id,
-              balance_qty: product[idx].product_qty,
-              balance_generic_qty: product[idxG].generic_qty
+              generic_id: v.generic_id,
+              product_id: pd.product_id,
+              product_qty: 0,
+              generic_qty: 0
             }
-            if (pd.balance_qty != obj.balance_qty || pd.balance_generic_qty != obj.balance_generic_qty) {
-              await toolModel.updateStockcardList(db, obj);
+            product.push(obj);
+          }
+          for (const pd of lists) {
+            const idxG = _.findIndex(product, { generic_id: v.generic_id });
+            if (idxG > -1) {
+              product[idxG].generic_qty += +pd.in_qty;
+              product[idxG].generic_qty -= +pd.out_qty;
+              const idx = _.findIndex(product, { product_id: pd.product_id });
+              if (idx > -1) {
+                product[idx].product_qty += +pd.in_qty;
+                product[idx].product_qty -= +pd.out_qty;
+
+              }
+              const obj: any = {
+                stock_card_id: pd.stock_card_id,
+                balance_qty: product[idx].product_qty,
+                balance_generic_qty: product[idxG].generic_qty
+              }
+              if (pd.balance_qty != obj.balance_qty || pd.balance_generic_qty != obj.balance_generic_qty) {
+                await toolModel.updateStockcardList(db, obj);
+              }
             }
           }
+        } else {
+          res.send({ ok: false, error: 'ปรับ stockcard ไม่ได้ เนื่องจากหา ใบเบิก,lot_no หรือ จำนวนก่อนปรับไม่เจอ' });
         }
         // #####################################
       }
