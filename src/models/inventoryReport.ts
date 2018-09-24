@@ -2635,6 +2635,60 @@ OR sc.ref_src like ?
             .select(knex.raw('bg_year + 543 as bg_year'));
     }
 
+    issueYear(knex: Knex, year: any, wareHouseId: any, genericType: any) {
+        return knex.raw(`select 
+        mg.generic_name,
+        mg.working_code,
+        mp.product_name,
+        vs.balance_amount,
+        ml.labeler_name as m_labeler_name,
+        mga.account_name,
+        mgt.generic_type_name,
+        mgd.dosage_name,
+        mg.standard_cost,
+        l.bid_name,
+        mgh.name,
+        mg.min_qty,
+        mg.max_qty,
+        concat( IFNULL( mgg1.group_name_1 , '' ), ' ', IFNULL( mgg2.group_name_2 , '' ),' ' , IFNULL( mgg3.group_name_3 , '' ), ' ' , IFNULL( mgg4.group_name_4, '' ) ) AS group_name,				
+        ROUND(avg(vs.balance_unit_cost),2) as cost,
+        (select avg(cost) from wm_products where warehouse_id=vs.warehouse_id and product_id=vs.product_id and lot_no in (select lot_no from view_stock_card_warehouse where product_id=vs.product_id and unit_generic_id=vs.unit_generic_id group by lot_no) ) as cost2,
+        mug.qty,mu1.unit_name as pack,
+        mu2.unit_name as small_unit,
+        (select (sum(in_qty)-sum(out_qty)) as summit from view_stock_card_warehouse where warehouse_id=vs.warehouse_id and product_id=vs.product_id and unit_generic_id = vs.unit_generic_id
+        and stock_date BETWEEN  '${year-1}-10-01 00:00:00' 
+        AND '${year}-09-30 23:59:59'
+        GROUP BY unit_generic_id,product_id) as summit,
+        sum(vs.in_qty)/mug.qty as in_qty,
+        sum(vs.out_qty)/mug.qty as out_qty ,
+        (select (sum(in_qty)-sum(out_qty)) as summit from view_stock_card_warehouse where warehouse_id=vs.warehouse_id and product_id=vs.product_id and unit_generic_id = vs.unit_generic_id
+        and stock_date BETWEEN  '${year-1}-10-01 00:00:00' 
+            AND '${year}-09-30 23:59:59'
+        GROUP BY unit_generic_id,product_id)+sum(vs.in_qty)-sum(vs.out_qty) as balance
+        from view_stock_card_warehouse vs
+        join mm_products mp on vs.product_id = mp.product_id
+        join mm_generics mg on mg.generic_id = mp.generic_id
+        join mm_unit_generics mug on mug.unit_generic_id = vs.unit_generic_id
+        join mm_units mu1 on mu1.unit_id = mug.from_unit_id
+        join mm_units mu2 on mu2.unit_id = mug.to_unit_id
+        join mm_labelers ml on ml.labeler_id = mp.m_labeler_id
+        left join mm_generic_accounts mga on mga.account_id = mg.account_id
+        left join mm_generic_dosages mgd on mgd.dosage_id = mg.dosage_id
+        left join mm_generic_types mgt on mgt.generic_type_id = mg.generic_type_id
+        left join l_bid_type l on l.bid_id = mg.purchasing_method        
+        left join mm_generic_group_1 AS mgg1 ON mgg1.group_code_1 = mg.group_code_1
+        left join mm_generic_group_2 AS mgg2 ON mgg2.group_code_2 = mg.group_code_2 and mgg2.group_code_1 = mg.group_code_1
+        left join mm_generic_group_3 AS mgg3 ON mgg3.group_code_3 = mg.group_code_3 and mgg3.group_code_2 = mg.group_code_2 and mgg3.group_code_1 = mg.group_code_1
+        left join mm_generic_group_4 AS mgg4 ON mgg4.group_code_4 = mg.group_code_4 and mgg4.group_code_3 = mg.group_code_3 and mgg4.group_code_2 = mg.group_code_2 and mgg4.group_code_1 = mg.group_code_1
+        left join mm_generic_hosp mgh on mgh.id = mg.generic_hosp_id
+    
+        where vs.warehouse_id=${wareHouseId}
+        and mg.generic_type_id in (${genericType})
+        and vs.stock_date BETWEEN  '${year-1}-10-01 00:00:00' 
+        AND '${year}-09-30 23:59:59' 
+        GROUP BY vs.unit_generic_id,vs.product_id`);
+    }
+
     receiveIssueYear(knex: Knex, year: any, wareHouseId: any, genericType: any) {
         let sql = `
         SELECT
@@ -2843,11 +2897,22 @@ OR sc.ref_src like ?
         return knex.raw(sql)
     }
 
-    getGenericInStockcrad(knex: Knex, warehouseId: string, startDate: any, endDate: any) {
-        return knex('view_stock_card_warehouse as vscw')
-            .select('vscw.generic_id', 'vscw.generic_name')
-            .where('vscw.warehouse_id', warehouseId)
-            .andWhereBetween('vscw.stock_date', [startDate, endDate])
-            .groupBy('vscw.generic_id')
+    getGenericInStockcrad(knex: Knex, warehouseId: string, startDate: any, endDate: any, dateSetting = 'view_stock_card_warehouse') {
+        let sql = `SELECT
+            vscw.generic_id,
+            mp.generic_name
+        FROM
+            ${dateSetting} AS vscw
+            join mm_generics as mp ON mp.generic_id = vscw.generic_id
+        WHERE
+            vscw.stock_date BETWEEN '${startDate} 00:00:00' 
+            AND '${endDate} 23:59:59'
+            AND vscw.warehouse_id = '${warehouseId}'
+            GROUP BY
+                vscw.generic_id
+            ORDER BY
+	            mp.generic_name`
+            // LIMIT 200 OFFSET 0
+        return knex.raw(sql)
     }
 }
