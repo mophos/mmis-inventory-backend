@@ -3080,7 +3080,8 @@ router.get('/report/genericStock/haveMovement/', wrap(async (req, res, next) => 
   let _inventory_stock: any = [];
   let genericCode = [];
   let genericId = [];
-  let rs = await inventoryReportModel.getGenericInStockcrad(db, warehouseId, startDate, endDate)
+  let rs = await inventoryReportModel.getGenericInStockcrad(db, warehouseId, startDate, endDate, dateSetting)
+  rs = rs[0]
   rs.forEach(v => {
     genericId.push(v.generic_id)
   });
