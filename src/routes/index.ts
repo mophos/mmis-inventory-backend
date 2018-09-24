@@ -2773,7 +2773,7 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
   const genericType = req.query.genericType
 
   try {
-    const rs: any = await inventoryReportModel.receiveIssueYear(db, year, warehouseId, genericType);
+    const rs: any = await inventoryReportModel.issueYear(db, year, warehouseId, genericType);
     let json = [];
 
     rs[0].forEach(v => {
@@ -2782,8 +2782,8 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
         'รหัส_Generics': v.working_code,
         'ชื่อสามัญ': v.generic_name,
         'ผู้จำหน่าย': v.m_labeler_name,
-        'CONVERSION': v.conversion,
-        'หน่วยเล็กสุด': v.baseunit,
+        'CONVERSION': v.qty,
+        'หน่วยเล็กสุด': v.small_unit,
         'บัญชียา': v.account_name,
         'ขนาด': v.dosage_name,
         'ประเภทยา': v.generic_hosp_name,
@@ -2794,12 +2794,12 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
         'MIN_QTY(หน่วยย่อย)': v.min_qty,
         'MAX_QTY(หน่วยย่อย)': v.max_qty,
         'แพ็ค': v.pack,
-        'ราคาต่อแพ็ค': v.unit_price,
-        'ยอดยกมา(หน่วยใหญ่)': v.balance_qty,
+        'ราคาต่อแพ็ค': v.cost,
+        'ยอดยกมา(หน่วยใหญ่)': v.summit/v.qty,
         'รับ(หน่วยใหญ่)': v.in_qty,
         'จ่าย(หน่วยใหญ่)': v.out_qty,
-        'คงเหลือ(หน่วยใหญ่)': v.summit_qty,
-        'มูลค่า': v.amount_qty
+        'คงเหลือ(หน่วยใหญ่)': v.balance/v.qty,
+        'มูลค่า': v.balance*v.cost
         // WORKING_CODE: v.working_code,
         // GENERIC_CODE: v.generic_name,
         // PRODUCT_NAME: v.product_name,
