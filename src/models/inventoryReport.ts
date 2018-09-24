@@ -2635,6 +2635,38 @@ OR sc.ref_src like ?
             .select(knex.raw('bg_year + 543 as bg_year'));
     }
 
+    issueYear(knex: Knex, year: any, wareHouseId: any, genericType: any) {
+        return knex.raw(`select 
+        mp.product_name,
+        vs.balance_amount,
+        ROUND(avg(vs.balance_unit_cost),2) as cost,
+        (select avg(cost) from wm_products where warehouse_id=vs.warehouse_id and product_id=vs.product_id and lot_no in (select lot_no from view_stock_card_warehouse where product_id=vs.product_id and unit_generic_id=vs.unit_generic_id group by lot_no) ) as cost2,
+        mug.qty,mu1.unit_name as pack,
+        mu2.unit_name as small_unit,
+        (select (sum(in_qty)-sum(out_qty)) as summit from view_stock_card_warehouse where warehouse_id=vs.warehouse_id and product_id=vs.product_id and unit_generic_id = vs.unit_generic_id
+        and stock_date BETWEEN  '${year - 1}-10-01 00:00:00' 
+        AND '${year}-09-30 23:59:59'
+        GROUP BY unit_generic_id,product_id) as summit,
+        sum(vs.in_qty)/mug.qty as in_qty,
+        sum(vs.out_qty)/mug.qty as out_qty ,
+        (select (sum(in_qty)-sum(out_qty)) as summit from view_stock_card_warehouse where warehouse_id=vs.warehouse_id and product_id=vs.product_id and unit_generic_id = vs.unit_generic_id
+        and stock_date BETWEEN  '${year - 1}-10-01 00:00:00' 
+            AND '${year}-09-30 23:59:59'
+        GROUP BY unit_generic_id,product_id)+sum(vs.in_qty)-sum(vs.out_qty) as balance
+        from view_stock_card_warehouse vs
+        join mm_products mp on vs.product_id = mp.product_id
+        join mm_generics mg on mg.generic_id = mp.generic_id
+        join mm_unit_generics mug on mug.unit_generic_id = vs.unit_generic_id
+        join mm_units mu1 on mu1.unit_id = mug.from_unit_id
+        join mm_units mu2 on mu2.unit_id = mug.to_unit_id
+        
+        where vs.warehouse_id=${wareHouseId}
+        and mg.generic_type_id in (${genericType})
+        and vs.stock_date BETWEEN  '${year - 1}-10-01 00:00:00' 
+        AND '${year}-09-30 23:59:59' 
+        GROUP BY vs.unit_generic_id,vs.product_id`);
+    }
+
     receiveIssueYear(knex: Knex, year: any, wareHouseId: any, genericType: any) {
         let sql = `
         SELECT
