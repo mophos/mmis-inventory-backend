@@ -178,14 +178,14 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
 
-    const rs: any = await inventoryReportModel.receiveIssueYear(db, year, warehouseId, genericType);
+    const rs: any = await inventoryReportModel.issueYear(db, year, warehouseId, genericType);
     rs[0].forEach(v => {
-      v.unit_price = inventoryReportModel.comma(v.unit_price);
-      v.balance_qty = inventoryReportModel.commaQty(v.balance_qty);
+      v.unit_price = inventoryReportModel.comma(v.cost);
+      v.balance = inventoryReportModel.commaQty(v.balance/v.qty);
       v.in_qty = inventoryReportModel.commaQty(v.in_qty);
       v.out_qty = inventoryReportModel.commaQty(v.out_qty);
-      v.summit_qty = inventoryReportModel.commaQty(v.summit_qty);
-      v.amount_qty = inventoryReportModel.comma(v.amount_qty);
+      v.summit = inventoryReportModel.commaQty(v.summit/v.qty);
+      v.amount = inventoryReportModel.comma(v.balance*v.cost);
     });
     let committee: any = []
     for (let peopleId of people) {
@@ -194,6 +194,7 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
       committee.push(pe[0])
     }
     res.render('issue_year', {
+      syear: year + 542,
       rs: rs[0],
       hospitalName: hospitalName,
       year: year + 543,
@@ -937,6 +938,8 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
       });
 
       generic_stock[0].forEach(v => {
+        console.log('xxxxxxxxxxxxxxxxxxx', v);
+
         const _in_qty = +v.in_qty;
         const _out_qty = +v.out_qty;
         const _conversion_qty = +v.conversion_qty;

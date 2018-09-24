@@ -324,6 +324,8 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
     } else {
       try {
         let borrow = {
+          src_warehouse_id: _summary.srcWarehouseId,
+          dst_warehouse_id: _summary.dstWarehouseId,
           borrow_date: _summary.borrowDate,
           people_user_id: req.decoded.people_user_id
         }
@@ -440,11 +442,8 @@ router.post('/returned/approved', co(async (req, res, next) => {
     //   // get balance
     let warehouseId = req.decoded.warehouseId;
     let balances = await borrowModel.getProductRemainByReturnedIds(db, returnedIds, warehouseId);
+  
     balances = balances[0];
-
-    console.log('******************************');
-    console.log(balances);
-    console.log('******************************');
 
     // save stockcard
     let data = [];
