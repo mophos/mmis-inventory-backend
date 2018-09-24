@@ -2843,11 +2843,22 @@ ORDER BY
         return knex.raw(sql)
     }
 
-    getGenericInStockcrad(knex: Knex, warehouseId: string, startDate: any, endDate: any) {
-        return knex('view_stock_card_warehouse as vscw')
-            .select('vscw.generic_id', 'vscw.generic_name')
-            .where('vscw.warehouse_id', warehouseId)
-            .andWhereBetween('vscw.stock_date', [startDate, endDate])
-            .groupBy('vscw.generic_id')
+    getGenericInStockcrad(knex: Knex, warehouseId: string, startDate: any, endDate: any, dateSetting = 'view_stock_card_warehouse') {
+        let sql = `SELECT
+            vscw.generic_id,
+            mp.generic_name
+        FROM
+            ${dateSetting} AS vscw
+            join mm_generics as mp ON mp.generic_id = vscw.generic_id
+        WHERE
+            vscw.stock_date BETWEEN '${startDate} 00:00:00' 
+            AND '${endDate} 23:59:59'
+            AND vscw.warehouse_id = '${warehouseId}'
+            GROUP BY
+                vscw.generic_id
+            ORDER BY
+	            mp.generic_name`
+            // LIMIT 200 OFFSET 0
+        return knex.raw(sql)
     }
 }
