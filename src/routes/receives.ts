@@ -363,9 +363,9 @@ router.put('/:receiveId', co(async (req, res, next) => {
       }
 
       // productIds.push(v.product_id);
-      
+
       if (v.is_free === 'N') {
-      totalPriceReceive += (v.receive_qty * v.cost);
+        totalPriceReceive += (v.receive_qty * v.cost);
       }
       productsData.push(pdata);
     });
@@ -416,54 +416,54 @@ router.put('/:receiveId', co(async (req, res, next) => {
         //   }
         // }
         // if (passPick) {
-          if (summary.purchaseOrderId) {
-            let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId); // 100
-            let rsReceived = await receiveModel.getTotalPricePurcehaseReceivedWithoutOwner(db, summary.purchaseOrderId, receiveId);
+        if (summary.purchaseOrderId) {
+          let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId); // 100
+          let rsReceived = await receiveModel.getTotalPricePurcehaseReceivedWithoutOwner(db, summary.purchaseOrderId, receiveId);
 
-            let totalPrice = +rsReceived[0].total + totalPriceReceive;
-            if (+totalPrice > +rsPo[0].total) {
-              res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
-            } else {
-              let temp = summary.receiveCode.split('-');
-              if (temp[0] === 'RT') {
-                let receiveCode = await serialModel.getSerial(db, 'RV');
-                data.receive_code = receiveCode;
-              }
-
-              let rsProduct = await receiveModel.getProductInPurchase(db, summary.purchaseOrderId);
-              let isInPurchase = true;
-              productsData.forEach(v => {
-                let idx = _.findIndex(rsProduct, { product_id: v.product_id });
-                if (idx === -1) isInPurchase = false;
-              });
-
-              if (isInPurchase) {
-                await receiveModel.updateReceiveSummary(db, receiveId, data);
-                // remove old data
-                await receiveModel.removeReceiveDetail(db, receiveId);
-                // insert new data
-                await receiveModel.saveReceiveDetail(db, productsData);
-
-                if (closePurchase === 'Y') {
-                  await receiveModel.updatePurchaseCompletedStatus(db, summary.purchaseOrderId);
-                }
-                res.send({ ok: true });
-              } else {
-                res.send({ ok: false, error: 'มีรายการสินค้าบางรายการไม่ได้อยู่ในใบสั่งซื้อ' })
-              }
-            }
+          let totalPrice = +rsReceived[0].total + totalPriceReceive;
+          if (+totalPrice > +rsPo[0].total) {
+            res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
           } else {
-            await receiveModel.updateReceiveSummary(db, receiveId, data);
-            // remove old data
-            await receiveModel.removeReceiveDetail(db, receiveId);
-            // insert new data
-            await receiveModel.saveReceiveDetail(db, productsData);
-
-            if (closePurchase === 'Y') {
-              await receiveModel.updatePurchaseCompletedStatus(db, summary.purchaseOrderId);
+            let temp = summary.receiveCode.split('-');
+            if (temp[0] === 'RT') {
+              let receiveCode = await serialModel.getSerial(db, 'RV');
+              data.receive_code = receiveCode;
             }
-            res.send({ ok: true });
+
+            let rsProduct = await receiveModel.getProductInPurchase(db, summary.purchaseOrderId);
+            let isInPurchase = true;
+            productsData.forEach(v => {
+              let idx = _.findIndex(rsProduct, { product_id: v.product_id });
+              if (idx === -1) isInPurchase = false;
+            });
+
+            if (isInPurchase) {
+              await receiveModel.updateReceiveSummary(db, receiveId, data);
+              // remove old data
+              await receiveModel.removeReceiveDetail(db, receiveId);
+              // insert new data
+              await receiveModel.saveReceiveDetail(db, productsData);
+
+              if (closePurchase === 'Y') {
+                await receiveModel.updatePurchaseCompletedStatus(db, summary.purchaseOrderId);
+              }
+              res.send({ ok: true });
+            } else {
+              res.send({ ok: false, error: 'มีรายการสินค้าบางรายการไม่ได้อยู่ในใบสั่งซื้อ' })
+            }
           }
+        } else {
+          await receiveModel.updateReceiveSummary(db, receiveId, data);
+          // remove old data
+          await receiveModel.removeReceiveDetail(db, receiveId);
+          // insert new data
+          await receiveModel.saveReceiveDetail(db, productsData);
+
+          if (closePurchase === 'Y') {
+            await receiveModel.updatePurchaseCompletedStatus(db, summary.purchaseOrderId);
+          }
+          res.send({ ok: true });
+        }
         // }
         // else {
         //   res.send({ ok: false, push: true, error: 'มีรายการรับที่ถูกยืนยันการหยิบแล้ว' });
@@ -793,9 +793,20 @@ router.post('/approve', co(async (req, res, next) => {
 
   try {
     let approveDatas = [];
-    _.forEach(receiveIds, (v: any) => {
+    // _.forEach(receiveIds, (v: any) => {
+    for (const v of receiveIds) {
+
+      // }
+
+      const checkApprove = await receiveModel.checkDuplicatedApprove(db, v.receive_id);
+      if (checkApprove[0].total > 0) {
+        const idx = _.findIndex(receiveIds, { 'receive_id': v.receive_id });
+        if (idx > -1) {
+          this.generics.splice(idx, 1);
+        }
+      }
+
       let _approveData = {
-        // approve_id: moment().format('x'),
         approve_date: approveDate,
         created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
         people_user_id: req.decoded.people_user_id,
@@ -804,7 +815,7 @@ router.post('/approve', co(async (req, res, next) => {
       }
 
       approveDatas.push(_approveData);
-    });
+    }
 
     // Todo
     // ดึงรายการวันที่ทั้งหมดของใบรับ (มีหลายใบ) แล้ววนลูปเพื่อดูว่ามีรายการใด อยู่ในช่วงปิดงบหรือเปล่า
@@ -1340,16 +1351,16 @@ router.delete('/remove', co(async (req, res, next) => {
       let peopleUserId: any = req.decoded.people_user_id;
       // let rs: any = await receiveModel.checkPickApprove(db, receiveId); //  test pick
       // if (!rs) {
-        await receiveModel.removeReceive(db, receiveId, peopleUserId);
-        if (purchaseOrderId) {
-          let rsCurrent = await receiveModel.getCurrentPurchaseStatus(db, purchaseOrderId);
-          if (rsCurrent) {
-            if (rsCurrent[0].purchase_order_status === 'COMPLETED') {
-              await receiveModel.updatePurchaseStatus2(db, purchaseOrderId, 'APPROVED');
-            }
+      await receiveModel.removeReceive(db, receiveId, peopleUserId);
+      if (purchaseOrderId) {
+        let rsCurrent = await receiveModel.getCurrentPurchaseStatus(db, purchaseOrderId);
+        if (rsCurrent) {
+          if (rsCurrent[0].purchase_order_status === 'COMPLETED') {
+            await receiveModel.updatePurchaseStatus2(db, purchaseOrderId, 'APPROVED');
           }
         }
-        res.send({ ok: true });
+      }
+      res.send({ ok: true });
       // } else { //  test pick
       //   res.send({ ok: false, error: 'มีัรายการหยิบที่อนุมัติแล้ว' });
       // }
