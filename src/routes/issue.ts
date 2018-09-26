@@ -100,8 +100,13 @@ router.post('/', co(async (req, res, next) => {
         objBalance.warehouse_id = srcBalance[0].warehouse_id;
         objBalance.balance_qty = srcBalance[0].balance;
         objBalance.balance_generic_qty = srcBalance[0].balance_generic;
-        balances.push(objBalance);
+        const idx = _.findIndex(balances, { 'product_id': srcBalance[0] });
+        if (idx == -1) {
+          balances.push(objBalance);
+        }
         // });
+        console.log(balances);
+
       }
       for (const e of rs) {
         if (rs.out_qty != 0) {
