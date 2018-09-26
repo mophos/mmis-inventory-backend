@@ -802,7 +802,7 @@ router.post('/approve', co(async (req, res, next) => {
       if (checkApprove[0].total > 0) {
         const idx = _.findIndex(receiveIds, { 'receive_id': v.receive_id });
         if (idx > -1) {
-          this.generics.splice(idx, 1);
+          receiveIds.splice(idx, 1);
         }
       }
 
