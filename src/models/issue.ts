@@ -481,6 +481,41 @@ WHERE
       .where('wm.product_id', productId)
   }
 
-
-
+  getBalance(knex: Knex, productId, warehouseId) {
+    let sql = `SELECT
+        wp.product_id,
+        sum(wp.qty) AS balance,
+        wp.warehouse_id,
+        wp.unit_generic_id,
+        (SELECT
+          sum(wp.qty)
+        FROM
+          wm_products wp
+        WHERE
+          wp.product_id in (
+            SELECT
+              mp.product_id
+            FROM
+              mm_products mp
+            WHERE
+              mp.generic_id in (
+                SELECT
+                  generic_id
+                FROM
+                  mm_products mp
+                WHERE
+                  mp.product_id = '${productId}'
+              )
+          ) and wp.warehouse_id = '${warehouseId}'
+        GROUP BY wp.warehouse_id) as balance_generic
+      FROM
+        wm_products wp
+      WHERE
+        wp.product_id= '${productId}'
+      AND wp.warehouse_id = '${warehouseId}'
+      GROUP BY
+        wp.product_id,
+        wp.warehouse_id`;
+    return knex.raw(sql);
+  }
 }

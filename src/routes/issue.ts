@@ -90,7 +90,20 @@ router.post('/', co(async (req, res, next) => {
       let rs = await issueModel.getIssueApprove(db, id[0], warehouseId);
       rs = rs[0];
       let data = [];
-      rs.forEach(e => {
+      // rs.forEach(e => {
+      let balances = [];
+      for (const e of rs) {
+        let srcBalance = await issueModel.getBalance(db, e.product_id, warehouseId);
+        let objBalance: any = {};
+        // srcBalance[0].forEach(v => {
+        objBalance.product_id = srcBalance[0].product_id;
+        objBalance.warehouse_id = srcBalance[0].warehouse_id;
+        objBalance.balance_qty = srcBalance[0].balance;
+        objBalance.balance_generic_qty = srcBalance[0].balance_generic;
+        balances.push(objBalance);
+        // });
+      }
+      for (const e of rs) {
         if (rs.out_qty != 0) {
           let objStockcard: any = {}
           objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -104,17 +117,28 @@ router.post('/', co(async (req, res, next) => {
           objStockcard.in_unit_cost = 0;
           objStockcard.out_qty = e.out_qty;
           objStockcard.out_unit_cost = e.out_unit_cost;
-          objStockcard.balance_qty = e.balance_qty;
           objStockcard.balance_unit_cost = e.balance_unit_cost;
           objStockcard.ref_src = warehouseId;
           objStockcard.ref_dst = e.ref_src;
           objStockcard.comment = e.transaction_name;
-          objStockcard.balance_generic_qty = e.balance_generic;
+
+          let srcBalance = 0;
+          let srcBalanceGeneric = 0;
+          let srcIdx = _.findIndex(balances, { product_id: e.product_id });
+          if (srcIdx > -1) {
+            balances[srcIdx].balance_qty -= +e.out_qty;
+            srcBalance = balances[srcIdx].balance_qty
+            balances[srcIdx].balance_generic_qty -= +e.out_qty;
+            srcBalanceGeneric = balances[srcIdx].balance_generic_qty;
+          }
+
+          objStockcard.balance_qty = srcBalance;
+          objStockcard.balance_generic_qty = srcBalanceGeneric;
           objStockcard.lot_no = e.lot_no;
           objStockcard.expired_date = e.expired_date;
           data.push(objStockcard)
         }
-      });
+      }
 
       await stockCardModel.saveFastStockTransaction(db, data);
     }
