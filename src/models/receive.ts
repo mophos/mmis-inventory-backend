@@ -511,6 +511,12 @@ export class ReceiveModel {
       .where('receive_id', receiveId);
   }
 
+  checkDuplicatedApproveOther(knex: Knex, receiveId: any) {
+    return knex('wm_receive_approve')
+      .count('* as total')
+      .where('receive_other_id', receiveId);
+  }
+
   getApproveStatus(knex: Knex, receiveId: any) {
     return knex('wm_receive_approve')
       .where('receive_id', receiveId);
@@ -539,7 +545,7 @@ export class ReceiveModel {
     //   .as('total_received_qty')
 
     return knex('wm_receive_detail as rd')
-      .select('rd.receive_detail_id','rd.product_id', 'p.product_name', 'rd.unit_generic_id', 'rd.lot_no', 'rd.discount',
+      .select('rd.receive_detail_id', 'rd.product_id', 'p.product_name', 'rd.unit_generic_id', 'rd.lot_no', 'rd.discount',
         'p.m_labeler_id', 'p.is_lot_control', 'p.v_labeler_id', 'g.generic_name', 'g.generic_id', 'rd.is_free',
         'rd.warehouse_id', 'rd.location_id', 'ww.warehouse_name', 'll.location_name',
         'rd.receive_qty', 'rd.cost', 'mu.from_unit_id', 'mu.to_unit_id as base_unit_id',
@@ -566,33 +572,33 @@ export class ReceiveModel {
 
       .where('rd.receive_id', receiveId);
   }
-  getPickDetailCheck(knex:Knex, receive_id:any){
+  getPickDetailCheck(knex: Knex, receive_id: any) {
 
     return knex('wm_pick_detail as pd')
-    .select('pd.product_id', 'pd.receive_id', 'pd.unit_generic_id', 'pd.lot_no',knex.raw('sum (pd.pick_qty) as pick_qty'))
-      .where('pd.receive_id' ,receive_id)
-      .join('wm_pick as p','p.pick_id','pd.pick_id')
-      .where('p.is_approve','Y')
-      .groupBy('pd.product_id', 'pd.receive_id', 'pd.unit_generic_id', 'pd.lot_no') ;
+      .select('pd.product_id', 'pd.receive_id', 'pd.unit_generic_id', 'pd.lot_no', knex.raw('sum (pd.pick_qty) as pick_qty'))
+      .where('pd.receive_id', receive_id)
+      .join('wm_pick as p', 'p.pick_id', 'pd.pick_id')
+      .where('p.is_approve', 'Y')
+      .groupBy('pd.product_id', 'pd.receive_id', 'pd.unit_generic_id', 'pd.lot_no');
 
     // return knex('wm_receive_detail as rd')
     // .select('q1.pick_qty','rd.receive_detail_id','rd.product_id', 'rd.receive_id', 'rd.unit_generic_id', 'rd.lot_no','rd.receive_qty')
     // .innerJoin(knex.raw(('(' + q1 + ')as q1 on q1.product_id = rd.product_id  and q1.receive_id = rd.receive_id and q1.unit_generic_id=rd.unit_generic_id and q1.lot_no=rd.lot_no')))
     // .where('rd.receive_id', receive_id)
 
-  
+
   }
-  getWmProduct(knex:Knex,item:any){
+  getWmProduct(knex: Knex, item: any) {
     return knex('wm_products')
-    // .select('*')
-    .where('product_id',item.product_id)
-    .andWhere('lot_no',item.lot_no)
-    .andWhere('unit_generic_id',item.unit_generic_id)
-    .andWhere('warehouse_id',505)
+      // .select('*')
+      .where('product_id', item.product_id)
+      .andWhere('lot_no', item.lot_no)
+      .andWhere('unit_generic_id', item.unit_generic_id)
+      .andWhere('warehouse_id', 505)
   }
-  getStockItem(knex: Knex,pick_id:any){
+  getStockItem(knex: Knex, pick_id: any) {
     let sql =
-    `
+      `
     SELECT
 p.pick_id,
       p.pick_code,
@@ -639,13 +645,13 @@ WHERE
 	`
     return knex.raw(sql)
   }
-  getPickCheck(knex:Knex, receive_id:any){
+  getPickCheck(knex: Knex, receive_id: any) {
     return knex('wm_pick_detail as pd')
-    .select('p.pick_code','p.wm_pick','pd.*',knex.raw('pd.pick_qty as pick_qty'))
-      .whereIn('pd.receive_id' ,receive_id) 
-      .join('wm_pick as p','p.pick_id','pd.pick_id')
-      .where('p.is_approve','Y')
-      // .groupBy('pd.product_id', 'pd.receive_id', 'pd.unit_generic_id', 'pd.lot_no') ;
+      .select('p.pick_code', 'p.wm_pick', 'pd.*', knex.raw('pd.pick_qty as pick_qty'))
+      .whereIn('pd.receive_id', receive_id)
+      .join('wm_pick as p', 'p.pick_id', 'pd.pick_id')
+      .where('p.is_approve', 'Y')
+    // .groupBy('pd.product_id', 'pd.receive_id', 'pd.unit_generic_id', 'pd.lot_no') ;
 
     // return knex('wm_receive_detail as rd')
     // .select('q1.pick_qty','rd.receive_detail_id','rd.product_id', 'rd.receive_id', 'rd.unit_generic_id', 'rd.lot_no','rd.receive_qty')
@@ -758,10 +764,10 @@ WHERE
   }
   checkPickApprove(knex: Knex, receiveId: string) {
     return knex('wm_pick_detail as pd')
-    .join('wm_pick as p','p.pick_id','pd.pick_id')
+      .join('wm_pick as p', 'p.pick_id', 'pd.pick_id')
       .where('pd.receive_id', receiveId)
-      .andWhere('p.is_approve','Y')
-    }
+      .andWhere('p.is_approve', 'Y')
+  }
   removeReceive(knex: Knex, receiveId: string, peopleUserId: any) {
     return knex('wm_receives')
       .where('receive_id', receiveId)
