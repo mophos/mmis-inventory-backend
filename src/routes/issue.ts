@@ -90,23 +90,30 @@ router.post('/', co(async (req, res, next) => {
       let rs = await issueModel.getIssueApprove(db, id[0], warehouseId);
       rs = rs[0];
       let data = [];
-      // rs.forEach(e => {
+
       let balances = [];
-      for (const e of rs) {
+      let balancesG = [];
+      for (const e of rs[0]) {
         let srcBalance = await issueModel.getBalance(db, e.product_id, warehouseId);
-        let objBalance: any = {};
-        // srcBalance[0].forEach(v => {
-        objBalance.product_id = srcBalance[0].product_id;
-        objBalance.warehouse_id = srcBalance[0].warehouse_id;
-        objBalance.balance_qty = srcBalance[0].balance;
-        objBalance.balance_generic_qty = srcBalance[0].balance_generic;
-        const idx = _.findIndex(balances, { 'product_id': srcBalance[0] });
+        srcBalance = srcBalance[0];
+        let objBalance: any = {
+          product_id: srcBalance[0].product_id,
+          balance_qty: srcBalance[0].balance
+        }
+        const idx = _.findIndex(balances, { 'product_id': srcBalance[0].product_id });
         if (idx == -1) {
           balances.push(objBalance);
         }
-        // });
-
+        let objBalanceG: any = {
+          generic_id: srcBalance[0].generic_id,
+          balance_generic_qty: srcBalance[0].balance_generic
+        }
+        const idxG = _.findIndex(balances, { 'generic_id': srcBalance[0].generic_id });
+        if (idxG == -1) {
+          balancesG.push(objBalanceG);
+        }
       }
+
       for (const e of rs) {
         if (rs.out_qty != 0) {
           let objStockcard: any = {}
@@ -132,8 +139,12 @@ router.post('/', co(async (req, res, next) => {
           if (srcIdx > -1) {
             balances[srcIdx].balance_qty -= +e.out_qty;
             srcBalance = balances[srcIdx].balance_qty
-            balances[srcIdx].balance_generic_qty -= +e.out_qty;
-            srcBalanceGeneric = balances[srcIdx].balance_generic_qty;
+          }
+
+          let srcIdxG = _.findIndex(balancesG, { generic_id: e.generic_id });
+          if (srcIdxG > -1) {
+            balancesG[srcIdxG].balance_generic_qty -= +e.out_qty;
+            srcBalanceGeneric = balancesG[srcIdxG].balance_generic_qty;
           }
 
           objStockcard.balance_qty = srcBalance;
@@ -234,26 +245,34 @@ router.post('/approve', co(async (req, res, next) => {
       }
 
       let rs = await issueModel.getIssueApprove(db, v, warehouseId);
-
       let data = [];
       let _cutProduct = [];
       let balances = [];
-      for (const e of rs) {
+      let balancesG = [];
+      for (const e of rs[0]) {
         let srcBalance = await issueModel.getBalance(db, e.product_id, warehouseId);
-        let objBalance: any = {};
-        // srcBalance[0].forEach(v => {
-        objBalance.product_id = srcBalance[0].product_id;
-        objBalance.warehouse_id = srcBalance[0].warehouse_id;
-        objBalance.balance_qty = srcBalance[0].balance;
-        objBalance.balance_generic_qty = srcBalance[0].balance_generic;
-        const idx = _.findIndex(balances, { 'product_id': srcBalance[0] });
+        srcBalance = srcBalance[0];
+        let objBalance: any = {
+          product_id: srcBalance[0].product_id,
+          balance_qty: srcBalance[0].balance
+        }
+        const idx = _.findIndex(balances, { 'product_id': srcBalance[0].product_id });
         if (idx == -1) {
           balances.push(objBalance);
         }
+        let objBalanceG: any = {
+          generic_id: srcBalance[0].generic_id,
+          balance_generic_qty: srcBalance[0].balance_generic
+        }
+        const idxG = _.findIndex(balances, { 'generic_id': srcBalance[0].generic_id });
+        if (idxG == -1) {
+          balancesG.push(objBalanceG);
+        }
       }
 
-      for (const e of rs) {
-        if (rs.out_qty != 0) {
+
+      for (const e of rs[0]) {
+        if (e.out_qty != 0) {
           let objStockcard: any = {};
           let cutProduct: any = {};
           objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -278,8 +297,12 @@ router.post('/approve', co(async (req, res, next) => {
           if (srcIdx > -1) {
             balances[srcIdx].balance_qty -= +e.out_qty;
             srcBalance = balances[srcIdx].balance_qty
-            balances[srcIdx].balance_generic_qty -= +e.out_qty;
-            srcBalanceGeneric = balances[srcIdx].balance_generic_qty;
+          }
+
+          let srcIdxG = _.findIndex(balancesG, { generic_id: e.generic_id });
+          if (srcIdxG > -1) {
+            balancesG[srcIdxG].balance_generic_qty -= +e.out_qty;
+            srcBalanceGeneric = balancesG[srcIdxG].balance_generic_qty;
           }
 
           objStockcard.balance_qty = srcBalance;
