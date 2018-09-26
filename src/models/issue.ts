@@ -487,6 +487,7 @@ WHERE
         sum(wp.qty) AS balance,
         wp.warehouse_id,
         wp.unit_generic_id,
+        mp.generic_id,
         (SELECT
           sum(wp.qty)
         FROM
@@ -510,6 +511,7 @@ WHERE
         GROUP BY wp.warehouse_id) as balance_generic
       FROM
         wm_products wp
+      join mm_products mp on wp.product_id = mp.product_id
       WHERE
         wp.product_id= '${productId}'
       AND wp.warehouse_id = '${warehouseId}'
