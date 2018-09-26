@@ -105,7 +105,6 @@ router.post('/', co(async (req, res, next) => {
           balances.push(objBalance);
         }
         // });
-        console.log(balances);
 
       }
       for (const e of rs) {
@@ -238,8 +237,22 @@ router.post('/approve', co(async (req, res, next) => {
 
       let data = [];
       let _cutProduct = [];
+      let balances = [];
+      for (const e of rs) {
+        let srcBalance = await issueModel.getBalance(db, e.product_id, warehouseId);
+        let objBalance: any = {};
+        // srcBalance[0].forEach(v => {
+        objBalance.product_id = srcBalance[0].product_id;
+        objBalance.warehouse_id = srcBalance[0].warehouse_id;
+        objBalance.balance_qty = srcBalance[0].balance;
+        objBalance.balance_generic_qty = srcBalance[0].balance_generic;
+        const idx = _.findIndex(balances, { 'product_id': srcBalance[0] });
+        if (idx == -1) {
+          balances.push(objBalance);
+        }
+      }
 
-      rs[0].forEach(e => {
+      for (const e of rs) {
         if (rs.out_qty != 0) {
           let objStockcard: any = {};
           let cutProduct: any = {};
@@ -254,12 +267,23 @@ router.post('/approve', co(async (req, res, next) => {
           objStockcard.in_unit_cost = 0;
           objStockcard.out_qty = e.out_qty;
           objStockcard.out_unit_cost = e.out_unit_cost;
-          objStockcard.balance_qty = e.balance_qty;
           objStockcard.balance_unit_cost = e.balance_unit_cost;
           objStockcard.ref_src = warehouseId;
           objStockcard.ref_dst = e.ref_src;
           objStockcard.comment = e.transaction_name;
-          objStockcard.balance_generic_qty = e.balance_generic;
+
+          let srcBalance = 0;
+          let srcBalanceGeneric = 0;
+          let srcIdx = _.findIndex(balances, { product_id: e.product_id });
+          if (srcIdx > -1) {
+            balances[srcIdx].balance_qty -= +e.out_qty;
+            srcBalance = balances[srcIdx].balance_qty
+            balances[srcIdx].balance_generic_qty -= +e.out_qty;
+            srcBalanceGeneric = balances[srcIdx].balance_generic_qty;
+          }
+
+          objStockcard.balance_qty = srcBalance;
+          objStockcard.balance_generic_qty = srcBalanceGeneric;
           objStockcard.lot_no = e.lot_no;
           objStockcard.expired_date = e.expired_date;
           data.push(objStockcard)
@@ -267,7 +291,7 @@ router.post('/approve', co(async (req, res, next) => {
           cutProduct.wm_product_id = e.wm_product_id;
           _cutProduct.push(cutProduct);
         }
-      });
+      }
       v = Array.isArray(v) ? v : [v];
       await issueModel.updateSummaryApprove(db, v, summary);
       // update wm_product
