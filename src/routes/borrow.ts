@@ -93,6 +93,50 @@ router.get('/list/other', co(async (req, res, next) => {
 
 }));
 
+router.get('/list-borrow', co(async (req, res, next) => {
+  let db = req.db;
+  let limit = +req.query.limit || 15;
+  let offset = +req.query.offset || 0;
+  let warehouseId = req.decoded.warehouseId;
+
+  try {
+    let rows;
+    let total;
+
+    rows = await borrowModel.returnedAll(db, warehouseId, limit, offset);
+    total = await borrowModel.returnedTotalAll(db, warehouseId);
+
+    res.send({ ok: true, rows: rows, total: total[0].total });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/list-borrow/other', co(async (req, res, next) => {
+  let db = req.db;
+  let limit = +req.query.limit || 15;
+  let offset = +req.query.offset || 0;
+  let warehouseId = req.decoded.warehouseId;
+
+  try {
+    let rows;
+    let total;
+
+    rows = await borrowModel.returnedAllOther(db, warehouseId, limit, offset);
+    total = await borrowModel.returnedTotalAllOther(db, warehouseId);
+
+    res.send({ ok: true, rows: rows, total: total[0].total });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
 router.get('/returned/list', co(async (req, res, next) => {
   let db = req.db;
   let type = +req.query.t || 1;
@@ -442,7 +486,7 @@ router.post('/returned/approved', co(async (req, res, next) => {
     //   // get balance
     let warehouseId = req.decoded.warehouseId;
     let balances = await borrowModel.getProductRemainByReturnedIds(db, returnedIds, warehouseId);
-  
+
     balances = balances[0];
 
     // save stockcard
@@ -454,7 +498,7 @@ router.post('/returned/approved', co(async (req, res, next) => {
       obj.product_id = v.product_id;
       obj.generic_id = v.generic_id;
       obj.unit_generic_id = v.unit_generic_id;
-      obj.transaction_type = TransactionType.RECEIVE_OTHER;
+      obj.transaction_type = TransactionType.RETURNED;
       obj.document_ref_id = v.returned_id;
       obj.document_ref = v.returned_code;
       obj.in_qty = v.qty;
@@ -485,6 +529,15 @@ router.post('/returned/approved', co(async (req, res, next) => {
       data.push(obj);
     });
 
+    let rs = await borrowModel.getBorrowDetail(db, returnedIds);
+    for (const v of rs) {
+      if (v.borrow_id) {
+        await borrowModel.updateReturnedApprove(db, returnedIds);
+      } else {
+        await borrowModel.updateReturnedApproveOther(db, returnedIds);
+      }
+    }
+    
     await borrowModel.changeApproveStatusReturned(db, returnedIds, peopleUserId);
     await borrowModel.saveProducts(db, products);
     await stockCard.saveFastStockTransaction(db, data);
@@ -668,6 +721,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
     }
 
   });
+
   await borrowModel.saveDstProducts(db, dstProducts);
   await borrowModel.decreaseQty(db, dstProducts);
   await borrowModel.changeApproveStatusIds(db, borrowIds, peopleUserId);
