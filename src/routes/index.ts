@@ -2203,10 +2203,10 @@ router.get('/report/balance', wrap(async (req, res, next) => {
   res.render('balance', { hospitalName: hospitalName, balance: balance, warehouseName: warehouseName });
 }));
 
-router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, next) => {
+router.get('/report/product-receive', wrap(async (req, res, next) => {
   let db = req.db;
-  let startdate = req.params.startdate
-  let enddate = req.params.enddate
+  let startdate = req.query.startDate
+  let enddate = req.query.endDate
 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
