@@ -10,5 +10,6 @@ export enum TransactionType {
   ADJUST = 'ADJUST',
   HIS = 'HIS',
   ADDITION_IN = 'ADD_IN',
-  ADDITION_OUT = 'ADD_OUT'
+  ADDITION_OUT = 'ADD_OUT',
+  RETURNED = 'RTN'
 }

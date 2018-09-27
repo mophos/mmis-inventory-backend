@@ -893,7 +893,6 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
   warehouseName = warehouseName[0].warehouse_name
 
   for (let id in genericId) {
-
     summit = await inventoryReportModel.summit_stockcard(db, dateSetting, genericId[id], _startDate, warehouseId)
     generic_stock = await inventoryReportModel.generic_stock(db, dateSetting, genericId[id], _startDate, _endDate, warehouseId);
     inventory_stock = await inventoryReportModel.inventory_stockcard(db, dateSetting, genericId[id], _endDate, warehouseId)
@@ -908,7 +907,6 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
       } else {
         _unit.push(generic_stock[0][0].small_unit)
       }
-
       summit[0].forEach(e => {
         const _in_qty = +e.in_qty;
         const _out_qty = +e.out_qty;
@@ -932,11 +930,9 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
         } else {
           e.out_qty_show = '-';
         }
-
         e.in_qty_base = inventoryReportModel.commaQty(_in_qty);
         e.out_qty_base = inventoryReportModel.commaQty(_out_qty);
       });
-
       generic_stock[0].forEach(v => {
         const _in_qty = +v.in_qty;
         const _out_qty = +v.out_qty;
@@ -991,7 +987,6 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
         }
 
         v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost * _conversion_qty);
-
         v.in_qty_base = inventoryReportModel.commaQty(_in_qty);
         v.out_qty_base = inventoryReportModel.commaQty(_out_qty);
       });
@@ -2271,7 +2266,7 @@ router.get('/report/product/receive', wrap(async (req, res, next) => {
   });
   allcost = inventoryReportModel.comma(allcost);
 
-  res.render('productReceive2', {
+  res.render('productReceive3', {
     allcost: allcost,
     hospitalName: hospitalName,
     printDate: printDate(req.decoded.SYS_PRINT_DATE),

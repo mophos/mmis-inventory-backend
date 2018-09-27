@@ -339,22 +339,18 @@ mgt.generic_type_id `
         wro.delivery_code AS delivery_code_other,
         wrt.receive_type_name,
         wr.receive_type_id
-   FROM
-       ${dateSetting} AS vscw
-   LEFT JOIN wm_receives AS wr ON wr.receive_id = vscw.document_ref_id
-   AND vscw.transaction_type = 'REV'
-   LEFT JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
-   AND vscw.transaction_type = 'REV_OTHER'
-   LEFT JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id
-   join mm_generics as mg ON mg.generic_id = vscw.generic_id
-   WHERE 
-   vscw.warehouse_id = '${warehouseId}'
-   AND
-   vscw.generic_id = '${genericId}'
-   AND vscw.stock_date BETWEEN '${startDate} 00:00:00'
-   AND '${endDate} 23:59:59'
-    ORDER BY
-        vscw.stock_card_id`
+        FROM ${dateSetting} AS vscw
+        LEFT JOIN wm_receives AS wr ON wr.receive_id = vscw.document_ref_id
+        AND vscw.transaction_type = 'REV'
+        LEFT JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
+        AND vscw.transaction_type = 'REV_OTHER'
+        LEFT JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id
+        join mm_generics as mg ON mg.generic_id = vscw.generic_id
+        WHERE vscw.warehouse_id = '${warehouseId}'
+        AND vscw.generic_id = '${genericId}'
+        AND vscw.stock_date BETWEEN '${startDate} 00:00:00'
+        AND '${endDate} 23:59:59'
+        ORDER BY vscw.stock_card_id`
         return knex.raw(sql)
     }
 
@@ -2055,6 +2051,7 @@ OR sc.ref_src like ?
     productReceive2(knex: Knex, receiveID) {
         let sql = `SELECT
         r.receive_id,
+        p.product_name,
         r.receive_code,
         r.receive_date,
         ppo.purchase_order_number,
@@ -2069,6 +2066,7 @@ OR sc.ref_src like ?
         lbp.NAME,
         wrd.cost,
         mg.generic_id,
+        mg.working_code as generic_code,
         mg.generic_name,
         wrd.expired_date,
         lbt.bid_name,

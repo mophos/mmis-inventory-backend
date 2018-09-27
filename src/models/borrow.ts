@@ -81,6 +81,34 @@ export class BorrowModel {
       .limit(limit).offset(offset);
   }
 
+  returnedAll(knex: Knex, warehouseId: any, limit: number, offset: number) {
+    return knex('wm_borrow as wmt')
+      .select('wmt.borrow_id', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
+        'src.warehouse_name as src_warehouse_name', 'src.short_code as src_warehouse_code', 'wmt.mark_deleted',
+        'dst.warehouse_name as dst_warehouse_name', 'dst.short_code as dst_warehouse_code', 'wmt.approved', 'wmt.confirmed')
+      .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
+      .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
+      .where('wmt.src_warehouse_id', warehouseId)
+      .andWhere('wmt.returned_approved', 'N')
+      .andWhere('wmt.mark_deleted', 'N')
+      .andWhere('wmt.approved', 'Y')
+      .orderBy('wmt.borrow_id', 'DESC')
+      .limit(limit)
+      .offset(offset);
+  }
+
+  returnedAllOther(knex: Knex, warehouseId: any, limit: number = 15, offset: number = 0) {
+    return knex('wm_borrow_other_summary as bo')
+      .select('bo.*', 'ww.warehouse_name')
+      .join('wm_warehouses as ww', 'ww.warehouse_id', 'bo.warehouse_id')
+      .where('bo.warehouse_id', warehouseId)
+      .andWhere('bo.returned_approved', 'N')
+      .andWhere('bo.is_cancel', 'N')
+      .andWhere('bo.approved', 'Y')
+      .orderBy('bo.borrow_other_id', 'desc')
+      .limit(limit).offset(offset);
+  }
+
   allReturned(knex: Knex, warehouseId: any, limit: number = 15, offset: number = 0) {
     return knex('wm_returned as r')
       .select('r.*', 'ww.warehouse_name')
@@ -99,6 +127,20 @@ export class BorrowModel {
   totalAllOther(knex: Knex, warehouseId: any) {
     return knex('wm_borrow_other_summary as b')
       .where('b.warehouse_id', warehouseId)
+      .count('* as total');
+  }
+
+  returnedTotalAll(knex: Knex, warehouseId: any) {
+    return knex('wm_borrow as b')
+      .where('b.src_warehouse_id', warehouseId)
+      .andWhere('b.returned_approved', 'N')
+      .count('* as total');
+  }
+
+  returnedTotalAllOther(knex: Knex, warehouseId: any) {
+    return knex('wm_borrow_other_summary as b')
+      .where('b.warehouse_id', warehouseId)
+      .andWhere('b.returned_approved', 'N')
       .count('* as total');
   }
 
@@ -629,73 +671,6 @@ export class BorrowModel {
       .insert(products);
   }
 
-  getReturnedOtherStatus(knex: Knex, limit: number, offset: number, warehouseId, status, sort: any = {}) {
-    let sql = `
-    select rt.*, rt.is_cancel, (select count(*) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as total,
-  (select sum(rtd.cost * rtd.receive_qty) from wm_receive_other_detail as rtd where rtd.receive_other_id=rt.receive_other_id) as cost,
-  rtt.receive_type_name, d.donator_name, ra.approve_id
-  from wm_receive_other as rt
-  left join wm_receive_types as rtt on rtt.receive_type_id=rt.receive_type_id
-  left join wm_donators as d on d.donator_id=rt.donator_id
-  left join wm_receive_approve as ra on ra.receive_other_id=rt.receive_other_id
-  WHERE rt.receive_other_id in (
-    SELECT
-      rod.receive_other_id
-    FROM
-      wm_receive_other_detail rod
-    WHERE
-      rod.warehouse_id = ${warehouseId}
-    AND rod.receive_other_id = rt.receive_other_id
-  )`;
-    if (status == 'approve') {
-      sql += ` and ra.receive_other_id is not null`
-    } else if (status == 'Napprove') {
-      sql += ` and ra.receive_other_id is null`
-    }
-
-    if (sort.by) {
-      let reverse = sort.reverse ? 'DESC' : 'ASC';
-      if (sort.by === 'receive_date') {
-        sql += ` order by rt.receive_date ${reverse}`;
-      }
-
-      if (sort.by === 'receive_code') {
-        sql += ` order by rt.receive_code ${reverse}`;
-      }
-
-      if (sort.by === 'donator_name') {
-        sql += ` order by d.donator_name ${reverse}`;
-      }
-
-    } else {
-      sql += ` order by rt.receive_code desc`;
-    }
-
-    sql += ` limit ${limit} offset ${offset}`;
-
-    return knex.raw(sql);
-  }
-
-  getReturnedOtherStatusTotal(knex: Knex, warehouseId, status) {
-    let sql = `
-    select count(*) as total from wm_returned as rt
-    where rt.returned_id in (
-      SELECT
-      rod.returned_id
-    FROM
-      wm_returned_detail rod
-    WHERE
-      rod.warehouse_id = '${warehouseId}'
-    AND rod.returned_id = rt.returned_id
-    ) `;
-    if (status == 'approve') {
-      sql += ` and ra.returned_id is not null`
-    } else if (status == 'Napprove') {
-      sql += ` and ra.returned_id is null`
-    }
-    return knex.raw(sql);
-  }
-
   getReturnedProductList(knex: Knex, returnedId: any) {
     let sql = `
     select 
@@ -833,5 +808,26 @@ export class BorrowModel {
 
     let queries = sqls.join(';');
     return knex.raw(queries);
+  }
+
+  updateReturnedApprove(knex: Knex, returnedIds: any) {
+    return knex('wm_borrow as b')
+      .join('wm_returned as r', 'b.returned_code', 'r.returned_code')
+      .whereIn('r.returned_id', returnedIds)
+      .update('b.returned_approved', 'Y');
+  }
+
+  updateReturnedApproveOther(knex: Knex, returnedIds: any) {
+    return knex('wm_borrow_other_summary as b')
+      .join('wm_returned as r', 'b.returned_code', 'r.returned_code')
+      .whereIn('r.returned_id', returnedIds)
+      .update('b.returned_approved', 'Y');
+  }
+
+  getBorrowDetail(knex: Knex, returnedId: any) {
+    return knex('wm_returned as r')
+      .leftJoin('wm_borrow as b', 'r.returned_code', 'b.returned_code')
+      .leftJoin('wm_borrow_other_summary as bo', 'r.returned_code', 'bo.returned_code')
+      .whereIn('r.returned_id', returnedId)
   }
 }
