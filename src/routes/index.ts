@@ -181,11 +181,11 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
     const rs: any = await inventoryReportModel.issueYear(db, year, warehouseId, genericType);
     rs[0].forEach(v => {
       v.unit_price = inventoryReportModel.comma(v.cost);
-      v.balance = inventoryReportModel.commaQty(v.balance/v.qty);
+      v.balance = inventoryReportModel.commaQty(v.balance / v.qty);
       v.in_qty = inventoryReportModel.commaQty(v.in_qty);
       v.out_qty = inventoryReportModel.commaQty(v.out_qty);
-      v.summit = inventoryReportModel.commaQty(v.summit/v.qty);
-      v.amount = inventoryReportModel.comma(v.balance*v.cost);
+      v.summit = inventoryReportModel.commaQty(v.summit / v.qty);
+      v.amount = inventoryReportModel.comma(v.balance * v.cost);
     });
     let committee: any = []
     for (let peopleId of people) {
@@ -934,7 +934,6 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
         e.out_qty_base = inventoryReportModel.commaQty(_out_qty);
       });
       generic_stock[0].forEach(v => {
-        console.log('xxxxxxxxxxxxxxxxxxx', v);
         const _in_qty = +v.in_qty;
         const _out_qty = +v.out_qty;
         const _conversion_qty = +v.conversion_qty;
@@ -2199,10 +2198,10 @@ router.get('/report/balance', wrap(async (req, res, next) => {
   res.render('balance', { hospitalName: hospitalName, balance: balance, warehouseName: warehouseName });
 }));
 
-router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, next) => {
+router.get('/report/product-receive', wrap(async (req, res, next) => {
   let db = req.db;
-  let startdate = req.params.startdate
-  let enddate = req.params.enddate
+  let startdate = req.query.startDate
+  let enddate = req.query.endDate
 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
@@ -2267,7 +2266,7 @@ router.get('/report/product/receive', wrap(async (req, res, next) => {
   });
   allcost = inventoryReportModel.comma(allcost);
 
-  res.render('productReceive2', {
+  res.render('productReceive3', {
     allcost: allcost,
     hospitalName: hospitalName,
     printDate: printDate(req.decoded.SYS_PRINT_DATE),
@@ -2789,11 +2788,11 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
         'MAX_QTY(หน่วยย่อย)': v.max_qty,
         'แพ็ค': v.pack,
         'ราคาต่อแพ็ค': v.cost,
-        'ยอดยกมา(หน่วยใหญ่)': v.summit/v.qty,
+        'ยอดยกมา(หน่วยใหญ่)': v.summit / v.qty,
         'รับ(หน่วยใหญ่)': v.in_qty,
         'จ่าย(หน่วยใหญ่)': v.out_qty,
-        'คงเหลือ(หน่วยใหญ่)': v.balance/v.qty,
-        'มูลค่า': v.balance*v.cost
+        'คงเหลือ(หน่วยใหญ่)': v.balance / v.qty,
+        'มูลค่า': v.balance * v.cost
         // WORKING_CODE: v.working_code,
         // GENERIC_CODE: v.generic_name,
         // PRODUCT_NAME: v.product_name,
@@ -3074,7 +3073,8 @@ router.get('/report/genericStock/haveMovement/', wrap(async (req, res, next) => 
   let _inventory_stock: any = [];
   let genericCode = [];
   let genericId = [];
-  let rs = await inventoryReportModel.getGenericInStockcrad(db, warehouseId, startDate, endDate)
+  let rs = await inventoryReportModel.getGenericInStockcrad(db, warehouseId, startDate, endDate, dateSetting)
+  rs = rs[0]
   rs.forEach(v => {
     genericId.push(v.generic_id)
   });

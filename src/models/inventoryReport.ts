@@ -2051,6 +2051,7 @@ OR sc.ref_src like ?
     productReceive2(knex: Knex, receiveID) {
         let sql = `SELECT
         r.receive_id,
+        p.product_name,
         r.receive_code,
         r.receive_date,
         ppo.purchase_order_number,
@@ -2065,6 +2066,7 @@ OR sc.ref_src like ?
         lbp.NAME,
         wrd.cost,
         mg.generic_id,
+        mg.working_code as generic_code,
         mg.generic_name,
         wrd.expired_date,
         lbt.bid_name,
@@ -2893,11 +2895,22 @@ OR sc.ref_src like ?
         return knex.raw(sql)
     }
 
-    getGenericInStockcrad(knex: Knex, warehouseId: string, startDate: any, endDate: any) {
-        return knex('view_stock_card_warehouse as vscw')
-            .select('vscw.generic_id', 'vscw.generic_name')
-            .where('vscw.warehouse_id', warehouseId)
-            .andWhereBetween('vscw.stock_date', [startDate, endDate])
-            .groupBy('vscw.generic_id')
+    getGenericInStockcrad(knex: Knex, warehouseId: string, startDate: any, endDate: any, dateSetting = 'view_stock_card_warehouse') {
+        let sql = `SELECT
+            vscw.generic_id,
+            mp.generic_name
+        FROM
+            ${dateSetting} AS vscw
+            join mm_generics as mp ON mp.generic_id = vscw.generic_id
+        WHERE
+            vscw.stock_date BETWEEN '${startDate} 00:00:00' 
+            AND '${endDate} 23:59:59'
+            AND vscw.warehouse_id = '${warehouseId}'
+            GROUP BY
+                vscw.generic_id
+            ORDER BY
+	            mp.generic_name`
+            // LIMIT 200 OFFSET 0
+        return knex.raw(sql)
     }
 }
