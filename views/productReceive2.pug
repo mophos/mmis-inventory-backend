@@ -1,0 +1,49 @@
+include css.pug
+style(media='print').
+style(type='text/css').
+  @page{
+    margin-top: 1.5cm;
+    margin-left: 0.3cm;
+    margin-right: 0.3cm;
+ }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    div(style="text-align:center;")
+      p.center.bold.head(colspan='12' style="font-size: 13pt;")
+        strong รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ
+      p.center.bold.head(colspan='12' style="font-size: 13pt;")
+        strong ตั้งแต่วันที่ #{startdate} ถึงวันที่ #{enddate}
+    br
+    table.table
+      thead
+        tr
+          th(style="font-size: 12pt;") ลำดับ
+          th(style="font-size: 12pt;") เลขที่ใบสั่งซื้อ
+          th(style="font-size: 12pt;") วันที่รับของ
+          th(style="font-size: 12pt;") รหัสเวชภัณฑ์
+          th(style="font-size: 12pt;") ชื่อเวชภัณฑ์
+          th(style="font-size: 12pt;") จำนวนรับ
+          th(style="font-size: 12pt;") ราคาต่อหน่วย
+          th(style="font-size: 12pt;") ราคาทั้งหมด
+          th(style="font-size: 12pt;") ผู้จัดจำหน่าย
+      tbody
+        - var y = 0
+          for b in productReceive
+            - y++
+              tr
+                td(style="width: 10px;text-align: center; font-size: 13pt;") #{y}
+                td(style="text-align: center; font-size: 13pt;") #{b.purchase_order_number}
+                td(style="text-align: left; font-size: 13pt;") #{b.receive_date}
+                td(style="text-align: center; font-size: 13pt;") #{b.generic_code}
+                td(style="text-align: left; font-size: 13pt;") #{b.generic_name}
+                  br
+                  | #{b.product_name}
+                td(style="text-align: center; font-size: 13pt;") #{b.receive_qty} #{b.large_unit} (#{b.conversion} #{b.small_unit})
+                td(style="text-align: center; font-size: 13pt;") #{b.cost}
+                td(style="text-align: center; font-size: 13pt;") #{b.total_cost}
+                td(style="text-align: left; font-size: 13pt;") #{b.labeler_name_po}

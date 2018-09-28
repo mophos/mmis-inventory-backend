@@ -2583,9 +2583,14 @@ OR sc.ref_src like ?
 
     productReceive(knex: Knex, startdate: any, enddate: any) {
         let sql = `SELECT
+        wr.delivery_code,
+        wr.receive_code,
         ppo.purchase_order_number,
         ppo.order_date,
         wr.receive_date,
+        wrd.receive_qty,
+        mu.unit_name as small_unit,
+        mu2.unit_name as large_unit,
         mg.working_code AS generic_code,
         mg.generic_name,
         mp.working_code AS product_code,
@@ -2599,7 +2604,8 @@ OR sc.ref_src like ?
         mgt.generic_type_name,
         mga.account_name,
         mgh. NAME AS generic_hosp_name,
-        ml.labeler_name
+        ml.labeler_name as labeler_name_po,
+        wrd.lot_no
       FROM
         wm_receives AS wr
       JOIN wm_receive_detail AS wrd ON wrd.receive_id = wr.receive_id

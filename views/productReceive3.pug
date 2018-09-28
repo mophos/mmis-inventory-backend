@@ -19,46 +19,57 @@ html
     table.table
       thead
         tr
-          td.center.bold.head(colspan='12' style="font-size: 13pt;") #{hospitalName}
+          td.center.bold.head(colspan='10' style="font-size: 13pt;") #{hospitalName}
         tr
-          td.center.bold.head(colspan='12' style="font-size: 13pt;") รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ
+          td.center.bold.head(colspan='10' style="font-size: 13pt;") รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ
+        //- tr
+        //-   td.center.bold.head(colspan='10' style="font-size: 13pt;") วันที่ #{startdate} ถึง #{enddate}
         tr
-          td.center.bold.head(colspan='12' style="font-size: 13pt;") วันที่ #{startdate} ถึง #{enddate}
-        tr
-          td.left(colspan='12' style="font-size: 13pt;") #{printDate}
+          td.left(colspan='10' style="font-size: 13pt;") #{printDate}
         tr.dash-top(style="font-size: 13pt;")
-          td.center ลำดับ
+          td.left เลขที่รับ
+          td.left วันรับของ
           td.left เลขที่ใบสั่งซื้อ
-          td.left วันที่รับของ
-          td.left รหัสเวชภัณฑ์
-          td.left ชื่อเวชภัณฑ์
-          td.left ชื่อทางการค้า
-          td.left จำนวน
-          td.left ราคาต่อหน่วย
-          td.left ราคาทั้งหมด
-          td.left ประเภท
-          td.left ชนิด
+          td.left เลขที่ใบส่งของ
           td.left บริษัทผู้จำหน่าย
-        tr.dash-bottom
-          td(colspan='12' style="font-size: 13pt;")
+          td Lot.
+          td.right ส่วนลด
+          td.right วิธีจัดซื้อ
+          td.right ประเภทงบ
+        tr.dash-bottom(style="font-size: 13pt;")
+          td 
+          td.left รหัสยา
+          td
+          td(colspan='2').left รายการยา
+          td 
+          td.right จำนวนที่รับ
+          td.right มูลค่า
+          td.right วันหมดอายุ
       tbody
         - var y = 0
           for b in productReceive
             - y++
               tr(style="font-size: 12pt;")
-                td.center #{y}
-                td.left #{b.purchase_order_number}
+                td.left #{b.receive_code}
                 td.left #{b.receive_date}
-                td.left #{b.generic_code}
-                td.left #{b.generic_name}
-                td.left #{b.product_name}
-                td.left #{b.receive_qty} #{b.large_unit} (#{b.qty} #{b.unit_name})
-                td.left #{b.cost}
-                td.left #{b.total_cost}
-                td.left #{b.generic_type_name}
-                td.left #{b.account_name}
-                td.left #{b.labeler_name}
+                td.left #{b.purchase_order_number}
+                td.left #{b.delivery_code}
+                td.left #{b.labeler_name_po}
+                td #{b.lot_no}
+                td.right(style='font-size: 10pt;') #{b.discount_cash}
+                td.right &nbsp;#{b.bid_name}
+                td.right #{b.bgtype_name}
+              tr(style="font-size: 13pt;")
+                td
+                td #{b.generic_id}
+                td.left(colspan='3')  #{b.generic_name}
+                td 
+                td.right #{b.receive_qty} x #{b.qty} (#{b.unit_name})
+                td.right #{b.total_cost}
+                td.right #{b.expired_date}
       tfooter
         tr
-          td.tbfooter(colspan="8")
-          td.tbfooter.right(colspan="4") รวม #{productReceive.length} รายการ มูลค่ารวม #{allcost} &nbsp;บาท
+          td.tbfooter(colspan="4")
+          td.tbfooter.right(colspan="2") รวม #{productReceive.length} รายการ
+          td.tbfooter.right(colspan="2") มูลค่ารวม #{allcost} 
+          td.tbfooter.left &nbsp;บาท
