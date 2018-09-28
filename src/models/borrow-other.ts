@@ -271,4 +271,10 @@ export class BorrowOther {
 
     return knex.raw(sql, [borrowId]);
   }
+
+  updateReturnedApprove(knex: Knex, borrowOtherIds: any) {
+    return knex('wm_borrow_other_summary')
+      .whereIn('borrow_other_id', borrowOtherIds)
+      .update('returned_approved', 'Y');
+  }
 }

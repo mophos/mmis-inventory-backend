@@ -11,7 +11,7 @@ html
     table.table(style="font-size: 13pt;")
       thead
         tr 
-          td.center(colspan='9') รายงานการตรวจสอบการรับ-จ่ายยา#{hospitalName}ประจำปีงบประมาณ #{year}(1 ตุลาคม #{year} - 30 กันยายน #{year})
+          td.center(colspan='9') รายงานการตรวจสอบการรับ-จ่ายยา#{hospitalName}ประจำปีงบประมาณ #{year}(1 ตุลาคม #{syear} - 30 กันยายน #{year})
         tr
           th.center.bold(style="border: 1px solid black;") รายการ
           th.center.bold(style="border: 1px solid black;") ขนาดบรรจุ
@@ -27,13 +27,13 @@ html
         - y++
         tr
           td.left(style="border: 1px solid black;") #{a.product_name}
-          td.center(style="border: 1px solid black;") #{a.pack}
-          td.center(style="border: 1px solid black;") #{a.unit_price}
-          td.right(style="border: 1px solid black;") #{a.balance_qty}
+          td.center(style="border: 1px solid black;") #{a.pack} (#{a.qty} #{a.small_unit})
+          td.center(style="border: 1px solid black;") #{a.cost}
+          td.right(style="border: 1px solid black;") #{a.summit}
           td.right(style="border: 1px solid black;") #{a.in_qty}
           td.right(style="border: 1px solid black;") #{a.out_qty}
-          td.right(style="border: 1px solid black;") #{a.summit_qty}
-          td.right(style="border: 1px solid black;") #{a.amount_qty}
+          td.right(style="border: 1px solid black;") #{a.balance}
+          td.right(style="border: 1px solid black;") #{a.amount}
       tfoot
         tr(style='border: 0; height:30px;')
           

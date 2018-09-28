@@ -178,14 +178,14 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
 
-    const rs: any = await inventoryReportModel.receiveIssueYear(db, year, warehouseId, genericType);
+    const rs: any = await inventoryReportModel.issueYear(db, year, warehouseId, genericType);
     rs[0].forEach(v => {
-      v.unit_price = inventoryReportModel.comma(v.unit_price);
-      v.balance_qty = inventoryReportModel.commaQty(v.balance_qty);
+      v.unit_price = inventoryReportModel.comma(v.cost);
+      v.balance = inventoryReportModel.commaQty(v.balance / v.qty);
       v.in_qty = inventoryReportModel.commaQty(v.in_qty);
       v.out_qty = inventoryReportModel.commaQty(v.out_qty);
-      v.summit_qty = inventoryReportModel.commaQty(v.summit_qty);
-      v.amount_qty = inventoryReportModel.comma(v.amount_qty);
+      v.summit = inventoryReportModel.commaQty(v.summit / v.qty);
+      v.amount = inventoryReportModel.comma(v.balance * v.cost);
     });
     let committee: any = []
     for (let peopleId of people) {
@@ -194,6 +194,7 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
       committee.push(pe[0])
     }
     res.render('issue_year', {
+      syear: year + 542,
       rs: rs[0],
       hospitalName: hospitalName,
       year: year + 543,
@@ -556,7 +557,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
     let hospitalName = hosdetail[0].hospname;
     const rline = await inventoryReportModel.getLine(db, 'LR')
     const line = rline[0].line;
-    // const printDateEdit = req.decoded.SYS_PRINT_DATE_EDIT;
+    const dateApprove = req.decoded.WM_REQUIS_LIST_DATE_APPROVE
     let _list_requis = [];
     for (let id of requisId) {
       let sPage = 1;
@@ -564,7 +565,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
       let array = [];
       let num = 0;
       let count = 0;
-      let header = await inventoryReportModel.getHeadRequis(db, id);
+      let header = await inventoryReportModel.getHeadRequis(db, id, dateApprove);
       header = header[0];
       if (header[0] === undefined) { res.render('error404'); }
       const objHead: any = {
@@ -1016,7 +1017,6 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
   warehouseName = warehouseName[0].warehouse_name
 
   for (let id in genericId) {
-
     summit = await inventoryReportModel.summit_stockcard(db, dateSetting, genericId[id], _startDate, warehouseId)
     generic_stock = await inventoryReportModel.generic_stock(db, dateSetting, genericId[id], _startDate, _endDate, warehouseId);
     inventory_stock = await inventoryReportModel.inventory_stockcard(db, dateSetting, genericId[id], _endDate, warehouseId)
@@ -1031,7 +1031,6 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
       } else {
         _unit.push(generic_stock[0][0].small_unit)
       }
-
       summit[0].forEach(e => {
         const _in_qty = +e.in_qty;
         const _out_qty = +e.out_qty;
@@ -1055,11 +1054,9 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
         } else {
           e.out_qty_show = '-';
         }
-
         e.in_qty_base = inventoryReportModel.commaQty(_in_qty);
         e.out_qty_base = inventoryReportModel.commaQty(_out_qty);
       });
-
       generic_stock[0].forEach(v => {
         const _in_qty = +v.in_qty;
         const _out_qty = +v.out_qty;
@@ -1114,7 +1111,6 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
         }
 
         v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost * _conversion_qty);
-
         v.in_qty_base = inventoryReportModel.commaQty(_in_qty);
         v.out_qty_base = inventoryReportModel.commaQty(_out_qty);
       });
@@ -2326,10 +2322,10 @@ router.get('/report/balance', wrap(async (req, res, next) => {
   res.render('balance', { hospitalName: hospitalName, balance: balance, warehouseName: warehouseName });
 }));
 
-router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, next) => {
+router.get('/report/product-receive', wrap(async (req, res, next) => {
   let db = req.db;
-  let startdate = req.params.startdate
-  let enddate = req.params.enddate
+  let startdate = req.query.startDate
+  let enddate = req.query.endDate
 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
@@ -2346,6 +2342,7 @@ router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, 
   productReceive.forEach(value => {
     allcost += value.total_cost;
     value.total_cost = inventoryReportModel.comma(value.total_cost);
+    value.cost = inventoryReportModel.comma(value.cost);
     value.receive_date = moment(value.receive_date).format('D/MM/YYYY');
     value.expired_date = moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543);
     if (value.discount_percent == null) value.discount_percent = '0.00%';
@@ -2393,7 +2390,7 @@ router.get('/report/product/receive', wrap(async (req, res, next) => {
   });
   allcost = inventoryReportModel.comma(allcost);
 
-  res.render('productReceive2', {
+  res.render('productReceive3', {
     allcost: allcost,
     hospitalName: hospitalName,
     printDate: printDate(req.decoded.SYS_PRINT_DATE),
@@ -2893,7 +2890,7 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
   const genericType = req.query.genericType
 
   try {
-    const rs: any = await inventoryReportModel.receiveIssueYear(db, year, warehouseId, genericType);
+    const rs: any = await inventoryReportModel.issueYear(db, year, warehouseId, genericType);
     let json = [];
 
     rs[0].forEach(v => {
@@ -2902,8 +2899,8 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
         'รหัส_Generics': v.working_code,
         'ชื่อสามัญ': v.generic_name,
         'ผู้จำหน่าย': v.m_labeler_name,
-        'CONVERSION': v.conversion,
-        'หน่วยเล็กสุด': v.baseunit,
+        'CONVERSION': v.qty,
+        'หน่วยเล็กสุด': v.small_unit,
         'บัญชียา': v.account_name,
         'ขนาด': v.dosage_name,
         'ประเภทยา': v.generic_hosp_name,
@@ -2914,12 +2911,12 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
         'MIN_QTY(หน่วยย่อย)': v.min_qty,
         'MAX_QTY(หน่วยย่อย)': v.max_qty,
         'แพ็ค': v.pack,
-        'ราคาต่อแพ็ค': v.unit_price,
-        'ยอดยกมา(หน่วยใหญ่)': v.balance_qty,
+        'ราคาต่อแพ็ค': v.cost,
+        'ยอดยกมา(หน่วยใหญ่)': v.summit / v.qty,
         'รับ(หน่วยใหญ่)': v.in_qty,
         'จ่าย(หน่วยใหญ่)': v.out_qty,
-        'คงเหลือ(หน่วยใหญ่)': v.summit_qty,
-        'มูลค่า': v.amount_qty
+        'คงเหลือ(หน่วยใหญ่)': v.balance / v.qty,
+        'มูลค่า': v.balance * v.cost
         // WORKING_CODE: v.working_code,
         // GENERIC_CODE: v.generic_name,
         // PRODUCT_NAME: v.product_name,
@@ -3200,7 +3197,8 @@ router.get('/report/genericStock/haveMovement/', wrap(async (req, res, next) => 
   let _inventory_stock: any = [];
   let genericCode = [];
   let genericId = [];
-  let rs = await inventoryReportModel.getGenericInStockcrad(db, warehouseId, startDate, endDate)
+  let rs = await inventoryReportModel.getGenericInStockcrad(db, warehouseId, startDate, endDate, dateSetting)
+  rs = rs[0]
   rs.forEach(v => {
     genericId.push(v.generic_id)
   });

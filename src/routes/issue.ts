@@ -90,7 +90,31 @@ router.post('/', co(async (req, res, next) => {
       let rs = await issueModel.getIssueApprove(db, id[0], warehouseId);
       rs = rs[0];
       let data = [];
-      rs.forEach(e => {
+
+      let balances = [];
+      let balancesG = [];
+      for (const e of rs[0]) {
+        let srcBalance = await issueModel.getBalance(db, e.product_id, warehouseId);
+        srcBalance = srcBalance[0];
+        let objBalance: any = {
+          product_id: srcBalance[0].product_id,
+          balance_qty: srcBalance[0].balance
+        }
+        const idx = _.findIndex(balances, { 'product_id': srcBalance[0].product_id });
+        if (idx == -1) {
+          balances.push(objBalance);
+        }
+        let objBalanceG: any = {
+          generic_id: srcBalance[0].generic_id,
+          balance_generic_qty: srcBalance[0].balance_generic
+        }
+        const idxG = _.findIndex(balances, { 'generic_id': srcBalance[0].generic_id });
+        if (idxG == -1) {
+          balancesG.push(objBalanceG);
+        }
+      }
+
+      for (const e of rs) {
         if (rs.out_qty != 0) {
           let objStockcard: any = {}
           objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -104,17 +128,32 @@ router.post('/', co(async (req, res, next) => {
           objStockcard.in_unit_cost = 0;
           objStockcard.out_qty = e.out_qty;
           objStockcard.out_unit_cost = e.out_unit_cost;
-          objStockcard.balance_qty = e.balance_qty;
           objStockcard.balance_unit_cost = e.balance_unit_cost;
           objStockcard.ref_src = warehouseId;
           objStockcard.ref_dst = e.ref_src;
           objStockcard.comment = e.transaction_name;
-          objStockcard.balance_generic_qty = e.balance_generic;
+
+          let srcBalance = 0;
+          let srcBalanceGeneric = 0;
+          let srcIdx = _.findIndex(balances, { product_id: e.product_id });
+          if (srcIdx > -1) {
+            balances[srcIdx].balance_qty -= +e.out_qty;
+            srcBalance = balances[srcIdx].balance_qty
+          }
+
+          let srcIdxG = _.findIndex(balancesG, { generic_id: e.generic_id });
+          if (srcIdxG > -1) {
+            balancesG[srcIdxG].balance_generic_qty -= +e.out_qty;
+            srcBalanceGeneric = balancesG[srcIdxG].balance_generic_qty;
+          }
+
+          objStockcard.balance_qty = srcBalance;
+          objStockcard.balance_generic_qty = srcBalanceGeneric;
           objStockcard.lot_no = e.lot_no;
           objStockcard.expired_date = e.expired_date;
           data.push(objStockcard)
         }
-      });
+      }
 
       await stockCardModel.saveFastStockTransaction(db, data);
     }
@@ -206,12 +245,34 @@ router.post('/approve', co(async (req, res, next) => {
       }
 
       let rs = await issueModel.getIssueApprove(db, v, warehouseId);
-
       let data = [];
       let _cutProduct = [];
+      let balances = [];
+      let balancesG = [];
+      for (const e of rs[0]) {
+        let srcBalance = await issueModel.getBalance(db, e.product_id, warehouseId);
+        srcBalance = srcBalance[0];
+        let objBalance: any = {
+          product_id: srcBalance[0].product_id,
+          balance_qty: srcBalance[0].balance
+        }
+        const idx = _.findIndex(balances, { 'product_id': srcBalance[0].product_id });
+        if (idx == -1) {
+          balances.push(objBalance);
+        }
+        let objBalanceG: any = {
+          generic_id: srcBalance[0].generic_id,
+          balance_generic_qty: srcBalance[0].balance_generic
+        }
+        const idxG = _.findIndex(balances, { 'generic_id': srcBalance[0].generic_id });
+        if (idxG == -1) {
+          balancesG.push(objBalanceG);
+        }
+      }
 
-      rs[0].forEach(e => {
-        if (rs.out_qty != 0) {
+
+      for (const e of rs[0]) {
+        if (e.out_qty != 0) {
           let objStockcard: any = {};
           let cutProduct: any = {};
           objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -225,12 +286,27 @@ router.post('/approve', co(async (req, res, next) => {
           objStockcard.in_unit_cost = 0;
           objStockcard.out_qty = e.out_qty;
           objStockcard.out_unit_cost = e.out_unit_cost;
-          objStockcard.balance_qty = e.balance_qty;
           objStockcard.balance_unit_cost = e.balance_unit_cost;
           objStockcard.ref_src = warehouseId;
           objStockcard.ref_dst = e.ref_src;
           objStockcard.comment = e.transaction_name;
-          objStockcard.balance_generic_qty = e.balance_generic;
+
+          let srcBalance = 0;
+          let srcBalanceGeneric = 0;
+          let srcIdx = _.findIndex(balances, { product_id: e.product_id });
+          if (srcIdx > -1) {
+            balances[srcIdx].balance_qty -= +e.out_qty;
+            srcBalance = balances[srcIdx].balance_qty
+          }
+
+          let srcIdxG = _.findIndex(balancesG, { generic_id: e.generic_id });
+          if (srcIdxG > -1) {
+            balancesG[srcIdxG].balance_generic_qty -= +e.out_qty;
+            srcBalanceGeneric = balancesG[srcIdxG].balance_generic_qty;
+          }
+
+          objStockcard.balance_qty = srcBalance;
+          objStockcard.balance_generic_qty = srcBalanceGeneric;
           objStockcard.lot_no = e.lot_no;
           objStockcard.expired_date = e.expired_date;
           data.push(objStockcard)
@@ -238,7 +314,7 @@ router.post('/approve', co(async (req, res, next) => {
           cutProduct.wm_product_id = e.wm_product_id;
           _cutProduct.push(cutProduct);
         }
-      });
+      }
       v = Array.isArray(v) ? v : [v];
       await issueModel.updateSummaryApprove(db, v, summary);
       // update wm_product
