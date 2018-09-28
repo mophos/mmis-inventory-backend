@@ -25,7 +25,19 @@ router.get('/getList/:limit/:offset', async (req, res, next) => {
     db.destroy();
   }
 });
-
+router.get('/getPickEdit/:pickId', async (req, res, next) => {
+  let db = req.db;
+  let pick_id = req.params.pickId
+  try {
+    let rs: any = await pickModel.getPick(db, pick_id);
+    let rsd: any = await pickModel.getPickEdit(db, pick_id)
+    res.send({ ok: true, rows: rs, products: rsd });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
 router.get('/getPick/:pickId', async (req, res, next) => {
   let db = req.db;
   let pick_id = req.params.pickId
@@ -114,6 +126,7 @@ router.get('/gerReceiveItem', async (req, res, next) => {
     res.send({ ok: false, error: 'กรุณาระบุเลขที่ใบรับ' });
   }
 });
+
 router.get('/getDetail/:pickId', async (req, res, next) => {
   let db = req.db;
   let pickId = req.params.pickId;

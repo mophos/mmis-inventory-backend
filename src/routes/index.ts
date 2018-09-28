@@ -422,6 +422,130 @@ router.get('/report/UnPaid/requis', wrap(async (req, res, next) => {
   }
 }));
 
+router.get('/report/list/pick', wrap(async (req, res, next) => {
+  let db = req.db;
+  try {
+    // let pickId = req.query.pickId;
+    // pickId = Array.isArray(pickId) ? pickId : [pickId]
+    // console.log(pickId);
+    
+    // let hosdetail = await inventoryReportModel.hospital(db);
+    // let hospitalName = hosdetail[0].hospname;
+    // const rline = await inventoryReportModel.getLine(db, 'PI')
+    // const line = rline[0].line;
+    // // const printDateEdit = req.decoded.SYS_PRINT_DATE_EDIT;
+    // let _list_requis = [];
+    // for (let id of pickId) {
+    //   let sPage = 1;
+    //   let ePage = 1;
+    //   let array = [];
+    //   let num = 0;
+    //   let count = 0;
+    //   let header = await inventoryReportModel.getHeadPick(db, id);
+    //   header = header;
+    //   if (header[0] === undefined) { res.render('error404'); }
+    //   const objHead: any = {
+    //     sPage: sPage,
+    //     ePage: ePage,
+    //     pick_date: dateToDDMMYYYY(header[0].pick_date),
+    //     pick_code: header[0].pick_code,
+    //     // confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+    //     warehouse_name: header[0].warehouse_name,
+    //     // withdraw_warehouse_name: header[0].withdraw_warehouse_name,
+    //     title: []
+    //   }
+    //   array[num] = _.clone(objHead);
+
+    //   let title = await inventoryReportModel.getDetailPick(db, header[0].pick_id);
+    //   // array.push( title);
+    //   let numTitle = 0;
+    //   // count += 7;
+    //   for (let tv of title) {
+    //     let rs = await inventoryReportModel.getDetailListPick(db, tv.pick_id, 505, tv.generic_id);
+    //     count += 5;
+    //     if (count + rs[0].length >= line) {
+    //       numTitle = 0;
+    //       count = 0;
+    //       sPage++;
+    //       ePage++;
+    //       count += 7;
+    //       for (const v of array) {
+    //         v.ePage = ePage;
+    //       }
+    //       num++;
+    //       const objHead: any = {
+    //         sPage: sPage,
+    //         ePage: ePage,
+    //         pick_date: dateToDDMMYYYY(header[0].pick_date),
+    //         pick_code: header[0].pick_code,
+    //         confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+    //         warehouse_name: header[0].warehouse_name,
+    //         // withdraw_warehouse_name: header[0].withdraw_warehouse_name,
+    //         title: []
+    //       }
+    //       array[num] = _.clone(objHead);
+    //     }
+    // //     const objTitle = {
+    // //       generic_code: tv.working_code,
+    // //       generic_name: tv.generic_name,
+    // //       product_name: tv.product_name,
+    // //       generic_id: tv.generic_id,
+    // //       product_id: tv.product_id,
+    // //       requisition_qty: commaQty(+tv.requisition_qty / +tv.requisition_conversion_qty),
+    // //       requisition_conversion_qty: tv.requisition_conversion_qty,
+    // //       requisition_large_unit: tv.requisition_large_unit,
+    // //       requisition_small_unit: tv.requisition_small_unit,
+    // //       large_unit: tv.large_unit,
+    // //       unit_qty: tv.unit_qty,
+    // //       small_unit: tv.small_unit,
+    // //       confirm_qty: commaQty(tv.confirm_qty / tv.unit_qty),
+    // //       remain: tv.remain,
+    // //       dosage_name: tv.dosage_name,
+    // //       items: []
+    //     // }
+    // //     array[num].title[numTitle] = _.clone(objTitle);
+    // //     for (const v of rs[0]) {
+    // //       count++;
+    // //       if (v.generic_code == 0 || v.confirm_qty != 0) {
+    // //         const objItems: any = {};
+    // //         objItems.generic_name = v.generic_name;
+    // //         objItems.product_name = v.product_name;
+    // //         objItems.large_unit = v.large_unit;
+    // //         objItems.small_unit = v.small_unit;
+    // //         objItems.confirm_qty = v.generic_code == 0 ? '' : (v.confirm_qty / v.conversion_qty) + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ' )';
+    // //         objItems.remain = v.remain;
+    // //         objItems.lot_no = v.lot_no;
+    // //         objItems.expired_date = dateToDMMYYYY(v.expired_date);
+    // //         objItems.conversion_qty = v.conversion_qty;
+    // //         objItems.is_approve = v.is_approve;
+    // //         objItems.location_name = v.location_name !== null ? v.location_name : '-';
+    // //         if (v.is_approve == "N") {
+    // //           objItems.remain = commaQty(Math.round((+v.remain - +v.confirm_qty) / +v.conversion_qty));
+    // //         } else {
+    // //           objItems.remain = commaQty(Math.round(+v.remain / +v.conversion_qty));
+    // //         }
+    // //         array[num].title[numTitle].items.push(_.clone(objItems));
+    // //       }
+    // //     }
+    // //     numTitle++;
+    //   }
+    //   _list_requis.push(array);
+    // }
+    res.render('error404');
+    // res.send({_list_requis : _list_requis })
+    // res.render('list_requis', {
+    //   hospitalName: hospitalName,
+    //   printDate: printDate(req.decoded.SYS_PRINT_DATE),
+    //   list_requis: _list_requis,
+    // });
+  } catch (error) {
+    // console.log(error);
+    res.send({ ok: false, error: error.message })
+  } finally {
+    db.destroy();
+  }
+}));
+
 router.get('/report/list/requis', wrap(async (req, res, next) => {
   let db = req.db;
   try {

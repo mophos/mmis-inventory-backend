@@ -2250,6 +2250,7 @@ OR sc.ref_src like ?
       ORDER BY mg.generic_id`
         return knex.raw(sql);
     }
+    getDetailListPick(knex: Knex, requisId, warehouseId, genericId) {}
     getDetailListRequis(knex: Knex, requisId, warehouseId, genericId) {
         let sql = `select * from (SELECT
           mg.working_code AS generic_code,
@@ -2347,6 +2348,41 @@ OR sc.ref_src like ?
         group by a.product_id,a.lot_no
         ORDER BY a.generic_code desc, a.product_id asc`
         return knex.raw(sql);
+    }
+    getListHeadPick(knex: Knex, pickId: any) {
+        return knex('wm_pick as p')
+            .select('p.*', 'ww.warehouse_name', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
+            .join('wm_warehouses as ww', 'ww.warehouse_id', 'p.wm_pick')
+            .leftJoin('um_people as up', 'up.people_id', 'p.people_id')
+            .leftJoin('um_titles as t', 't.title_id', 'up.title_id')
+            .where('p.pick_id', pickId)
+    }
+    getHeadPick(knex: Knex, pickId: any) {
+        return knex('wm_pick as p')
+            .select('p.*', 'ww.warehouse_name', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
+            .join('wm_warehouses as ww', 'ww.warehouse_id', 'p.wm_pick')
+            .leftJoin('um_people as up', 'up.people_id', 'p.people_id')
+            .leftJoin('um_titles as t', 't.title_id', 'up.title_id')
+            .where('p.pick_id', pickId)
+    }
+    getDetailPick(knex: Knex, pickId: any) {
+        return knex('wm_pick_detail as wpd')
+            .select(
+                'mgd.dosage_name',
+                'p.generic_id',
+                'ra.approve_id',
+                knex.raw(`(select sum(pd.pick_qty) from wm_pick_detail as pd join wm_pick as p on p.pick_id = pd.pick_id  where p.is_approve = 'Y' and pd.product_id = wpd.product_id and pd.lot_no = wpd.lot_no and pd.receive_id = wpd.receive_id and pd.unit_generic_id = wpd.unit_generic_id group by pd.unit_generic_id, pd.product_id,pd.lot_no,pd.receive_id) as remain_qty`),
+                'wpd.*', 'p.product_name', 'wpd.lot_no', 'u1.unit_name as small_unit', 'u2.unit_name as large_unit', 'mu.qty as base_unit', 'r.receive_code', 'wpd.receive_id', 'r.is_cancel'
+            ,knex.raw(`(select sum(rd.receive_qty) as receive_qty from wm_receive_detail as rd where rd.receive_id = wpd.receive_id and rd.product_id = wpd.product_id and rd.lot_no = wpd.lot_no and rd.unit_generic_id = wpd.unit_generic_id group by rd.product_id,rd.unit_generic_id,rd.lot_no,rd.receive_id ) as receive_qty`))
+            .innerJoin('wm_receives as r', 'r.receive_id', 'wpd.receive_id')
+            .innerJoin('mm_products as p', 'p.product_id', 'wpd.product_id')
+            .leftJoin('mm_generics as g', 'g.generic_id', 'p.generic_id')
+            .leftJoin('mm_generic_dosages as mgd', 'mgd.dosage_id','g.dosage_id' )
+            .leftJoin('mm_unit_generics as mu', 'mu.unit_generic_id', 'wpd.unit_generic_id')
+            .leftJoin('mm_units as u1', 'u1.unit_id', 'mu.to_unit_id')
+            .leftJoin('mm_units as u2', 'u2.unit_id', 'mu.from_unit_id')
+            .leftJoin('wm_receive_approve as ra','ra.receive_id','wpd.receive_id')
+            .where('wpd.pick_id', pickId)
     }
     getHeadRequis(knex: Knex, requisId) {
         let sql = `SELECT
