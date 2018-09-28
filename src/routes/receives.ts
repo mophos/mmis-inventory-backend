@@ -322,8 +322,7 @@ router.put('/:receiveId', co(async (req, res, next) => {
 
   let products: any = [];
   products = req.body.products;
-  if (receiveId && summary.deliveryCode && summary.deliveryDate &&
-    summary.supplierId && summary.receiveDate && products.length) {
+  if (receiveId && summary.deliveryCode && summary.deliveryDate &&summary.supplierId && summary.receiveDate && products.length) {
 
     const data: any = {
       // receive_code: summary.receiveCode,
@@ -382,7 +381,7 @@ router.put('/:receiveId', co(async (req, res, next) => {
       } else {
 
         // product is in PO 
-<<<<<<< HEAD
+
         let rsProductPick = await receiveModel.getPickDetailCheck(db, receiveId);
         let passPick = true;
         let proSum: any = [];
@@ -415,62 +414,26 @@ router.put('/:receiveId', co(async (req, res, next) => {
           }
         }
         if (passPick) {
-          if (summary.purchaseOrderId) {
-            let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId); // 100
-            let rsReceived = await receiveModel.getTotalPricePurcehaseReceivedWithoutOwner(db, summary.purchaseOrderId, receiveId);
-            console.log('----');
-            console.log(+rsReceived[0].total )
-            console.log(totalPriceReceive);
-            console.log( +rsPo[0].total);
-            let totalPrice = +rsReceived[0].total + totalPriceReceive;
-            if (+totalPrice > +rsPo[0].total) {
-              res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
-            } else {
-              let temp = summary.receiveCode.split('-');
-              if (temp[0] === 'RT') {
-                let receiveCode = await serialModel.getSerial(db, 'RV');
-                data.receive_code = receiveCode;
-              }
-=======
-        // let rsProductPick = await receiveModel.getPickDetailCheck(db, receiveId);
-        // let passPick = true;
-        // let proSum: any = [];
-        // console.log(productsData);
-        // for (let p of productsData) {
-        //   let item = {
-        //     receive_id: p.receive_id,
-        //     product_id: p.product_id,
-        //     receive_qty: p.receive_qty,
-        //     unit_generic_id: p.unit_generic_id,
-        //     lot_no: p.lot_no
-        //   }
-        //   if (proSum.length < 1) { proSum.push(item); }
-        //   else {
-        //     let i = _.findIndex(proSum, { product_id: p.product_id, lot_no: p.lot_no, unit_generic_id: p.unit_generic_id })
-        //     console.log(i);
-        //     if (i !== -1) {
-        //       proSum[i].receive_qty += p.receive_qty
-        //     } else {
-        //       proSum.push(item)
-        //     }
-        //   }
-        // }
-        // for (let item of rsProductPick) {
-        //   let idx = _.findIndex(proSum, { product_id: item.product_id, lot_no: item.lot_no, unit_generic_id: item.unit_generic_id });
-        //   if (idx > -1) {
-        //     if (proSum[idx].receive_qty < item.pick_qty) {
-        //       passPick = false;
-        //     }
-        //   } else {
-        //     passPick = false;
-        //   }
-        // }
-        // if (passPick) {
+          // if (summary.purchaseOrderId) {
+          //   let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId); // 100
+          //   let rsReceived = await receiveModel.getTotalPricePurcehaseReceivedWithoutOwner(db, summary.purchaseOrderId, receiveId);
+          //   console.log('----');
+          //   console.log(+rsReceived[0].total )
+          //   console.log(totalPriceReceive);
+          //   console.log( +rsPo[0].total);
+          //   let totalPrice = +rsReceived[0].total + totalPriceReceive;
+          //   if (+totalPrice > +rsPo[0].total) {
+          //     res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
+          //   } else {
+          //     let temp = summary.receiveCode.split('-');
+          //     if (temp[0] === 'RT') {
+          //       let receiveCode = await serialModel.getSerial(db, 'RV');
+          //       data.receive_code = receiveCode;
+          //     }
+
         if (summary.purchaseOrderId) {
           let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId); // 100
           let rsReceived = await receiveModel.getTotalPricePurcehaseReceivedWithoutOwner(db, summary.purchaseOrderId, receiveId);
->>>>>>> 372098fc83baffca02b33442457b5ca0b9b10899
-
           let totalPrice = +rsReceived[0].total + totalPriceReceive;
           if (+totalPrice > +rsPo[0].total) {
             res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
@@ -503,12 +466,6 @@ router.put('/:receiveId', co(async (req, res, next) => {
               res.send({ ok: false, error: 'มีรายการสินค้าบางรายการไม่ได้อยู่ในใบสั่งซื้อ' })
             }
           }
-<<<<<<< HEAD
-        }
-        else {
-          res.send({ ok: false, push: true, error: 'มีรายการรับที่ถูกยืนยันการหยิบแล้ว' });
-        }
-=======
         } else {
           await receiveModel.updateReceiveSummary(db, receiveId, data);
           // remove old data
@@ -521,12 +478,9 @@ router.put('/:receiveId', co(async (req, res, next) => {
           }
           res.send({ ok: true });
         }
-        // }
-        // else {
-        //   res.send({ ok: false, push: true, error: 'มีรายการรับที่ถูกยืนยันการหยิบแล้ว' });
-        // }
->>>>>>> 372098fc83baffca02b33442457b5ca0b9b10899
-
+        } else {
+          res.send({ ok: false, push: true, error: 'มีรายการรับที่ถูกยืนยันการหยิบแล้ว' });
+        }
 
 
       }
@@ -848,482 +802,173 @@ router.post('/approve', co(async (req, res, next) => {
   let comment = req.body.comment;
   let approveDate = req.body.approveDate;
 
-  try {
-    let approveDatas = [];
-    for (const v of receiveIds) {
-      const checkApprove = await receiveModel.checkDuplicatedApprove(db, v);
-      if (checkApprove[0].total > 0) {
-        const idx = _.indexOf(receiveIds, v);
-        if (idx > -1) {
-          receiveIds.splice(idx, 1);
-        }
-      } else {
-        let _approveData = {
-          approve_date: approveDate,
-          created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
-          people_user_id: req.decoded.people_user_id,
-          receive_id: v,
-          comment: comment
-        }
-        approveDatas.push(_approveData);
-      }
-    }
-
-    if (!receiveIds.length) {
-      res.send({ ok: false, error: 'ไม่มีรายการอนุมัติ กรุณา refresh ใหม่' });
-    } else {
-      // Todo
-      // ดึงรายการวันที่ทั้งหมดของใบรับ (มีหลายใบ) แล้ววนลูปเพื่อดูว่ามีรายการใด อยู่ในช่วงปิดงบหรือเปล่า
-
-      // let year = moment(summary.receiveDate, 'YYYY-MM-DD').get('year');
-      // let month = moment(summary.receiveDate, 'YYYY-MM-DD').get('month') + 1;
-
-      // let isClose = await periodModel.isPeriodClose(db, year, month);
-
-      // if (isClose) {
-      //   res.send({ ok: false, error: 'บัญชีถูกปิดแล้ว' });
-      // } else {
-
-      // }
-
-      await receiveModel.removeOldApprove(db, receiveIds);
-      await receiveModel.saveApprove(db, approveDatas);
-      // get product
-      let _rproducts = await receiveModel.getReceiveProductsImport(db, receiveIds);
-      let adjust_price = []; // ปรับราคาต่อแพค
-      let products: any = [];
-      _rproducts.forEach((v: any) => {
-        let id = uuid();
-        let obj_adjust: any = {};
-        // let reqQty = +v.requisition_qty || 0;
-        let obj: any = {
-          wm_product_id: id,
-          warehouse_id: v.warehouse_id,
-          vendor_labeler_id: v.vendor_labeler_id,
-          product_id: v.product_id,
-          generic_id: v.generic_id,
-          balance: v.balance,
-          receive_code: v.receive_code,
-          receive_id: v.receive_id,
-          qty: (v.receive_qty * v.conversion_qty),
-          price: (v.cost * v.receive_qty) / (v.receive_qty * v.conversion_qty),
-          cost: (v.cost * v.receive_qty) / (v.receive_qty * v.conversion_qty),
-          lot_no: v.lot_no,
-          expired_date: moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date, 'YYYY-MM-DD').format('YYYY-MM-DD') : null,
-          unit_generic_id: v.unit_generic_id,
-          location_id: +v.location_id,
-          people_user_id: req.decoded.people_user_id,
-          created_at: moment().format('YYYY-MM-DD HH:mm:ss')
-        };
-        // add product
-        products.push(obj);
-        //ปรับราคาต่อแพค
-        obj_adjust.unit_generic_id = v.unit_generic_id;
-        obj_adjust.cost = v.cost;
-        if (v.cost > 0) {
-          adjust_price.push(obj_adjust);
-        }
-      });
-
-      // get balance
-      let warehouseId = req.decoded.warehouseId;
-      let balances = await receiveModel.getProductRemainByReceiveIds(db, receiveIds, warehouseId);
-      balances = balances[0];
-      // save stockcard
-      let data = [];
-      products.forEach(v => {
-        let obj: any = {};
-
-        obj.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-        obj.product_id = v.product_id;
-        obj.generic_id = v.generic_id;
-        obj.unit_generic_id = v.unit_generic_id;
-        obj.transaction_type = TransactionType.RECEIVE;
-        obj.document_ref_id = v.receive_id;
-        obj.document_ref = v.receive_code;
-        obj.in_qty = v.qty;
-        obj.in_unit_cost = v.cost;
-
-        let balance = 0;
-        let balance_generic = 0; let idx = _.findIndex(balances, {
-          product_id: v.product_id,
-          warehouse_id: v.warehouse_id
-        });
-
-        if (idx > -1) {
-          balance = balances[idx].balance + v.qty;
-          balance_generic = balances[idx].balance_generic + v.qty;
-          balances[idx].balance += v.qty;
-          balances[idx].balance_generic += v.qty;
-        }
-
-<<<<<<< HEAD
-    // stock card receive
-    await receiveModel.saveProducts(db, products);
-    await stockcard.saveFastStockTransaction(db, data);
-    await receiveModel.adjustCost(db, adjust_price);
-    // res.send({ ok: true });
-
-    try { // close pick
-      let rdPick: any = await receiveModel.getPickCheck(db, receiveIds)
-      let rsWp = []
-      let dstProducts = []
-      let items = []
-      let stockCard = []
-      let rsStock: any = []
-      let pickIds: any = [];
-      if (!Array.isArray(rdPick) || !rdPick.length) {
-        res.send({ ok: true });
-      } else {
-        for (let item of rdPick) {
-          let _rsWp: any = await receiveModel.getWmProduct(db, item)
-          if (_rsWp[0]) {
-            _rsWp[0].wm_pick = item.wm_pick
-            item.wm_product_id = _rsWp[0].wm_product_id
-            rsWp.push(_rsWp[0])
-            pickIds.push(item.pick_id)
-            if (item.pick_qty != 0) {
-              // wmProductIds.push(v.wm_product_id);
-              dstProducts.push({
-                qty: item.pick_qty * item.conversion_qty,
-                wm_product_id: item.wm_product_id,
-                warehouse_id: 505
-              });
-              items.push({
-                qty: item.pick_qty * item.conversion_qty,
-                wm_product_id: item.wm_product_id
-              });
-            }
-          }
-        }
-        let products2: any = [];
-
-
-        rsWp.forEach((v: any) => {
-          let id = uuid();
-          let qty = 0;
-          let idx = _.findIndex(items, { wm_product_id: v.wm_product_id });
-          if (idx > -1) {
-            qty = items[idx].qty;
-            let obj: any = {
-              wm_product_id: id,
-              warehouse_id: v.wm_pick,
-              // vendor_labeler_id: v.vendor_labeler_id,
-              product_id: v.product_id,
-              // generic_id: v.generic_id,
-              qty: qty,
-              price: v.cost,
-              cost: v.cost,
-              lot_no: v.lot_no,
-              expired_date: moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null,
-              unit_generic_id: v.unit_generic_id,
-              location_id: +v.location_id,
-              people_user_id: req.decoded.people_user_id,
-              created_at: moment().format('YYYY-MM-DD HH:mm:ss')
-            };
-            products2.push(obj);
-          }
-        });
-
-        rsStock = await receiveModel.getStockItem(db, pickIds)
-        rsStock = rsStock[0]
-        let balances = [];
-        for (let s of rsStock) {
-          let srcObjBalance: any = {};
-          let dstObjBalance: any = {};
-          let srcBalance = await receiveModel.getBalance(db, s.product_id, s.src_warehouse);
-          srcBalance[0].forEach(v => {
-            srcObjBalance.product_id = v.product_id;
-            srcObjBalance.warehouse_id = v.warehouse_id;
-            srcObjBalance.balance_qty = v.balance;
-            srcObjBalance.balance_generic_qty = v.balance_generic;
-          });
-          balances.push(srcObjBalance);
-          let dstBalance = await receiveModel.getBalance(db, s.product_id, s.dst_warehouse)
-          dstBalance[0].forEach(v => {
-            dstObjBalance.product_id = v.product_id;
-            dstObjBalance.warehouse_id = v.warehouse_id;
-            dstObjBalance.balance_qty = v.balance;
-            dstObjBalance.balance_generic_qty = v.balance_generic;
-          });
-          balances.push(dstObjBalance);
-        }
-
-        rsStock.forEach(v => {
-          let objStockcardOut: any = {}
-          let objStockcardIn: any = {}
-          objStockcardOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-          objStockcardOut.product_id = v.product_id;
-          objStockcardOut.generic_id = v.generic_id;
-          objStockcardOut.unit_generic_id = v.unit_generic_id;
-          objStockcardOut.transaction_type = 'REQ_OUT';
-          objStockcardOut.document_ref_id = v.pick_id;
-          objStockcardOut.document_ref = v.pick_code;
-          objStockcardOut.lot_no = v.lot_no;
-          objStockcardOut.expired_date = v.expired_date;
-          objStockcardOut.in_qty = 0;
-          objStockcardOut.in_unit_cost = 0;
-          objStockcardOut.out_qty = v.confirm_qty;
-          objStockcardOut.out_unit_cost = v.cost;
-
-          let srcBalance = 0;
-          let srcBalanceGeneric = 0;
-          let srcIdx = _.findIndex(balances, {
-            product_id: v.product_id,
-            warehouse_id: v.src_warehouse,
-          });
-          if (srcIdx > -1) {
-            balances[srcIdx].balance_qty -= +v.confirm_qty;
-            srcBalance = balances[srcIdx].balance_qty
-            balances[srcIdx].balance_generic_qty -= +v.confirm_qty;
-            srcBalanceGeneric = balances[srcIdx].balance_generic_qty;
-          }
-          objStockcardOut.balance_qty = srcBalance;
-          objStockcardOut.balance_generic_qty = srcBalanceGeneric;
-
-          objStockcardOut.balance_unit_cost = v.cost;
-          objStockcardOut.ref_src = v.src_warehouse;
-          objStockcardOut.ref_dst = v.dst_warehouse;
-          objStockcardOut.comment = 'ให้เบิกโดยการหยิบ';
-          stockCard.push(objStockcardOut);
-
-          objStockcardIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-          objStockcardIn.product_id = v.product_id;
-          objStockcardIn.generic_id = v.generic_id;
-          objStockcardIn.unit_generic_id = v.unit_generic_id;
-          objStockcardIn.transaction_type = 'REQ_IN';
-          objStockcardIn.document_ref_id = v.pick_id;
-          objStockcardIn.document_ref = v.pick_code;
-          objStockcardIn.lot_no = v.lot_no;
-          objStockcardIn.expired_date = v.expired_date;
-          objStockcardIn.in_qty = v.confirm_qty;
-          objStockcardIn.in_unit_cost = v.cost;
-          objStockcardIn.out_qty = 0
-          objStockcardIn.out_unit_cost = 0
-
-          let dstBalance = 0;
-          let dstBalanceGeneric = 0;
-          let dstIdx = _.findIndex(balances, {
-            product_id: v.product_id,
-            warehouse_id: v.dst_warehouse,
-          });
-          if (dstIdx > -1) {
-            balances[dstIdx].balance_qty += +v.confirm_qty;
-            dstBalance = balances[dstIdx].balance_qty;
-            balances[dstIdx].balance_generic_qty += +v.confirm_qty;
-            dstBalanceGeneric = balances[dstIdx].balance_generic_qty;
-          } else {
-            dstBalance = +v.confirm_qty;
-            dstBalanceGeneric = +v.confirm_qty;
-          }
-          objStockcardIn.balance_qty = dstBalance
-          objStockcardIn.balance_generic_qty = dstBalanceGeneric;
-          objStockcardIn.balance_unit_cost = v.cost;
-          objStockcardIn.ref_src = v.dst_warehouse;
-          objStockcardIn.ref_dst = v.src_warehouse;
-          objStockcardIn.comment = 'เบิกโดยการหยิบ';
-          stockCard.push(objStockcardIn);
-        })
-        await stockcard.saveFastStockTransaction(db, stockCard);
-        await productModel.saveProducts(db, products2);
-        await receiveModel.decreaseQtyPick(db, dstProducts);
-        res.send({ ok: true });
-      }
-    } catch (error) {
-      res.send({ ok: false, error: error.message });
-    }
-=======
-        obj.balance_qty = balance;
-        obj.balance_generic_qty = balance_generic;
-        obj.balance_unit_cost = v.cost;
-        obj.ref_src = v.vendor_labeler_id;
-        obj.ref_dst = v.warehouse_id;
-        obj.comment = 'รับเข้าคลังจากใบสั่งซื้อ';
-        obj.lot_no = v.lot_no;
-        obj.expired_date = v.expired_date;
-        data.push(obj);
-      });
-
-      // stock card receive
-      await receiveModel.saveProducts(db, products);
-      await stockcard.saveFastStockTransaction(db, data);
-      await receiveModel.adjustCost(db, adjust_price);
+  try { 
+    let rdPick: any = await receiveModel.getPickCheck(db, receiveIds)
+    let rsWp = []
+    let dstProducts = []
+    let items = []
+    let stockCard = []
+    let rsStock: any = []
+    let pickIds: any = [];
+    if (!Array.isArray(rdPick) || !rdPick.length) {
       res.send({ ok: true });
->>>>>>> 372098fc83baffca02b33442457b5ca0b9b10899
-
-      // try { // close pick
-      //   let rdPick: any = await receiveModel.getPickCheck(db, receiveIds)
-      //   let rsWp = []
-      //   let dstProducts = []
-      //   let items = []
-      //   let stockCard = []
-      //   let rsStock: any = []
-      //   let pickIds: any = [];
-      //   if (!Array.isArray(rdPick) || !rdPick.length) {
-      //     res.send({ ok: true });
-      //   } else {
-      //     for (let item of rdPick) {
-      //       let _rsWp: any = await receiveModel.getWmProduct(db, item)
-      //       if (_rsWp[0]) {
-      //         _rsWp[0].wm_pick = item.wm_pick
-      //         item.wm_product_id = _rsWp[0].wm_product_id
-      //         rsWp.push(_rsWp[0])
-      //         pickIds.push(item.pick_id)
-      //         if (item.pick_qty != 0) {
-      //           // wmProductIds.push(v.wm_product_id);
-      //           dstProducts.push({
-      //             qty: item.pick_qty,
-      //             wm_product_id: item.wm_product_id,
-      //             warehouse_id: 505
-      //           });
-      //           items.push({
-      //             qty: item.pick_qty,
-      //             wm_product_id: item.wm_product_id
-      //           });
-      //         }
-      //       }
-      //     }
-      //     let products2: any = [];
+    } else {
+      for (let item of rdPick) {
+        let _rsWp: any = await receiveModel.getWmProduct(db, item)
+        if (_rsWp[0]) {
+          _rsWp[0].wm_pick = item.wm_pick
+          item.wm_product_id = _rsWp[0].wm_product_id
+          rsWp.push(_rsWp[0])
+          pickIds.push(item.pick_id)
+          if (item.pick_qty != 0) {
+            // wmProductIds.push(v.wm_product_id);
+            dstProducts.push({
+              qty: item.pick_qty,
+              wm_product_id: item.wm_product_id,
+              warehouse_id: 505
+            });
+            items.push({
+              qty: item.pick_qty,
+              wm_product_id: item.wm_product_id
+            });
+          }
+        }
+      }
+      let products2: any = [];
 
 
-      //     rsWp.forEach((v: any) => {
-      //       let id = uuid();
-      //       let qty = 0;
-      //       let idx = _.findIndex(items, { wm_product_id: v.wm_product_id });
-      //       if (idx > -1) {
-      //         qty = items[idx].qty;
-      //         let obj: any = {
-      //           wm_product_id: id,
-      //           warehouse_id: v.wm_pick,
-      //           // vendor_labeler_id: v.vendor_labeler_id,
-      //           product_id: v.product_id,
-      //           // generic_id: v.generic_id,
-      //           qty: qty,
-      //           price: v.cost,
-      //           cost: v.cost,
-      //           lot_no: v.lot_no,
-      //           expired_date: moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null,
-      //           unit_generic_id: v.unit_generic_id,
-      //           location_id: +v.location_id,
-      //           people_user_id: req.decoded.people_user_id,
-      //           created_at: moment().format('YYYY-MM-DD HH:mm:ss')
-      //         };
-      //         products2.push(obj);
-      //       }
-      //     });
+      rsWp.forEach((v: any) => {
+        let id = uuid();
+        let qty = 0;
+        let idx = _.findIndex(items, { wm_product_id: v.wm_product_id });
+        if (idx > -1) {
+          qty = items[idx].qty;
+          let obj: any = {
+            wm_product_id: id,
+            warehouse_id: v.wm_pick,
+            // vendor_labeler_id: v.vendor_labeler_id,
+            product_id: v.product_id,
+            // generic_id: v.generic_id,
+            qty: qty,
+            price: v.cost,
+            cost: v.cost,
+            lot_no: v.lot_no,
+            expired_date: moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null,
+            unit_generic_id: v.unit_generic_id,
+            location_id: +v.location_id,
+            people_user_id: req.decoded.people_user_id,
+            created_at: moment().format('YYYY-MM-DD HH:mm:ss')
+          };
+          products2.push(obj);
+        }
+      });
 
-      //     rsStock = await receiveModel.getStockItem(db, pickIds)
-      //     rsStock = rsStock[0]
-      //     let balances = [];
-      //     for (let s of rsStock) {
-      //       let srcObjBalance: any = {};
-      //       let dstObjBalance: any = {};
-      //       let srcBalance = await receiveModel.getBalance(db, s.product_id, s.src_warehouse);
-      //       srcBalance[0].forEach(v => {
-      //         srcObjBalance.product_id = v.product_id;
-      //         srcObjBalance.warehouse_id = v.warehouse_id;
-      //         srcObjBalance.balance_qty = v.balance;
-      //         srcObjBalance.balance_generic_qty = v.balance_generic;
-      //       });
-      //       balances.push(srcObjBalance);
-      //       let dstBalance = await receiveModel.getBalance(db, s.product_id, s.dst_warehouse)
-      //       dstBalance[0].forEach(v => {
-      //         dstObjBalance.product_id = v.product_id;
-      //         dstObjBalance.warehouse_id = v.warehouse_id;
-      //         dstObjBalance.balance_qty = v.balance;
-      //         dstObjBalance.balance_generic_qty = v.balance_generic;
-      //       });
-      //       balances.push(dstObjBalance);
-      //     }
+      rsStock = await receiveModel.getStockItem(db, pickIds)
+      rsStock = rsStock[0]
+      let balances = [];
+      for (let s of rsStock) {
+        let srcObjBalance: any = {};
+        let dstObjBalance: any = {};
+        let srcBalance = await receiveModel.getBalance(db, s.product_id, s.src_warehouse);
+        srcBalance[0].forEach(v => {
+          srcObjBalance.product_id = v.product_id;
+          srcObjBalance.warehouse_id = v.warehouse_id;
+          srcObjBalance.balance_qty = v.balance;
+          srcObjBalance.balance_generic_qty = v.balance_generic;
+        });
+        balances.push(srcObjBalance);
+        let dstBalance = await receiveModel.getBalance(db, s.product_id, s.dst_warehouse)
+        dstBalance[0].forEach(v => {
+          dstObjBalance.product_id = v.product_id;
+          dstObjBalance.warehouse_id = v.warehouse_id;
+          dstObjBalance.balance_qty = v.balance;
+          dstObjBalance.balance_generic_qty = v.balance_generic;
+        });
+        balances.push(dstObjBalance);
+      }
 
-      //     rsStock.forEach(v => {
-      //       let objStockcardOut: any = {}
-      //       let objStockcardIn: any = {}
-      //       objStockcardOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-      //       objStockcardOut.product_id = v.product_id;
-      //       objStockcardOut.generic_id = v.generic_id;
-      //       objStockcardOut.unit_generic_id = v.unit_generic_id;
-      //       objStockcardOut.transaction_type = 'REQ_OUT';
-      //       objStockcardOut.document_ref_id = v.pick_id;
-      //       objStockcardOut.document_ref = v.pick_code;
-      //       objStockcardOut.lot_no = v.lot_no;
-      //       objStockcardOut.expired_date = v.expired_date;
-      //       objStockcardOut.in_qty = 0;
-      //       objStockcardOut.in_unit_cost = 0;
-      //       objStockcardOut.out_qty = v.confirm_qty;
-      //       objStockcardOut.out_unit_cost = v.cost;
+      rsStock.forEach(v => {
+        let objStockcardOut: any = {}
+        let objStockcardIn: any = {}
+        objStockcardOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+        objStockcardOut.product_id = v.product_id;
+        objStockcardOut.generic_id = v.generic_id;
+        objStockcardOut.unit_generic_id = v.unit_generic_id;
+        objStockcardOut.transaction_type = 'REQ_OUT';
+        objStockcardOut.document_ref_id = v.pick_id;
+        objStockcardOut.document_ref = v.pick_code;
+        objStockcardOut.lot_no = v.lot_no;
+        objStockcardOut.expired_date = v.expired_date;
+        objStockcardOut.in_qty = 0;
+        objStockcardOut.in_unit_cost = 0;
+        objStockcardOut.out_qty = v.confirm_qty;
+        objStockcardOut.out_unit_cost = v.cost;
 
-      //       let srcBalance = 0;
-      //       let srcBalanceGeneric = 0;
-      //       let srcIdx = _.findIndex(balances, {
-      //         product_id: v.product_id,
-      //         warehouse_id: v.src_warehouse,
-      //       });
-      //       if (srcIdx > -1) {
-      //         balances[srcIdx].balance_qty -= +v.confirm_qty;
-      //         srcBalance = balances[srcIdx].balance_qty
-      //         balances[srcIdx].balance_generic_qty -= +v.confirm_qty;
-      //         srcBalanceGeneric = balances[srcIdx].balance_generic_qty;
-      //       }
-      //       objStockcardOut.balance_qty = srcBalance;
-      //       objStockcardOut.balance_generic_qty = srcBalanceGeneric;
+        let srcBalance = 0;
+        let srcBalanceGeneric = 0;
+        let srcIdx = _.findIndex(balances, {
+          product_id: v.product_id,
+          warehouse_id: v.src_warehouse,
+        });
+        if (srcIdx > -1) {
+          balances[srcIdx].balance_qty -= +v.confirm_qty;
+          srcBalance = balances[srcIdx].balance_qty
+          balances[srcIdx].balance_generic_qty -= +v.confirm_qty;
+          srcBalanceGeneric = balances[srcIdx].balance_generic_qty;
+        }
+        objStockcardOut.balance_qty = srcBalance;
+        objStockcardOut.balance_generic_qty = srcBalanceGeneric;
 
-      //       objStockcardOut.balance_unit_cost = v.cost;
-      //       objStockcardOut.ref_src = v.src_warehouse;
-      //       objStockcardOut.ref_dst = v.dst_warehouse;
-      //       objStockcardOut.comment = 'ให้เบิกโดยการหยิบ';
-      //       stockCard.push(objStockcardOut);
+        objStockcardOut.balance_unit_cost = v.cost;
+        objStockcardOut.ref_src = v.src_warehouse;
+        objStockcardOut.ref_dst = v.dst_warehouse;
+        objStockcardOut.comment = 'ให้เบิกโดยการหยิบ';
+        stockCard.push(objStockcardOut);
 
-      //       objStockcardIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-      //       objStockcardIn.product_id = v.product_id;
-      //       objStockcardIn.generic_id = v.generic_id;
-      //       objStockcardIn.unit_generic_id = v.unit_generic_id;
-      //       objStockcardIn.transaction_type = 'REQ_IN';
-      //       objStockcardIn.document_ref_id = v.pick_id;
-      //       objStockcardIn.document_ref = v.pick_code;
-      //       objStockcardIn.lot_no = v.lot_no;
-      //       objStockcardIn.expired_date = v.expired_date;
-      //       objStockcardIn.in_qty = v.confirm_qty;
-      //       objStockcardIn.in_unit_cost = v.cost;
-      //       objStockcardIn.out_qty = 0
-      //       objStockcardIn.out_unit_cost = 0
+        objStockcardIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+        objStockcardIn.product_id = v.product_id;
+        objStockcardIn.generic_id = v.generic_id;
+        objStockcardIn.unit_generic_id = v.unit_generic_id;
+        objStockcardIn.transaction_type = 'REQ_IN';
+        objStockcardIn.document_ref_id = v.pick_id;
+        objStockcardIn.document_ref = v.pick_code;
+        objStockcardIn.lot_no = v.lot_no;
+        objStockcardIn.expired_date = v.expired_date;
+        objStockcardIn.in_qty = v.confirm_qty;
+        objStockcardIn.in_unit_cost = v.cost;
+        objStockcardIn.out_qty = 0
+        objStockcardIn.out_unit_cost = 0
 
-      //       let dstBalance = 0;
-      //       let dstBalanceGeneric = 0;
-      //       let dstIdx = _.findIndex(balances, {
-      //         product_id: v.product_id,
-      //         warehouse_id: v.dst_warehouse,
-      //       });
-      //       if (dstIdx > -1) {
-      //         balances[dstIdx].balance_qty += +v.confirm_qty;
-      //         dstBalance = balances[dstIdx].balance_qty;
-      //         balances[dstIdx].balance_generic_qty += +v.confirm_qty;
-      //         dstBalanceGeneric = balances[dstIdx].balance_generic_qty;
-      //       } else {
-      //         dstBalance = +v.confirm_qty;
-      //         dstBalanceGeneric = +v.confirm_qty;
-      //       }
-      //       objStockcardIn.balance_qty = dstBalance
-      //       objStockcardIn.balance_generic_qty = dstBalanceGeneric;
-      //       objStockcardIn.balance_unit_cost = v.cost;
-      //       objStockcardIn.ref_src = v.dst_warehouse;
-      //       objStockcardIn.ref_dst = v.src_warehouse;
-      //       objStockcardIn.comment = 'เบิกโดยการหยิบ';
-      //       stockCard.push(objStockcardIn);
-      //     })
-      //     await stockcard.saveFastStockTransaction(db, stockCard);
-      //     await productModel.saveProducts(db, products2);
-      //     await receiveModel.decreaseQtyPick(db, dstProducts);
-      //     res.send({ ok: true });
-      //   }
-      // } catch (error) {
-      //   res.send({ ok: false, error: error.message });
-      // }
+        let dstBalance = 0;
+        let dstBalanceGeneric = 0;
+        let dstIdx = _.findIndex(balances, {
+          product_id: v.product_id,
+          warehouse_id: v.dst_warehouse,
+        });
+        if (dstIdx > -1) {
+          balances[dstIdx].balance_qty += +v.confirm_qty;
+          dstBalance = balances[dstIdx].balance_qty;
+          balances[dstIdx].balance_generic_qty += +v.confirm_qty;
+          dstBalanceGeneric = balances[dstIdx].balance_generic_qty;
+        } else {
+          dstBalance = +v.confirm_qty;
+          dstBalanceGeneric = +v.confirm_qty;
+        }
+        objStockcardIn.balance_qty = dstBalance
+        objStockcardIn.balance_generic_qty = dstBalanceGeneric;
+        objStockcardIn.balance_unit_cost = v.cost;
+        objStockcardIn.ref_src = v.dst_warehouse;
+        objStockcardIn.ref_dst = v.src_warehouse;
+        objStockcardIn.comment = 'เบิกโดยการหยิบ';
+        stockCard.push(objStockcardIn);
+      })
+      await stockcard.saveFastStockTransaction(db, stockCard);
+      await productModel.saveProducts(db, products2);
+      await receiveModel.decreaseQtyPick(db, dstProducts);
+      res.send({ ok: true });
     }
   } catch (error) {
     res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
   }
 }));
 
@@ -1592,7 +1237,6 @@ router.delete('/remove', co(async (req, res, next) => {
   if (receiveId) {
     try {
       let peopleUserId: any = req.decoded.people_user_id;
-<<<<<<< HEAD
       let rs: any = await receiveModel.checkPickApprove(db, receiveId);
       if (!rs.length) {
         await receiveModel.removeReceive(db, receiveId, peopleUserId);
@@ -1608,23 +1252,6 @@ router.delete('/remove', co(async (req, res, next) => {
       } else { //  test pick
         res.send({ ok: false, error: 'มีัรายการหยิบที่อนุมัติแล้ว' });
       }
-=======
-      // let rs: any = await receiveModel.checkPickApprove(db, receiveId); //  test pick
-      // if (!rs) {
-      await receiveModel.removeReceive(db, receiveId, peopleUserId);
-      if (purchaseOrderId) {
-        let rsCurrent = await receiveModel.getCurrentPurchaseStatus(db, purchaseOrderId);
-        if (rsCurrent) {
-          if (rsCurrent[0].purchase_order_status === 'COMPLETED') {
-            await receiveModel.updatePurchaseStatus2(db, purchaseOrderId, 'APPROVED');
-          }
-        }
-      }
-      res.send({ ok: true });
-      // } else { //  test pick
-      //   res.send({ ok: false, error: 'มีัรายการหยิบที่อนุมัติแล้ว' });
-      // }
->>>>>>> 372098fc83baffca02b33442457b5ca0b9b10899
     } catch (error) {
       res.send({ ok: false, error: error.message });
     } finally {
