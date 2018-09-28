@@ -65,7 +65,19 @@ router.post('/stockcard/issues/search', async (req, res, next) => {
     db.destroy();
   }
 });
-
+router.post('/stockcard/pick/search', async (req, res, next) => {
+  let db = req.db;
+  let query = req.body.query;
+  try {
+    let rs: any = await toolModel.searchPick(db, query);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
 router.post('/stockcard/receives/items', async (req, res, next) => {
 
   let db = req.db;
