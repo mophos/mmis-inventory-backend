@@ -279,7 +279,7 @@ app.use('/setting', checkAuth, settingRoute);
 // tools
 app.use('/tools', checkAuth, adminAuth, toolsRoute);
 
-app.use('/', indexRoute);
+app.use('/',checkAuth, indexRoute);
 //temperature
 app.use('/temperature', temperatureRoute);
 

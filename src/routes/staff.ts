@@ -1521,7 +1521,18 @@ router.post('/requisition/orders', async (req, res, next) => {
     let order: any = req.body.order;
     let products = req.body.products;
 
-    let serial: any = order.is_temp !== 'Y' ? await serialModel.getSerial(db, 'RQ') : null;
+    let year = moment(order.requisition_date, 'YYYY-MM-DD').get('year');
+    let month = moment(order.requisition_date, 'YYYY-MM-DD').get('month') + 1;
+
+
+    if (month >= 10) {
+      year += 1;
+    }
+
+    const no = await serialModel.getCountOrder(db);
+    const count = +no[0].total + 1;
+
+    let serial: any = order.is_temp !== 'Y' ? await serialModel.getSerialNew(db, 'RQ', count, year) : null;
 
     order.requisition_code = serial;
     order.people_id = people_id;
@@ -1566,8 +1577,18 @@ router.put('/requisition/orders/:requisitionId', async (req, res, next) => {
     _order.is_temp = order.is_temp;
     _order.requisition_date = order.requisition_date;
 
+    let year = moment(order.requisition_date, 'YYYY-MM-DD').get('year');
+    let month = moment(order.requisition_date, 'YYYY-MM-DD').get('month') + 1
+
+    if (month >= 10) {
+      year += 1;
+    }
+
+    const no = await serialModel.getCountOrder(db);
+    const count = +no[0].total + 1;
+
     if (order.is_temp === 'N' && !order.requisition_code) {
-      _order.requisition_code = order.is_temp !== 'Y' ? await serialModel.getSerial(db, 'RQ') : null;
+      _order.requisition_code = order.is_temp !== 'Y' ? await serialModel.getSerialNew(db, 'RQ', count, year) : null;
     }
 
     let rsOrder: any = await orderModel.updateOrder(db, requisitionId, _order);
@@ -2997,13 +3018,15 @@ router.get('/receives/purchases/check-holiday', co(async (req, res, nex) => {
 router.post('/receives/other', co(async (req, res, next) => {
 
   let db = req.db;
+  let warehoseId = req.decoded.warehouseId
   let summary = req.body.summary;
   let products: any = [];
   products = req.body.products;
 
   if (summary.receiveDate && summary.receiveTypeId && summary.donatorId && products.length) {
     try {
-      let receiveCode = await serialModel.getSerialSatff(db, 'RO');
+
+      let receiveCode = await serialModel.getSerialSatff(db, 'RO',warehoseId);
       console.log(receiveCode, '******************************');
       // let receiveId = moment().format('x');
 

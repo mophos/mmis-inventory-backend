@@ -10,7 +10,7 @@ const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const issueModel = new IssueModel();
 
-
+const signale = require('signale');
 const path = require('path')
 const fse = require('fs-extra');
 const fs = require('fs');
@@ -1507,7 +1507,8 @@ router.get('/report/list/receive', wrap(async (req, res, next) => {
     })
   })
   // res.send({receiveID:receiveID,list_receive3:list_receive3,receiveId:receiveId,productId:productId})
-  res.render('list_receive', { hospitalName: hospitalName, printDate: printDate(req.decoded.SYS_PRINT_DATE), list_receive2: list_receive2, array2: array2 });
+    //  printDate(req.decoded.SYS_PRINT_DATE)
+  res.render('list_receive', { hospitalName: hospitalName,printDate:printDate(req.decoded.SYS_PRINT_DATE) ,list_receive2: list_receive2, array2: array2 });
 }));
 router.get('/report/list/receiveCode/:sID/:eID', wrap(async (req, res, next) => {
   let db = req.db;
@@ -3361,24 +3362,4 @@ router.get('/report/genericStock/haveMovement/', wrap(async (req, res, next) => 
   });
 }));
 
-
-router.get('/report/123456', async (req, res, next) => {
-  try {
-    const db = req.db;
-    const rs = await inventoryReportModel.budget(req.db);
-    // console.log(rs[0]);
-    let inComingBalance = 344440;
-    for (const v of rs[0]) {
-      let balance = inComingBalance - v.amount
-      await inventoryReportModel.updateBudget(db, inComingBalance.toFixed(2), balance.toFixed(2), v.transection_id)
-      inComingBalance -= v.amount
-      // v.incomimg_balance  = v.balance
-    }
-    res.send({ ok: true });
-
-  } catch (error) {
-
-    res.send({ ok: false });
-  }
-});
 export default router;
