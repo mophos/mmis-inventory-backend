@@ -1525,11 +1525,11 @@ router.post('/requisition/orders', async (req, res, next) => {
     let month = moment(order.requisition_date, 'YYYY-MM-DD').get('month') + 1;
 
 
+    const no = await serialModel.getCountOrder(db, year);
     if (month >= 10) {
       year += 1;
     }
 
-    const no = await serialModel.getCountOrder(db);
     const count = +no[0].total + 1;
 
     let serial: any = order.is_temp !== 'Y' ? await serialModel.getSerialNew(db, 'RQ', count, year) : null;
@@ -1580,11 +1580,11 @@ router.put('/requisition/orders/:requisitionId', async (req, res, next) => {
     let year = moment(order.requisition_date, 'YYYY-MM-DD').get('year');
     let month = moment(order.requisition_date, 'YYYY-MM-DD').get('month') + 1
 
+    const no = await serialModel.getCountOrder(db, year);
     if (month >= 10) {
       year += 1;
     }
 
-    const no = await serialModel.getCountOrder(db);
     const count = +no[0].total + 1;
 
     if (order.is_temp === 'N' && !order.requisition_code) {
