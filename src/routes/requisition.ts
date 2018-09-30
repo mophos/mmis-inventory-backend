@@ -68,11 +68,11 @@ router.post('/orders', async (req, res, next) => {
   } else {
     try {
       // get serial
+      const no = await serialModel.getCountOrder(db, year);
       if (month >= 10) {
         year += 1;
       }
 
-      const no = await serialModel.getCountOrder(db);
       const count = +no[0].total + 1;
 
       let serial = await serialModel.getSerialNew(db, 'RQ', count, year);
@@ -121,15 +121,15 @@ router.post('/fast/orders', async (req, res, next) => {
   } else {
     try {
       // get serial
+      const no = await serialModel.getCountOrder(db, year);
       if (month >= 10) {
         year += 1;
       }
 
-      const no = await serialModel.getCountOrder(db);
       const count = +no[0].total + 1;
 
       let serial = await serialModel.getSerialNew(db, 'RQ', count, year);
-      
+
       order.requisition_code = serial;
       order.people_id = people_id;
       order.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -664,15 +664,15 @@ router.post('/orders/unpaid/reorder', async (req, res, next) => {
 
         let orders: any = {};
 
+        const no = await serialModel.getCountOrder(db, year);
         if (month >= 10) {
           year += 1;
         }
-  
-        const no = await serialModel.getCountOrder(db);
+
         const count = +no[0].total + 1;
-  
+
         let serial = await serialModel.getSerialNew(db, 'RQ', count, year);
-        
+
         orders.requisition_date = _order.requisition_date;
         orders.wm_requisition = _order.wm_requisition;
         orders.wm_withdraw = _order.wm_withdraw;

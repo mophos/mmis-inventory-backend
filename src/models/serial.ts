@@ -127,9 +127,10 @@ export class SerialModel {
     }
   }
 
-  getCountOrder(knex: Knex) {
+  getCountOrder(knex: Knex, year: any) {
     return knex('wm_requisition_orders')
-      .select(knex.raw('count(*) as total'));
+      .select(knex.raw('count(*) as total'))
+      .whereRaw(`requisition_date >= '${year}-10-01' AND requisition_date <= '${year + 1}-09-30'`);
   }
-  
+
 }
