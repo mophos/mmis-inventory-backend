@@ -37,8 +37,13 @@ router.post('/', co(async (req, res, next) => {
     _summary.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
     _summary.ref_document = summary.refDocument;
     _summary.warehouse_id = warehouseId;
-
-    let serialCode = await serialModel.getSerial(db, 'ST');
+    let yearST = moment().get('year');
+    let monthST = moment().get('month') + 1;
+    if (monthST >= 10) {
+      yearST += 1;
+    }
+    let countST:any = await issueModel.getCountCode(db,yearST)
+    let serialCode = await serialModel.getSerialNew(db, 'ST',countST[0].count+1,yearST);
     _summary.issue_code = serialCode;
 
     let id = await issueModel.saveSummary(db, _summary);
