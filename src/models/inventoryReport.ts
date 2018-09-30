@@ -4,6 +4,32 @@ import { SettingModel } from './settings';
 const settingModel = new SettingModel();
 
 export class InventoryReportModel {
+
+
+    budget(knex: Knex) {
+        let sql = `SELECT
+        pt.transection_id,
+        pt.incoming_balance,
+        pt.amount,
+        pt.balance
+    FROM
+        pc_budget_transection_new pt
+        LEFT JOIN pc_purchasing_order po ON po.purchase_order_id = pt.purchase_order_id 
+    WHERE
+        pt.transaction_status = 'SPEND' 
+        AND pt.bgdetail_id = '22' 
+    ORDER BY
+        pt.transection_id`;
+        return knex.raw(sql);
+    }
+
+    updateBudget(knex: Knex, incoming_balance, balance, transection_id) {
+        return knex('pc_budget_transection_new').update({
+            'incoming_balance_new': incoming_balance,
+            'balance_new': balance
+        })
+            .where('transection_id', transection_id)
+    }
     receiveNotMatchPO(knex: Knex, startDate: any, endDate: any) {
         let sql = `SELECT
         *
@@ -2696,13 +2722,13 @@ OR sc.ref_src like ?
         mug.qty,mu1.unit_name as pack,
         mu2.unit_name as small_unit,
         (select (sum(in_qty)-sum(out_qty)) as summit from view_stock_card_warehouse where warehouse_id=vs.warehouse_id and product_id=vs.product_id and unit_generic_id = vs.unit_generic_id
-        and stock_date BETWEEN  '${year-1}-10-01 00:00:00' 
+        and stock_date BETWEEN  '${year - 1}-10-01 00:00:00' 
         AND '${year}-09-30 23:59:59'
         GROUP BY unit_generic_id,product_id) as summit,
         sum(vs.in_qty)/mug.qty as in_qty,
         sum(vs.out_qty)/mug.qty as out_qty ,
         (select (sum(in_qty)-sum(out_qty)) as summit from view_stock_card_warehouse where warehouse_id=vs.warehouse_id and product_id=vs.product_id and unit_generic_id = vs.unit_generic_id
-        and stock_date BETWEEN  '${year-1}-10-01 00:00:00' 
+        and stock_date BETWEEN  '${year - 1}-10-01 00:00:00' 
             AND '${year}-09-30 23:59:59'
         GROUP BY unit_generic_id,product_id)+sum(vs.in_qty)-sum(vs.out_qty) as balance
         from view_stock_card_warehouse vs
@@ -2724,7 +2750,7 @@ OR sc.ref_src like ?
     
         where vs.warehouse_id=${wareHouseId}
         and mg.generic_type_id in (${genericType})
-        and vs.stock_date BETWEEN  '${year-1}-10-01 00:00:00' 
+        and vs.stock_date BETWEEN  '${year - 1}-10-01 00:00:00' 
         AND '${year}-09-30 23:59:59' 
         GROUP BY vs.unit_generic_id,vs.product_id`);
     }
@@ -2952,7 +2978,7 @@ OR sc.ref_src like ?
                 vscw.generic_id
             ORDER BY
 	            mp.generic_name`
-            // LIMIT 200 OFFSET 0
+        // LIMIT 200 OFFSET 0
         return knex.raw(sql)
     }
 }

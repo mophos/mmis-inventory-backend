@@ -3361,4 +3361,24 @@ router.get('/report/genericStock/haveMovement/', wrap(async (req, res, next) => 
   });
 }));
 
+
+router.get('/report/123456', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const rs = await inventoryReportModel.budget(req.db);
+    // console.log(rs[0]);
+    let inComingBalance = 344440;
+    for (const v of rs[0]) {
+      let balance = inComingBalance - v.amount
+      await inventoryReportModel.updateBudget(db, inComingBalance.toFixed(2), balance.toFixed(2), v.transection_id)
+      inComingBalance -= v.amount
+      // v.incomimg_balance  = v.balance
+    }
+    res.send({ ok: true });
+
+  } catch (error) {
+
+    res.send({ ok: false });
+  }
+});
 export default router;
