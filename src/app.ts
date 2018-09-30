@@ -233,7 +233,7 @@ app.use('/receives', checkAuth, adminAuth, receiveRoute);
 app.use('/requisitiontype', checkAuth, adminAuth, requisitionType);
 app.use('/addition', checkAuth, adminAuth, additionRoute);
 
-app.use('/pick',checkAuth,adminAuth,pickRoute)
+app.use('/pick', checkAuth, adminAuth, pickRoute)
 app.use('/alert-expired', checkAuth, adminAuth, alertExpiredRoute);
 app.use('/productlots', checkAuth, adminAuth, productLots);
 app.use('/abc-ven', checkAuth, adminAuth, abcVenRoute);
@@ -279,7 +279,7 @@ app.use('/setting', checkAuth, settingRoute);
 // tools
 app.use('/tools', checkAuth, adminAuth, toolsRoute);
 
-app.use('/', checkAuth, indexRoute);
+app.use('/', indexRoute);
 //temperature
 app.use('/temperature', temperatureRoute);
 
