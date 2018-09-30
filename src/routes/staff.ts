@@ -778,7 +778,18 @@ router.post('/transfer/save', co(async (req, res, next) => {
       if (rsShipping[0].total == 0) {
         res.send({ ok: false, error: 'ไม่สามารถโอนได้เนื่องจากไม่ได้อยู่ในเครือข่ายเดียวกัน' })
       } else {
-        let transferCode = await serialModel.getSerial(db, 'TR');
+        const date = _summary.transferDate;
+        let year = moment(date, 'YYYY-MM-DD').get('year');
+        const month = moment(date, 'YYYY-MM-DD').get('month') + 1;
+        if (month >= 10) {
+          year += 1;
+        }
+        // year = ปีงบ
+        // count
+        let no = await transferModel.getTransferCount(db, year);
+        no = no[0];
+        no = +no[0].count + 1;
+        let transferCode = await serialModel.getSerialNew(db, 'TR', no, year);
         let transfer = {
           transfer_code: transferCode,
           transfer_date: _summary.transferDate,
@@ -1525,11 +1536,11 @@ router.post('/requisition/orders', async (req, res, next) => {
     let month = moment(order.requisition_date, 'YYYY-MM-DD').get('month') + 1;
 
 
+    const no = await serialModel.getCountOrder(db, year);
     if (month >= 10) {
       year += 1;
     }
 
-    const no = await serialModel.getCountOrder(db);
     const count = +no[0].total + 1;
 
     let serial: any = order.is_temp !== 'Y' ? await serialModel.getSerialNew(db, 'RQ', count, year) : null;
@@ -1580,11 +1591,11 @@ router.put('/requisition/orders/:requisitionId', async (req, res, next) => {
     let year = moment(order.requisition_date, 'YYYY-MM-DD').get('year');
     let month = moment(order.requisition_date, 'YYYY-MM-DD').get('month') + 1
 
+    const no = await serialModel.getCountOrder(db, year);
     if (month >= 10) {
       year += 1;
     }
 
-    const no = await serialModel.getCountOrder(db);
     const count = +no[0].total + 1;
 
     if (order.is_temp === 'N' && !order.requisition_code) {
@@ -3026,7 +3037,7 @@ router.post('/receives/other', co(async (req, res, next) => {
   if (summary.receiveDate && summary.receiveTypeId && summary.donatorId && products.length) {
     try {
 
-      let receiveCode = await serialModel.getSerialSatff(db, 'RO',warehoseId);
+      let receiveCode = await serialModel.getSerialSatff(db, 'RO', warehoseId);
       console.log(receiveCode, '******************************');
       // let receiveId = moment().format('x');
 
