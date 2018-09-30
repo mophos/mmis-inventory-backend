@@ -1233,6 +1233,17 @@ WHERE
       });
   }
 
+  getReceiveNumber(knex:Knex , year:any){
+    return knex('wm_receives')
+    .count('* as count').as('count')
+    .whereBetween('receive_date', [(+year - 1) + '-10-01',+year + '-09-30'])
+  }
+  getReceiveOtherNumber(knex:Knex , year:any){
+    return knex('wm_receive_other')
+    .count('* as count').as('count')
+    .whereBetween('receive_date', [(+year - 1) + '-10-01',+year + '-09-30'])
+  }
+
   checkDeliveryCode(knex: Knex, deliveryCode: any, supplierId: any) {
     return knex('wm_receives')
       .where('delivery_code', deliveryCode)
