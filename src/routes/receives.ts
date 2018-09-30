@@ -414,22 +414,6 @@ router.put('/:receiveId', co(async (req, res, next) => {
           }
         }
         if (passPick) {
-          // if (summary.purchaseOrderId) {
-          //   let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId); // 100
-          //   let rsReceived = await receiveModel.getTotalPricePurcehaseReceivedWithoutOwner(db, summary.purchaseOrderId, receiveId);
-          //   console.log('----');
-          //   console.log(+rsReceived[0].total )
-          //   console.log(totalPriceReceive);
-          //   console.log( +rsPo[0].total);
-          //   let totalPrice = +rsReceived[0].total + totalPriceReceive;
-          //   if (+totalPrice > +rsPo[0].total) {
-          //     res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
-          //   } else {
-          //     let temp = summary.receiveCode.split('-');
-          //     if (temp[0] === 'RT') {
-          //       let receiveCode = await serialModel.getSerial(db, 'RV');
-          //       data.receive_code = receiveCode;
-          //     }
 
         if (summary.purchaseOrderId) {
           let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId); // 100
