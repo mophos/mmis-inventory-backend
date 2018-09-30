@@ -2997,13 +2997,15 @@ router.get('/receives/purchases/check-holiday', co(async (req, res, nex) => {
 router.post('/receives/other', co(async (req, res, next) => {
 
   let db = req.db;
+  let warehoseId = req.decoded.warehouseId
   let summary = req.body.summary;
   let products: any = [];
   products = req.body.products;
 
   if (summary.receiveDate && summary.receiveTypeId && summary.donatorId && products.length) {
     try {
-      let receiveCode = await serialModel.getSerialSatff(db, 'RO');
+
+      let receiveCode = await serialModel.getSerialSatff(db, 'RO',warehoseId);
       console.log(receiveCode, '******************************');
       // let receiveId = moment().format('x');
 

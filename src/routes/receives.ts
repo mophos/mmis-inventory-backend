@@ -42,7 +42,8 @@ const thaiBath = new ThaiBath();
 const serialModel = new SerialModel();
 const stockcard = new StockCard();
 const periodModel = new PeriodModel();
-
+const signale = require('signale');
+moment.locale('th');
 router.get('/all-products', (req, res, next) => {
   let db = req.db;
 
@@ -178,6 +179,16 @@ router.get('/warehouse-main', co(async (req, res, next) => {
   }
 }));
 
+router.get('/yeartest', co(async (req, res, next) => {
+  let year = moment().get('year');
+  let month = moment().get('month') + 1;
+  if (month >= 10) {
+    year += 1;
+  }
+  let rs:any = await receiveModel.getReceiveOtherNumber(req.db,year)
+    signale.info(year,rs)
+    res.send({year:year,rs:rs})
+}))
 router.post('/', co(async (req, res, next) => {
 
   let db = req.db;
@@ -232,10 +243,16 @@ router.post('/', co(async (req, res, next) => {
             let _receiveCode: null;
             let _receiveTmpCode: null;
 
+            let year = moment().get('year');
+            let month = moment().get('month') + 1;
+            if (month >= 10) {
+              year += 1;
+            }
+            let rs:any = await receiveModel.getReceiveNumber(req.db,year)
             if (summary.purchaseOrderId) {
-              _receiveCode = await serialModel.getSerial(db, 'RV');
+              _receiveCode = await serialModel.getSerialNew(db, 'RV',rs[0].count+1 , year);
             } else {
-              _receiveCode = await serialModel.getSerial(db, 'RT');
+              _receiveCode = await serialModel.getSerialNew(db, 'RT',rs[0].count+1 , year);
               _receiveTmpCode = _receiveCode;
             }
 
@@ -648,7 +665,13 @@ router.post('/other', co(async (req, res, next) => {
 
   if (summary.receiveDate && summary.receiveTypeId && summary.donatorId && products.length) {
     try {
-      let receiveCode = await serialModel.getSerial(db, 'RO');
+      let yearRo = moment().get('year');
+      let monthRo = moment().get('month') + 1;
+      if (monthRo >= 10) {
+        yearRo += 1;
+      }
+      let countRo:any = await receiveModel.getReceiveOtherNumber(db,yearRo)
+      let receiveCode = await serialModel.getSerialNew(db, 'RO',countRo[0].count+1,yearRo);
       // let receiveId = moment().format('x');
 
       const data: any = {
