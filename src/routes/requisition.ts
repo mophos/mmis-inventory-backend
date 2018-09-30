@@ -68,7 +68,14 @@ router.post('/orders', async (req, res, next) => {
   } else {
     try {
       // get serial
-      let serial = await serialModel.getSerial(db, 'RQ');
+      if (month >= 10) {
+        year += 1;
+      }
+
+      const no = await serialModel.getCountOrder(db);
+      const count = +no[0].total + 1;
+
+      let serial = await serialModel.getSerialNew(db, 'RQ', count, year);
       order.requisition_code = serial;
       order.people_id = people_id;
       order.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -114,7 +121,15 @@ router.post('/fast/orders', async (req, res, next) => {
   } else {
     try {
       // get serial
-      let serial = await serialModel.getSerial(db, 'RQ');
+      if (month >= 10) {
+        year += 1;
+      }
+
+      const no = await serialModel.getCountOrder(db);
+      const count = +no[0].total + 1;
+
+      let serial = await serialModel.getSerialNew(db, 'RQ', count, year);
+      
       order.requisition_code = serial;
       order.people_id = people_id;
       order.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -648,6 +663,16 @@ router.post('/orders/unpaid/reorder', async (req, res, next) => {
         let _order: any = rs[0][0];
 
         let orders: any = {};
+
+        if (month >= 10) {
+          year += 1;
+        }
+  
+        const no = await serialModel.getCountOrder(db);
+        const count = +no[0].total + 1;
+  
+        let serial = await serialModel.getSerialNew(db, 'RQ', count, year);
+        
         orders.requisition_date = _order.requisition_date;
         orders.wm_requisition = _order.wm_requisition;
         orders.wm_withdraw = _order.wm_withdraw;
@@ -655,7 +680,7 @@ router.post('/orders/unpaid/reorder', async (req, res, next) => {
         orders.remark = 'สร้างใหม่จากรายการค้างจ่าย เลขที่ใบเบิก ' + _order.requisition_code;
         orders.doc_type = _order.doc_type;
         orders.people_id = _order.people_id;
-        orders.requisition_code = await serialModel.getSerial(db, 'RQ');
+        orders.requisition_code = serial;
         orders.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
 
         let rsOrder: any = await orderModel.saveOrder(db, orders);
