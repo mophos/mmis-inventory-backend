@@ -127,4 +127,9 @@ export class SerialModel {
     }
   }
 
+  getCountOrder(knex: Knex) {
+    return knex('wm_requisition_orders')
+      .select(knex.raw('count(*) as total'));
+  }
+  
 }
