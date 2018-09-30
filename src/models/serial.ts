@@ -39,6 +39,34 @@ export class SerialModel {
     }
   }
 
+  async getSerialNew(knex: Knex, srType: string, no, year) {
+    let serialInfo = await this.getSerialInfo(knex, srType);
+    if (serialInfo.length) {
+      let currentNo = no
+      let serialCode = serialInfo[0].serial_code;
+      let serialLength = serialInfo[0].digit_length;
+      let serialPrefix = serialInfo[0].sr_prefix;
+      let serialYear = year + 543;
+      let _serialYear = serialYear.toString().substring(2);
+      let newSerialNo = this.paddingNumber(currentNo, serialLength);
+
+      let sr: any = null;
+
+      if (serialInfo[0].is_year_prefix === 'Y') {
+        sr = serialCode.replace('PREFIX', serialPrefix).replace('YY', _serialYear).replace('##', newSerialNo);
+      } else {
+        sr = serialCode.replace('PREFIX', serialPrefix).replace('##', newSerialNo);
+      }
+
+      // update serial
+      // await this.updateSerial(knex, srType);
+      // return serial
+      return sr;
+
+    } else {
+      return '000000';
+    }
+  }
   paddingNumber(n: number, p: number) {
     var pad_char = '0';
     var pad = new Array(1 + p).join(pad_char);
