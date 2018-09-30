@@ -475,4 +475,24 @@ export class TransferModel {
       .select('wmt.mark_deleted', 'wmt.approved', 'wmt.confirmed')
       .whereIn('wmt.transfer_id', transferId);
   }
+
+  getTransferCount(knex: Knex, getyear: any) {
+    let sql = `SELECT
+    count( * )  as count
+    FROM
+      (
+    SELECT
+      * 
+    FROM
+      wm_transfer AS wt 
+    WHERE
+      wt.transfer_date >= '${getyear - 1}-10-01' 
+      AND wt.transfer_date <= '${getyear}-09-30' 
+    GROUP BY
+      wt.transfer_code 
+    ORDER BY
+      wt.transfer_code 
+      ) as q`
+    return knex.raw(sql);
+  }
 }
