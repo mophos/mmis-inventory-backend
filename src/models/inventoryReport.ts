@@ -365,22 +365,18 @@ mgt.generic_type_id `
         wro.delivery_code AS delivery_code_other,
         wrt.receive_type_name,
         wr.receive_type_id
-   FROM
-       ${dateSetting} AS vscw
-   LEFT JOIN wm_receives AS wr ON wr.receive_id = vscw.document_ref_id
-   AND vscw.transaction_type = 'REV'
-   LEFT JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
-   AND vscw.transaction_type = 'REV_OTHER'
-   LEFT JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id
-   join mm_generics as mg ON mg.generic_id = vscw.generic_id
-   WHERE 
-   vscw.warehouse_id = '${warehouseId}'
-   AND
-   vscw.generic_id = '${genericId}'
-   AND vscw.stock_date BETWEEN '${startDate} 00:00:00'
-   AND '${endDate} 23:59:59'
-    ORDER BY
-        vscw.stock_card_id`
+        FROM ${dateSetting} AS vscw
+        LEFT JOIN wm_receives AS wr ON wr.receive_id = vscw.document_ref_id
+        AND vscw.transaction_type = 'REV'
+        LEFT JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
+        AND vscw.transaction_type = 'REV_OTHER'
+        LEFT JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id
+        join mm_generics as mg ON mg.generic_id = vscw.generic_id
+        WHERE vscw.warehouse_id = '${warehouseId}'
+        AND vscw.generic_id = '${genericId}'
+        AND vscw.stock_date BETWEEN '${startDate} 00:00:00'
+        AND '${endDate} 23:59:59'
+        ORDER BY vscw.stock_card_id`
         return knex.raw(sql)
     }
 
@@ -2081,6 +2077,7 @@ OR sc.ref_src like ?
     productReceive2(knex: Knex, receiveID) {
         let sql = `SELECT
         r.receive_id,
+        p.product_name,
         r.receive_code,
         r.receive_date,
         ppo.purchase_order_number,
@@ -2095,6 +2092,7 @@ OR sc.ref_src like ?
         lbp.NAME,
         wrd.cost,
         mg.generic_id,
+        mg.working_code as generic_code,
         mg.generic_name,
         wrd.expired_date,
         lbt.bid_name,
@@ -2276,6 +2274,7 @@ OR sc.ref_src like ?
       ORDER BY mg.generic_id`
         return knex.raw(sql);
     }
+    getDetailListPick(knex: Knex, requisId, warehouseId, genericId) {}
     getDetailListRequis(knex: Knex, requisId, warehouseId, genericId) {
         let sql = `select * from (SELECT
           mg.working_code AS generic_code,
@@ -2373,6 +2372,41 @@ OR sc.ref_src like ?
         group by a.product_id,a.lot_no
         ORDER BY a.generic_code desc, a.product_id asc`
         return knex.raw(sql);
+    }
+    getListHeadPick(knex: Knex, pickId: any) {
+        return knex('wm_pick as p')
+            .select('p.*', 'ww.warehouse_name', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
+            .join('wm_warehouses as ww', 'ww.warehouse_id', 'p.wm_pick')
+            .leftJoin('um_people as up', 'up.people_id', 'p.people_id')
+            .leftJoin('um_titles as t', 't.title_id', 'up.title_id')
+            .where('p.pick_id', pickId)
+    }
+    getHeadPick(knex: Knex, pickId: any) {
+        return knex('wm_pick as p')
+            .select('p.*', 'ww.warehouse_name', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
+            .join('wm_warehouses as ww', 'ww.warehouse_id', 'p.wm_pick')
+            .leftJoin('um_people as up', 'up.people_id', 'p.people_id')
+            .leftJoin('um_titles as t', 't.title_id', 'up.title_id')
+            .where('p.pick_id', pickId)
+    }
+    getDetailPick(knex: Knex, pickId: any) {
+        return knex('wm_pick_detail as wpd')
+            .select(
+                'mgd.dosage_name',
+                'p.generic_id',
+                'ra.approve_id',
+                knex.raw(`(select sum(pd.pick_qty) from wm_pick_detail as pd join wm_pick as p on p.pick_id = pd.pick_id  where p.is_approve = 'Y' and pd.product_id = wpd.product_id and pd.lot_no = wpd.lot_no and pd.receive_id = wpd.receive_id and pd.unit_generic_id = wpd.unit_generic_id group by pd.unit_generic_id, pd.product_id,pd.lot_no,pd.receive_id) as remain_qty`),
+                'wpd.*', 'p.product_name', 'wpd.lot_no', 'u1.unit_name as small_unit', 'u2.unit_name as large_unit', 'mu.qty as base_unit', 'r.receive_code', 'wpd.receive_id', 'r.is_cancel'
+            ,knex.raw(`(select sum(rd.receive_qty) as receive_qty from wm_receive_detail as rd where rd.receive_id = wpd.receive_id and rd.product_id = wpd.product_id and rd.lot_no = wpd.lot_no and rd.unit_generic_id = wpd.unit_generic_id group by rd.product_id,rd.unit_generic_id,rd.lot_no,rd.receive_id ) as receive_qty`))
+            .innerJoin('wm_receives as r', 'r.receive_id', 'wpd.receive_id')
+            .innerJoin('mm_products as p', 'p.product_id', 'wpd.product_id')
+            .leftJoin('mm_generics as g', 'g.generic_id', 'p.generic_id')
+            .leftJoin('mm_generic_dosages as mgd', 'mgd.dosage_id','g.dosage_id' )
+            .leftJoin('mm_unit_generics as mu', 'mu.unit_generic_id', 'wpd.unit_generic_id')
+            .leftJoin('mm_units as u1', 'u1.unit_id', 'mu.to_unit_id')
+            .leftJoin('mm_units as u2', 'u2.unit_id', 'mu.from_unit_id')
+            .leftJoin('wm_receive_approve as ra','ra.receive_id','wpd.receive_id')
+            .where('wpd.pick_id', pickId)
     }
     getHeadRequis(knex: Knex, requisId, dateApprove: any) {
         let sql = `SELECT
@@ -2611,9 +2645,14 @@ OR sc.ref_src like ?
 
     productReceive(knex: Knex, startdate: any, enddate: any) {
         let sql = `SELECT
+        wr.delivery_code,
+        wr.receive_code,
         ppo.purchase_order_number,
         ppo.order_date,
         wr.receive_date,
+        wrd.receive_qty,
+        mu.unit_name as small_unit,
+        mu2.unit_name as large_unit,
         mg.working_code AS generic_code,
         mg.generic_name,
         mp.working_code AS product_code,
@@ -2627,7 +2666,8 @@ OR sc.ref_src like ?
         mgt.generic_type_name,
         mga.account_name,
         mgh. NAME AS generic_hosp_name,
-        ml.labeler_name
+        ml.labeler_name as labeler_name_po,
+        wrd.lot_no
       FROM
         wm_receives AS wr
       JOIN wm_receive_detail AS wrd ON wrd.receive_id = wr.receive_id

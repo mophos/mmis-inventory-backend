@@ -647,11 +647,12 @@ WHERE
   }
   getPickCheck(knex: Knex, receive_id: any) {
     return knex('wm_pick_detail as pd')
-      .select('p.pick_code', 'p.wm_pick', 'pd.*', knex.raw('pd.pick_qty as pick_qty'))
-      .whereIn('pd.receive_id', receive_id)
-      .join('wm_pick as p', 'p.pick_id', 'pd.pick_id')
-      .where('p.is_approve', 'Y')
-    // .groupBy('pd.product_id', 'pd.receive_id', 'pd.unit_generic_id', 'pd.lot_no') ;
+    .select('ug.qty as conversion_qty','p.pick_code','p.wm_pick','pd.*',knex.raw('pd.pick_qty as pick_qty'))
+      .whereIn('pd.receive_id' ,receive_id) 
+      .join('wm_pick as p','p.pick_id','pd.pick_id')
+      .join('mm_unit_generics as ug','ug.unit_generic_id','pd.unit_generic_id')
+      .where('p.is_approve','Y')
+      // .groupBy('pd.product_id', 'pd.receive_id', 'pd.unit_generic_id', 'pd.lot_no') ;
 
     // return knex('wm_receive_detail as rd')
     // .select('q1.pick_qty','rd.receive_detail_id','rd.product_id', 'rd.receive_id', 'rd.unit_generic_id', 'rd.lot_no','rd.receive_qty')
