@@ -1,5 +1,7 @@
 import Knex = require('knex');
 import * as moment from 'moment';
+import * as _ from 'lodash'
+const signale = require('signale');
 
 export class AdjustStockModel {
   list(knex: Knex, warehouseId, limit, offset) {
@@ -19,6 +21,56 @@ export class AdjustStockModel {
       .join('um_people_users as pu', 'a.people_user_id', 'pu.people_user_id')
       .join('um_people as p', 'p.people_id', 'pu.people_id')
       .where('a.warehouse_id', warehouseId)
+      .orderBy('a.adjust_code', 'DESC')
+  }
+
+  searchlist(knex: Knex, warehouseId, limit, offset, query) {
+    let sub:any = knex('wm_adjusts as a')
+    .select('a.adjust_id')
+    .leftJoin('wm_adjust_generics as ag','ag.adjust_id','a.adjust_id')
+    .leftJoin('mm_generics as g','g.generic_id','ag.generic_id')
+    .where('g.generic_name','LIKE',`%${query}%`)
+    .orWhere('g.working_code',query)
+    .groupBy('a.adjust_id')
+
+    // sub = _.map(sub,'adjust_id')
+    // signale.info(sub)
+    return knex('wm_adjusts as a')
+      .select('a.*', knex.raw(`concat(p.fname,' ',p.lname) as people_name`))
+      .join('um_people_users as pu', 'a.people_user_id', 'pu.people_user_id')
+      .join('um_people as p', 'p.people_id', 'pu.people_id')
+      .where('a.warehouse_id', warehouseId)
+      .where((w)=>{
+        w.where('a.adjust_code','LIKE', `%${query}%`)
+        w.orWhere('a.reason','LIKE', `%${query}%`)
+        w.orWhereIn('a.adjust_id',sub)
+      })
+      .orderBy('a.adjust_code', 'DESC')
+      .limit(limit)
+      .offset(offset);
+  }
+
+  totalsearchList(knex: Knex, warehouseId, query) {
+    let sub:any = knex('wm_adjusts as a')
+    .select('a.adjust_id')
+    .leftJoin('wm_adjust_generics as ag','ag.adjust_id','a.adjust_id')
+    .leftJoin('mm_generics as g','g.generic_id','ag.generic_id')
+    .where('g.generic_name','LIKE',`%${query}%`)
+    .orWhere('g.working_code',query)
+    .groupBy('a.adjust_id')
+
+    // sub = _.map(sub,'adjust_id')
+    // signale.info(sub)
+    return knex('wm_adjusts as a')
+      .count('* as total')
+      .join('um_people_users as pu', 'a.people_user_id', 'pu.people_user_id')
+      .join('um_people as p', 'p.people_id', 'pu.people_id')
+      .where('a.warehouse_id', warehouseId)
+      .where((w)=>{
+        w.where('a.adjust_code','LIKE', `%${query}%`)
+        w.orWhere('a.reason','LIKE', `%${query}%`)
+        w.orWhereIn('a.adjust_id',sub)
+      })
       .orderBy('a.adjust_code', 'DESC')
   }
 
