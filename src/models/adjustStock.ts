@@ -33,8 +33,7 @@ export class AdjustStockModel {
     .orWhere('g.working_code',query)
     .groupBy('a.adjust_id')
 
-    // sub = _.map(sub,'adjust_id')
-    // signale.info(sub)
+
     return knex('wm_adjusts as a')
       .select('a.*', knex.raw(`concat(p.fname,' ',p.lname) as people_name`))
       .join('um_people_users as pu', 'a.people_user_id', 'pu.people_user_id')
@@ -59,8 +58,6 @@ export class AdjustStockModel {
     .orWhere('g.working_code',query)
     .groupBy('a.adjust_id')
 
-    // sub = _.map(sub,'adjust_id')
-    // signale.info(sub)
     return knex('wm_adjusts as a')
       .count('* as total')
       .join('um_people_users as pu', 'a.people_user_id', 'pu.people_user_id')
