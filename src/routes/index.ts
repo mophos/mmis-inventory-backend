@@ -429,7 +429,7 @@ router.get('/report/list/pick', wrap(async (req, res, next) => {
     // let pickId = req.query.pickId;
     // pickId = Array.isArray(pickId) ? pickId : [pickId]
     // console.log(pickId);
-    
+
     // let hosdetail = await inventoryReportModel.hospital(db);
     // let hospitalName = hosdetail[0].hospname;
     // const rline = await inventoryReportModel.getLine(db, 'PI')
@@ -995,7 +995,8 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
   let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
   startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
   endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
-  let beforeStartDate = moment(_startDate, 'YYYY-MM-DD').add(-1, 'day').format('DD/MM/') + (moment(_startDate).get('year') + 543);
+  // let beforeStartDate = moment(_startDate, 'YYYY-MM-DD').add(-1, 'day').format('DD/MM/') + (moment(_startDate).get('year') + 543);
+  let summitStartDate = moment(_startDate, 'YYYY-MM-DD').add(0, 'day').format('DD/MM/') + (moment(_startDate).get('year') + 543);
 
   let _generic_stock: any = [];
   let _generic_name = [];
@@ -1035,7 +1036,7 @@ router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
         const _in_qty = +e.in_qty;
         const _out_qty = +e.out_qty;
         const _conversion_qty = +e.conversion_qty;
-        e.stock_date = beforeStartDate;
+        e.stock_date = summitStartDate;
         e.expired_date = moment(e.expired_date, 'YYYY-MM-DD').isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year')) : '-';
         e.balance_generic_qty = inventoryReportModel.commaQty(e.balance_generic_qty);
         e.in_cost = inventoryReportModel.comma(_in_qty * +e.balance_unit_cost);
@@ -1507,8 +1508,8 @@ router.get('/report/list/receive', wrap(async (req, res, next) => {
     })
   })
   // res.send({receiveID:receiveID,list_receive3:list_receive3,receiveId:receiveId,productId:productId})
-    //  printDate(req.decoded.SYS_PRINT_DATE)
-  res.render('list_receive', { hospitalName: hospitalName,printDate:printDate(req.decoded.SYS_PRINT_DATE) ,list_receive2: list_receive2, array2: array2 });
+  //  printDate(req.decoded.SYS_PRINT_DATE)
+  res.render('list_receive', { hospitalName: hospitalName, printDate: printDate(req.decoded.SYS_PRINT_DATE), list_receive2: list_receive2, array2: array2 });
 }));
 router.get('/report/list/receiveCode/:sID/:eID', wrap(async (req, res, next) => {
   let db = req.db;
@@ -1705,7 +1706,7 @@ router.get('/report/list/receiveCodeCheck/:sID/:eID', wrap(async (req, res, next
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
-    serialYear:serialYear,
+    serialYear: serialYear,
     check_receive: check_receive,
     province: province,
     bahtText: bahtText,
@@ -2212,7 +2213,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
-    serialYear:serialYear,
+    serialYear: serialYear,
     check_receive: check_receive,
     province: province,
     bahtText: bahtText,
@@ -2306,7 +2307,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
-    serialYear:serialYear,
+    serialYear: serialYear,
     check_receive: check_receive,
     length: length,
     province: province,
@@ -3195,7 +3196,8 @@ router.get('/report/genericStock/haveMovement/', wrap(async (req, res, next) => 
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
   let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
-  let beforeStartDate = moment(_startDate, 'YYYY-MM-DD').add(-1, 'day').format('DD/MM/') + (moment(_startDate).get('year') + 543);
+  // let beforeStartDate = moment(_startDate, 'YYYY-MM-DD').add(-1, 'day').format('DD/MM/') + (moment(_startDate).get('year') + 543);
+  let summitStartDate = moment(_startDate, 'YYYY-MM-DD').add(0, 'day').format('DD/MM/') + (moment(_startDate).get('year') + 543);
 
   let _generic_stock: any = [];
   let _generic_name = [];
@@ -3244,7 +3246,7 @@ router.get('/report/genericStock/haveMovement/', wrap(async (req, res, next) => 
         const _in_qty = +e.in_qty;
         const _out_qty = +e.out_qty;
         const _conversion_qty = +e.conversion_qty;
-        e.stock_date = beforeStartDate;
+        e.stock_date = summitStartDate;
         e.expired_date = moment(e.expired_date, 'YYYY-MM-DD').isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year')) : '-';
         e.balance_generic_qty = inventoryReportModel.commaQty(e.balance_generic_qty);
         e.in_cost = inventoryReportModel.comma(_in_qty * +e.balance_unit_cost);
@@ -3373,6 +3375,155 @@ router.get('/report/genericStock/haveMovement/', wrap(async (req, res, next) => 
     endDate: endDate,
     printDate: printDate(req.decoded.SYS_PRINT_DATE)
   });
+}));
+
+router.get('/report/genericStock/all', wrap(async (req, res, next) => {
+  let db = req.db;
+  let startDate = req.query.startDate;
+  let endDate = req.query.endDate;
+  let warehouseId = req.query.warehouseId;
+  let offset = req.query.offset;
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let _endDate = moment(endDate).format('YYYY-MM-DD');
+  let _startDate = moment(startDate).format('YYYY-MM-DD');
+  let generic_stock: any = [];
+  let inventory_stock: any = [];
+  let genericId = [];
+  let data = [];
+  let rs = await inventoryReportModel.getGenericWarehouse(db, warehouseId, offset)
+  rs = rs[0];
+  for (const v of rs) {
+    genericId.push(v.generic_id)
+  }
+
+  let warehouseName = await inventoryReportModel.getWarehouse(db, warehouseId)
+  warehouseName = warehouseName[0].warehouse_name
+
+  startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
+  endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+
+  for (let id in genericId) {
+
+    generic_stock = await inventoryReportModel.generic_stockNew(db, dateSetting, genericId[id], _startDate, _endDate, warehouseId);
+    if (generic_stock[0].length > 0) {
+      inventory_stock = await inventoryReportModel.inventory_stockcard(db, dateSetting, genericId[id], _endDate, warehouseId)
+      const obj: any = {
+        generic_id: generic_stock[0][0].generic_id,
+        generic_name: generic_stock[0][0].generic_name,
+        dosage_name: generic_stock[0][0].dosage_name,
+        generic_code: generic_stock[0][0].working_code
+      }
+
+      for (const v of generic_stock[0]) {
+        const _in_qty = +v.in_qty;
+        const _out_qty = +v.out_qty;
+        const _conversion_qty = +v.conversion_qty;
+        const _balance_unit_cost = v.balance_unit_cost
+
+        if (v.transaction_type == 'SUMMIT') {
+          v.stock_date = moment(_startDate, 'YYYY-MM-DD').isValid() ? moment(_startDate).format('DD/MM/') + (moment(_startDate).get('year') + 543) : '-';
+          // v.in_cost = inventoryReportModel.comma(_in_qty * _balance_unit_cost);
+          // v.in_qty_show = v.in_qty
+        } else {
+          v.stock_date = moment(v.stock_date, 'YYYY-MM-DD').isValid() ? moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543) : '-';
+          //มี unit_generic_id จะโชว์เป็น pack
+        }
+        if (v.small_unit && v.large_unit) {
+          v.in_cost = inventoryReportModel.comma(_in_qty * _balance_unit_cost);
+          v.out_cost = inventoryReportModel.comma(_out_qty * _balance_unit_cost);
+          // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
+          v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
+          v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
+          v.in_base = inventoryReportModel.commaQty(Math.floor(_in_qty % _conversion_qty));
+          v.out_base = inventoryReportModel.commaQty(Math.floor(_out_qty % _conversion_qty));
+          v.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
+          //in_qty_show
+          if (v.in_qty != 0 && v.in_base != 0) {
+            v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' ' + v.in_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.in_qty != 0) {
+            v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.in_base != 0) {
+            v.in_qty_show = v.in_base + ' ' + v.small_unit
+          } else {
+            v.in_qty_show = '-';
+          }
+          //out_qty_show
+          if (v.out_qty != 0 && v.out_base != 0) {
+            v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' ' + v.out_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.out_qty != 0) {
+            v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.out_base != 0) {
+            v.out_qty_show = v.out_base + ' ' + v.small_unit
+          } else {
+            v.out_qty_show = '-';
+          }
+        }//ไม่มี unit_generic_id จะโชว์เป็น base
+        else {
+          if (v.in_qty != 0) {
+            v.in_qty_show = v.in_qty
+          } else {
+            v.in_qty_show = '-';
+          }
+          if (v.out_qty != 0) {
+            v.out_qty_show = v.out_qty
+          } else {
+            v.out_qty_show = '-';
+          }
+        }
+        v.expired_date = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('DD/MM/') + (moment(v.expired_date).get('year')) : '-';
+        v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
+        v.balance_unit_cost = inventoryReportModel.comma(_balance_unit_cost * _conversion_qty);
+        v.in_qty_base = inventoryReportModel.commaQty(_in_qty);
+        v.out_qty_base = inventoryReportModel.commaQty(_out_qty);
+      }
+
+      //inventory_stock
+      for (const e of inventory_stock[0]) {
+        //มี unit_generic_id จะโชว์เป็น pack
+        if (e.unit_generic_id) {
+          e.qty = +e.in_qty - +e.out_qty
+          e.qty_pack = inventoryReportModel.commaQty(Math.floor(e.qty / e.conversion_qty));
+          e.qty_base = inventoryReportModel.commaQty(Math.floor(e.qty % e.conversion_qty));
+          if (e.qty_pack != 0 && e.qty_base != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          } else if (e.qty_pack != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          } else if (e.qty_base != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          }
+        }
+        //ไม่มี unit_generic_id จะโชว์เป็น base
+        else {
+          e.in_qty = inventoryReportModel.commaQty(+e.in_qty - +e.out_qty)
+        }
+      }
+      obj.inventory_stock = inventory_stock[0];
+      obj.generic_stock = generic_stock[0];
+      data.push(obj);
+    }
+
+  }
+  if (data.length <= 0) {
+    res.render('error404');
+  }
+  res.render('generic_stockAll', {
+    hospitalName: hospitalName,
+    warehouseName: warehouseName,
+    startDate: startDate,
+    endDate: endDate,
+    data: data,
+    printDate: printDate(req.decoded.SYS_PRINT_DATE)
+  });
+}));
+
+router.get('/report/getGenericWarehouseAll', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.query.warehouseId;
+  let offset = '';
+  let rs = await inventoryReportModel.getGenericWarehouse(db, warehouseId, offset)
+  res.send({ ok: true, rows: rs[0].length })
 }));
 
 export default router;
