@@ -2941,7 +2941,7 @@ GROUP BY
         // left join mm_generic_group_3 AS mgg3 ON mgg3.group_code_3 = mg.group_code_3 and mgg3.group_code_2 = mg.group_code_2 and mgg3.group_code_1 = mg.group_code_1
         // left join mm_generic_group_4 AS mgg4 ON mgg4.group_code_4 = mg.group_code_4 and mgg4.group_code_3 = mg.group_code_3 and mgg4.group_code_2 = mg.group_code_2 and mgg4.group_code_1 = mg.group_code_1
         // left join mm_generic_hosp mgh on mgh.id = mg.generic_hosp_id
-    
+
         // where vs.warehouse_id=${wareHouseId}
         // and mg.generic_type_id in (${genericType})
         // and vs.stock_date BETWEEN  '${year - 1}-10-01 00:00:00' 
@@ -3157,7 +3157,7 @@ GROUP BY
         return knex.raw(sql)
     }
 
-    getGenericInStockcrad(knex: Knex, warehouseId: string, startDate: any, endDate: any, dateSetting = 'view_stock_card_warehouse') {
+    getGenericInStockcrad(knex: Knex, warehouseId: string, startDate: any, endDate: any, dateSetting = 'view_stock_card_warehouse', offset: any) {
         let sql = `SELECT
             vscw.generic_id,
             mp.generic_name
@@ -3171,7 +3171,10 @@ GROUP BY
             GROUP BY
                 vscw.generic_id
             ORDER BY
-	            mp.generic_name`
+                mp.generic_name`
+        if (offset !== '') {
+            sql += ` LIMIT 150 OFFSET ${offset}`
+        }
         // LIMIT 200 OFFSET 0
         return knex.raw(sql)
     }
@@ -3191,7 +3194,7 @@ GROUP BY
             mp.generic_id
         ORDER BY
             mg.generic_name`
-        if (offset > 0) {
+        if (offset !== '') {
             sql += ` LIMIT 150 OFFSET ${offset}`
         }
         // LIMIT 200 OFFSET 0
