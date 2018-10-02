@@ -1355,6 +1355,7 @@ FROM
         wro.receive_code,
         mg.generic_id,
         mg.generic_name,
+        mg.working_code,
         sum( wrod.receive_qty ) AS receive_qty,
         mul.unit_name AS small_unit_name,
         mus.unit_name AS lange_unit_name,
