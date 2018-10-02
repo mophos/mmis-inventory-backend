@@ -34,7 +34,7 @@ router.post('/', async (req, res, next) => {
       obj.unit_generic_id = v.unit_generic_id;
       _detail.push(obj);
     });
-
+    
     await borrowModel.saveDetail(db, _detail);
 
     res.send({ ok: true });

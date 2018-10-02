@@ -604,14 +604,10 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
   let dstProducts = [];
   let srcProducts = [];
   let balances = [];
-  let returnData: any = [];
-  let qty: number = 0;
   for (let v of results) {
     if (+v.qty != 0) {
       let obj: any = {};
       let id = uuid();
-
-      qty = +v.qty;
 
       obj.wm_product_id = id;
       obj.dst_warehouse_id = v.dst_warehouse_id;
@@ -621,7 +617,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       obj.product_id = v.product_id;
       obj.generic_id = v.generic_id;
       obj.unit_generic_id = v.unit_generic_id;
-      obj.qty = +v.qty;
+      obj.qty = +v.lot_qty;
       obj.borrow_code = v.borrow_code;
       obj.borrow_id = v.borrow_id;
       obj.price = v.price;
@@ -658,33 +654,40 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
   }
 
   // ==================================== RETURN DATA ====================
+  let returnData: any = [];
+
   for (let v of dstProducts) {
-    let rsLots: any = await borrowModel.getLotbalance(db, v.src_warehouse_id, v.product_id,
-      v.lot_no);
-
-    if (qty > rsLots[0].lot_balance) {
-      qty -= rsLots[0].lot_balance;
+    // console.log('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',v);
     
-      if (qty < rsLots[0].lot_balance) {
-        returnData.push({
-          generic_id: v.generic_id,
-          unit_generic_id: v.unit_generic_id,
-          qty: qty,
-          src_warehouse_id: v.src_warehouse_id,
-          dst_warehouse_id: v.dst_warehouse_id,
-          lot_no: v.lot_no
-        });
+    let rsLots: any = await borrowModel.getLotbalance(db, v.src_warehouse_id, v.product_id, v.lot_no);
 
-        qty = 0;
+    if (+v.qty > rsLots[0].lot_balance) {
+      v.qty -= rsLots[0].lot_balance;
+      if (+v.qty < rsLots[0].lot_balance) {
 
-        // let rsLots = await borrowModel.getLotbalance(db, v.src_warehouse_id, v.product_id,
-        // v.lot_no);
-
-        // let idxLots = _.findIndex(rsLots, [{ "lot_no": v.lot_no }, { "product_id": v.product_id }]);
-        // if (idxLots > -1) {
-        // v.qty = rsLots[idxLots].lot_balance;
-        // console.log('llllllllllllllllllllllllllllllllll', rsLots[idxLots].lot_balance);
-        // }
+        const idx = _.findIndex(returnData, { 'src_warehouse_id': v.src_warehouse_id,'dst_warehouse_id': v.dst_warehouse_id  });
+        if (idx > -1 ) {
+          returnData[idx].products.push({
+            generic_id: v.generic_id,
+            unit_generic_id: v.unit_generic_id,
+            qty: v.qty,
+            lot_no: v.lot_no
+          })
+        } else {
+          let product = [];
+          product.push({
+            generic_id: v.generic_id,
+            unit_generic_id: v.unit_generic_id,
+            qty: v.qty,
+            lot_no: v.lot_no
+          })
+          const obj: any = {
+            src_warehouse_id: v.src_warehouse_id,
+            dst_warehouse_id: v.dst_warehouse_id,
+            products: product
+          }
+          returnData.push(obj)
+        }
       } else v.qty = +v.qty;
     }
   };
@@ -695,7 +698,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
   // =================================== BORROW IN ========================
   let data = [];
 
-  dstProducts.forEach(v => {
+  for (const v of dstProducts) {
     if (v.qty != 0) {
       let objIn: any = {};
       objIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -729,9 +732,10 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       objIn.comment = 'รับยืม';
       data.push(objIn);
     }
-  });
+  };
 
-  srcProducts.forEach(v => {
+  for (const v of srcProducts) {
+    
     if (v.qty != 0) {
       let objOut: any = {};
       objOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -749,6 +753,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
         product_id: v.product_id,
         warehouse_id: v.src_warehouse_id,
       });
+      
       if (srcIdx > -1) {
         srcBalance = balances[srcIdx].balance - v.qty;
         balances[srcIdx].balance -= v.qty;
@@ -765,8 +770,10 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       objOut.expired_date = v.expired_date;
       data.push(objOut);
     }
-  });
+  };
 
+  console.log(data);
+  
   // await borrowModel.saveDstProducts(db, dstProducts);
   // await borrowModel.decreaseQty(db, dstProducts);
   // await borrowModel.changeApproveStatusIds(db, borrowIds, peopleUserId);
