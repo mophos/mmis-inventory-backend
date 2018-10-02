@@ -619,6 +619,14 @@ export class BorrowModel {
     return knex.raw(sql);
   }
 
+  getLotbalance(knex: Knex, warehouseId: any, productId: any, lot_no: any) {
+    return knex('wm_products as wp')
+      .select('wp.product_id', 'wp.lot_no', 'wp.qty as lot_balance')
+      .where('wp.warehouse_id', warehouseId)
+      .andWhere('wp.product_id', productId)
+      .andWhere('lot_no', lot_no)
+  }
+
   transferRequest(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_transfer as wmt')
       .select('wmt.borrow_id', 'wmt.transfer_code', 'wmt.mark_deleted', 'wmt.transfer_date',
@@ -829,5 +837,11 @@ export class BorrowModel {
       .leftJoin('wm_borrow as b', 'r.returned_code', 'b.returned_code')
       .leftJoin('wm_borrow_other_summary as bo', 'r.returned_code', 'bo.returned_code')
       .whereIn('r.returned_id', returnedId)
+  }
+
+  getCountOrder(knex: Knex, year: any) {
+    return knex('wm_borrow')
+      .select(knex.raw('count(*) as total'))
+      .whereRaw(`borrow_date >= '${year}-10-01' AND borrow_date <= '${year + 1}-09-30'`);
   }
 }

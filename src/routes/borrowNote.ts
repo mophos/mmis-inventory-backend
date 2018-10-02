@@ -16,6 +16,7 @@ router.post('/', async (req, res, next) => {
   let notes = req.body.notes;
   let detail = req.body.detail;
 
+  if (!notes.borrow_date) notes.borrow_date = moment().format('YYYY-MM-DD');
   notes.people_user_id = req.decoded.people_user_id;
   notes.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
 
@@ -187,7 +188,7 @@ router.get('/', async (req, res, next) => {
   // }
   try {
     let rs: any = await borrowModel.getList(db, query, warehouse);
-    let rsTotal: any = await borrowModel.getListTotal(db, query);
+    let rsTotal: any = await borrowModel.getListTotal(db, query, warehouse);
     res.send({ ok: true, rows: rs, total: rsTotal[0].total });
   } catch (error) {
     res.send({ ok: false, error: error.message });

@@ -298,9 +298,21 @@ router.post('/save', co(async (req, res, next) => {
 
   if (_generics.length && _summary) {
     try {
-      let borrowCode = await serialModel.getSerial(db, 'BR');
+
+      let year = moment(_summary.borrowDate, 'YYYY-MM-DD').get('year');
+      let month = moment(_summary.borrowDate, 'YYYY-MM-DD').get('month') + 1;
+
+      const no = await borrowModel.getCountOrder(db, year);
+      if (month >= 10) {
+        year += 1;
+      }
+
+      const count = +no[0].total + 1;
+
+      let serial = await serialModel.getSerialNew(db, 'BR', count, year);
+
       let borrow = {
-        borrow_code: borrowCode,
+        borrow_code: serial,
         borrow_date: _summary.borrowDate,
         src_warehouse_id: _summary.srcWarehouseId,
         dst_warehouse_id: _summary.dstWarehouseId,
@@ -435,8 +447,9 @@ router.post('/approve-all', co(async (req, res, next) => {
       }
     }
     if (isValid) {
-      await approve(db, borrowIds, warehouseId, peopleUserId);
-      res.send({ ok: true });
+      let rs: any = await approve(db, borrowIds, warehouseId, peopleUserId);
+
+      res.send({ ok: true, data: rs });
     } else {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะบางรายการมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
     }
@@ -537,7 +550,7 @@ router.post('/returned/approved', co(async (req, res, next) => {
         await borrowModel.updateReturnedApproveOther(db, returnedIds);
       }
     }
-    
+
     await borrowModel.changeApproveStatusReturned(db, returnedIds, peopleUserId);
     await borrowModel.saveProducts(db, products);
     await stockCard.saveFastStockTransaction(db, data);
@@ -590,12 +603,15 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
 
   let dstProducts = [];
   let srcProducts = [];
-  let srcWarehouseId = null;
   let balances = [];
+  let returnData: any = [];
+  let qty: number = 0;
   for (let v of results) {
     if (+v.qty != 0) {
       let obj: any = {};
       let id = uuid();
+
+      qty = +v.qty;
 
       obj.wm_product_id = id;
       obj.dst_warehouse_id = v.dst_warehouse_id;
@@ -605,9 +621,9 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       obj.product_id = v.product_id;
       obj.generic_id = v.generic_id;
       obj.unit_generic_id = v.unit_generic_id;
+      obj.qty = +v.qty;
       obj.borrow_code = v.borrow_code;
       obj.borrow_id = v.borrow_id;
-      obj.qty = +v.qty;
       obj.price = v.price;
       obj.cost = v.cost;
       obj.lot_no = v.lot_no;
@@ -638,11 +654,41 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       }
       balances.push(obj_remaint_dst);
       balances.push(obj_remain_src);
-
     }
   }
-  let srcBalances = [];
-  let dstBalances = [];
+
+  // ==================================== RETURN DATA ====================
+  for (let v of dstProducts) {
+    let rsLots: any = await borrowModel.getLotbalance(db, v.src_warehouse_id, v.product_id,
+      v.lot_no);
+
+    if (qty > rsLots[0].lot_balance) {
+      qty -= rsLots[0].lot_balance;
+    
+      if (qty < rsLots[0].lot_balance) {
+        returnData.push({
+          generic_id: v.generic_id,
+          unit_generic_id: v.unit_generic_id,
+          qty: qty,
+          src_warehouse_id: v.src_warehouse_id,
+          dst_warehouse_id: v.dst_warehouse_id,
+          lot_no: v.lot_no
+        });
+
+        qty = 0;
+
+        // let rsLots = await borrowModel.getLotbalance(db, v.src_warehouse_id, v.product_id,
+        // v.lot_no);
+
+        // let idxLots = _.findIndex(rsLots, [{ "lot_no": v.lot_no }, { "product_id": v.product_id }]);
+        // if (idxLots > -1) {
+        // v.qty = rsLots[idxLots].lot_balance;
+        // console.log('llllllllllllllllllllllllllllllllll', rsLots[idxLots].lot_balance);
+        // }
+      } else v.qty = +v.qty;
+    }
+  };
+  // =====================================================================
 
   srcProducts = _.clone(dstProducts);
 
@@ -719,13 +765,14 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       objOut.expired_date = v.expired_date;
       data.push(objOut);
     }
-
   });
 
-  await borrowModel.saveDstProducts(db, dstProducts);
-  await borrowModel.decreaseQty(db, dstProducts);
-  await borrowModel.changeApproveStatusIds(db, borrowIds, peopleUserId);
-  await stockCard.saveFastStockTransaction(db, data);
+  // await borrowModel.saveDstProducts(db, dstProducts);
+  // await borrowModel.decreaseQty(db, dstProducts);
+  // await borrowModel.changeApproveStatusIds(db, borrowIds, peopleUserId);
+  // await stockCard.saveFastStockTransaction(db, data);
+
+  return returnData;
 });
 
 router.post('/confirm', co(async (req, res, next) => {
