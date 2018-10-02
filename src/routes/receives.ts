@@ -185,9 +185,9 @@ router.get('/yeartest', co(async (req, res, next) => {
   if (month >= 10) {
     year += 1;
   }
-  let rs:any = await receiveModel.getReceiveOtherNumber(req.db,year)
-    signale.info(year,rs)
-    res.send({year:year,rs:rs})
+  let rs: any = await receiveModel.getReceiveOtherNumber(req.db, year)
+  signale.info(year, rs)
+  res.send({ year: year, rs: rs })
 }))
 router.post('/', co(async (req, res, next) => {
 
@@ -248,11 +248,12 @@ router.post('/', co(async (req, res, next) => {
             if (month >= 10) {
               year += 1;
             }
-            let rs:any = await receiveModel.getReceiveNumber(req.db,year)
+            let rsPO: any = await receiveModel.getReceiveNumberPO(req.db, year)
+            let rs: any = await receiveModel.getReceiveNumber(req.db, year)
             if (summary.purchaseOrderId) {
-              _receiveCode = await serialModel.getSerialNew(db, 'RV',rs[0].count+1 , year);
+              _receiveCode = await serialModel.getSerialNew(db, 'RV', rsPO[0].count + 1, year);
             } else {
-              _receiveCode = await serialModel.getSerialNew(db, 'RT',rs[0].count+1 , year);
+              _receiveCode = await serialModel.getSerialNew(db, 'RT', rs[0].count + 1, year);
               _receiveTmpCode = _receiveCode;
             }
 
@@ -339,7 +340,7 @@ router.put('/:receiveId', co(async (req, res, next) => {
 
   let products: any = [];
   products = req.body.products;
-  if (receiveId && summary.deliveryCode && summary.deliveryDate &&summary.supplierId && summary.receiveDate && products.length) {
+  if (receiveId && summary.deliveryCode && summary.deliveryDate && summary.supplierId && summary.receiveDate && products.length) {
 
     const data: any = {
       // receive_code: summary.receiveCode,
@@ -432,53 +433,53 @@ router.put('/:receiveId', co(async (req, res, next) => {
         }
         if (passPick) {
 
-        if (summary.purchaseOrderId) {
-          let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId); // 100
-          let rsReceived = await receiveModel.getTotalPricePurcehaseReceivedWithoutOwner(db, summary.purchaseOrderId, receiveId);
-          let totalPrice = +rsReceived[0].total + totalPriceReceive;
-          if (+totalPrice > +rsPo[0].total) {
-            res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
-          } else {
-            let temp = summary.receiveCode.split('-');
-            if (temp[0] === 'RT') {
-              let receiveCode = await serialModel.getSerial(db, 'RV');
-              data.receive_code = receiveCode;
-            }
-
-            let rsProduct = await receiveModel.getProductInPurchase(db, summary.purchaseOrderId);
-            let isInPurchase = true;
-            productsData.forEach(v => {
-              let idx = _.findIndex(rsProduct, { product_id: v.product_id });
-              if (idx === -1) isInPurchase = false;
-            });
-
-            if (isInPurchase) {
-              await receiveModel.updateReceiveSummary(db, receiveId, data);
-              // remove old data
-              await receiveModel.removeReceiveDetail(db, receiveId);
-              // insert new data
-              await receiveModel.saveReceiveDetail(db, productsData);
-
-              if (closePurchase === 'Y') {
-                await receiveModel.updatePurchaseCompletedStatus(db, summary.purchaseOrderId);
-              }
-              res.send({ ok: true });
+          if (summary.purchaseOrderId) {
+            let rsPo = await receiveModel.getTotalPricePurchase(db, summary.purchaseOrderId); // 100
+            let rsReceived = await receiveModel.getTotalPricePurcehaseReceivedWithoutOwner(db, summary.purchaseOrderId, receiveId);
+            let totalPrice = +rsReceived[0].total + totalPriceReceive;
+            if (+totalPrice > +rsPo[0].total) {
+              res.send({ ok: false, error: 'มูลค่าที่รับทั้งหมดมากกว่ามูลค่าที่จัดซื้อ' });
             } else {
-              res.send({ ok: false, error: 'มีรายการสินค้าบางรายการไม่ได้อยู่ในใบสั่งซื้อ' })
-            }
-          }
-        } else {
-          await receiveModel.updateReceiveSummary(db, receiveId, data);
-          // remove old data
-          await receiveModel.removeReceiveDetail(db, receiveId);
-          // insert new data
-          await receiveModel.saveReceiveDetail(db, productsData);
+              let temp = summary.receiveCode.split('-');
+              if (temp[0] === 'RT') {
+                let receiveCode = await serialModel.getSerial(db, 'RV');
+                data.receive_code = receiveCode;
+              }
 
-          if (closePurchase === 'Y') {
-            await receiveModel.updatePurchaseCompletedStatus(db, summary.purchaseOrderId);
+              let rsProduct = await receiveModel.getProductInPurchase(db, summary.purchaseOrderId);
+              let isInPurchase = true;
+              productsData.forEach(v => {
+                let idx = _.findIndex(rsProduct, { product_id: v.product_id });
+                if (idx === -1) isInPurchase = false;
+              });
+
+              if (isInPurchase) {
+                await receiveModel.updateReceiveSummary(db, receiveId, data);
+                // remove old data
+                await receiveModel.removeReceiveDetail(db, receiveId);
+                // insert new data
+                await receiveModel.saveReceiveDetail(db, productsData);
+
+                if (closePurchase === 'Y') {
+                  await receiveModel.updatePurchaseCompletedStatus(db, summary.purchaseOrderId);
+                }
+                res.send({ ok: true });
+              } else {
+                res.send({ ok: false, error: 'มีรายการสินค้าบางรายการไม่ได้อยู่ในใบสั่งซื้อ' })
+              }
+            }
+          } else {
+            await receiveModel.updateReceiveSummary(db, receiveId, data);
+            // remove old data
+            await receiveModel.removeReceiveDetail(db, receiveId);
+            // insert new data
+            await receiveModel.saveReceiveDetail(db, productsData);
+
+            if (closePurchase === 'Y') {
+              await receiveModel.updatePurchaseCompletedStatus(db, summary.purchaseOrderId);
+            }
+            res.send({ ok: true });
           }
-          res.send({ ok: true });
-        }
         } else {
           res.send({ ok: false, push: true, error: 'มีรายการรับที่ถูกยืนยันการหยิบแล้ว' });
         }
@@ -670,8 +671,8 @@ router.post('/other', co(async (req, res, next) => {
       if (monthRo >= 10) {
         yearRo += 1;
       }
-      let countRo:any = await receiveModel.getReceiveOtherNumber(db,yearRo)
-      let receiveCode = await serialModel.getSerialNew(db, 'RO',countRo[0].count+1,yearRo);
+      let countRo: any = await receiveModel.getReceiveOtherNumber(db, yearRo)
+      let receiveCode = await serialModel.getSerialNew(db, 'RO', countRo[0].count + 1, yearRo);
       // let receiveId = moment().format('x');
 
       const data: any = {

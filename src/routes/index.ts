@@ -3004,6 +3004,7 @@ router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:wa
         'ลำดับ': i,
         'วันที่รับเข้า': v.receive_date,
         'เลขที่ใบรับ': v.receive_code,
+        'รหัสเวชภัณฑ์': v.working_code,
         'ชื่อเวชภัณฑ์': v.generic_name,
         'จำนวนที่รับ': v.receive_qty,
         'หน่วย': v.small_unit_name,

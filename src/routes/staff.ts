@@ -2621,6 +2621,28 @@ router.get('/adjust-stock/list', async (req, res, next) => {
     db.destroy();
   }
 });
+router.get('/adjust-stock/list/search', async (req, res, next) => {
+  const db = req.db;
+  const warehouseId = req.decoded.warehouseId;
+  const limit = +req.query.limit;
+  const offset = +req.query.offset;
+  const query = req.query.query
+  try {
+    const rs = await adjustStockModel.searchlist(db, warehouseId, limit, offset,query);
+    const rsTotal = await adjustStockModel.totalsearchList(db, warehouseId,query);
+    for (const r of rs) {
+      const rsGeneric = await adjustStockModel.getGeneric(db, r.adjust_id);
+      if (rsGeneric) {
+        r.generics = rsGeneric;
+      }
+    }
+    res.send({ ok: true, rows: rs, total: rsTotal[0].total });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
 
 router.get('/adjust-stock/generic', async (req, res, next) => {
   const db = req.db;
