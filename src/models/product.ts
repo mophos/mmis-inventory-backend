@@ -52,7 +52,7 @@ export class ProductModel {
       AND mg.generic_id = '${genericId}'
       and wp.qty > 0
     ORDER BY
-    wp.qty DESC
+    wp.expired_date asc, wp.qty DESC
     `;
     return knex.raw(sql);
   }

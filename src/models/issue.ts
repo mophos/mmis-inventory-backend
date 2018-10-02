@@ -7,7 +7,11 @@ export class IssueModel {
     return knex('wm_issue_summary')
       .insert(data, 'issue_id');
   }
-
+  getCountCode(knex:Knex , year:any){
+    return knex('wm_issue_summary')
+    .count('* as count').as('count')
+    .whereBetween('issue_date', [(+year - 1) + '-10-01',+year + '-09-30'])
+  }
   updateSummary(knex: Knex, issueId: any, data: any) {
     return knex('wm_issue_summary')
       .where('issue_id', issueId)

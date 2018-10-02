@@ -79,27 +79,33 @@ export class SerialModel {
       .where('sr_type', srType);
   }
 
-  getSerialInfoStaff(knex: Knex, srType: string) {
+  getSerialInfoStaff(knex: Knex, srType: string,warehoseId:any) {
+    warehoseId = +warehoseId
     return knex('sys_serials as sr')
       .where('sr.sr_type', srType)
       .select(knex.raw(`(
         SELECT
           count( * ) AS sr_no 
         FROM
-          ( SELECT count( wrod.receive_other_id ) AS count FROM wm_receive_other_detail AS wrod WHERE wrod.warehouse_id = '405' GROUP BY wrod.receive_other_id ) AS sr_no 
+          ( SELECT count( wrod.receive_other_id ) AS count FROM wm_receive_other_detail AS wrod WHERE wrod.warehouse_id = ${warehoseId} GROUP BY wrod.receive_other_id ) AS sr_no 
           ) AS sr_no`), 'sr.is_year_prefix', 'sr.sr_prefix', 'sr.digit_length', 'sf.serial_code')
       .leftJoin('sys_serial_format as sf', 'sf.serial_format_id', 'sr.serial_format_id')
       .limit(1);
   }
 
-  async getSerialSatff(knex: Knex, srType: string) {
-    let serialInfo = await this.getSerialInfoStaff(knex, srType);
+  async getSerialSatff(knex: Knex, srType: string ,warehoseId:any) {
+    let serialInfo = await this.getSerialInfoStaff(knex, srType,warehoseId);
     if (serialInfo.length) {
       let currentNo = serialInfo[0].sr_no + 1;
       let serialCode = serialInfo[0].serial_code;
       let serialLength = serialInfo[0].digit_length;
       let serialPrefix = serialInfo[0].sr_prefix;
       let serialYear = moment().get('year') + 543;
+      let monthRo = moment().get('month') + 1;
+      if (monthRo >= 10) {
+        serialYear += 1;
+      }
+      // let serialYear = moment().get('year') + 543;
       let _serialYear = serialYear.toString().substring(2);
       let newSerialNo = this.paddingNumber(currentNo, serialLength);
 

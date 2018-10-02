@@ -647,12 +647,12 @@ WHERE
   }
   getPickCheck(knex: Knex, receive_id: any) {
     return knex('wm_pick_detail as pd')
-    .select('ug.qty as conversion_qty','p.pick_code','p.wm_pick','pd.*',knex.raw('pd.pick_qty as pick_qty'))
-      .whereIn('pd.receive_id' ,receive_id) 
-      .join('wm_pick as p','p.pick_id','pd.pick_id')
-      .join('mm_unit_generics as ug','ug.unit_generic_id','pd.unit_generic_id')
-      .where('p.is_approve','Y')
-      // .groupBy('pd.product_id', 'pd.receive_id', 'pd.unit_generic_id', 'pd.lot_no') ;
+      .select('ug.qty as conversion_qty', 'p.pick_code', 'p.wm_pick', 'pd.*', knex.raw('pd.pick_qty as pick_qty'))
+      .whereIn('pd.receive_id', receive_id)
+      .join('wm_pick as p', 'p.pick_id', 'pd.pick_id')
+      .join('mm_unit_generics as ug', 'ug.unit_generic_id', 'pd.unit_generic_id')
+      .where('p.is_approve', 'Y')
+    // .groupBy('pd.product_id', 'pd.receive_id', 'pd.unit_generic_id', 'pd.lot_no') ;
 
     // return knex('wm_receive_detail as rd')
     // .select('q1.pick_qty','rd.receive_detail_id','rd.product_id', 'rd.receive_id', 'rd.unit_generic_id', 'rd.lot_no','rd.receive_qty')
@@ -1231,6 +1231,26 @@ WHERE
       .update({
         'pc.purchase_order_status': 'APPROVED'
       });
+  }
+
+  getReceiveNumberPO(knex: Knex, year: any) {
+    return knex('wm_receives')
+      .count('* as count').as('count')
+      .whereBetween('receive_date', [(+year - 1) + '-10-01', +year + '-09-30'])
+      .whereNotNull('purchase_order_id')
+  }
+
+  getReceiveNumber(knex: Knex, year: any) {
+    return knex('wm_receives')
+      .count('* as count').as('count')
+      .whereBetween('receive_date', [(+year - 1) + '-10-01', +year + '-09-30'])
+      .whereNull('purchase_order_id')
+  }
+
+  getReceiveOtherNumber(knex: Knex, year: any) {
+    return knex('wm_receive_other')
+      .count('* as count').as('count')
+      .whereBetween('receive_date', [(+year - 1) + '-10-01', +year + '-09-30'])
   }
 
   checkDeliveryCode(knex: Knex, deliveryCode: any, supplierId: any) {

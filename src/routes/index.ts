@@ -1695,13 +1695,17 @@ router.get('/report/list/receiveCodeCheck/:sID/:eID', wrap(async (req, res, next
   if (committee[0] === undefined) { res.render('no_commitee'); }
   let staffReceive = await inventoryReportModel.staffReceive(db);
   let chief = await inventoryReportModel.getChief(db, 'CHIEF');
-
+  let serialYear = moment().get('year') + 543;
+  let monthRo = moment().get('month') + 1;
+  if (monthRo >= 10) {
+    serialYear += 1;
+  }
   res.render('check_receive', {
     chief: chief[0],
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
-
+    serialYear:serialYear,
     check_receive: check_receive,
     province: province,
     bahtText: bahtText,
@@ -2198,13 +2202,17 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let chief = await inventoryReportModel.getChief(db, 'CHIEF');
   let idxChiefPo = _.findIndex(chief, { people_id: chiefPo });
   idxChiefPo > -1 ? cName.push(chief[idxChiefPo]) : cName = [];
-
+  let serialYear = moment().get('year') + 543;
+  let monthRo = moment().get('month') + 1;
+  if (monthRo >= 10) {
+    serialYear += 1;
+  }
   res.render('check_receive', {
     chief: cName[0],
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
-
+    serialYear:serialYear,
     check_receive: check_receive,
     province: province,
     bahtText: bahtText,
@@ -2286,7 +2294,11 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
   let chief = await inventoryReportModel.getChief(db, 'CHIEF');
   let idxChiefPo = _.findIndex(chief, { people_id: chiefPo });
   idxChiefPo > -1 ? cName.push(chief[idxChiefPo]) : cName = [];
-
+  let serialYear = moment().get('year') + 543;
+  let monthRo = moment().get('month') + 1;
+  if (monthRo >= 10) {
+    serialYear += 1;
+  }
   res.render('check_receives', {
     totalPrice: totalPrice,
     _bahtText: _bahtText,
@@ -2294,7 +2306,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
-
+    serialYear:serialYear,
     check_receive: check_receive,
     length: length,
     province: province,
@@ -2991,6 +3003,7 @@ router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:wa
         'ลำดับ': i,
         'วันที่รับเข้า': v.receive_date,
         'เลขที่ใบรับ': v.receive_code,
+        'รหัสเวชภัณฑ์': v.working_code,
         'ชื่อเวชภัณฑ์': v.generic_name,
         'จำนวนที่รับ': v.receive_qty,
         'หน่วย': v.small_unit_name,
