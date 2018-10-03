@@ -920,7 +920,11 @@ export class RequisitionOrderModel {
     let query = sql.join(';');
     return knex.raw(query);
   }
-
+  checkDuplicatedApprove(knex: Knex, requisitionId: any) {
+    return knex('wm_requisition_confirms')
+      .count('* as total')
+      .where('requisition_order_id', requisitionId);
+  }
   getRequisitionFromConfirm(knex: Knex, confirmId: any) {
     return knex('wm_requisition_confirms as rc')
       .select('rc.confirm_date', 'rc.confirm_id', 'ro.requisition_date')
