@@ -353,8 +353,10 @@ export class BorrowModel {
       sql += `, ${v.unit_generic_id}, '${v.people_user_id}'
           , '${v.created_at}')
           ON DUPLICATE KEY UPDATE
-          qty=qty+${v.qty}
+          qty = qty + ${v.qty}
         `;
+      console.log('xxxxxxxxxxxxxx', sql);
+
       sqls.push(sql);
     });
 
@@ -373,6 +375,8 @@ export class BorrowModel {
       AND warehouse_id = ${v.src_warehouse_id}
       AND product_id = '${v.product_id}'
       `;
+      console.log('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', sql);
+
       sql.push(_sql);
     });
 
@@ -407,7 +411,7 @@ export class BorrowModel {
     // .whereRaw('wp.product_id=d.product_id and wp.warehouse_id=t.dst_warehouse_id and wp.lot_no=d.lot_no and wp.expired_date=d.expired_date');
 
     return knex('wm_borrow_product as d')
-      .select('d.borrow_product_id','d.borrow_id','d.wm_product_id','d.qty as lot_qty','ug.qty as conversion_qty','p.lot_no',
+      .select('d.borrow_product_id', 'd.borrow_id', 'd.wm_product_id', 'd.qty as lot_qty', 'ug.qty as conversion_qty', 'p.lot_no',
         'p.expired_date', 'p.cost', 'p.price', 'p.product_id',
         'mp.generic_id', 't.*', 'tg.*', subBalanceSrc, subBalanceDst, 'p.unit_generic_id')
       .innerJoin('wm_borrow as t', 't.borrow_id', 'd.borrow_id')
@@ -621,10 +625,20 @@ export class BorrowModel {
 
   getLotbalance(knex: Knex, warehouseId: any, productId: any, lot_no: any) {
     return knex('wm_products as wp')
-      .select('wp.product_id', 'wp.lot_no', 'wp.qty as lot_balance')
+      .select('wp.product_id', 'wp.lot_no', 'wp.qty as lot_balance', 'wp.cost')
       .where('wp.warehouse_id', warehouseId)
       .andWhere('wp.product_id', productId)
-      .andWhere('lot_no', lot_no)
+      .andWhere('wp.lot_no', lot_no)
+  }
+
+  getProductbalance(knex: Knex, warehouseId: any, productId: any, lot_no: any) {
+    return knex('wm_products as wp')
+      .sum('wp.qty as balance')
+      .select('wp.product_id', 'wp.lot_no', 'wp.cost')
+      .where('wp.warehouse_id', warehouseId)
+      .andWhere('wp.product_id', productId)
+      .andWhere('wp.lot_no', lot_no)
+      .groupBy('wp.product_id', 'wp.unit_generic_id')
   }
 
   transferRequest(knex: Knex, warehouseId: any, limit: number, offset: number) {
