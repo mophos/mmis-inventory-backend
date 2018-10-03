@@ -1,0 +1,108 @@
+include css.pug
+style(type='text/css' media='print').
+  @media print {
+    @page{
+      margin-top: 0.7cm;
+      margin-left: 1cm;
+      margin-right: 1cm;
+      size:landscape;
+    }
+ }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    - for(var i of data)
+      span.page
+      table.table
+        thead
+          tr 
+            td.center.bold(colspan='12') #{hospitalName}
+          tr 
+            td.center.bold(colspan='12') บัญชีคุมคลังเวชภัณฑ์
+          tr 
+            td.center(colspan='12') ตั้งแต่วันที่ #{startDate} ถึง #{endDate}
+          tr 
+            td.left(colspan='6') รหัสเวชภัณฑ์ #{i.generic_code}
+            td.right(colspan='6') คลัง #{warehouseName}
+            //- td.right(colspan='5') หน่วย #{unit[i]}
+          tr 
+            td.left(colspan='6') ชื่อสามัญ #{i.generic_name}
+            td.right(colspan='6') 
+              if(i.dosage_name)
+                | รูปแบบ #{i.dosage_name}
+          tr 
+            td.left(colspan='12') #{printDate}
+          tr
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") วัน/เดือน/ปี
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") เลขที่เอกสาร
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") รับ/จ่าย
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") หน่วยงาน
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") รับ
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") จ่าย
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") base unit
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px; solid;") คงคลัง
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") ราคา
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") มูลค่า
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") Lot.
+            th(style="border-style: solid;border-width: 2px 1px 2px 1px;") วันหมดอายุ
+        tbody
+        - var y=0
+        - for(var a of i.generic_stock)
+          - y++
+          tr
+            td(style="border:1px solid; padding:0.2em;") #{a.stock_date}
+            td(style="border:1px solid; padding:0.2em;") #{a.document_ref}
+              if(a.delivery_code)
+                br
+                | #{a.delivery_code}
+              if(a.delivery_code_other)
+                br
+                | #{a.delivery_code_other}
+            td(style="border:1px solid; padding:0.2em;") #{a.comment}
+              if(a.receive_type_name)
+                br
+                | #{a.receive_type_name}
+              else
+                | 
+            td(style="border:1px solid; padding:0.2em;") #{a.warehouse_name}
+            if(a.in_qty_show === '-')
+              td.center(style="border:1px solid; padding:0.2em;") #{a.in_qty_show}
+            else
+              td.right(style="border:1px solid; padding:0.2em;") #{a.in_qty_show}
+            if(a.out_qty_show === '-')
+              td.center(style="border:1px solid; padding:0.2em;") #{a.out_qty_show}
+            else
+              td.right(style="border:1px solid; padding:0.2em;") #{a.out_qty_show}
+            td.right(style="border:1px solid; padding:0.2em;") 
+              if(a.in_qty_base != 0)
+                | #{a.in_qty_base}
+              else
+                | #{a.out_qty_base}
+            td.right(style="border:1px solid; padding:0.2em;") #{a.balance_generic_qty}
+            td.right(style="border:1px solid; padding:0.2em;") #{a.balance_unit_cost}
+            td.right(style="border:1px solid; padding:0.2em;")
+              if(a.in_qty != 0)
+                | #{a.in_cost}
+              else
+                | #{a.out_cost}
+            td.right(style="border:1px solid; padding:0.2em;") #{a.lot_no}
+            if(a.expired_date === '-')
+              td.center(style="border:1px solid; padding:0.2em;") #{a.expired_date}
+            else
+              td(style="border:1px solid; padding:0.2em;") #{a.expired_date}
+        tr
+          td(colspan='12') &nbsp;
+        tr
+          td(colspan='12') คงคลัง ณ วันที่ #{endDate}
+        for s in i.inventory_stock
+          if(s.in_qty > 0)
+            tr
+              td(colspan='12') #{s.show_qty}
+        //- tfoot 
+        //-   tr.tbfooter
+        //-     td(colspan='10')
+      .pagebreak
