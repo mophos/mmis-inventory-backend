@@ -68,7 +68,7 @@ router.post('/orders', async (req, res, next) => {
   } else {
     try {
       // get serial
-      const no = await serialModel.getCountOrder(db, year);
+      const no = await orderModel.getCountOrder(db, year);
       if (month >= 10) {
         year += 1;
       }
@@ -121,7 +121,7 @@ router.post('/fast/orders', async (req, res, next) => {
   } else {
     try {
       // get serial
-      const no = await serialModel.getCountOrder(db, year);
+      const no = await orderModel.getCountOrder(db, year);
       if (month >= 10) {
         year += 1;
       }
@@ -664,7 +664,7 @@ router.post('/orders/unpaid/reorder', async (req, res, next) => {
 
         let orders: any = {};
 
-        const no = await serialModel.getCountOrder(db, year);
+        const no = await orderModel.getCountOrder(db, year);
         if (month >= 10) {
           year += 1;
         }
