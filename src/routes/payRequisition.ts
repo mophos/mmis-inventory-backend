@@ -59,6 +59,37 @@ router.get('/orders/waiting', async (req, res, next) => {
   }
 
 });
+router.get('/generics-requisition/unpaid/:unpaidId', async (req, res, next) => {
+
+  let db = req.db;
+  let unpaidId: any = req.params.unpaidId;
+
+  try {
+    let rs: any = await requisitionModel.getOrderUnpaidItems(db, unpaidId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+});
+router.get('/generics-requisition/pay/:requisitionId/:confirmId', async (req, res, next) => {
+
+  let db = req.db;
+  let requisitionId: any = req.params.requisitionId;
+  let confirmId: any = req.params.confirmId;
+
+  try {
+    let rs: any = await requisitionModel.getOrderItemsPayByRequisition(db, requisitionId, confirmId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+});
 
 router.get('/orders/detail/:requisitionId', async (req, res, next) => {
 
@@ -93,7 +124,7 @@ router.get('/generics-requisition/:requisitionId', async (req, res, next) => {
   let db = req.db;
   let requisitionId: any = req.params.requisitionId;
   try {
-    let rs: any = await orderModel.getOrderItemsByRequisition(db, requisitionId);
+    let rs: any = await requisitionModel.getOrderItemsByRequisition(db, requisitionId);
     res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
