@@ -1065,7 +1065,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
     approveData.approve_people_id = peopleId;
 
     const checkApprove = await orderModel.checkDuplicatedApprove(db, confirmId);
-      if (checkApprove[0].total > 0) {
+      if (checkApprove[0].total == 0) {
 
     // get confirm detail
     let rs: any = await orderModel.getRequisitionFromConfirm(db, confirmId);
@@ -1278,7 +1278,7 @@ router.post('/unpaid/confirm', async (req, res, next) => {
   
   try {
     const checkApprove = await orderModel.checkDuplicatedApprove(db, unpaidId);
-    if (checkApprove[0].total > 0) {
+    if (checkApprove[0].total == 0) {
     let rsSummary: any = await orderModel.saveConfirmUnpaid(db, objSummary);
     let orderUnpaidId = rsSummary[0];
 
