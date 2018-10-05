@@ -2873,9 +2873,6 @@ router.get('/report/receive/export/:startdate/:enddate', async (req, res, next) 
   let i = 0;
   for (let tmp of rs[0]) {
     tmp.order_date = moment(tmp.order_date).isValid() ? moment(tmp.order_date).format('DD MMM ') + (moment(tmp.order_date).get('year') + 543) : '';
-    tmp.total_qty = inventoryReportModel.commaQty(tmp.total_qty);
-    tmp.cost = inventoryReportModel.comma(tmp.cost);
-    tmp.total_cost = inventoryReportModel.comma(tmp.total_cost);
   }
   rs[0].forEach(v => {
     i++;
@@ -2894,7 +2891,7 @@ router.get('/report/receive/export/:startdate/:enddate', async (req, res, next) 
       'ราคารวม': v.total_cost,
       'ประเภท': v.generic_type_name,
       'ชนิด': v.account_name ? v.account_name : '',
-      'บริษัทผู้จำหน่าย': v.labeler_name,
+      'บริษัทผู้จำหน่าย': v.labeler_name_po,
     };
     json.push(obj);
   });
