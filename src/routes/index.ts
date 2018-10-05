@@ -3038,9 +3038,9 @@ router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:wa
 
     for (let tmp of data[0]) {
       tmp.receive_date = moment(tmp.receive_date).isValid() ? moment(tmp.receive_date).format('DD MMM ') + (moment(tmp.receive_date).get('year') + 543) : '';
-      tmp.receive_qty = inventoryReportModel.commaQty(tmp.receive_qty);
-      tmp.cost = inventoryReportModel.comma(tmp.cost);
-      tmp.costAmount = inventoryReportModel.comma(tmp.costAmount);
+      // tmp.receive_qty = inventoryReportModel.commaQty(tmp.receive_qty);
+      // tmp.cost = inventoryReportModel.comma(tmp.cost);
+      // tmp.costAmount = inventoryReportModel.comma(tmp.costAmount);
     }
     let json = [];
     let i = 0;
@@ -3053,6 +3053,8 @@ router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:wa
         'รหัสเวชภัณฑ์': v.working_code,
         'ชื่อเวชภัณฑ์': v.generic_name,
         'จำนวนที่รับ': v.receive_qty,
+        'หน่วยใหญ่': v.large_unit_name,
+        'conversion': v.qty,
         'หน่วย': v.small_unit_name,
         'ราคาต่อหน่วย': v.cost,
         'มูลค่า': v.costAmount,
