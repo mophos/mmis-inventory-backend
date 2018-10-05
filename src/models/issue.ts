@@ -264,6 +264,14 @@ export class IssueModel {
     WHERE wis.issue_id = ?`;
     return knex.raw(sql, [id]);
   }
+
+  checkDuplicatedApprove(knex: Knex, requisitionId: any) {
+    return knex('wm_issue_summary')
+      .select('issue_id')
+      .whereIn('issue_id', requisitionId)
+      .andWhere('approved','N');
+  }
+
   getIssueApprove(knex: Knex, id: any, warehouseId: any) {
     let sql = `SELECT
     sg.generic_id,
