@@ -1474,8 +1474,9 @@ FROM
         mg.generic_name,
         mg.working_code,
         sum( wrod.receive_qty ) AS receive_qty,
-        mul.unit_name AS small_unit_name,
-        mus.unit_name AS lange_unit_name,
+        mug.qty,
+        mul.unit_name AS large_unit_name,
+        mus.unit_name AS small_unit_name,
         wrod.cost,
         sum( wrod.receive_qty ) * wrod.cost as costAmount,
         wrt.receive_type_name 

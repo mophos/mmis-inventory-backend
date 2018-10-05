@@ -2873,9 +2873,6 @@ router.get('/report/receive/export/:startdate/:enddate', async (req, res, next) 
   let i = 0;
   for (let tmp of rs[0]) {
     tmp.order_date = moment(tmp.order_date).isValid() ? moment(tmp.order_date).format('DD MMM ') + (moment(tmp.order_date).get('year') + 543) : '';
-    tmp.total_qty = inventoryReportModel.commaQty(tmp.total_qty);
-    tmp.cost = inventoryReportModel.comma(tmp.cost);
-    tmp.total_cost = inventoryReportModel.comma(tmp.total_cost);
   }
   rs[0].forEach(v => {
     i++;
@@ -2894,7 +2891,7 @@ router.get('/report/receive/export/:startdate/:enddate', async (req, res, next) 
       'ราคารวม': v.total_cost,
       'ประเภท': v.generic_type_name,
       'ชนิด': v.account_name ? v.account_name : '',
-      'บริษัทผู้จำหน่าย': v.labeler_name,
+      'บริษัทผู้จำหน่าย': v.labeler_name_po,
     };
     json.push(obj);
   });
@@ -3044,9 +3041,9 @@ router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:wa
 
     for (let tmp of data[0]) {
       tmp.receive_date = moment(tmp.receive_date).isValid() ? moment(tmp.receive_date).format('DD MMM ') + (moment(tmp.receive_date).get('year') + 543) : '';
-      tmp.receive_qty = inventoryReportModel.commaQty(tmp.receive_qty);
-      tmp.cost = inventoryReportModel.comma(tmp.cost);
-      tmp.costAmount = inventoryReportModel.comma(tmp.costAmount);
+      // tmp.receive_qty = inventoryReportModel.commaQty(tmp.receive_qty);
+      // tmp.cost = inventoryReportModel.comma(tmp.cost);
+      // tmp.costAmount = inventoryReportModel.comma(tmp.costAmount);
     }
     let json = [];
     let i = 0;
@@ -3059,6 +3056,8 @@ router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:wa
         'รหัสเวชภัณฑ์': v.working_code,
         'ชื่อเวชภัณฑ์': v.generic_name,
         'จำนวนที่รับ': v.receive_qty,
+        'หน่วยใหญ่': v.large_unit_name,
+        'conversion': v.qty,
         'หน่วย': v.small_unit_name,
         'ราคาต่อหน่วย': v.cost,
         'มูลค่า': v.costAmount,
