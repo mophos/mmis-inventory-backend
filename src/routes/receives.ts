@@ -249,11 +249,11 @@ router.post('/', co(async (req, res, next) => {
               year += 1;
             }
             let rsPO: any = await receiveModel.getReceiveNumberPO(req.db, year)
-            let rs: any = await receiveModel.getReceiveNumber(req.db, year)
+            // let rs: any = await receiveModel.getReceiveNumber(req.db, year)
             if (summary.purchaseOrderId) {
               _receiveCode = await serialModel.getSerialNew(db, 'RV', rsPO[0].count + 1, year);
             } else {
-              _receiveCode = await serialModel.getSerialNew(db, 'RT', rs[0].count + 1, year);
+              _receiveCode = await serialModel.getSerialNew(db, 'RT', rsPO[0].count + 1, year);
               _receiveTmpCode = _receiveCode;
             }
 
@@ -930,167 +930,167 @@ router.post('/approve', co(async (req, res, next) => {
       await receiveModel.adjustCost(db, adjust_price);
       res.send({ ok: true });
 
-      // try { // close pick
-      //   let rdPick: any = await receiveModel.getPickCheck(db, receiveIds)
-      //   let rsWp = []
-      //   let dstProducts = []
-      //   let items = []
-      //   let stockCard = []
-      //   let rsStock: any = []
-      //   let pickIds: any = [];
-      //   if (!Array.isArray(rdPick) || !rdPick.length) {
-      //     res.send({ ok: true });
-      //   } else {
-      //     for (let item of rdPick) {
-      //       let _rsWp: any = await receiveModel.getWmProduct(db, item)
-      //       if (_rsWp[0]) {
-      //         _rsWp[0].wm_pick = item.wm_pick
-      //         item.wm_product_id = _rsWp[0].wm_product_id
-      //         rsWp.push(_rsWp[0])
-      //         pickIds.push(item.pick_id)
-      //         if (item.pick_qty != 0) {
-      //           // wmProductIds.push(v.wm_product_id);
-      //           dstProducts.push({
-      //             qty: item.pick_qty,
-      //             wm_product_id: item.wm_product_id,
-      //             warehouse_id: 505
-      //           });
-      //           items.push({
-      //             qty: item.pick_qty,
-      //             wm_product_id: item.wm_product_id
-      //           });
-      //         }
-      //       }
-      //     }
-      //     let products2: any = [];
+      try { // close pick
+        let rdPick: any = await receiveModel.getPickCheck(db, receiveIds)
+        let rsWp = []
+        let dstProducts = []
+        let items = []
+        let stockCard = []
+        let rsStock: any = []
+        let pickIds: any = [];
+        if (!Array.isArray(rdPick) || !rdPick.length) {
+          res.send({ ok: true });
+        } else {
+          for (let item of rdPick) {
+            let _rsWp: any = await receiveModel.getWmProduct(db, item)
+            if (_rsWp[0]) {
+              _rsWp[0].wm_pick = item.wm_pick
+              item.wm_product_id = _rsWp[0].wm_product_id
+              rsWp.push(_rsWp[0])
+              pickIds.push(item.pick_id)
+              if (item.pick_qty != 0) {
+                // wmProductIds.push(v.wm_product_id);
+                dstProducts.push({
+                  qty: item.pick_qty,
+                  wm_product_id: item.wm_product_id,
+                  warehouse_id: 505
+                });
+                items.push({
+                  qty: item.pick_qty,
+                  wm_product_id: item.wm_product_id
+                });
+              }
+            }
+          }
+          let products2: any = [];
 
-      //     rsWp.forEach((v: any) => {
-      //       let id = uuid();
-      //       let qty = 0;
-      //       let idx = _.findIndex(items, { wm_product_id: v.wm_product_id });
-      //       if (idx > -1) {
-      //         qty = items[idx].qty;
-      //         let obj: any = {
-      //           wm_product_id: id,
-      //           warehouse_id: v.wm_pick,
-      //           // vendor_labeler_id: v.vendor_labeler_id,
-      //           product_id: v.product_id,
-      //           // generic_id: v.generic_id,
-      //           qty: qty,
-      //           price: v.cost,
-      //           cost: v.cost,
-      //           lot_no: v.lot_no,
-      //           expired_date: moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null,
-      //           unit_generic_id: v.unit_generic_id,
-      //           location_id: +v.location_id,
-      //           people_user_id: req.decoded.people_user_id,
-      //           created_at: moment().format('YYYY-MM-DD HH:mm:ss')
-      //         };
-      //         products2.push(obj);
-      //       }
-      //     });
-      //     rsStock = await receiveModel.getStockItem(db, pickIds)
-      //     rsStock = rsStock[0]
-      //     let balances = [];
-      //     for (let s of rsStock) {
-      //       let srcObjBalance: any = {};
-      //       let dstObjBalance: any = {};
-      //       let srcBalance = await receiveModel.getBalance(db, s.product_id, s.src_warehouse);
-      //       srcBalance[0].forEach(v => {
-      //         srcObjBalance.product_id = v.product_id;
-      //         srcObjBalance.warehouse_id = v.warehouse_id;
-      //         srcObjBalance.balance_qty = v.balance;
-      //         srcObjBalance.balance_generic_qty = v.balance_generic;
-      //       });
-      //       balances.push(srcObjBalance);
-      //       let dstBalance = await receiveModel.getBalance(db, s.product_id, s.dst_warehouse)
-      //       dstBalance[0].forEach(v => {
-      //         dstObjBalance.product_id = v.product_id;
-      //         dstObjBalance.warehouse_id = v.warehouse_id;
-      //         dstObjBalance.balance_qty = v.balance;
-      //         dstObjBalance.balance_generic_qty = v.balance_generic;
-      //       });
-      //       balances.push(dstObjBalance);
-      //     }
-      //     rsStock.forEach(v => {
-      //       let objStockcardOut: any = {}
-      //       let objStockcardIn: any = {}
-      //       objStockcardOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-      //       objStockcardOut.product_id = v.product_id;
-      //       objStockcardOut.generic_id = v.generic_id;
-      //       objStockcardOut.unit_generic_id = v.unit_generic_id;
-      //       objStockcardOut.transaction_type = 'REQ_OUT';
-      //       objStockcardOut.document_ref_id = v.pick_id;
-      //       objStockcardOut.document_ref = v.pick_code;
-      //       objStockcardOut.lot_no = v.lot_no;
-      //       objStockcardOut.expired_date = v.expired_date;
-      //       objStockcardOut.in_qty = 0;
-      //       objStockcardOut.in_unit_cost = 0;
-      //       objStockcardOut.out_qty = v.confirm_qty;
-      //       objStockcardOut.out_unit_cost = v.cost;
-      //       let srcBalance = 0;
-      //       let srcBalanceGeneric = 0;
-      //       let srcIdx = _.findIndex(balances, {
-      //         product_id: v.product_id,
-      //         warehouse_id: v.src_warehouse,
-      //       });
-      //       if (srcIdx > -1) {
-      //         balances[srcIdx].balance_qty -= +v.confirm_qty;
-      //         srcBalance = balances[srcIdx].balance_qty
-      //         balances[srcIdx].balance_generic_qty -= +v.confirm_qty;
-      //         srcBalanceGeneric = balances[srcIdx].balance_generic_qty;
-      //       }
-      //       objStockcardOut.balance_qty = srcBalance;
-      //       objStockcardOut.balance_generic_qty = srcBalanceGeneric;
-      //       objStockcardOut.balance_unit_cost = v.cost;
-      //       objStockcardOut.ref_src = v.src_warehouse;
-      //       objStockcardOut.ref_dst = v.dst_warehouse;
-      //       objStockcardOut.comment = 'ให้เบิกโดยการหยิบ';
-      //       stockCard.push(objStockcardOut);
-      //       objStockcardIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-      //       objStockcardIn.product_id = v.product_id;
-      //       objStockcardIn.generic_id = v.generic_id;
-      //       objStockcardIn.unit_generic_id = v.unit_generic_id;
-      //       objStockcardIn.transaction_type = 'REQ_IN';
-      //       objStockcardIn.document_ref_id = v.pick_id;
-      //       objStockcardIn.document_ref = v.pick_code;
-      //       objStockcardIn.lot_no = v.lot_no;
-      //       objStockcardIn.expired_date = v.expired_date;
-      //       objStockcardIn.in_qty = v.confirm_qty;
-      //       objStockcardIn.in_unit_cost = v.cost;
-      //       objStockcardIn.out_qty = 0
-      //       objStockcardIn.out_unit_cost = 0
-      //       let dstBalance = 0;
-      //       let dstBalanceGeneric = 0;
-      //       let dstIdx = _.findIndex(balances, {
-      //         product_id: v.product_id,
-      //         warehouse_id: v.dst_warehouse,
-      //       });
-      //       if (dstIdx > -1) {
-      //         balances[dstIdx].balance_qty += +v.confirm_qty;
-      //         dstBalance = balances[dstIdx].balance_qty;
-      //         balances[dstIdx].balance_generic_qty += +v.confirm_qty;
-      //         dstBalanceGeneric = balances[dstIdx].balance_generic_qty;
-      //       } else {
-      //         dstBalance = +v.confirm_qty;
-      //         dstBalanceGeneric = +v.confirm_qty;
-      //       }
-      //       objStockcardIn.balance_qty = dstBalance
-      //       objStockcardIn.balance_generic_qty = dstBalanceGeneric;
-      //       objStockcardIn.balance_unit_cost = v.cost;
-      //       objStockcardIn.ref_src = v.dst_warehouse;
-      //       objStockcardIn.ref_dst = v.src_warehouse;
-      //       objStockcardIn.comment = 'เบิกโดยการหยิบ';
-      //       stockCard.push(objStockcardIn);
-      //     })
-      //     await stockcard.saveFastStockTransaction(db, stockCard);
-      //     await productModel.saveProducts(db, products2);
-      //     await receiveModel.decreaseQtyPick(db, dstProducts);
-      //     res.send({ ok: true });
-      //   }
-      // } catch (error) {
-      //   res.send({ ok: false, error: error.message });
-      // }
+          rsWp.forEach((v: any) => {
+            let id = uuid();
+            let qty = 0;
+            let idx = _.findIndex(items, { wm_product_id: v.wm_product_id });
+            if (idx > -1) {
+              qty = items[idx].qty;
+              let obj: any = {
+                wm_product_id: id,
+                warehouse_id: v.wm_pick,
+                // vendor_labeler_id: v.vendor_labeler_id,
+                product_id: v.product_id,
+                // generic_id: v.generic_id,
+                qty: qty,
+                price: v.cost,
+                cost: v.cost,
+                lot_no: v.lot_no,
+                expired_date: moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null,
+                unit_generic_id: v.unit_generic_id,
+                location_id: +v.location_id,
+                people_user_id: req.decoded.people_user_id,
+                created_at: moment().format('YYYY-MM-DD HH:mm:ss')
+              };
+              products2.push(obj);
+            }
+          });
+          rsStock = await receiveModel.getStockItem(db, pickIds)
+          rsStock = rsStock[0]
+          let balances = [];
+          for (let s of rsStock) {
+            let srcObjBalance: any = {};
+            let dstObjBalance: any = {};
+            let srcBalance = await receiveModel.getBalance(db, s.product_id, s.src_warehouse);
+            srcBalance[0].forEach(v => {
+              srcObjBalance.product_id = v.product_id;
+              srcObjBalance.warehouse_id = v.warehouse_id;
+              srcObjBalance.balance_qty = v.balance;
+              srcObjBalance.balance_generic_qty = v.balance_generic;
+            });
+            balances.push(srcObjBalance);
+            let dstBalance = await receiveModel.getBalance(db, s.product_id, s.dst_warehouse)
+            dstBalance[0].forEach(v => {
+              dstObjBalance.product_id = v.product_id;
+              dstObjBalance.warehouse_id = v.warehouse_id;
+              dstObjBalance.balance_qty = v.balance;
+              dstObjBalance.balance_generic_qty = v.balance_generic;
+            });
+            balances.push(dstObjBalance);
+          }
+          rsStock.forEach(v => {
+            let objStockcardOut: any = {}
+            let objStockcardIn: any = {}
+            objStockcardOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+            objStockcardOut.product_id = v.product_id;
+            objStockcardOut.generic_id = v.generic_id;
+            objStockcardOut.unit_generic_id = v.unit_generic_id;
+            objStockcardOut.transaction_type = 'REQ_OUT';
+            objStockcardOut.document_ref_id = v.pick_id;
+            objStockcardOut.document_ref = v.pick_code;
+            objStockcardOut.lot_no = v.lot_no;
+            objStockcardOut.expired_date = v.expired_date;
+            objStockcardOut.in_qty = 0;
+            objStockcardOut.in_unit_cost = 0;
+            objStockcardOut.out_qty = v.confirm_qty;
+            objStockcardOut.out_unit_cost = v.cost;
+            let srcBalance = 0;
+            let srcBalanceGeneric = 0;
+            let srcIdx = _.findIndex(balances, {
+              product_id: v.product_id,
+              warehouse_id: v.src_warehouse,
+            });
+            if (srcIdx > -1) {
+              balances[srcIdx].balance_qty -= +v.confirm_qty;
+              srcBalance = balances[srcIdx].balance_qty
+              balances[srcIdx].balance_generic_qty -= +v.confirm_qty;
+              srcBalanceGeneric = balances[srcIdx].balance_generic_qty;
+            }
+            objStockcardOut.balance_qty = srcBalance;
+            objStockcardOut.balance_generic_qty = srcBalanceGeneric;
+            objStockcardOut.balance_unit_cost = v.cost;
+            objStockcardOut.ref_src = v.src_warehouse;
+            objStockcardOut.ref_dst = v.dst_warehouse;
+            objStockcardOut.comment = 'ให้เบิกโดยการหยิบ';
+            stockCard.push(objStockcardOut);
+            objStockcardIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+            objStockcardIn.product_id = v.product_id;
+            objStockcardIn.generic_id = v.generic_id;
+            objStockcardIn.unit_generic_id = v.unit_generic_id;
+            objStockcardIn.transaction_type = 'REQ_IN';
+            objStockcardIn.document_ref_id = v.pick_id;
+            objStockcardIn.document_ref = v.pick_code;
+            objStockcardIn.lot_no = v.lot_no;
+            objStockcardIn.expired_date = v.expired_date;
+            objStockcardIn.in_qty = v.confirm_qty;
+            objStockcardIn.in_unit_cost = v.cost;
+            objStockcardIn.out_qty = 0
+            objStockcardIn.out_unit_cost = 0
+            let dstBalance = 0;
+            let dstBalanceGeneric = 0;
+            let dstIdx = _.findIndex(balances, {
+              product_id: v.product_id,
+              warehouse_id: v.dst_warehouse,
+            });
+            if (dstIdx > -1) {
+              balances[dstIdx].balance_qty += +v.confirm_qty;
+              dstBalance = balances[dstIdx].balance_qty;
+              balances[dstIdx].balance_generic_qty += +v.confirm_qty;
+              dstBalanceGeneric = balances[dstIdx].balance_generic_qty;
+            } else {
+              dstBalance = +v.confirm_qty;
+              dstBalanceGeneric = +v.confirm_qty;
+            }
+            objStockcardIn.balance_qty = dstBalance
+            objStockcardIn.balance_generic_qty = dstBalanceGeneric;
+            objStockcardIn.balance_unit_cost = v.cost;
+            objStockcardIn.ref_src = v.dst_warehouse;
+            objStockcardIn.ref_dst = v.src_warehouse;
+            objStockcardIn.comment = 'เบิกโดยการหยิบ';
+            stockCard.push(objStockcardIn);
+          })
+          await stockcard.saveFastStockTransaction(db, stockCard);
+          await productModel.saveProducts(db, products2);
+          await receiveModel.decreaseQtyPick(db, dstProducts);
+          res.send({ ok: true });
+        }
+      } catch (error) {
+        res.send({ ok: false, error: error.message });
+      }
     }
   } catch (error) {
     res.send({ ok: false, error: error.message });
