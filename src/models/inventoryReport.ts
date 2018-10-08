@@ -475,7 +475,6 @@ mgt.generic_type_id `
                 ) AS q
             ORDER BY
             q.stock_card_id`
-        console.log(sql);
         return knex.raw(sql)
     }
 
