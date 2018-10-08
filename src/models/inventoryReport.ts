@@ -2785,7 +2785,8 @@ OR sc.ref_src like ?
         mga.account_name,
         mgh. NAME AS generic_hosp_name,
         ml.labeler_name as labeler_name_po,
-        wrd.lot_no
+        wrd.lot_no,
+        lb.bid_name
       FROM
         wm_receives AS wr
       JOIN wm_receive_detail AS wrd ON wrd.receive_id = wr.receive_id
@@ -2800,6 +2801,7 @@ OR sc.ref_src like ?
       LEFT JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
       LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
       LEFT JOIN mm_labelers ml ON ppo.labeler_id = ml.labeler_id
+      LEFT JOIN l_bid_type as lb ON lb.bid_id = mg.purchasing_method
       WHERE
         wrd.is_free = 'N'
       AND wr.receive_date BETWEEN '${startdate}'
