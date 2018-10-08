@@ -2863,14 +2863,13 @@ router.get('/report/generics-no-movement/:warehouseId/:startdate/:enddate', wrap
 
 router.get('/report/receive/export', async (req, res, next) => {
   const db = req.db;
-  let startdate = req.query.startdate
-  let enddate = req.query.enddate
+  let startdate = req.query.startDate
+  let enddate = req.query.endDate
   console.log(startdate, enddate);
 
   // get tmt data
   let rs: any = await inventoryReportModel.productReceive(db, startdate, enddate);
   let json = [];
-
   if (rs[0].length) {
     let i = 0;
     for (let tmp of rs[0]) {
@@ -2894,20 +2893,23 @@ router.get('/report/receive/export', async (req, res, next) => {
         'ประเภท': v.generic_type_name,
         'ชนิด': v.account_name ? v.account_name : '',
         'บริษัทผู้จำหน่าย': v.labeler_name_po,
+        'รูปแบบการจัดซื้อ(Generic)': v.bid_name
       };
       json.push(obj);
-      const xls = json2xls(json);
-      const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
-      // create directory
-      fse.ensureDirSync(exportDirectory);
-      const filePath = path.join(exportDirectory, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
-      fs.writeFileSync(filePath, xls, 'binary');
-      // force download
-      res.download(filePath, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
     });
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
   } else {
-    { res.render('error404') }
+    { res.render('error404'); }
   }
+
+
 });
 
 router.get('/report/list/cost/excel', wrap(async (req, res, next) => {

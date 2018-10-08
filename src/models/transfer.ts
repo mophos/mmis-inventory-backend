@@ -255,6 +255,7 @@ export class TransferModel {
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
       .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'p.unit_generic_id')
       .whereIn('d.transfer_id', transferIds)
+      .andWhere('t.approve','N')
       .groupByRaw('d.wm_product_id');
   }
 
