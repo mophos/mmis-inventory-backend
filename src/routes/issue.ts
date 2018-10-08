@@ -244,8 +244,7 @@ router.post('/approve', co(async (req, res, next) => {
     const decoded = req.decoded;
     const warehouseId = decoded.warehouseId;
     const checkApprove = await issueModel.checkDuplicatedApprove(db, issueIds);
-    // if (checkApprove[0].total === 0) {
-      issueIds = _.map(checkApprove,'issue_id')
+    issueIds = _.map(checkApprove,'issue_id')
     if(issueIds.length) {
 
     
