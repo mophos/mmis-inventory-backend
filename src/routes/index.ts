@@ -187,7 +187,7 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
       v.in_qty = inventoryReportModel.commaQty(v.in_qty);
       v.out_qty = inventoryReportModel.commaQty(v.out_qty);
       v.summit = inventoryReportModel.commaQty(+v.summit / +v.qty);
-      
+
     });
     let committee: any = []
     for (let peopleId of people) {
@@ -376,8 +376,8 @@ router.get('/report/staff/approve/requis', wrap(async (req, res, next) => {
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
           // value.updated_at ? value.confirm_date = moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) : value.confirm_date = moment(value.created_at).format('D MMMM ') + (moment(value.created_at).get('year') + 543)
           value.cost = inventoryReportModel.comma(value.cost);
-          value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty );
-          value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty );
+          value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty);
+          value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty);
           value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
           value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
           value.today = printDate(req.decoded.SYS_PRINT_DATE);
@@ -505,7 +505,7 @@ router.get('/report/staff/UnPaid/requis', wrap(async (req, res, next) => {
     signale.info(req.decoded.SYS_PRINT_DATE)
     // res.send({ requisId: requisId,unPaid:unPaid,list_UnPaid:list_UnPaid})
     res.render('list_requisition_staff', {
-      today:today,
+      today: today,
       hospitalName: hospitalName,
       unPaid: unPaid,
       list_UnPaid: list_UnPaid
@@ -707,7 +707,7 @@ router.get('/report/staff/list/requis', wrap(async (req, res, next) => {
           product_name: tv.product_name,
           generic_id: tv.generic_id,
           product_id: tv.product_id,
-          requisition_qty: commaQty(+tv.requisition_qty ),
+          requisition_qty: commaQty(+tv.requisition_qty),
           requisition_conversion_qty: tv.requisition_conversion_qty,
           requisition_large_unit: tv.requisition_large_unit,
           requisition_small_unit: tv.requisition_small_unit,
@@ -728,7 +728,7 @@ router.get('/report/staff/list/requis', wrap(async (req, res, next) => {
             objItems.product_name = v.product_name;
             objItems.large_unit = v.large_unit;
             objItems.small_unit = v.small_unit;
-            objItems.confirm_qty = v.generic_code == 0 ? '' : (v.confirm_qty ) + ' '  + v.small_unit ;
+            objItems.confirm_qty = v.generic_code == 0 ? '' : (v.confirm_qty) + ' ' + v.small_unit;
             objItems.remain = v.remain;
             objItems.lot_no = v.lot_no;
             objItems.expired_date = dateToDMMYYYY(v.expired_date);
@@ -736,7 +736,7 @@ router.get('/report/staff/list/requis', wrap(async (req, res, next) => {
             objItems.is_approve = v.is_approve;
             objItems.location_name = v.location_name !== null ? v.location_name : '-';
             if (v.is_approve == "N") {
-              objItems.remain = commaQty(Math.round((+v.remain - +v.confirm_qty) ));
+              objItems.remain = commaQty(Math.round((+v.remain - +v.confirm_qty)));
             } else {
               objItems.remain = commaQty(Math.round(+v.remain));
             }
@@ -1928,9 +1928,9 @@ router.get('/report/list/receiveDateOther/:sDate/:eDate', wrap(async (req, res, 
   res.render('_list_receive4', { hospitalName: hospitalName, list_receive2: list_receive2, array2: array2, sDate: sDate, eDate: eDate });
 }));
 
-router.get('/report/receive/:receiveId', wrap(async (req, res, next) => {
+router.get('/report/receive', wrap(async (req, res, next) => {
   let db = req.db;
-  let receiveId = req.params.receiveId;
+  let receiveId = req.query.receiveId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let boox_prefix = await inventoryReportModel.boox_prefix(db);
@@ -1964,6 +1964,7 @@ router.get('/report/receive/:receiveId', wrap(async (req, res, next) => {
     receiveUser: receiveUser
   });
 }));
+
 router.get('/report/requis/day/:date', wrap(async (req, res, next) => {
   let db = req.db;
   let date = req.params.date;
@@ -2860,50 +2861,53 @@ router.get('/report/generics-no-movement/:warehouseId/:startdate/:enddate', wrap
   });
 }));
 
-router.get('/report/receive/export/:startdate/:enddate', async (req, res, next) => {
-
+router.get('/report/receive/export', async (req, res, next) => {
   const db = req.db;
-  let startdate = req.params.startdate
-  let enddate = req.params.enddate
+  let startdate = req.query.startdate
+  let enddate = req.query.enddate
+  console.log(startdate, enddate);
 
   // get tmt data
   let rs: any = await inventoryReportModel.productReceive(db, startdate, enddate);
-
   let json = [];
-  let i = 0;
-  for (let tmp of rs[0]) {
-    tmp.order_date = moment(tmp.order_date).isValid() ? moment(tmp.order_date).format('DD MMM ') + (moment(tmp.order_date).get('year') + 543) : '';
-  }
-  rs[0].forEach(v => {
-    i++;
-    let obj: any = {
-      'ลำดับ': i,
-      'เลขที่ใบสั่งซื้อ': v.purchase_order_number,
-      'วันที่รับของ': v.order_date,
-      'รหัสเวชภัณฑ์': v.generic_code,
-      'ชื่อเวชภัณฑ์': v.generic_name,
-      'ชื่อทางการค้า': v.product_name,
-      'หน่วย': v.unit_name,
-      'Conversion': v.conversion,
-      'Package': v.package,
-      'ราคาต่อหน่วย': v.cost,
-      'จำนวนทั้งหมด(base)': v.total_qty,
-      'ราคารวม': v.total_cost,
-      'ประเภท': v.generic_type_name,
-      'ชนิด': v.account_name ? v.account_name : '',
-      'บริษัทผู้จำหน่าย': v.labeler_name_po,
-    };
-    json.push(obj);
-  });
 
-  const xls = json2xls(json);
-  const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
-  // create directory
-  fse.ensureDirSync(exportDirectory);
-  const filePath = path.join(exportDirectory, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
-  fs.writeFileSync(filePath, xls, 'binary');
-  // force download
-  res.download(filePath, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
+  if (rs[0].length) {
+    let i = 0;
+    for (let tmp of rs[0]) {
+      tmp.order_date = moment(tmp.order_date).isValid() ? moment(tmp.order_date).format('DD MMM ') + (moment(tmp.order_date).get('year') + 543) : '';
+    }
+    rs[0].forEach(v => {
+      i++;
+      let obj: any = {
+        'ลำดับ': i,
+        'เลขที่ใบสั่งซื้อ': v.purchase_order_number,
+        'วันที่รับของ': v.order_date,
+        'รหัสเวชภัณฑ์': v.generic_code,
+        'ชื่อเวชภัณฑ์': v.generic_name,
+        'ชื่อทางการค้า': v.product_name,
+        'หน่วย': v.unit_name,
+        'Conversion': v.conversion,
+        'Package': v.package,
+        'ราคาต่อหน่วย': v.cost,
+        'จำนวนทั้งหมด(base)': v.total_qty,
+        'ราคารวม': v.total_cost,
+        'ประเภท': v.generic_type_name,
+        'ชนิด': v.account_name ? v.account_name : '',
+        'บริษัทผู้จำหน่าย': v.labeler_name_po,
+      };
+      json.push(obj);
+      const xls = json2xls(json);
+      const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+      // create directory
+      fse.ensureDirSync(exportDirectory);
+      const filePath = path.join(exportDirectory, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
+      fs.writeFileSync(filePath, xls, 'binary');
+      // force download
+      res.download(filePath, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
+    });
+  } else {
+    { res.render('error404') }
+  }
 });
 
 router.get('/report/list/cost/excel', wrap(async (req, res, next) => {
