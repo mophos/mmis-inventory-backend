@@ -1983,12 +1983,13 @@ router.get('/report/requis/day/:date', wrap(async (req, res, next) => {
 
 router.get('/report/un-receive', wrap(async (req, res, next) => {
   let db = req.db;
-  let date = req.query.date
+  let startdate = req.query.startdate
+  let enddate = req.query.enddate
 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let unReceive = await inventoryReportModel.unReceive(db, date);
+  let unReceive = await inventoryReportModel.unReceive(db, startdate, enddate);
   unReceive = unReceive[0];
 
   unReceive.forEach(value => {
@@ -1996,10 +1997,14 @@ router.get('/report/un-receive', wrap(async (req, res, next) => {
     value.canReceive = value.qty - value.receive_qty + ' ' + value.u1 + ' ' + '(' + value.mugQty + value.u2 + ')'
   });
 
+  let startDate = moment(startdate).format('D MMMM ') + (moment(startdate).get('year') + 543);
+  let endDate = moment(enddate).format('D MMMM ') + (moment(enddate).get('year') + 543);
+
   res.render('un-receive', {
     hospitalName: hospitalName,
-
-    unReceive: unReceive
+    unReceive: unReceive,
+    startDate: startDate,
+    endDate: endDate
   });
 }));
 

@@ -707,7 +707,7 @@ mgt.generic_type_id `
     }
 
 
-    getUnPaidOrders(db: Knex, dstWarehouseId : any = null, srcWarehouseId: any = null) {
+    getUnPaidOrders(db: Knex, dstWarehouseId: any = null, srcWarehouseId: any = null) {
 
         let sql = `
         select rou.requisition_order_unpaid_id, rou.unpaid_date, rou.requisition_order_id, whr.warehouse_name as requisition_warehouse, 
@@ -1724,7 +1724,7 @@ FROM
         return knex.raw(sql, date)
     }
 
-    unReceive(knex: Knex, date: any) {
+    unReceive(knex: Knex, startdate: any, enddate: any) {
         let sql = `SELECT * FROM
         (
         SELECT 
@@ -1751,7 +1751,7 @@ FROM
                 JOIN mm_labelers ml on ml.labeler_id = mp.v_labeler_id
                 LEFT JOIN wm_receives r on r.purchase_order_id = po.purchase_order_id
                 LEFT JOIN wm_receive_detail rd on rd.receive_id = r.receive_id AND poi.product_id = rd.product_id
-                WHERE po.purchase_order_status = 'APPROVED' and po.order_date = ${date}
+                WHERE po.purchase_order_status = 'APPROVED' AND po.order_date BETWEEN '${startdate}' AND '${enddate}'
                 GROUP BY po.purchase_order_id,poi.product_id
                 ORDER BY
                 po.purchase_order_number DESC
