@@ -7,7 +7,11 @@ export class IssueModel {
     return knex('wm_issue_summary')
       .insert(data, 'issue_id');
   }
-
+  getCountCode(knex:Knex , year:any){
+    return knex('wm_issue_summary')
+    .count('* as count').as('count')
+    .whereBetween('issue_date', [(+year - 1) + '-10-01',+year + '-09-30'])
+  }
   updateSummary(knex: Knex, issueId: any, data: any) {
     return knex('wm_issue_summary')
       .where('issue_id', issueId)
@@ -78,6 +82,7 @@ export class IssueModel {
   getProductDetail(knex: Knex, issueId: any) {
     let sql = `
     SELECT
+      sp.issue_product_id,
       sg.generic_id,
       sp.product_id,
       sp.wm_product_id,
@@ -86,7 +91,8 @@ export class IssueModel {
       mug.qty AS product_conversion,
       wp.qty AS product_remain_qty,
       mu.unit_name AS from_unit_name,
-      mu2.unit_name AS to_unit_name
+      mu2.unit_name AS to_unit_name,
+      wp.lot_no
     FROM
       wm_issue_generics sg
     JOIN wm_issue_summary ss ON ss.issue_id = sg.issue_id
@@ -102,6 +108,7 @@ export class IssueModel {
   }
   getGenericsDetail(knex: Knex, issueId: any) {
     let sql = `SELECT
+    sg.issue_generic_id,
     mg.working_code,
     sg.generic_id,
     sg.qty / mug.qty AS generic_qty,
@@ -257,6 +264,14 @@ export class IssueModel {
     WHERE wis.issue_id = ?`;
     return knex.raw(sql, [id]);
   }
+
+  checkDuplicatedApprove(knex: Knex, requisitionId: any) {
+    return knex('wm_issue_summary')
+      .select('issue_id')
+      .whereIn('issue_id', requisitionId)
+      .andWhere('approved','N');
+  }
+
   getIssueApprove(knex: Knex, id: any, warehouseId: any) {
     let sql = `SELECT
     sg.generic_id,
@@ -478,6 +493,43 @@ WHERE
       .where('wm.product_id', productId)
   }
 
-  
-
+  getBalance(knex: Knex, productId, warehouseId) {
+    let sql = `SELECT
+        wp.product_id,
+        sum(wp.qty) AS balance,
+        wp.warehouse_id,
+        wp.unit_generic_id,
+        mp.generic_id,
+        (SELECT
+          sum(wp.qty)
+        FROM
+          wm_products wp
+        WHERE
+          wp.product_id in (
+            SELECT
+              mp.product_id
+            FROM
+              mm_products mp
+            WHERE
+              mp.generic_id in (
+                SELECT
+                  generic_id
+                FROM
+                  mm_products mp
+                WHERE
+                  mp.product_id = '${productId}'
+              )
+          ) and wp.warehouse_id = '${warehouseId}'
+        GROUP BY wp.warehouse_id) as balance_generic
+      FROM
+        wm_products wp
+      join mm_products mp on wp.product_id = mp.product_id
+      WHERE
+        wp.product_id= '${productId}'
+      AND wp.warehouse_id = '${warehouseId}'
+      GROUP BY
+        wp.product_id,
+        wp.warehouse_id`;
+    return knex.raw(sql);
+  }
 }

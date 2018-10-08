@@ -10,7 +10,7 @@ const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const issueModel = new IssueModel();
 
-
+const signale = require('signale');
 const path = require('path')
 const fse = require('fs-extra');
 const fs = require('fs');
@@ -37,6 +37,66 @@ function checkNull(value) {
   }
 }
 
+function dateToDDMMYYYY(date) {
+  return moment(date).isValid() ? moment(date).format('DD MMMM ') + (+moment(date).get('year') + 543) : '-';
+}
+
+function dateToDMMYYYY(date) {
+  return moment(date).isValid() ? moment(date).format('D/MM/') + (moment(date).get('year')) : '-';
+}
+
+function comma(num) {
+  if (num === null) { return ('0.00'); }
+  let minus = false;
+  if (num < 0) {
+    minus = true;
+    num = Math.abs(num);
+  }
+  var number = +num
+  num = number.toFixed(2);
+  let deci = num.substr(num.length - 2, num.length);
+  num = num.substr(0, num.length - 3);
+
+  var l = num.toString().length
+  var num2 = '';
+  var c = 0;
+  for (var i = l - 1; i >= 0; i--) {
+    c++;
+    if (c == 3 && num[i - 1] != null) { c = 0; num2 = ',' + num[i] + num2 }
+    else num2 = num[i] + num2
+  }
+  if (minus) {
+    return '-' + num2 + '.' + deci;
+  } else {
+    return num2 + '.' + deci;
+  }
+
+}
+
+function commaQty(num) {
+  if (num === null) { return 0; }
+  let minus = false;
+  if (num < 0) {
+    minus = true;
+    num = Math.abs(num);
+  }
+  // num = num.toFixed(0);
+  num = '' + num;
+  var l = num.toString().length
+  var num2 = '';
+  var c = 0;
+  for (var i = l - 1; i >= 0; i--) {
+    c++;
+    if (c == 3 && num[i - 1] != null) { c = 0; num2 = ',' + num[i] + num2 }
+    else num2 = num[i] + num2
+  }
+  if (minus) {
+    return '-' + num2;
+  } else {
+    return num2;
+  }
+
+}
 router.get('/', (req, res, next) => {
   res.send({ ok: true, message: 'Welcome to Inventory API server' });
 });
@@ -104,29 +164,44 @@ router.get('/report/getBudgetYear', wrap(async (req, res, next) => {
     res.send({ ok: false, error: error.message })
   }
 }))
+
 router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
   const db = req.db;
   const year = req.params.year - 543
   const warehouseId: any = req.decoded.warehouseId
-
+  const genericType = req.query.genericType
+  const people1 = req.query.people1
+  const people2 = req.query.people2
+  const people3 = req.query.people3
+  let people = [people1, people2, people3]
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
 
-    const rs: any = await inventoryReportModel.receiveIssueYear(db, year, warehouseId);
+    const rs: any = await inventoryReportModel.issueYear(db, year, warehouseId, genericType);
     rs[0].forEach(v => {
-      v.unit_price = inventoryReportModel.comma(v.unit_price);
-      v.balance_qty = inventoryReportModel.commaQty(v.balance_qty);
+      v.unit_price = inventoryReportModel.comma(v.cost);
+      // v.balance = +v.balance / +v.qty
+      v.amount = inventoryReportModel.comma(+v.balance * +v.cost);
+      v.balance = inventoryReportModel.commaQty(+v.balance / +v.qty);
       v.in_qty = inventoryReportModel.commaQty(v.in_qty);
       v.out_qty = inventoryReportModel.commaQty(v.out_qty);
-      v.summit_qty = inventoryReportModel.commaQty(v.summit_qty);
-      v.amount_qty = inventoryReportModel.comma(v.amount_qty);
-    });
+      v.summit = inventoryReportModel.commaQty(+v.summit / +v.qty);
 
+    });
+    let committee: any = []
+    for (let peopleId of people) {
+      console.log(peopleId);
+      let pe: any = await inventoryReportModel.peopleFullName(db, peopleId)
+      committee.push(pe[0])
+    }
+    // res.send({rs:rs[0]})
     res.render('issue_year', {
+      syear: year + 542,
       rs: rs[0],
       hospitalName: hospitalName,
-      year: year + 543
+      year: year + 543,
+      committee: committee
     });
   } catch (error) {
     res.send({ ok: false, error: error.message })
@@ -217,7 +292,9 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
   let db = req.db;
   let approve_requis: any = []
   let sum: any = []
-  let page_re: any = req.decoded.WM_REQUISITION_REPORT_APPROVE;
+  const line = await inventoryReportModel.getLine(db, 'AR');
+  let page_re: any = line[0].line;
+
   let warehouse_id: any = req.decoded.warehouseId
   // console.log(req.decoded);
 
@@ -230,9 +307,13 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
       const _approve_requis = await inventoryReportModel.approve_requis2(db, requisId[i]);
       approve_requis.push(_approve_requis[0])
       approve_requis[i] = _.chunk(approve_requis[i], page_re)
+      let page = 0;
       _.forEach(approve_requis[i], values => {
         sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
+        page++;
         _.forEach(values, value => {
+          value.sPage = page;
+          value.nPage = approve_requis[i].length;
           value.full_name = warehouse_id === 505 ? '' : value.full_name
           value.total_cost = inventoryReportModel.comma(value.total_cost);
           value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
@@ -263,11 +344,67 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
   }
 
 }));
+router.get('/report/staff/approve/requis', wrap(async (req, res, next) => {
+  let db = req.db;
+  let approve_requis: any = []
+  let sum: any = []
+  const line = await inventoryReportModel.getLine(db, 'AR');
+  let page_re: any = line[0].line;
+
+  let warehouse_id: any = req.decoded.warehouseId
+  // console.log(req.decoded);
+
+  try {
+    let requisId = req.query.requisId;
+    requisId = Array.isArray(requisId) ? requisId : [requisId]
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    for (let i in requisId) {
+      const _approve_requis = await inventoryReportModel.approve_requis2(db, requisId[i]);
+      approve_requis.push(_approve_requis[0])
+      approve_requis[i] = _.chunk(approve_requis[i], page_re)
+      let page = 0;
+      _.forEach(approve_requis[i], values => {
+        sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
+        page++;
+        _.forEach(values, value => {
+          value.sPage = page;
+          value.nPage = approve_requis[i].length;
+          value.full_name = warehouse_id === 505 ? '' : value.full_name
+          value.total_cost = inventoryReportModel.comma(value.total_cost);
+          value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
+          value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
+          // value.updated_at ? value.confirm_date = moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) : value.confirm_date = moment(value.created_at).format('D MMMM ') + (moment(value.created_at).get('year') + 543)
+          value.cost = inventoryReportModel.comma(value.cost);
+          value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty);
+          value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty);
+          value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
+          value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
+          value.today = printDate(req.decoded.SYS_PRINT_DATE);
+          if (req.decoded.SYS_PRINT_DATE_EDIT === 'Y') {
+            value.today += (value.updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) + moment(value.updated_at).format(', HH:mm') + ' น.' : '';
+          }
+        })
+      })
+    }
+    // res.send({approve_requis:approve_requis,page_re:page_re,sum:sum})
+    res.render('approve_requis_staff', {
+      hospitalName: hospitalName,
+      approve_requis: approve_requis,
+      sum: sum
+    });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
 router.get('/report/approve2/requis', wrap(async (req, res, next) => {
   let db = req.db;
   let approve_requis: any = []
   let sum: any = []
-  let page_re: any = req.decoded.WM_REQUISITION_REPORT_APPROVE;
+  const line = await inventoryReportModel.getLine(db, 'AR');
+  let page_re: any = line[0].line;
   try {
     let requisId = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
@@ -343,109 +480,399 @@ router.get('/report/UnPaid/requis', wrap(async (req, res, next) => {
     db.destroy();
   }
 }));
+router.get('/report/staff/UnPaid/requis', wrap(async (req, res, next) => {
+  let db = req.db;
+  let list_UnPaid: any = []
+  let unPaid: any = []
+  try {
+    let warehouseId = req.decoded.warehouseId;
+    let requisId = req.query.requisId;
+    requisId = Array.isArray(requisId) ? requisId : [requisId]
+    let rs: any = await inventoryReportModel.getUnPaidOrders(db, warehouseId);
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    _.forEach(requisId, object => {
+      let tmp = _.find(rs[0], ['requisition_order_id', +object])
+      tmp.unpaid_date = moment(tmp.unpaid_date).format('D MMMM ') + (moment(tmp.unpaid_date).get('year') + 543);
+      tmp.requisition_date = moment(tmp.requisition_date).format('D MMMM ') + (moment(tmp.requisition_date).get('year') + 543);
+      unPaid.push(tmp)
+    })
+    for (let i in unPaid) {
+      const rs: any = await inventoryReportModel.getOrderUnpaidItemsStaff(db, unPaid[i].requisition_order_unpaid_id);
+      list_UnPaid.push(rs[0])
+    }
+    let today = printDate(req.decoded.SYS_PRINT_DATE)
+    signale.info(req.decoded.SYS_PRINT_DATE)
+    // res.send({ requisId: requisId,unPaid:unPaid,list_UnPaid:list_UnPaid})
+    res.render('list_requisition_staff', {
+      today: today,
+      hospitalName: hospitalName,
+      unPaid: unPaid,
+      list_UnPaid: list_UnPaid
+    });
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  } finally {
+    db.destroy();
+  }
+}));
 
-router.get('/report/list/requis', wrap(async (req, res, next) => {
+router.get('/report/list/pick', wrap(async (req, res, next) => {
   let db = req.db;
   try {
+    // let pickId = req.query.pickId;
+    // pickId = Array.isArray(pickId) ? pickId : [pickId]
+    // console.log(pickId);
+
+    // let hosdetail = await inventoryReportModel.hospital(db);
+    // let hospitalName = hosdetail[0].hospname;
+    // const rline = await inventoryReportModel.getLine(db, 'PI')
+    // const line = rline[0].line;
+    // // const printDateEdit = req.decoded.SYS_PRINT_DATE_EDIT;
+    // let _list_requis = [];
+    // for (let id of pickId) {
+    //   let sPage = 1;
+    //   let ePage = 1;
+    //   let array = [];
+    //   let num = 0;
+    //   let count = 0;
+    //   let header = await inventoryReportModel.getHeadPick(db, id);
+    //   header = header;
+    //   if (header[0] === undefined) { res.render('error404'); }
+    //   const objHead: any = {
+    //     sPage: sPage,
+    //     ePage: ePage,
+    //     pick_date: dateToDDMMYYYY(header[0].pick_date),
+    //     pick_code: header[0].pick_code,
+    //     // confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+    //     warehouse_name: header[0].warehouse_name,
+    //     // withdraw_warehouse_name: header[0].withdraw_warehouse_name,
+    //     title: []
+    //   }
+    //   array[num] = _.clone(objHead);
+
+    //   let title = await inventoryReportModel.getDetailPick(db, header[0].pick_id);
+    //   // array.push( title);
+    //   let numTitle = 0;
+    //   // count += 7;
+    //   for (let tv of title) {
+    //     let rs = await inventoryReportModel.getDetailListPick(db, tv.pick_id, 505, tv.generic_id);
+    //     count += 5;
+    //     if (count + rs[0].length >= line) {
+    //       numTitle = 0;
+    //       count = 0;
+    //       sPage++;
+    //       ePage++;
+    //       count += 7;
+    //       for (const v of array) {
+    //         v.ePage = ePage;
+    //       }
+    //       num++;
+    //       const objHead: any = {
+    //         sPage: sPage,
+    //         ePage: ePage,
+    //         pick_date: dateToDDMMYYYY(header[0].pick_date),
+    //         pick_code: header[0].pick_code,
+    //         confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+    //         warehouse_name: header[0].warehouse_name,
+    //         // withdraw_warehouse_name: header[0].withdraw_warehouse_name,
+    //         title: []
+    //       }
+    //       array[num] = _.clone(objHead);
+    //     }
+    // //     const objTitle = {
+    // //       generic_code: tv.working_code,
+    // //       generic_name: tv.generic_name,
+    // //       product_name: tv.product_name,
+    // //       generic_id: tv.generic_id,
+    // //       product_id: tv.product_id,
+    // //       requisition_qty: commaQty(+tv.requisition_qty / +tv.requisition_conversion_qty),
+    // //       requisition_conversion_qty: tv.requisition_conversion_qty,
+    // //       requisition_large_unit: tv.requisition_large_unit,
+    // //       requisition_small_unit: tv.requisition_small_unit,
+    // //       large_unit: tv.large_unit,
+    // //       unit_qty: tv.unit_qty,
+    // //       small_unit: tv.small_unit,
+    // //       confirm_qty: commaQty(tv.confirm_qty / tv.unit_qty),
+    // //       remain: tv.remain,
+    // //       dosage_name: tv.dosage_name,
+    // //       items: []
+    //     // }
+    // //     array[num].title[numTitle] = _.clone(objTitle);
+    // //     for (const v of rs[0]) {
+    // //       count++;
+    // //       if (v.generic_code == 0 || v.confirm_qty != 0) {
+    // //         const objItems: any = {};
+    // //         objItems.generic_name = v.generic_name;
+    // //         objItems.product_name = v.product_name;
+    // //         objItems.large_unit = v.large_unit;
+    // //         objItems.small_unit = v.small_unit;
+    // //         objItems.confirm_qty = v.generic_code == 0 ? '' : (v.confirm_qty / v.conversion_qty) + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ' )';
+    // //         objItems.remain = v.remain;
+    // //         objItems.lot_no = v.lot_no;
+    // //         objItems.expired_date = dateToDMMYYYY(v.expired_date);
+    // //         objItems.conversion_qty = v.conversion_qty;
+    // //         objItems.is_approve = v.is_approve;
+    // //         objItems.location_name = v.location_name !== null ? v.location_name : '-';
+    // //         if (v.is_approve == "N") {
+    // //           objItems.remain = commaQty(Math.round((+v.remain - +v.confirm_qty) / +v.conversion_qty));
+    // //         } else {
+    // //           objItems.remain = commaQty(Math.round(+v.remain / +v.conversion_qty));
+    // //         }
+    // //         array[num].title[numTitle].items.push(_.clone(objItems));
+    // //       }
+    // //     }
+    // //     numTitle++;
+    //   }
+    //   _list_requis.push(array);
+    // }
+    res.render('error404');
+    // res.send({_list_requis : _list_requis })
+    // res.render('list_requis', {
+    //   hospitalName: hospitalName,
+    //   printDate: printDate(req.decoded.SYS_PRINT_DATE),
+    //   list_requis: _list_requis,
+    // });
+  } catch (error) {
+    // console.log(error);
+    res.send({ ok: false, error: error.message })
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/report/staff/list/requis', wrap(async (req, res, next) => {
+  let db = req.db;
+  try {
+    let test;
     let requisId = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
-    const printDateEdit = req.decoded.SYS_PRINT_DATE_EDIT;
-
+    const rline = await inventoryReportModel.getLine(db, 'LR')
+    const line = rline[0].line;
+    const dateApprove = req.decoded.WM_REQUIS_LIST_DATE_APPROVE
     let _list_requis = [];
-    for (let i in requisId) {
-      let _list: any = [];
-      let requisition: any = [];
-      let header = await inventoryReportModel.getHeadRequis(db, requisId[i]);
+    for (let id of requisId) {
+      let sPage = 1;
+      let ePage = 1;
+      let array = [];
+      let num = 0;
+      let count = 0;
+      let header = await inventoryReportModel.getHeadRequis(db, id, dateApprove);
       header = header[0];
       if (header[0] === undefined) { res.render('error404'); }
-      let objHead: any = {};
-      objHead.requisition_date = header[0].requisition_date;
-      // header[0].updated_at ? objHead.requisition_date = header[0].updated_at : objHead.requisition_date = header[0].created_at;
-      objHead.requisition_code = header[0].requisition_code;
-      objHead.confirm_date = header[0].requisition_date;
-      // header[0].updated_at ? objHead.confirm_date = header[0].updated_at : objHead.confirm_date = header[0].created_at;
-      objHead.warehouse_name = header[0].warehouse_name;
-      objHead.withdraw_warehouse_name = header[0].withdraw_warehouse_name;
+      const objHead: any = {
+        sPage: sPage,
+        ePage: ePage,
+        requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+        requisition_code: header[0].requisition_code,
+        confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+        warehouse_name: header[0].warehouse_name,
+        withdraw_warehouse_name: header[0].withdraw_warehouse_name,
+        title: []
+      }
+      array[num] = _.clone(objHead);
       let title = await inventoryReportModel.list_requiAll(db, header[0].requisition_order_id);
-      title = title[0];
-      // res.send(title)
-      for (let tv of title) {
-        let objTitle: any = {};
-        objHead.title = {};
-        objTitle.generic_code = tv.working_code;
-        objTitle.generic_name = tv.generic_name;
-        objTitle.product_name = tv.product_name;
-        objTitle.generic_id = tv.generic_id;
-        objTitle.product_id = tv.product_id;
-        objTitle.requisition_qty = tv.requisition_qty;
-        objTitle.large_unit = tv.large_unit;
-        objTitle.unit_qty = tv.unit_qty;
-        objTitle.small_unit = tv.small_unit;
-        objTitle.confirm_qty = tv.confirm_qty;
-        objTitle.remain = tv.remain;
-        objTitle.dosage_name = tv.dosage_name;
+      let numTitle = 0;
+      // count += 7;
+      for (let tv of title[0]) {
         let rs = await inventoryReportModel.getDetailListRequis(db, tv.requisition_order_id, tv.withdraw_warehouse_id, tv.generic_id);
-        rs = rs[0];
-        let items = [];
-        rs.forEach(async (v: any) => {
-          let objItems: any = {};
-          // objItems = v
-          objItems.generic_name = v.generic_name;
-          objItems.product_name = v.product_name;
-          objItems.large_unit = v.large_unit;
-          objItems.small_unit = v.small_unit;
-          objItems.confirm_qty = v.confirm_qty;
-          objItems.remain = v.remain;
-          objItems.lot_no = v.lot_no;
-          objItems.expired_date = v.expired_date;
-          objItems.conversion_qty = v.conversion_qty;
-          objItems.is_approve = v.is_approve;
-          items.push(objItems)
-        });
-        objTitle.items = items;
-        objHead.title = objTitle;
-        let _objHead = _.clone(objHead);
-        requisition.push(_objHead);
-      }
-      if (requisition.length > 0) {
-        _list_requis.push(requisition);
-      } else if (requisition.length === 0) {
-        res.render('error404');
-      }
-    }
-    for (let page in _list_requis) {
-      for (let head in _list_requis[page]) {
-        _list_requis[page][head].confirm_date = moment(_list_requis[page][head].confirm_date).isValid() ? moment(_list_requis[page][head].confirm_date).format('DD MMMM ') + (+moment(_list_requis[page][head].confirm_date).get('year') + 543) : '-';
-        _list_requis[page][head].requisition_date = moment(_list_requis[page][head].requisition_date).isValid() ? moment(_list_requis[page][head].requisition_date).format('DD MMMM ') + (+moment(_list_requis[page][head].requisition_date).get('year') + 543) : '-';
-        _list_requis[page][head].title.requisition_qty = inventoryReportModel.commaQty(+_list_requis[page][head].title.requisition_qty / +_list_requis[page][head].title.unit_qty);
-        _list_requis[page][head].title.confirm_qty = inventoryReportModel.commaQty(+_list_requis[page][head].title.confirm_qty / +_list_requis[page][head].title.unit_qty);
-        for (let detail in _list_requis[page][head].title.items) {
-          if (_list_requis[page][head].title.items[detail].confirm_qty != 0) {
-            let old_confirm_qty = _list_requis[page][head].title.items[detail].confirm_qty;
-            let confirm_qty = inventoryReportModel.commaQty(+_list_requis[page][head].title.items[detail].confirm_qty / +_list_requis[page][head].title.items[detail].conversion_qty);
-            _list_requis[page][head].title.items[detail].confirm_qty = confirm_qty + ' ' + _list_requis[page][head].title.items[detail].large_unit + ' (' + _list_requis[page][head].title.items[detail].conversion_qty + ' ' + _list_requis[page][head].title.items[detail].small_unit + ' )'
-            if (_list_requis[page][head].title.items[detail].is_approve == "N") {
-              _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round((+_list_requis[page][head].title.items[detail].remain - +old_confirm_qty) / +_list_requis[page][head].title.items[detail].conversion_qty));
-            } else {
-              _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round(+_list_requis[page][head].title.items[detail].remain / +_list_requis[page][head].title.items[detail].conversion_qty));
-            }
-          } else {
-            _list_requis[page][head].title.items[detail].remain = inventoryReportModel.commaQty(Math.round(+_list_requis[page][head].title.items[detail].remain / +_list_requis[page][head].title.items[detail].conversion_qty));
+        count += 5;
+        if (count + rs[0].length >= line) {
+          numTitle = 0;
+          count = 0;
+          sPage++;
+          ePage++;
+          count += 7;
+          for (const v of array) {
+            v.ePage = ePage;
           }
-          _list_requis[page][head].title.items[detail].location_name = _list_requis[page][head].title.items[detail].location_name !== null ? _list_requis[page][head].title.items[detail].location_name : '-';
-          _list_requis[page][head].title.items[detail].expired_date = moment(_list_requis[page][head].title.items[detail].expired_date).isValid() ? moment(_list_requis[page][head].title.items[detail].expired_date).format('D/MM/') + (moment(_list_requis[page][head].title.items[detail].expired_date).get('year')) : '-';
+          num++;
+          const objHead: any = {
+            sPage: sPage,
+            ePage: ePage,
+            requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+            requisition_code: header[0].requisition_code,
+            confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+            warehouse_name: header[0].warehouse_name,
+            withdraw_warehouse_name: header[0].withdraw_warehouse_name,
+            title: []
+          }
+          array[num] = _.clone(objHead);
         }
+        const objTitle = {
+          generic_code: tv.working_code,
+          generic_name: tv.generic_name,
+          product_name: tv.product_name,
+          generic_id: tv.generic_id,
+          product_id: tv.product_id,
+          requisition_qty: commaQty(+tv.requisition_qty),
+          requisition_conversion_qty: tv.requisition_conversion_qty,
+          requisition_large_unit: tv.requisition_large_unit,
+          requisition_small_unit: tv.requisition_small_unit,
+          large_unit: tv.large_unit,
+          unit_qty: tv.unit_qty,
+          small_unit: tv.small_unit,
+          confirm_qty: commaQty(tv.confirm_qty),
+          remain: tv.remain,
+          dosage_name: tv.dosage_name,
+          items: []
+        }
+        array[num].title[numTitle] = _.clone(objTitle);
+        for (const v of rs[0]) {
+          count++;
+          if (v.generic_code == 0 || v.confirm_qty != 0) {
+            const objItems: any = {};
+            objItems.generic_name = v.generic_name;
+            objItems.product_name = v.product_name;
+            objItems.large_unit = v.large_unit;
+            objItems.small_unit = v.small_unit;
+            objItems.confirm_qty = v.generic_code == 0 ? '' : (v.confirm_qty) + ' ' + v.small_unit;
+            objItems.remain = v.remain;
+            objItems.lot_no = v.lot_no;
+            objItems.expired_date = dateToDMMYYYY(v.expired_date);
+            objItems.conversion_qty = v.conversion_qty;
+            objItems.is_approve = v.is_approve;
+            objItems.location_name = v.location_name !== null ? v.location_name : '-';
+            if (v.is_approve == "N") {
+              objItems.remain = commaQty(Math.round((+v.remain - +v.confirm_qty)));
+            } else {
+              objItems.remain = commaQty(Math.round(+v.remain));
+            }
+            array[num].title[numTitle].items.push(_.clone(objItems));
+          }
+        }
+        numTitle++;
       }
+      _list_requis.push(array);
     }
-    // res.send( _list_requis)
+    res.render('list_requis_staff', {
+      hospitalName: hospitalName,
+      printDate: printDate(req.decoded.SYS_PRINT_DATE),
+      list_requis: _list_requis,
+    });
+  } catch (error) {
+    // console.log(error);
+    res.send({ ok: false, error: error.message })
+  } finally {
+    db.destroy();
+  }
+}));
+router.get('/report/list/requis', wrap(async (req, res, next) => {
+  let db = req.db;
+  try {
+    let test;
+    let requisId = req.query.requisId;
+    requisId = Array.isArray(requisId) ? requisId : [requisId]
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    const rline = await inventoryReportModel.getLine(db, 'LR')
+    const line = rline[0].line;
+    const dateApprove = req.decoded.WM_REQUIS_LIST_DATE_APPROVE
+    let _list_requis = [];
+    for (let id of requisId) {
+      let sPage = 1;
+      let ePage = 1;
+      let array = [];
+      let num = 0;
+      let count = 0;
+      let header = await inventoryReportModel.getHeadRequis(db, id, dateApprove);
+      header = header[0];
+      if (header[0] === undefined) { res.render('error404'); }
+      const objHead: any = {
+        sPage: sPage,
+        ePage: ePage,
+        requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+        requisition_code: header[0].requisition_code,
+        confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+        warehouse_name: header[0].warehouse_name,
+        withdraw_warehouse_name: header[0].withdraw_warehouse_name,
+        title: []
+      }
+      array[num] = _.clone(objHead);
+
+      let title = await inventoryReportModel.list_requiAll(db, header[0].requisition_order_id);
+      let numTitle = 0;
+      // count += 7;
+      for (let tv of title[0]) {
+        let rs = await inventoryReportModel.getDetailListRequis(db, tv.requisition_order_id, tv.withdraw_warehouse_id, tv.generic_id);
+        count += 5;
+        if (count + rs[0].length >= line) {
+          numTitle = 0;
+          count = 0;
+          sPage++;
+          ePage++;
+          count += 7;
+          for (const v of array) {
+            v.ePage = ePage;
+          }
+          num++;
+          const objHead: any = {
+            sPage: sPage,
+            ePage: ePage,
+            requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+            requisition_code: header[0].requisition_code,
+            confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+            warehouse_name: header[0].warehouse_name,
+            withdraw_warehouse_name: header[0].withdraw_warehouse_name,
+            title: []
+          }
+          array[num] = _.clone(objHead);
+        }
+        const objTitle = {
+          generic_code: tv.working_code,
+          generic_name: tv.generic_name,
+          product_name: tv.product_name,
+          generic_id: tv.generic_id,
+          product_id: tv.product_id,
+          requisition_qty: commaQty(+tv.requisition_qty / +tv.requisition_conversion_qty),
+          requisition_conversion_qty: tv.requisition_conversion_qty,
+          requisition_large_unit: tv.requisition_large_unit,
+          requisition_small_unit: tv.requisition_small_unit,
+          large_unit: tv.large_unit,
+          unit_qty: tv.unit_qty,
+          small_unit: tv.small_unit,
+          confirm_qty: commaQty(tv.confirm_qty / tv.unit_qty),
+          remain: tv.remain,
+          dosage_name: tv.dosage_name,
+          items: []
+        }
+        array[num].title[numTitle] = _.clone(objTitle);
+        for (const v of rs[0]) {
+          count++;
+          if (v.generic_code == 0 || v.confirm_qty != 0) {
+            const objItems: any = {};
+            objItems.generic_name = v.generic_name;
+            objItems.product_name = v.product_name;
+            objItems.large_unit = v.large_unit;
+            objItems.small_unit = v.small_unit;
+            objItems.confirm_qty = v.generic_code == 0 ? '' : (v.confirm_qty / v.conversion_qty) + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ' )';
+            objItems.remain = v.remain;
+            objItems.lot_no = v.lot_no;
+            objItems.expired_date = dateToDMMYYYY(v.expired_date);
+            objItems.conversion_qty = v.conversion_qty;
+            objItems.is_approve = v.is_approve;
+            objItems.location_name = v.location_name !== null ? v.location_name : '-';
+            if (v.is_approve == "N") {
+              objItems.remain = commaQty(Math.round((+v.remain - +v.confirm_qty) / +v.conversion_qty));
+            } else {
+              objItems.remain = commaQty(Math.round(+v.remain / +v.conversion_qty));
+            }
+            array[num].title[numTitle].items.push(_.clone(objItems));
+          }
+        }
+        numTitle++;
+      }
+      _list_requis.push(array);
+    }
     res.render('list_requis', {
       hospitalName: hospitalName,
       printDate: printDate(req.decoded.SYS_PRINT_DATE),
-      list_requis: _list_requis
+      list_requis: _list_requis,
     });
   } catch (error) {
+    // console.log(error);
     res.send({ ok: false, error: error.message })
   } finally {
     db.destroy();
@@ -606,329 +1033,188 @@ router.get('/report/maxcost/group/issue/:date', wrap(async (req, res, next) => {
   res.render('maxcost_group_issue', { hospitalName: hospitalName, maxcost_group_issue: maxcost_group_issue, month: month });
 }));//ทำFrontEndแล้ว //ตรวจสอบแล้ว 14-9-60
 
+// Stock Card ตัวเก่า เก็บไว้ก่อน กันพลาด !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
+//   let db = req.db;
+//   let genericId = req.query.genericId;
+//   let startDate = req.query.startDate;
+//   let endDate = req.query.endDate;
+//   let warehouseId = req.query.warehouseId;
+//   let hosdetail = await inventoryReportModel.hospital(db);
+//   let hospitalName = hosdetail[0].hospname;
+//   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+//   let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
+//   let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
+//   startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
+//   endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+//   // let beforeStartDate = moment(_startDate, 'YYYY-MM-DD').add(-1, 'day').format('DD/MM/') + (moment(_startDate).get('year') + 543);
+//   let summitStartDate = moment(_startDate, 'YYYY-MM-DD').add(0, 'day').format('DD/MM/') + (moment(_startDate).get('year') + 543);
 
-router.get('/report/generic/stock/', wrap(async (req, res, next) => {
-  let db = req.db;
-  let genericId = req.query.genericId;
-  let startDate = req.query.startDate;
-  let endDate = req.query.endDate;
-  let warehouseId = req.query.warehouseId;
-  let hosdetail = await inventoryReportModel.hospital(db);
-  let hospitalName = hosdetail[0].hospname;
-  let dateSetting = req.decoded.WM_STOCK_DATE == 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
-  let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
-  let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
+//   let _generic_stock: any = [];
+//   let _generic_name = [];
+//   let _unit = [];
+//   let _dosage_name = [];
+//   let _conversion_qty = [];
+//   let generic_stock: any = [];
+//   let _genericId: any = [];
+//   let summit: any = [];
+//   let _summit: any = [];
+//   let balance: any = [];
+//   let inventory_stock: any = [];
+//   let _inventory_stock: any = [];
+//   let genericCode = [];
+//   genericId = Array.isArray(genericId) ? genericId : [genericId]
+//   Array.isArray(genericId)
 
-  startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
-  endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+//   let warehouseName = await inventoryReportModel.getWarehouse(db, warehouseId)
+//   warehouseName = warehouseName[0].warehouse_name
 
-  let _generic_stock: any = [];
-  let _generic_name = [];
-  let _unit = [];
-  let _conversion_qty = [];
-  let _dosage_name = [];
-  let generic_stock: any = [];
-  let _genericId: any = []
-  genericId = Array.isArray(genericId) ? genericId : [genericId]
-  Array.isArray(genericId)
-  // console.log(genericId, '**************');
+//   for (let id in genericId) {
+//     summit = await inventoryReportModel.summit_stockcard(db, dateSetting, genericId[id], _startDate, warehouseId)
+//     generic_stock = await inventoryReportModel.generic_stock(db, dateSetting, genericId[id], _startDate, _endDate, warehouseId);
+//     inventory_stock = await inventoryReportModel.inventory_stockcard(db, dateSetting, genericId[id], _endDate, warehouseId)
 
-  for (let id in genericId) {
-    generic_stock = await inventoryReportModel.generic_stock(db, dateSetting, genericId[id], _startDate, _endDate, warehouseId);
+//     if (generic_stock[0].length > 0) {
+//       _genericId.push(generic_stock[0][0].generic_id)
+//       _generic_name.push(generic_stock[0][0].generic_name)
+//       _dosage_name.push(generic_stock[0][0].dosage_name)
+//       genericCode.push(generic_stock[0][0].working_code)
+//       if (generic_stock[0][0].conversion_qty) {
+//         _unit.push(generic_stock[0][0].large_unit + ' (' + generic_stock[0][0].conversion_qty + ' ' + generic_stock[0][0].small_unit + ')')
+//       } else {
+//         _unit.push(generic_stock[0][0].small_unit)
+//       }
+//       summit[0].forEach(e => {
+//         const _in_qty = +e.in_qty;
+//         const _out_qty = +e.out_qty;
+//         const _conversion_qty = +e.conversion_qty;
+//         e.stock_date = summitStartDate;
+//         e.expired_date = moment(e.expired_date, 'YYYY-MM-DD').isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year')) : '-';
+//         e.balance_generic_qty = inventoryReportModel.commaQty(e.balance_generic_qty);
+//         e.in_cost = inventoryReportModel.comma(_in_qty * +e.balance_unit_cost);
+//         e.out_cost = inventoryReportModel.comma(_out_qty * +e.balance_unit_cost);
+//         e.balance_unit_cost = inventoryReportModel.comma(e.balance_unit_cost * _conversion_qty);
+//         e.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
+//         e.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
+//         e.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
+//         if (e.in_qty != 0) {
+//           e.in_qty_show = e.in_qty + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')';
+//         } else {
+//           e.in_qty_show = '-';
+//         }
+//         if (e.out_qty != 0) {
+//           e.out_qty_show = e.out_qty + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')';
+//         } else {
+//           e.out_qty_show = '-';
+//         }
+//         e.in_qty_base = inventoryReportModel.commaQty(_in_qty);
+//         e.out_qty_base = inventoryReportModel.commaQty(_out_qty);
+//       });
+//       generic_stock[0].forEach(v => {
+//         const _in_qty = +v.in_qty;
+//         const _out_qty = +v.out_qty;
+//         const _conversion_qty = +v.conversion_qty;
 
-    if (generic_stock[0].length > 0) {
-      _genericId.push(generic_stock[0][0].generic_id)
-      _generic_name.push(generic_stock[0][0].generic_name)
-      _dosage_name.push(generic_stock[0][0].dosage_name)
-      if (generic_stock[0][0].conversion_qty) {
-        _unit.push(generic_stock[0][0].large_unit + ' ' + '(' + generic_stock[0][0].conversion_qty + ' ' + generic_stock[0][0].small_unit + ')')
-      } else {
-        _unit.push(generic_stock[0][0].small_unit)
-      }
+//         v.stock_date = moment(v.stock_date, 'YYYY-MM-DD').isValid() ? moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543) : '-';
+//         v.expired_date = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('DD/MM/') + (moment(v.expired_date).get('year')) : '-';
+//         v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
 
-      generic_stock[0].forEach(v => {
-        v.stock_date = moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543);
-        v.in_cost = inventoryReportModel.comma(+v.in_qty * +v.balance_unit_cost);
-        v.out_cost = inventoryReportModel.comma(+v.out_qty * +v.balance_unit_cost);
-        v.balance_unit_cost = inventoryReportModel.comma(+v.balance_unit_cost * +v.balance_generic_qty);
-        if (v.conversion_qty) {
-          v.in_qty = Math.floor(v.in_qty / v.conversion_qty);
-          v.out_qty = Math.floor(v.out_qty / v.conversion_qty);
+//         //มี unit_generic_id จะโชว์เป็น pack
+//         if (v.small_unit && v.large_unit) {
+//           v.in_cost = inventoryReportModel.comma(_in_qty * +v.balance_unit_cost);
+//           v.out_cost = inventoryReportModel.comma(_out_qty * +v.balance_unit_cost);
+//           // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
+//           v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
+//           v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
+//           v.in_base = inventoryReportModel.commaQty(Math.floor(_in_qty % _conversion_qty));
+//           v.out_base = inventoryReportModel.commaQty(Math.floor(_out_qty % _conversion_qty));
+//           v.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
+//           //in_qty_show
+//           if (v.in_qty != 0 && v.in_base != 0) {
+//             v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' ' + v.in_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+//           } else if (v.in_qty != 0) {
+//             v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+//           } else if (v.in_base != 0) {
+//             v.in_qty_show = v.in_base + ' ' + v.small_unit
+//           } else {
+//             v.in_qty_show = '-';
+//           }
+//           //out_qty_show
+//           if (v.out_qty != 0 && v.out_base != 0) {
+//             v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' ' + v.out_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+//           } else if (v.out_qty != 0) {
+//             v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+//           } else if (v.out_base != 0) {
+//             v.out_qty_show = v.out_base + ' ' + v.small_unit
+//           } else {
+//             v.out_qty_show = '-';
+//           }
+//         }//ไม่มี unit_generic_id จะโชว์เป็น base
+//         else {
+//           if (v.in_qty != 0) {
+//             v.in_qty_show = v.in_qty
+//           } else {
+//             v.in_qty_show = '-';
+//           }
+//           if (v.out_qty != 0) {
+//             v.out_qty_show = v.out_qty
+//           } else {
+//             v.out_qty_show = '-';
+//           }
+//         }
 
-          v.in_qty = inventoryReportModel.commaQty(v.in_qty);
-          v.out_qty = inventoryReportModel.commaQty(v.out_qty);
+//         v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost * _conversion_qty);
+//         v.in_qty_base = inventoryReportModel.commaQty(_in_qty);
+//         v.out_qty_base = inventoryReportModel.commaQty(_out_qty);
+//       });
 
-          v.balance_generic_qty = inventoryReportModel.commaQty(Math.floor(v.balance_generic_qty / v.conversion_qty));
-        } else {
-          v.in_qty = inventoryReportModel.commaQty(v.in_qty);
-          v.out_qty = inventoryReportModel.commaQty(v.out_qty);
-          v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
-        }
-      });
-      _generic_stock.push(generic_stock[0])
-    }
-  }
-  if (_generic_stock.length <= 0) {
-    res.render('error404');
-  }
-  res.render('generic_stock', {
-    generic_stock: generic_stock,
-    _generic_stock: _generic_stock,
-    hospitalName: hospitalName,
-    printDate: printDate(req.decoded.SYS_PRINT_DATE),
-    genericId: genericId,
-    generic_name: _generic_name,
-    unit: _unit,
-    conversion_qty: _conversion_qty,
-    dosage_name: _dosage_name,
-    _genericId: _genericId,
-    startDate: startDate,
-    endDate: endDate
-  });
-  // //console.log();
-  // res.send(_generic_stock[0])
-}));//ทำFrontEndแล้ว  //ตรวจสอบแล้ว 14-9-60
+//       inventory_stock[0].forEach(e => {
+//         //มี unit_generic_id จะโชว์เป็น pack
+//         if (e.unit_generic_id) {
+//           e.qty = +e.in_qty - +e.out_qty
+//           e.qty_pack = inventoryReportModel.commaQty(Math.floor(e.qty / e.conversion_qty));
+//           e.qty_base = inventoryReportModel.commaQty(Math.floor(e.qty % e.conversion_qty));
+//           if (e.qty_pack != 0 && e.qty_base != 0) {
+//             e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+//           } else if (e.qty_pack != 0) {
+//             e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+//           } else if (e.qty_base != 0) {
+//             e.show_qty = e.lot_no + ' [ ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+//           }
+//         }
+//         //ไม่มี unit_generic_id จะโชว์เป็น base
+//         else {
+//           e.in_qty = inventoryReportModel.commaQty(+e.in_qty - +e.out_qty)
+//         }
+//       });
 
-router.get('/report/generic/stock2/', wrap(async (req, res, next) => {
-  let db = req.db;
-  let genericId = req.query.genericId;
-  let startDate = req.query.startDate;
-  let endDate = req.query.endDate;
-  let warehouseId = req.query.warehouseId;
-  let hosdetail = await inventoryReportModel.hospital(db);
-  let hospitalName = hosdetail[0].hospname;
-  let dateSetting = req.decoded.WM_STOCK_DATE == 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
-  let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
-  let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
-
-  startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
-  endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
-
-  let _generic_stock: any = [];
-  let _generic_name = [];
-  let _unit = [];
-  let _dosage_name = [];
-  let _conversion_qty = [];
-  let generic_stock: any = [];
-  let _genericId: any = []
-  genericId = Array.isArray(genericId) ? genericId : [genericId]
-  Array.isArray(genericId)
-  // console.log(genericId, '**************');
-
-  for (let id in genericId) {
-    generic_stock = await inventoryReportModel.generic_stock(db, dateSetting, genericId[id], _startDate, _endDate, warehouseId);
-
-    if (generic_stock[0].length > 0) {
-      _genericId.push(generic_stock[0][0].generic_id)
-      _generic_name.push(generic_stock[0][0].generic_name)
-      _dosage_name.push(generic_stock[0][0].dosage_name)
-      if (generic_stock[0][0].conversion_qty) {
-        _unit.push(generic_stock[0][0].large_unit + ' (' + generic_stock[0][0].conversion_qty + ' ' + generic_stock[0][0].small_unit + ')')
-      } else {
-        _unit.push(generic_stock[0][0].small_unit)
-      }
-
-      generic_stock[0].forEach(v => {
-        v.stock_date = moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543);
-        v.expired_date = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('DD/MM/') + (moment(v.expired_date).get('year')) : '-';
-        v.in_cost = inventoryReportModel.comma(+v.in_qty * +v.balance_unit_cost);
-        v.out_cost = inventoryReportModel.comma(+v.out_qty * +v.balance_unit_cost);
-        if (v.conversion_qty) {
-          v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost * v.conversion_qty);
-          v.in_qty = inventoryReportModel.commaQty(Math.floor(v.in_qty / v.conversion_qty));
-          v.out_qty = inventoryReportModel.commaQty(Math.floor(v.out_qty / v.conversion_qty));
-          v.balance_generic_qty = inventoryReportModel.commaQty(Math.floor(v.balance_generic_qty / v.conversion_qty));
-        } else {
-          v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost);
-          v.in_qty = inventoryReportModel.commaQty(v.in_qty);
-          v.out_qty = inventoryReportModel.commaQty(v.out_qty);
-          v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
-        }
-      });
-      _generic_stock.push(generic_stock[0])
-    }
-  }
-  if (_generic_stock.length <= 0) {
-    res.render('error404');
-  }
-  res.render('generic_stock2', {
-    generic_stock: generic_stock,
-    _generic_stock: _generic_stock,
-    hospitalName: hospitalName,
-    printDate: printDate(req.decoded.SYS_PRINT_DATE),
-    genericId: genericId,
-    generic_name: _generic_name,
-    unit: _unit,
-    conversion_qty: _conversion_qty,
-    dosage_name: _dosage_name,
-    _genericId: _genericId,
-    startDate: startDate,
-    endDate: endDate
-  });
-}));
-
-router.get('/report/generic/stock3/', wrap(async (req, res, next) => {
-  let db = req.db;
-  let genericId = req.query.genericId;
-  let startDate = req.query.startDate;
-  let endDate = req.query.endDate;
-  let warehouseId = req.query.warehouseId;
-  let hosdetail = await inventoryReportModel.hospital(db);
-  let hospitalName = hosdetail[0].hospname;
-  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
-  let _endDate = moment(endDate).format('YYYY-MM-DD') + ' 23:59:59';
-  let _startDate = moment(startDate).format('YYYY-MM-DD') + ' 00:00:00';
-
-  startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
-  endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
-
-  let _generic_stock: any = [];
-  let _generic_name = [];
-  let _unit = [];
-  let _dosage_name = [];
-  let _conversion_qty = [];
-  let generic_stock: any = [];
-  let _genericId: any = [];
-  let summit: any = [];
-  let _summit: any = [];
-  let balance: any = [];
-  let inventory_stock: any = [];
-  let _inventory_stock: any = [];
-  genericId = Array.isArray(genericId) ? genericId : [genericId]
-  Array.isArray(genericId)
-
-  let warehouseName = await inventoryReportModel.getWarehouse(db, warehouseId)
-  warehouseName = warehouseName[0].warehouse_name
-
-  for (let id in genericId) {
-
-    summit = await inventoryReportModel.summit_stockcard(db, dateSetting, genericId[id], _startDate, warehouseId)
-    generic_stock = await inventoryReportModel.generic_stock(db, dateSetting, genericId[id], _startDate, _endDate, warehouseId);
-    inventory_stock = await inventoryReportModel.inventory_stockcard(db, dateSetting, genericId[id], _endDate, warehouseId)
-
-    if (generic_stock[0].length > 0) {
-      _genericId.push(generic_stock[0][0].generic_id)
-      _generic_name.push(generic_stock[0][0].generic_name)
-      _dosage_name.push(generic_stock[0][0].dosage_name)
-      if (generic_stock[0][0].conversion_qty) {
-        _unit.push(generic_stock[0][0].large_unit + ' (' + generic_stock[0][0].conversion_qty + ' ' + generic_stock[0][0].small_unit + ')')
-      } else {
-        _unit.push(generic_stock[0][0].small_unit)
-      }
-
-      summit[0].forEach(e => {
-        const _in_qty = +e.in_qty;
-        const _out_qty = +e.out_qty;
-        const _conversion_qty = +e.conversion_qty;
-        e.stock_date = moment(e.stock_date, 'YYYY-MM-DD').isValid() ? moment(e.stock_date).format('DD/MM/') + (moment(e.stock_date).get('year') + 543) : '-';
-        e.expired_date = moment(e.expired_date, 'YYYY-MM-DD').isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year')) : '-';
-        e.balance_generic_qty = inventoryReportModel.commaQty(e.balance_generic_qty);
-        e.in_cost = inventoryReportModel.comma(_in_qty * +e.balance_unit_cost);
-        e.out_cost = inventoryReportModel.comma(_out_qty * +e.balance_unit_cost);
-        e.balance_unit_cost = inventoryReportModel.comma(e.balance_unit_cost * _conversion_qty);
-        e.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
-        e.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
-        e.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
-        if (e.in_qty != 0) {
-          e.in_qty_show = e.in_qty + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')';
-        } else {
-          e.in_qty_show = '-';
-        }
-        if (e.out_qty != 0) {
-          e.out_qty_show = e.out_qty + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')';
-        } else {
-          e.out_qty_show = '-';
-        }
-
-        e.in_qty_base = inventoryReportModel.commaQty(_in_qty);
-        e.out_qty_base = inventoryReportModel.commaQty(_out_qty);
-      });
-
-      generic_stock[0].forEach(v => {
-        const _in_qty = +v.in_qty;
-        const _out_qty = +v.out_qty;
-        const _conversion_qty = +v.conversion_qty;
-
-        v.stock_date = moment(v.stock_date, 'YYYY-MM-DD').isValid() ? moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543) : '-';
-        v.expired_date = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('DD/MM/') + (moment(v.expired_date).get('year')) : '-';
-        v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
-
-        //มี unit_generic_id จะโชว์เป็น pack
-        if (v.small_unit && v.large_unit) {
-          v.in_cost = inventoryReportModel.comma(_in_qty * +v.balance_unit_cost);
-          v.out_cost = inventoryReportModel.comma(_out_qty * +v.balance_unit_cost);
-          // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
-          v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
-          v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
-          v.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
-          if (v.in_qty != 0) {
-            v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
-          } else {
-            v.in_qty_show = '-';
-          }
-          if (v.out_qty != 0) {
-            v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
-          } else {
-            v.out_qty_show = '-';
-          }
-        }//ไม่มี unit_generic_id จะโชว์เป็น base
-        else {
-          if (v.in_qty != 0) {
-            v.in_qty_show = v.in_qty;
-          } else {
-            v.in_qty_show = '-';
-          }
-          if (v.out_qty != 0) {
-            v.out_qty_show = v.out_qty;
-          } else {
-            v.out_qty_show = '-';
-          }
-        }
-
-        v.balance_unit_cost = inventoryReportModel.comma(v.balance_unit_cost * _conversion_qty);
-
-        v.in_qty_base = inventoryReportModel.commaQty(_in_qty);
-        v.out_qty_base = inventoryReportModel.commaQty(_out_qty);
-      });
-
-      inventory_stock[0].forEach(e => {
-        //มี unit_generic_id จะโชว์เป็น pack
-        if (e.unit_generic_id) {
-          e.in_qty = +e.in_qty - +e.out_qty
-          e.in_qty = inventoryReportModel.commaQty(Math.floor(e.in_qty / e.conversion_qty));
-        }
-        //ไม่มี unit_generic_id จะโชว์เป็น base
-        else {
-          e.in_qty = inventoryReportModel.commaQty(+e.in_qty - +e.out_qty)
-        }
-      });
-
-      _inventory_stock.push(inventory_stock[0])
-      _summit.push(summit[0])
-      _generic_stock.push(generic_stock[0])
-    }
-  }
-  if (_generic_stock.length <= 0) {
-    res.render('error404');
-  }
-  res.render('generic_stock3', {
-    generic_stock: generic_stock,
-    _generic_stock: _generic_stock,
-    _summit: _summit,
-    _inventory_stock: _inventory_stock,
-    hospitalName: hospitalName,
-    warehouseName: warehouseName,
-    genericId: genericId,
-    generic_name: _generic_name,
-    unit: _unit,
-    conversion_qty: _conversion_qty,
-    dosage_name: _dosage_name,
-    _genericId: _genericId,
-    startDate: startDate,
-    endDate: endDate,
-    printDate: printDate(req.decoded.SYS_PRINT_DATE)
-  });
-}));
+//       _inventory_stock.push(inventory_stock[0])
+//       _summit.push(summit[0])
+//       _generic_stock.push(generic_stock[0])
+//     }
+//   }
+//   if (_generic_stock.length <= 0) {
+//     res.render('error404');
+//   }
+//   res.render('generic_stock3', {
+//     generic_stock: generic_stock,
+//     _generic_stock: _generic_stock,
+//     _summit: _summit,
+//     genericCode: genericCode,
+//     _inventory_stock: _inventory_stock,
+//     hospitalName: hospitalName,
+//     warehouseName: warehouseName,
+//     genericId: genericId,
+//     generic_name: _generic_name,
+//     unit: _unit,
+//     conversion_qty: _conversion_qty,
+//     dosage_name: _dosage_name,
+//     _genericId: _genericId,
+//     startDate: startDate,
+//     endDate: endDate,
+//     printDate: printDate(req.decoded.SYS_PRINT_DATE)
+//   });
+// }));
 
 router.get('/report/count/requis/:date', wrap(async (req, res, next) => {
   let db = req.db;
@@ -1054,6 +1340,7 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
   else { wareHouse = '%' + wareHouse + '%'; }
   if (genericId == 0) { genericId = '%%'; }
   else { genericId = '%' + genericId + '%'; }
+  if (typeof genericTypeId === 'string') genericTypeId = [genericTypeId];
 
   let product_expired = await inventoryReportModel.product_expired(db, startDate, endDate, wareHouse, genericId, genericTypeId);
   product_expired = product_expired[0];
@@ -1158,13 +1445,13 @@ router.get('/report/list/cost/:startDate/:endDate/:warehouseId/:warehouseName', 
   });
 }));//ตรวจสอบแล้ว 14-9-60
 
-router.get('/report/list/cost/type/:startDate/:endDate/:warehouseId/:warehouseName/:genericType', wrap(async (req, res, next) => {
+router.get('/report/list/cost/type/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
   let db = req.db;
   let startDate = req.params.startDate
   let endDate = req.params.endDate
   let warehouseId = req.params.warehouseId
   let warehouseName = req.params.warehouseName
-  let genericTypeId = req.params.genericType
+  let genericTypeId = Array.isArray(req.query.genericType) ? req.query.genericType : [req.query.genericType];
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let sumt: any = 0
@@ -1178,10 +1465,11 @@ router.get('/report/list/cost/type/:startDate/:endDate/:warehouseId/:warehouseNa
 
   _.forEach(list_cost, (v: any, index: any) => {
     sumt += +v.cost
-    v.generic_type_name = index === 0 ? v.generic_type_name : null;
+    if (index !== 0 && v.generic_type_name === list_cost[index - 1].generic_type_name) {
+      v.generic_type_name = null
+    }
     v.cost = inventoryReportModel.comma(v.cost)
     v.sum = index === list_cost.length - 1 ? inventoryReportModel.comma(_sun) : null;
-    console.log(v.sum);
   });
 
   startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
@@ -1272,6 +1560,7 @@ router.get('/report/list/receive', wrap(async (req, res, next) => {
     })
   })
   // res.send({receiveID:receiveID,list_receive3:list_receive3,receiveId:receiveId,productId:productId})
+  //  printDate(req.decoded.SYS_PRINT_DATE)
   res.render('list_receive', { hospitalName: hospitalName, printDate: printDate(req.decoded.SYS_PRINT_DATE), list_receive2: list_receive2, array2: array2 });
 }));
 router.get('/report/list/receiveCode/:sID/:eID', wrap(async (req, res, next) => {
@@ -1459,13 +1748,17 @@ router.get('/report/list/receiveCodeCheck/:sID/:eID', wrap(async (req, res, next
   if (committee[0] === undefined) { res.render('no_commitee'); }
   let staffReceive = await inventoryReportModel.staffReceive(db);
   let chief = await inventoryReportModel.getChief(db, 'CHIEF');
-
+  let serialYear = moment().get('year') + 543;
+  let monthRo = moment().get('month') + 1;
+  if (monthRo >= 10) {
+    serialYear += 1;
+  }
   res.render('check_receive', {
     chief: chief[0],
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
-
+    serialYear: serialYear,
     check_receive: check_receive,
     province: province,
     bahtText: bahtText,
@@ -1635,9 +1928,9 @@ router.get('/report/list/receiveDateOther/:sDate/:eDate', wrap(async (req, res, 
   res.render('_list_receive4', { hospitalName: hospitalName, list_receive2: list_receive2, array2: array2, sDate: sDate, eDate: eDate });
 }));
 
-router.get('/report/receive/:receiveId', wrap(async (req, res, next) => {
+router.get('/report/receive', wrap(async (req, res, next) => {
   let db = req.db;
-  let receiveId = req.params.receiveId;
+  let receiveId = req.query.receiveId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let boox_prefix = await inventoryReportModel.boox_prefix(db);
@@ -1671,6 +1964,7 @@ router.get('/report/receive/:receiveId', wrap(async (req, res, next) => {
     receiveUser: receiveUser
   });
 }));
+
 router.get('/report/requis/day/:date', wrap(async (req, res, next) => {
   let db = req.db;
   let date = req.params.date;
@@ -1689,15 +1983,17 @@ router.get('/report/requis/day/:date', wrap(async (req, res, next) => {
 
 router.get('/report/un-receive', wrap(async (req, res, next) => {
   let db = req.db;
+  let date = req.query.date
 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let unReceive = await inventoryReportModel.unReceive(db);
+  let unReceive = await inventoryReportModel.unReceive(db, date);
   unReceive = unReceive[0];
 
   unReceive.forEach(value => {
     value.order_date = moment(value.order_date).format('D MMMM ') + (moment(value.order_date).get('year') + 543);
+    value.canReceive = value.qty - value.receive_qty + ' ' + value.u1 + ' ' + '(' + value.mugQty + value.u2 + ')'
   });
 
   res.render('un-receive', {
@@ -1739,7 +2035,8 @@ router.get('/report/tranfers', wrap(async (req, res, next) => {
   let _sum: any = [];
   let _tmpSum: any = [];
   let _tmpTranfer: any = []
-  let page: any = req.decoded.WM_TRANSFER_REPORT_APPROVE;
+  const line = await inventoryReportModel.getLine(db, 'AT');
+  let page: any = line[0].line;
 
   // console.log(page);
 
@@ -1959,13 +2256,17 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let chief = await inventoryReportModel.getChief(db, 'CHIEF');
   let idxChiefPo = _.findIndex(chief, { people_id: chiefPo });
   idxChiefPo > -1 ? cName.push(chief[idxChiefPo]) : cName = [];
-
+  let serialYear = moment().get('year') + 543;
+  let monthRo = moment().get('month') + 1;
+  if (monthRo >= 10) {
+    serialYear += 1;
+  }
   res.render('check_receive', {
     chief: cName[0],
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
-
+    serialYear: serialYear,
     check_receive: check_receive,
     province: province,
     bahtText: bahtText,
@@ -2047,7 +2348,11 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
   let chief = await inventoryReportModel.getChief(db, 'CHIEF');
   let idxChiefPo = _.findIndex(chief, { people_id: chiefPo });
   idxChiefPo > -1 ? cName.push(chief[idxChiefPo]) : cName = [];
-
+  let serialYear = moment().get('year') + 543;
+  let monthRo = moment().get('month') + 1;
+  if (monthRo >= 10) {
+    serialYear += 1;
+  }
   res.render('check_receives', {
     totalPrice: totalPrice,
     _bahtText: _bahtText,
@@ -2055,7 +2360,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     staffReceive: staffReceive[0],
     master: master,
     hospitalName: hospitalName,
-
+    serialYear: serialYear,
     check_receive: check_receive,
     length: length,
     province: province,
@@ -2084,10 +2389,10 @@ router.get('/report/balance', wrap(async (req, res, next) => {
   res.render('balance', { hospitalName: hospitalName, balance: balance, warehouseName: warehouseName });
 }));
 
-router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, next) => {
+router.get('/report/product-receive', wrap(async (req, res, next) => {
   let db = req.db;
-  let startdate = req.params.startdate
-  let enddate = req.params.enddate
+  let startdate = req.query.startDate
+  let enddate = req.query.endDate
 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
@@ -2104,6 +2409,7 @@ router.get('/report/product/receive/:startdate/:enddate', wrap(async (req, res, 
   productReceive.forEach(value => {
     allcost += value.total_cost;
     value.total_cost = inventoryReportModel.comma(value.total_cost);
+    value.cost = inventoryReportModel.comma(value.cost);
     value.receive_date = moment(value.receive_date).format('D/MM/YYYY');
     value.expired_date = moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543);
     if (value.discount_percent == null) value.discount_percent = '0.00%';
@@ -2151,7 +2457,7 @@ router.get('/report/product/receive', wrap(async (req, res, next) => {
   });
   allcost = inventoryReportModel.comma(allcost);
 
-  res.render('productReceive2', {
+  res.render('productReceive3', {
     allcost: allcost,
     hospitalName: hospitalName,
     printDate: printDate(req.decoded.SYS_PRINT_DATE),
@@ -2380,14 +2686,15 @@ router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req
   });
 }));
 
-router.get('/report/inventorystatus/:warehouseId/:genericTypeId/:statusDate', wrap(async (req, res, next) => {
+router.get('/report/inventorystatus', wrap(async (req, res, next) => {
   let db = req.db;
-  let warehouseId = req.params.warehouseId
-  let genericTypeId = req.params.genericTypeId
-  let statusDate = req.params.statusDate
+  let warehouseId = req.query.warehouseId
+  let statusDate = req.query.statusDate
+  let genericType = req.query.genericType
+  let warehouseName = req.query.warehouseName
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.inventoryStatus(db, warehouseId, genericTypeId, statusDate);
+  let rs = await inventoryReportModel.inventoryStatus(db, warehouseId, genericType, statusDate);
   let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
   let list = rs[0]
   let sumlist = [];
@@ -2417,6 +2724,7 @@ router.get('/report/inventorystatus/:warehouseId/:genericTypeId/:statusDate', wr
     printDate: printDate(req.decoded.SYS_PRINT_DATE),
     hospitalName: hospitalName,
     list: list,
+    warehouseName: warehouseName,
     sumlist: sumlist,
     totalsum: totalsum,
     totalsumShow: totalsumShow
@@ -2553,53 +2861,63 @@ router.get('/report/generics-no-movement/:warehouseId/:startdate/:enddate', wrap
   });
 }));
 
-router.get('/report/receive/export/:startdate/:enddate', async (req, res, next) => {
-
+router.get('/report/receive/export', async (req, res, next) => {
   const db = req.db;
-  let startdate = req.params.startdate
-  let enddate = req.params.enddate
+  let startdate = req.query.startDate
+  let enddate = req.query.endDate
+  console.log(startdate, enddate);
 
   // get tmt data
   let rs: any = await inventoryReportModel.productReceive(db, startdate, enddate);
-
   let json = [];
-  rs[0].forEach(v => {
-    let obj: any = {};
-    obj.purchase_order_number = v.purchase_order_number;
-    obj.order_date = v.order_date;
-    obj.generic_code = v.generic_code;
-    obj.generic_name = v.generic_name;
-    obj.product_code = v.product_code;
-    obj.product_name = v.product_name;
-    obj.unit_name = v.unit_name;
-    obj.conversion = v.conversion;
-    obj.package = v.package;
-    obj.cost = v.cost;
-    obj.total_qty = v.total_qty;
-    obj.total_cost = v.total_cost;
-    obj.generic_type_name = v.generic_type_name;
-    obj.account_name = v.account_name;
-    obj.generic_hosp_name = v.generic_hosp_name;
-    obj.labeler_name = v.labeler_name;
-    json.push(obj);
-  });
+  if (rs[0].length) {
+    let i = 0;
+    for (let tmp of rs[0]) {
+      tmp.order_date = moment(tmp.order_date).isValid() ? moment(tmp.order_date).format('DD MMM ') + (moment(tmp.order_date).get('year') + 543) : '';
+    }
+    rs[0].forEach(v => {
+      i++;
+      let obj: any = {
+        'ลำดับ': i,
+        'เลขที่ใบสั่งซื้อ': v.purchase_order_number,
+        'วันที่รับของ': v.order_date,
+        'รหัสเวชภัณฑ์': v.generic_code,
+        'ชื่อเวชภัณฑ์': v.generic_name,
+        'ชื่อทางการค้า': v.product_name,
+        'หน่วย': v.unit_name,
+        'Conversion': v.conversion,
+        'Package': v.package,
+        'ราคาต่อหน่วย': v.cost,
+        'จำนวนทั้งหมด(base)': v.total_qty,
+        'ราคารวม': v.total_cost,
+        'ประเภท': v.generic_type_name,
+        'ชนิด': v.account_name ? v.account_name : '',
+        'บริษัทผู้จำหน่าย': v.labeler_name_po,
+        'รูปแบบการจัดซื้อ(Generic)': v.bid_name
+      };
+      json.push(obj);
+    });
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
+  } else {
+    { res.render('error404'); }
+  }
 
-  const xls = json2xls(json);
-  const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
-  // create directory
-  fse.ensureDirSync(exportDirectory);
-  const filePath = path.join(exportDirectory, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
-  fs.writeFileSync(filePath, xls, 'binary');
-  // force download
-  res.download(filePath, 'รายงานเวชภัณฑ์ที่รับจากการสั่งซื้อ.xlsx');
+
 });
 
-router.get('/report/list/cost/excel/:startDate/:warehouseId/:warehouseName/:genericTypeId', wrap(async (req, res, next) => {
+router.get('/report/list/cost/excel', wrap(async (req, res, next) => {
   let db = req.db;
-  let startDate = req.params.startDate;
-  let warehouseId = req.params.warehouseId;
-  let warehouseName = req.params.warehouseName;
-  let genericTypeId = req.params.genericTypeId;
+  let startDate = req.query.startDate;
+  let warehouseId = req.query.warehouseId;
+  let warehouseName = req.query.warehouseName;
+  let genericTypeId = Array.isArray(req.query.genericType) ? req.query.genericType : [req.query.genericType];
 
   let rs: any = await inventoryReportModel.listCostExcel(db, genericTypeId, startDate, warehouseId)
   rs = rs[0];
@@ -2624,8 +2942,6 @@ router.get('/report/list/cost/excel/:startDate/:warehouseId/:warehouseName/:gene
   let sumText = inventoryReportModel.comma(sum)
   json[json.length - 1].sum = sumText
 
-  // res.send(json)
-
   const xls = json2xls(json);
   const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
   // create directory
@@ -2640,20 +2956,59 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
   const db = req.db;
   const year = req.params.year - 543
   const warehouseId: any = req.decoded.warehouseId
+  const genericType = req.query.genericType
 
   try {
-    const rs: any = await inventoryReportModel.receiveIssueYear(db, year, warehouseId);
+    const rs: any = await inventoryReportModel.issueYear(db, year, warehouseId, genericType);
     let json = [];
-    
+
     rs[0].forEach(v => {
-      let obj: any = {};
-      obj.PRODUCT_NAME = v.product_name;
-      obj.PACK = v.pack;
-      obj.UNIT_PRICE = v.unit_price;
-      obj.SUMMIT_QTY = v.summit_qty;
-      obj.IN_QTY = v.out_qty;
-      obj.BALANCE_QTY = v.balance_qty;
-      obj.AMOUNT_QTY = v.amount_qty;
+      let obj: any = {
+        'ชื่อทางการค้า': v.product_name,
+        'รหัส_Generics': v.working_code,
+        'ชื่อสามัญ': v.generic_name,
+        'ผู้จำหน่าย': v.m_labeler_name,
+        'CONVERSION': v.qty,
+        'หน่วยเล็กสุด': v.small_unit,
+        'บัญชียา': v.account_name,
+        'ขนาด': v.dosage_name,
+        'ประเภทยา': v.generic_hosp_name,
+        'ประเภทสินค้า': v.generic_type_name,
+        'ราคากลาง': v.standard_cost,
+        'รูปแบบการจัดซื้อ': v.bid_name,
+        'กลุ่มยา': v.group_name,
+        'MIN_QTY(หน่วยย่อย)': v.min_qty,
+        'MAX_QTY(หน่วยย่อย)': v.max_qty,
+        'แพ็ค': v.pack,
+        'ราคาต่อแพ็ค': v.cost,
+        'ยอดยกมา(หน่วยใหญ่)': v.summit / v.qty,
+        'รับ(หน่วยใหญ่)': v.in_qty,
+        'จ่าย(หน่วยใหญ่)': v.out_qty,
+        'คงเหลือ(หน่วยใหญ่)': v.balance / v.qty,
+        'มูลค่า': v.balance * v.cost
+        // WORKING_CODE: v.working_code,
+        // GENERIC_CODE: v.generic_name,
+        // PRODUCT_NAME: v.product_name,
+        // CONVERSION: v.conversion,
+        // BASEUNIT: v.baseunit,
+        // ACCOUNT_NAME: v.account_name,
+        // DOSAGE_NAME: v.dosage_name,
+        // GENERIC_HOSP_NAME: v.generic_hosp_name,
+        // GENERIC_TYPE_NAME: v.generic_type_name,
+        // STANDARD_COST: v.standard_cost,
+        // BID_NAME: v.bid_name,
+        // GROUP_NAME: v.group_name,
+        // MIN_QTY: v.min_qty,
+        // MAX_QTY: v.max_qty,
+        // PACK: v.pack,
+        // UNIT_PRICE: v.unit_price,
+        // BALANCE_QTY: v.balance_qty,
+        // IN_QTY: v.in_qty,
+        // OUT_QTY: v.out_qty,
+        // SUMMIT_QTY: v.summit_qty,
+        // AMOUNT_QTY: v.amount_qty
+      };
+
       json.push(obj);
     });
 
@@ -2669,4 +3024,660 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
     res.send({ ok: false, message: error.message })
   }
 });
+
+router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:warehouseName', async (req, res, next) => {
+
+  const db = req.db;
+  let startDate = req.params.startDate;
+  let endDate = req.params.endDate;
+  let warehouseId = req.params.warehouseId;
+  let warehouseName = req.params.warehouseName;
+  let receiveTpyeId = Array.isArray(req.query.receiveTpyeId) ? req.query.receiveTpyeId : [req.query.receiveTpyeId];
+
+  // get tmt data
+  let hosdetail = await inventoryReportModel.hospital(db);
+
+  let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId, receiveTpyeId);
+  if (!data[0].length || data[0] === []) {
+    res.render('error404')
+  } else {
+    let hospitalName = hosdetail[0].hospname;
+    //  res.send(data[0])
+    let sum = inventoryReportModel.comma(_.sumBy(data[0], (o: any) => { return o.receive_qty * o.cost; }));
+
+    for (let tmp of data[0]) {
+      tmp.receive_date = moment(tmp.receive_date).isValid() ? moment(tmp.receive_date).format('DD MMM ') + (moment(tmp.receive_date).get('year') + 543) : '';
+      // tmp.receive_qty = inventoryReportModel.commaQty(tmp.receive_qty);
+      // tmp.cost = inventoryReportModel.comma(tmp.cost);
+      // tmp.costAmount = inventoryReportModel.comma(tmp.costAmount);
+    }
+    let json = [];
+    let i = 0;
+    data[0].forEach(v => {
+      i++;
+      let obj: any = {
+        'ลำดับ': i,
+        'วันที่รับเข้า': v.receive_date,
+        'เลขที่ใบรับ': v.receive_code,
+        'รหัสเวชภัณฑ์': v.working_code,
+        'ชื่อเวชภัณฑ์': v.generic_name,
+        'จำนวนที่รับ': v.receive_qty,
+        'หน่วยใหญ่': v.large_unit_name,
+        'conversion': v.qty,
+        'หน่วย': v.small_unit_name,
+        'ราคาต่อหน่วย': v.cost,
+        'มูลค่า': v.costAmount,
+        'ประเภทการรับ': v.receive_type_name,
+        'รวม': ''
+      };
+      json.push(obj);
+    });
+
+    json[json.length - 1]['รวม'] = sum
+
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'รายงานมูลค่าจากการรับอื่นๆ คลัง' + warehouseName + '.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'รายงานมูลค่าจากการรับอื่นๆ คลัง' + warehouseName + '.xlsx');
+  }
+});
+router.get('/report/remain/qty/export', async (req, res, next) => {
+  const db = req.db;
+  const warehouseId: any = req.decoded.warehouseId
+
+  try {
+    const rs: any = await inventoryReportModel.exportRemainQty(db, warehouseId);
+    let json = [];
+
+    rs.forEach(v => {
+      let obj: any = {};
+      obj.working_code = v.working_code;
+      obj.generic_name = v.generic_name;
+      obj.min_qty = v.min_qty;
+      obj.max_qty = v.max_qty;
+      obj.remain_qty = v.qty;
+      obj.unit_name = v.unit_name;
+      json.push(obj);
+    });
+
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'remainWarehouse.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'remainWarehouse.xlsx');
+  } catch (error) {
+    res.send({ ok: false, message: error.message })
+  }
+});
+
+router.get('/report/remain-trade/qty/export', async (req, res, next) => {
+  const db = req.db;
+  const warehouseId: any = req.decoded.warehouseId
+
+  try {
+    const rs: any = await inventoryReportModel.exportRemainQtyByTrade(db, warehouseId);
+    let json = [];
+
+    rs.forEach(v => {
+      let obj: any = {};
+      obj.working_code = v.working_code;
+      obj.generic_name = v.generic_name;
+      obj.product_name = v.product_name;
+      obj.lot_no = v.lot_no;
+      obj.min_qty = v.min_qty;
+      obj.max_qty = v.max_qty;
+      obj.remain_qty = v.qty;
+      obj.unit_name = v.unit_name;
+      json.push(obj);
+    });
+
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'remainWarehouseByTrade.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'remainWarehouseByTrade.xlsx');
+  } catch (error) {
+    res.send({ ok: false, message: error.message })
+  }
+});
+
+router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
+  const db = req.db;
+  const genericTypeId = req.query.genericTypeId;
+  const warehouseId = req.query.warehouseId;
+
+  try {
+    const rs: any = await inventoryReportModel.productExpired(db, genericTypeId, warehouseId);
+    rs.forEach(element => {
+      element.expired_date = (moment(element.expired_date).get('year')) + moment(element.expired_date).format('/D/M');
+    });
+    res.render('alert-expired', {
+      rs: rs
+    })
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  }
+}))
+
+router.get('/report/inventoryStatus/excel', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.query.warehouseId
+  let statusDate = req.query.statusDate
+  let genericType = req.query.genericType
+  let warehouseName = req.query.warehouseName
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let rs = await inventoryReportModel.inventoryStatus(db, warehouseId, genericType, statusDate);
+  let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
+  let json = [];
+  let sum = 0;
+  rs = rs[0];
+
+  rs.forEach(v => {
+    let obj: any = {
+      'รหัสเวชภัณฑ์': v.working_code,
+      'รายการเวชภัณฑ์': v.generic_name,
+      'จำนวน': v.qty,
+      'หน่วย': v.small_unit,
+      'ราคาต่อหน่วย': v.unit_cost,
+      'มูลค่า': v.cost,
+      'รวม': ''
+    };
+    sum += v.cost;
+    json.push(obj);
+  });
+  let sumText = inventoryReportModel.comma(sum)
+  json[json.length - 1]['รวม'] = sumText
+
+  const xls = json2xls(json);
+  const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+  // create directory
+  fse.ensureDirSync(exportDirectory);
+  const filePath = path.join(exportDirectory, 'รายงานสถานะเวชภัณฑ์คงคลัง ' + warehouseName + 'ณ วันที่' + statusDate_text + '.xlsx');
+  fs.writeFileSync(filePath, xls, 'binary');
+  // force download
+  res.download(filePath, 'รายงานสถานะเวชภัณฑ์คงคลัง ' + warehouseName + 'ณ วันที่' + statusDate_text + '.xlsx');
+}));
+
+router.get('/report/returnBudget/export', async (req, res, next) => {
+  const db = req.db;
+
+  try {
+    const rs: any = await inventoryReportModel.getreturnBudgetList(db);
+    let json = [];
+
+    rs[0].forEach(v => {
+      let obj: any = {
+        'เลขที่ใบสั่งซื้อ': v.purchase_order_number,
+        'วันที่จัดซื้อ': v.order_date,
+        'ผู้จำหน่าย': v.labeler_name,
+        'หมวดงบประมาณ': v.budget_name,
+        'มูลค่าจัดซื้อ': v.purchase_price,
+        'มูลค่ารับ': v.receive_price,
+        'มูลค่าแตกต่าง': v.differ_price,
+        'มูลค่าคืนงบ': v.return_price
+      };
+      json.push(obj);
+    });
+
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'รายงานใบสั่งซื้อที่ตรวจสอบแล้ว.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'รายงานใบสั่งซื้อที่ตรวจสอบแล้ว.xlsx');
+  } catch (error) {
+    res.send({ ok: false, message: error.message })
+  }
+});
+
+router.get('/report/genericStock/all', wrap(async (req, res, next) => {
+  let db = req.db;
+  let startDate = req.query.startDate;
+  let endDate = req.query.endDate;
+  let warehouseId = req.query.warehouseId;
+  let offset = req.query.offset;
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let _endDate = moment(endDate).format('YYYY-MM-DD');
+  let _startDate = moment(startDate).format('YYYY-MM-DD');
+  let generic_stock: any = [];
+  let inventory_stock: any = [];
+  let genericId = [];
+  let data = [];
+  let rs = await inventoryReportModel.getGenericWarehouse(db, warehouseId, offset)
+  rs = rs[0];
+  for (const v of rs) {
+    genericId.push(v.generic_id)
+  }
+
+  let warehouseName = await inventoryReportModel.getWarehouse(db, warehouseId)
+  warehouseName = warehouseName[0].warehouse_name
+
+  startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
+  endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+
+  for (let id in genericId) {
+
+    generic_stock = await inventoryReportModel.generic_stockNew(db, dateSetting, genericId[id], _startDate, _endDate, warehouseId);
+    if (generic_stock[0].length > 0) {
+      inventory_stock = await inventoryReportModel.inventory_stockcard(db, dateSetting, genericId[id], _endDate, warehouseId)
+      const obj: any = {
+        generic_id: generic_stock[0][0].generic_id,
+        generic_name: generic_stock[0][0].generic_name,
+        dosage_name: generic_stock[0][0].dosage_name,
+        generic_code: generic_stock[0][0].working_code
+      }
+
+      for (const v of generic_stock[0]) {
+        const _in_qty = +v.in_qty;
+        const _out_qty = +v.out_qty;
+        const _conversion_qty = +v.conversion_qty;
+        const _balance_unit_cost = v.balance_unit_cost
+
+        if (v.transaction_type == 'SUMMIT') {
+          v.stock_date = moment(_startDate, 'YYYY-MM-DD').isValid() ? moment(_startDate).format('DD/MM/') + (moment(_startDate).get('year') + 543) : '-';
+          // v.in_cost = inventoryReportModel.comma(_in_qty * _balance_unit_cost);
+          // v.in_qty_show = v.in_qty
+        } else {
+          v.stock_date = moment(v.stock_date, 'YYYY-MM-DD').isValid() ? moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543) : '-';
+          //มี unit_generic_id จะโชว์เป็น pack
+        }
+        if (v.small_unit && v.large_unit) {
+          v.in_cost = inventoryReportModel.comma(_in_qty * _balance_unit_cost);
+          v.out_cost = inventoryReportModel.comma(_out_qty * _balance_unit_cost);
+          // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
+          v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
+          v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
+          v.in_base = inventoryReportModel.commaQty(Math.floor(_in_qty % _conversion_qty));
+          v.out_base = inventoryReportModel.commaQty(Math.floor(_out_qty % _conversion_qty));
+          v.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
+          //in_qty_show
+          if (v.in_qty != 0 && v.in_base != 0) {
+            v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' ' + v.in_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.in_qty != 0) {
+            v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.in_base != 0) {
+            v.in_qty_show = v.in_base + ' ' + v.small_unit
+          } else {
+            v.in_qty_show = '-';
+          }
+          //out_qty_show
+          if (v.out_qty != 0 && v.out_base != 0) {
+            v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' ' + v.out_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.out_qty != 0) {
+            v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.out_base != 0) {
+            v.out_qty_show = v.out_base + ' ' + v.small_unit
+          } else {
+            v.out_qty_show = '-';
+          }
+        }//ไม่มี unit_generic_id จะโชว์เป็น base
+        else {
+          if (v.in_qty != 0) {
+            v.in_qty_show = v.in_qty
+          } else {
+            v.in_qty_show = '-';
+          }
+          if (v.out_qty != 0) {
+            v.out_qty_show = v.out_qty
+          } else {
+            v.out_qty_show = '-';
+          }
+        }
+        v.expired_date = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('DD/MM/') + (moment(v.expired_date).get('year')) : '-';
+        v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
+        v.balance_unit_cost = inventoryReportModel.comma(_balance_unit_cost * _conversion_qty);
+        v.in_qty_base = inventoryReportModel.commaQty(_in_qty);
+        v.out_qty_base = inventoryReportModel.commaQty(_out_qty);
+      }
+
+      //inventory_stock
+      for (const e of inventory_stock[0]) {
+        //มี unit_generic_id จะโชว์เป็น pack
+        if (e.unit_generic_id) {
+          e.qty = +e.in_qty - +e.out_qty
+          e.qty_pack = inventoryReportModel.commaQty(Math.floor(e.qty / e.conversion_qty));
+          e.qty_base = inventoryReportModel.commaQty(Math.floor(e.qty % e.conversion_qty));
+          if (e.qty_pack != 0 && e.qty_base != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          } else if (e.qty_pack != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          } else if (e.qty_base != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          }
+        }
+        //ไม่มี unit_generic_id จะโชว์เป็น base
+        else {
+          e.in_qty = inventoryReportModel.commaQty(+e.in_qty - +e.out_qty)
+        }
+      }
+      obj.inventory_stock = inventory_stock[0];
+      obj.generic_stock = generic_stock[0];
+      data.push(obj);
+    }
+
+  }
+  if (data.length <= 0) {
+    res.render('error404');
+  }
+  res.render('generic_stockAll', {
+    hospitalName: hospitalName,
+    warehouseName: warehouseName,
+    startDate: startDate,
+    endDate: endDate,
+    data: data,
+    printDate: printDate(req.decoded.SYS_PRINT_DATE)
+  });
+}));
+
+router.get('/report/getGenericWarehouseAll', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.query.warehouseId;
+  let offset = '';
+  let rs = await inventoryReportModel.getGenericWarehouse(db, warehouseId, offset)
+  res.send({ ok: true, rows: rs[0].length })
+}));
+
+router.get('/report/generic/stock', wrap(async (req, res, next) => {
+  let db = req.db;
+  let genericId = req.query.genericId;
+  let startDate = req.query.startDate;
+  let endDate = req.query.endDate;
+  let warehouseId = req.query.warehouseId;
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let _endDate = moment(endDate).format('YYYY-MM-DD');
+  let _startDate = moment(startDate).format('YYYY-MM-DD');
+  let generic_stock: any = [];
+  let inventory_stock: any = [];
+  let data = [];
+  genericId = Array.isArray(genericId) ? genericId : [genericId]
+  Array.isArray(genericId)
+
+  let warehouseName = await inventoryReportModel.getWarehouse(db, warehouseId)
+  warehouseName = warehouseName[0].warehouse_name
+
+  startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
+  endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+
+  for (let id in genericId) {
+
+    generic_stock = await inventoryReportModel.generic_stockNew(db, dateSetting, genericId[id], _startDate, _endDate, warehouseId);
+    if (generic_stock[0].length > 0) {
+      inventory_stock = await inventoryReportModel.inventory_stockcard(db, dateSetting, genericId[id], _endDate, warehouseId)
+      const obj: any = {
+        generic_id: generic_stock[0][0].generic_id,
+        generic_name: generic_stock[0][0].generic_name,
+        dosage_name: generic_stock[0][0].dosage_name,
+        generic_code: generic_stock[0][0].working_code
+      }
+
+      for (const v of generic_stock[0]) {
+        const _in_qty = +v.in_qty;
+        const _out_qty = +v.out_qty;
+        const _conversion_qty = +v.conversion_qty;
+        const _balance_unit_cost = v.balance_unit_cost
+
+        if (v.transaction_type == 'SUMMIT') {
+          v.stock_date = moment(_startDate, 'YYYY-MM-DD').isValid() ? moment(_startDate).format('DD/MM/') + (moment(_startDate).get('year') + 543) : '-';
+          // v.in_cost = inventoryReportModel.comma(_in_qty * _balance_unit_cost);
+          // v.in_qty_show = v.in_qty
+        } else {
+          v.stock_date = moment(v.stock_date, 'YYYY-MM-DD').isValid() ? moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543) : '-';
+          //มี unit_generic_id จะโชว์เป็น pack
+        }
+        if (v.small_unit && v.large_unit) {
+          v.in_cost = inventoryReportModel.comma(_in_qty * _balance_unit_cost);
+          v.out_cost = inventoryReportModel.comma(_out_qty * _balance_unit_cost);
+          // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
+          v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
+          v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
+          v.in_base = inventoryReportModel.commaQty(Math.floor(_in_qty % _conversion_qty));
+          v.out_base = inventoryReportModel.commaQty(Math.floor(_out_qty % _conversion_qty));
+          v.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
+          //in_qty_show
+          if (v.in_qty != 0 && v.in_base != 0) {
+            v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' ' + v.in_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.in_qty != 0) {
+            v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.in_base != 0) {
+            v.in_qty_show = v.in_base + ' ' + v.small_unit
+          } else {
+            v.in_qty_show = '-';
+          }
+          //out_qty_show
+          if (v.out_qty != 0 && v.out_base != 0) {
+            v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' ' + v.out_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.out_qty != 0) {
+            v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.out_base != 0) {
+            v.out_qty_show = v.out_base + ' ' + v.small_unit
+          } else {
+            v.out_qty_show = '-';
+          }
+        }//ไม่มี unit_generic_id จะโชว์เป็น base
+        else {
+          if (v.in_qty != 0) {
+            v.in_qty_show = v.in_qty
+          } else {
+            v.in_qty_show = '-';
+          }
+          if (v.out_qty != 0) {
+            v.out_qty_show = v.out_qty
+          } else {
+            v.out_qty_show = '-';
+          }
+        }
+        v.expired_date = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('DD/MM/') + (moment(v.expired_date).get('year')) : '-';
+        v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
+        v.balance_unit_cost = inventoryReportModel.comma(_balance_unit_cost * _conversion_qty);
+        v.in_qty_base = inventoryReportModel.commaQty(_in_qty);
+        v.out_qty_base = inventoryReportModel.commaQty(_out_qty);
+      }
+
+      //inventory_stock
+      for (const e of inventory_stock[0]) {
+        //มี unit_generic_id จะโชว์เป็น pack
+        if (e.unit_generic_id) {
+          e.qty = +e.in_qty - +e.out_qty
+          e.qty_pack = inventoryReportModel.commaQty(Math.floor(e.qty / e.conversion_qty));
+          e.qty_base = inventoryReportModel.commaQty(Math.floor(e.qty % e.conversion_qty));
+          if (e.qty_pack != 0 && e.qty_base != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          } else if (e.qty_pack != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          } else if (e.qty_base != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          }
+        }
+        //ไม่มี unit_generic_id จะโชว์เป็น base
+        else {
+          e.in_qty = inventoryReportModel.commaQty(+e.in_qty - +e.out_qty)
+        }
+      }
+      obj.inventory_stock = inventory_stock[0];
+      obj.generic_stock = generic_stock[0];
+      data.push(obj);
+    }
+  }
+  if (data.length <= 0) {
+    res.render('error404');
+  }
+  res.render('generic_stockAll', {
+    hospitalName: hospitalName,
+    warehouseName: warehouseName,
+    startDate: startDate,
+    endDate: endDate,
+    data: data,
+    printDate: printDate(req.decoded.SYS_PRINT_DATE)
+  });
+}));
+
+router.get('/report/genericStock/haveMovement', wrap(async (req, res, next) => {
+  let db = req.db;
+  let startDate = req.query.startDate;
+  let endDate = req.query.endDate;
+  let warehouseId = req.query.warehouseId;
+  let offset = req.query.offset;
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let _endDate = moment(endDate).format('YYYY-MM-DD');
+  let _startDate = moment(startDate).format('YYYY-MM-DD');
+  let generic_stock: any = [];
+  let inventory_stock: any = [];
+  let genericId = [];
+  let data = [];
+  let rs = await inventoryReportModel.getGenericInStockcrad(db, warehouseId, startDate, endDate, dateSetting, offset)
+  rs = rs[0];
+  for (const v of rs) {
+    genericId.push(v.generic_id)
+  }
+
+  let warehouseName = await inventoryReportModel.getWarehouse(db, warehouseId)
+  warehouseName = warehouseName[0].warehouse_name
+
+  startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
+  endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+
+  for (let id in genericId) {
+
+    generic_stock = await inventoryReportModel.generic_stockNew(db, dateSetting, genericId[id], _startDate, _endDate, warehouseId);
+    if (generic_stock[0].length > 0) {
+      inventory_stock = await inventoryReportModel.inventory_stockcard(db, dateSetting, genericId[id], _endDate, warehouseId)
+      const obj: any = {
+        generic_id: generic_stock[0][0].generic_id,
+        generic_name: generic_stock[0][0].generic_name,
+        dosage_name: generic_stock[0][0].dosage_name,
+        generic_code: generic_stock[0][0].working_code
+      }
+
+      for (const v of generic_stock[0]) {
+        const _in_qty = +v.in_qty;
+        const _out_qty = +v.out_qty;
+        const _conversion_qty = +v.conversion_qty;
+        const _balance_unit_cost = v.balance_unit_cost
+
+        if (v.transaction_type == 'SUMMIT') {
+          v.stock_date = moment(_startDate, 'YYYY-MM-DD').isValid() ? moment(_startDate).format('DD/MM/') + (moment(_startDate).get('year') + 543) : '-';
+          // v.in_cost = inventoryReportModel.comma(_in_qty * _balance_unit_cost);
+          // v.in_qty_show = v.in_qty
+        } else {
+          v.stock_date = moment(v.stock_date, 'YYYY-MM-DD').isValid() ? moment(v.stock_date).format('DD/MM/') + (moment(v.stock_date).get('year') + 543) : '-';
+          //มี unit_generic_id จะโชว์เป็น pack
+        }
+        if (v.small_unit && v.large_unit) {
+          v.in_cost = inventoryReportModel.comma(_in_qty * _balance_unit_cost);
+          v.out_cost = inventoryReportModel.comma(_out_qty * _balance_unit_cost);
+          // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
+          v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
+          v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
+          v.in_base = inventoryReportModel.commaQty(Math.floor(_in_qty % _conversion_qty));
+          v.out_base = inventoryReportModel.commaQty(Math.floor(_out_qty % _conversion_qty));
+          v.conversion_qty = inventoryReportModel.commaQty(_conversion_qty);
+          //in_qty_show
+          if (v.in_qty != 0 && v.in_base != 0) {
+            v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' ' + v.in_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.in_qty != 0) {
+            v.in_qty_show = v.in_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.in_base != 0) {
+            v.in_qty_show = v.in_base + ' ' + v.small_unit
+          } else {
+            v.in_qty_show = '-';
+          }
+          //out_qty_show
+          if (v.out_qty != 0 && v.out_base != 0) {
+            v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' ' + v.out_base + ' ' + v.small_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.out_qty != 0) {
+            v.out_qty_show = v.out_qty + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ')';
+          } else if (v.out_base != 0) {
+            v.out_qty_show = v.out_base + ' ' + v.small_unit
+          } else {
+            v.out_qty_show = '-';
+          }
+        }//ไม่มี unit_generic_id จะโชว์เป็น base
+        else {
+          if (v.in_qty != 0) {
+            v.in_qty_show = v.in_qty
+          } else {
+            v.in_qty_show = '-';
+          }
+          if (v.out_qty != 0) {
+            v.out_qty_show = v.out_qty
+          } else {
+            v.out_qty_show = '-';
+          }
+        }
+        v.expired_date = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('DD/MM/') + (moment(v.expired_date).get('year')) : '-';
+        v.balance_generic_qty = inventoryReportModel.commaQty(v.balance_generic_qty);
+        v.balance_unit_cost = inventoryReportModel.comma(_balance_unit_cost * _conversion_qty);
+        v.in_qty_base = inventoryReportModel.commaQty(_in_qty);
+        v.out_qty_base = inventoryReportModel.commaQty(_out_qty);
+      }
+
+      //inventory_stock
+      for (const e of inventory_stock[0]) {
+        //มี unit_generic_id จะโชว์เป็น pack
+        if (e.unit_generic_id) {
+          e.qty = +e.in_qty - +e.out_qty
+          e.qty_pack = inventoryReportModel.commaQty(Math.floor(e.qty / e.conversion_qty));
+          e.qty_base = inventoryReportModel.commaQty(Math.floor(e.qty % e.conversion_qty));
+          if (e.qty_pack != 0 && e.qty_base != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          } else if (e.qty_pack != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          } else if (e.qty_base != 0) {
+            e.show_qty = e.lot_no + ' [ ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
+          }
+        }
+        //ไม่มี unit_generic_id จะโชว์เป็น base
+        else {
+          e.in_qty = inventoryReportModel.commaQty(+e.in_qty - +e.out_qty)
+        }
+      }
+      obj.inventory_stock = inventory_stock[0];
+      obj.generic_stock = generic_stock[0];
+      data.push(obj);
+    }
+
+  }
+  if (data.length <= 0) {
+    res.render('error404');
+  }
+  res.render('generic_stockAll', {
+    hospitalName: hospitalName,
+    warehouseName: warehouseName,
+    startDate: startDate,
+    endDate: endDate,
+    data: data,
+    printDate: printDate(req.decoded.SYS_PRINT_DATE)
+  });
+}));
+
+router.get('/report/getGenericInStockcrad', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.query.warehouseId;
+  let startDate = req.query.startDate;
+  let endDate = req.query.endDate;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let offset = '';
+  let rs = await inventoryReportModel.getGenericInStockcrad(db, warehouseId, startDate, endDate, dateSetting, offset)
+  res.send({ ok: true, rows: rs[0].length })
+}));
+
 export default router;

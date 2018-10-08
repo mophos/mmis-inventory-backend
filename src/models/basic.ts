@@ -2,10 +2,12 @@ import Knex = require('knex');
 import * as moment from 'moment';
 
 export class BasicModel {
-  checkApprove(knex: Knex, username: any, password: any) {
+  checkApprove(knex: Knex, username: any, password: any, warehouseId) {
     return knex('um_users as uu')
-      .andWhere('uu.username', username)
-      .andWhere('uu.password', password)
+      .join('um_user_warehouse as uw', 'uw.user_id', 'uu.user_id')
+      .where('uu.username', username)
+      .where('uu.password', password)
+      .where('uw.warehouse_id', warehouseId)
   }
   getProductVendors(knex: Knex, genericId: any) {
     return knex('mm_products as mp')
@@ -123,6 +125,7 @@ export class BasicModel {
 
   getWarehouses(knex: Knex) {
     return knex('wm_warehouses')
+      .where('is_deleted', 'N')
       .orderBy('short_code');
   }
 

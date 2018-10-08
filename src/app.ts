@@ -1,4 +1,3 @@
-
 import * as path from 'path';
 let envPath = path.join(__dirname, '../../mmis-config');
 require('dotenv').config(({ path: envPath }));
@@ -53,6 +52,8 @@ import productLots from './routes/productLots';
 import abcVenRoute from './routes/abcVen';
 import periodRoute from "./routes/period";
 import minMaxRoute from "./routes/minMax";
+import borrowRoute from './routes/borrow'
+import pickRoute from './routes/pick';
 
 import transferRoute from './routes/transfer';
 import requisitionRoute from "./routes/requisition";
@@ -87,9 +88,12 @@ import hisTransactionRoute from './routes/hisTransaction';
 import additionRoute from './routes/addition';
 
 import staffRoute from './routes/staff';
+import payRequisitionRoute from './routes/payRequisition';
+
 import settingRoute from './routes/setting';
 import versionRoute from './routes/version';
 import borrowNoteRoute from './routes/borrowNote';
+import borrowOtherRoute from './routes/borrow-other';
 
 import toolsRoute from './routes/tools';
 import returnBudgetRoute from "./routes/returnBudget";
@@ -229,6 +233,7 @@ app.use('/receives', checkAuth, adminAuth, receiveRoute);
 app.use('/requisitiontype', checkAuth, adminAuth, requisitionType);
 app.use('/addition', checkAuth, adminAuth, additionRoute);
 
+app.use('/pick', checkAuth, adminAuth, pickRoute)
 app.use('/alert-expired', checkAuth, adminAuth, alertExpiredRoute);
 app.use('/productlots', checkAuth, adminAuth, productLots);
 app.use('/abc-ven', checkAuth, adminAuth, abcVenRoute);
@@ -237,6 +242,7 @@ app.use('/transectiontype', checkAuth, adminAuth, transectionTypeRoute);
 app.use('/receiveothertype', checkAuth, adminAuth, receiveotherTypeRoute);
 // app.use('/borrows', checkAuth, adminAuth, borrowRoute);
 app.use('/transfer', checkAuth, adminAuth, transferRoute);
+app.use('/borrow', checkAuth, adminAuth, borrowRoute);
 app.use('/production-units', checkAuth, adminAuth, productionUnitRoute);
 app.use('/unitissue', checkAuth, adminAuth, unitissue)
 
@@ -246,6 +252,7 @@ app.use('/donators', checkAuth, adminAuth, donatorRoute)
 app.use('/counting', checkAuth, adminAuth, countingRoute)
 app.use('/shipping-networks', checkAuth, adminAuth, shippingNetworkRoute)
 app.use('/issues', checkAuth, adminAuth, issueRoute)
+app.use('/borrow-other', checkAuth, adminAuth, borrowOtherRoute)
 app.use('/his-transaction', checkAuth, adminAuth, hisTransactionRoute)
 app.use('/adjust-stock', checkAuth, adminAuth, AdjustStockRoute)
 app.use('/return-budget', checkAuth, adminAuth, returnBudgetRoute);
@@ -260,6 +267,7 @@ app.use('/reports/internalissue', reportInternalissueRoute);
 app.use('/staff/borrow-notes', checkAuth, staffAuth, borrowNoteRoute);
 app.use('/borrow-notes', checkAuth, adminAuth, borrowNoteRoute);
 // staff
+app.use('/staff/pay-requisition', checkAuth, staffAuth, payRequisitionRoute);
 app.use('/staff', checkAuth, staffAuth, staffRoute);
 
 app.use('/users', checkAuth, userRoute);
@@ -271,7 +279,7 @@ app.use('/setting', checkAuth, settingRoute);
 // tools
 app.use('/tools', checkAuth, adminAuth, toolsRoute);
 
-app.use('/', checkAuth, indexRoute);
+app.use('/',checkAuth, indexRoute);
 //temperature
 app.use('/temperature', temperatureRoute);
 

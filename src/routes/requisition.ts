@@ -68,7 +68,14 @@ router.post('/orders', async (req, res, next) => {
   } else {
     try {
       // get serial
-      let serial = await serialModel.getSerial(db, 'RQ');
+      const no = await orderModel.getCountOrder(db, year);
+      if (month >= 10) {
+        year += 1;
+      }
+
+      const count = +no[0].total + 1;
+
+      let serial = await serialModel.getSerialNew(db, 'RQ', count, year);
       order.requisition_code = serial;
       order.people_id = people_id;
       order.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -114,7 +121,15 @@ router.post('/fast/orders', async (req, res, next) => {
   } else {
     try {
       // get serial
-      let serial = await serialModel.getSerial(db, 'RQ');
+      const no = await orderModel.getCountOrder(db, year);
+      if (month >= 10) {
+        year += 1;
+      }
+
+      const count = +no[0].total + 1;
+
+      let serial = await serialModel.getSerialNew(db, 'RQ', count, year);
+
       order.requisition_code = serial;
       order.people_id = people_id;
       order.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -244,7 +259,7 @@ router.get('/orders/waiting-approve', async (req, res, next) => {
   try {
     let rs: any = await orderModel.getListWaitingApprove(db, null, warehouseId, limit, offset, query, fillterCancel);
     let total: any = await orderModel.totalListWaitingApprove(db, null, warehouseId, query, fillterCancel);
-    res.send({ ok: true, rows: rs[0], total: total[0] });
+    res.send({ ok: true, rows: rs[0], total: [{ total: total[0].length }] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -648,6 +663,16 @@ router.post('/orders/unpaid/reorder', async (req, res, next) => {
         let _order: any = rs[0][0];
 
         let orders: any = {};
+
+        const no = await orderModel.getCountOrder(db, year);
+        if (month >= 10) {
+          year += 1;
+        }
+
+        const count = +no[0].total + 1;
+
+        let serial = await serialModel.getSerialNew(db, 'RQ', count, year);
+
         orders.requisition_date = _order.requisition_date;
         orders.wm_requisition = _order.wm_requisition;
         orders.wm_withdraw = _order.wm_withdraw;
@@ -655,7 +680,7 @@ router.post('/orders/unpaid/reorder', async (req, res, next) => {
         orders.remark = 'สร้างใหม่จากรายการค้างจ่าย เลขที่ใบเบิก ' + _order.requisition_code;
         orders.doc_type = _order.doc_type;
         orders.people_id = _order.people_id;
-        orders.requisition_code = await serialModel.getSerial(db, 'RQ');
+        orders.requisition_code = serial;
         orders.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
 
         let rsOrder: any = await orderModel.saveOrder(db, orders);
@@ -1039,6 +1064,9 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
     approveData.approve_date = approveDate;
     approveData.approve_people_id = peopleId;
 
+    const checkApprove = await orderModel.checkDuplicatedApprove(db, confirmId);
+      if (checkApprove[0].total == 0) {
+
     // get confirm detail
     let rs: any = await orderModel.getRequisitionFromConfirm(db, confirmId);
 
@@ -1221,6 +1249,9 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
     } else {
       res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการอนุมัติ' });
     }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการอนุมัติ' });
+  }
 
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -1243,8 +1274,11 @@ router.post('/unpaid/confirm', async (req, res, next) => {
   objSummary.people_id = peopleId;
   objSummary.confirm_date = confirmDate;
   objSummary.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
-
+  
+  
   try {
+    const checkApprove = await orderModel.checkDuplicatedApprove(db, unpaidId);
+    if (checkApprove[0].total == 0) {
     let rsSummary: any = await orderModel.saveConfirmUnpaid(db, objSummary);
     let orderUnpaidId = rsSummary[0];
 
@@ -1406,6 +1440,9 @@ router.post('/unpaid/confirm', async (req, res, next) => {
     await orderModel.decreaseQty(db, dstProducts);
 
     res.send({ ok: true });
+    } else {
+    res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการอนุมัติ' });
+  }
   } catch (error) {
     console.log(error);
     res.send({ ok: false, error: error.message });
@@ -1477,7 +1514,7 @@ router.post('/borrow-notes', async (req, res, next) => {
   let genericIds = req.body.genericIds;
   let warehouseId = req.body.warehouseId;
   let requisitionId = req.body.requisitionId;
-  genericIds = Array.isArray(genericIds) ? genericIds: [genericIds];
+  genericIds = Array.isArray(genericIds) ? genericIds : [genericIds];
   try {
     let rs: any = await borrowNoteModel.getItemsWithGenerics(db, warehouseId, genericIds, requisitionId);
     res.send({ ok: true, rows: rs });

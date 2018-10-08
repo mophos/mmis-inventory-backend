@@ -49,6 +49,30 @@ export class ToolModel {
     return db.raw(sql);
   }
 
+  searchIssues(db: Knex, query: any) {
+    let _query = `%${query}%`;
+    let sql = `SELECT
+    t.issue_id,t.issue_date,t.issue_code,w.warehouse_name,t.warehouse_id
+    FROM wm_issue_summary t
+    JOIN wm_warehouses w ON t.warehouse_id = w.warehouse_id
+    where t.approved = 'Y' and 
+    t.is_cancel ='N' and 
+    t.issue_code like '${_query}'`;
+    return db.raw(sql);
+  }
+
+  searchPick(db: Knex, query: any) {
+    let _query = `%${query}%`;
+    let sql = `SELECT
+    t.pick_id,t.pick_date,t.pick_code,w.warehouse_name,t.wm_pick
+    FROM wm_pick t
+    JOIN wm_warehouses w ON w.warehouse_id = t.wm_pick
+    where t.is_approve = 'Y' and 
+    t.is_cancel ='N' and 
+    t.pick_code like '${_query}'`;
+    return db.raw(sql);
+  }
+
   getReceivesItems(db: Knex, receiveId: any) {
     let sql = `
       select rd.receive_detail_id, rd.receive_id, rd.product_id, rd.lot_no, rd.expired_date, rd.receive_qty, rd.unit_generic_id, rd.warehouse_id,
@@ -231,10 +255,32 @@ export class ToolModel {
     return knex.raw(sql);;
   }
 
-  changeLot(knex: Knex, productId, lotNoOld, lotNoNew, warehouseId) {
+  increasingQtyWM(knex: Knex, wmProductId, qty) {
     const sql = `UPDATE wm_products 
-    set lot_no = '${lotNoNew}'
-    WHERE product_id = '${productId}' AND warehouse_id = '${warehouseId}' AND lot_no = '${lotNoOld}'`
+    set qty = qty+${qty}
+    WHERE wm_product_id = '${wmProductId}'`
+    return knex.raw(sql);
+  }
+
+  decreaseQtyWM(knex: Knex, wmProductId, qty) {
+    const sql = `UPDATE wm_products 
+    set qty = qty-${qty}
+    WHERE wm_product_id = '${wmProductId}'`
+    return knex.raw(sql);;
+  }
+
+  changeLotWmProduct(knex: Knex, productId, lotNoOld, lotNoNew, expiredOld, expiredNew, warehouseId, unitGenericIdOld, unitGenericId) {
+    const sql = `UPDATE wm_products 
+    set lot_no = '${lotNoNew}',expired_date = '${expiredNew}',unit_generic_id =${unitGenericId}
+    WHERE product_id = '${productId}' AND lot_no = '${lotNoOld}' AND expired_date = '${expiredOld}' and unit_generic_id = ${unitGenericIdOld}`
+    console.log(sql.toString());
+    return knex.raw(sql);
+  }
+
+  changeLotStockcard(knex: Knex, productId, lotNoOld, lotNoNew, expiredOld, expiredNew, warehouseId) {
+    const sql = `UPDATE wm_stock_card 
+    set lot_no = '${lotNoNew}',expired_date = '${expiredNew}'
+    WHERE product_id = '${productId}'  AND lot_no = '${lotNoOld}' AND expired_date = '${expiredOld}'`
     console.log(sql.toString());
     return knex.raw(sql);
   }
@@ -303,6 +349,31 @@ export class ToolModel {
         'product_qty': qty
       });
   }
+
+  updateIssue(db: Knex, issueId: any, summary: any) {
+    return db('wm_issue_summary')
+      .where('issue_id', issueId)
+      .update(summary);
+  }
+
+  updateIssueGeneric(db: Knex, products: any) {
+    return db('wm_issue_generics')
+      .where('issue_generic_id', products.issue_generic_id)
+      .update({
+        'qty': products.issue_qty * products.conversion_qty,
+        'unit_generic_id': products.unit_generic_id
+      });
+  }
+
+  updateIssueProduct(db: Knex, products: any) {
+    return db('wm_issue_products')
+      .where('issue_product_id', products.issue_product_id)
+      .update({
+        'qty': products.product_qty
+      });
+  }
+
+
 
   getHistory(db: Knex) {
     let sql = `SELECT s.stock_date,s.document_ref,mp.working_code,mp.product_name,sl.in_qty_old,sl.stock_card_log_date,

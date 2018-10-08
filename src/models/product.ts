@@ -52,7 +52,7 @@ export class ProductModel {
       AND mg.generic_id = '${genericId}'
       and wp.qty > 0
     ORDER BY
-    wp.qty DESC
+    wp.expired_date asc, wp.qty DESC
     `;
     return knex.raw(sql);
   }
@@ -882,6 +882,19 @@ group by mpp.product_id
     return db('mm_products as mp')
       .select('mp.working_code', 'mp.product_name', 'tpu.TMTID', 'tpu.FSN', 'mp.product_id')
       .leftJoin('tmt_tpu as tpu', 'tpu.TMTID', 'mp.tmt_id')
+      .orderBy('mp.product_name', 'DESC');
+  }
+
+  getSearchProduct(db: Knex, query: any) {
+    let _query = `%${query}%`;
+    return db('mm_products as mp')
+      .select('mp.working_code', 'mp.product_name', 'tpu.TMTID', 'tpu.FSN', 'mp.product_id')
+      .leftJoin('tmt_tpu as tpu', 'tpu.TMTID', 'mp.tmt_id')
+      .where('mp.working_code', query)
+      .orWhere(w => {
+        w.where('mp.product_name', 'like', _query)
+          .orWhere('mp.keywords', 'like', _query)
+      })
       .orderBy('mp.product_name', 'DESC');
   }
 

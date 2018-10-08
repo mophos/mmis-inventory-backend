@@ -173,7 +173,18 @@ router.post('/save', co(async (req, res, next) => {
       if (rsShipping[0].total == 0) {
         res.send({ ok: false, error: 'ไม่สามารถโอนได้เนื่องจากไม่ได้อยู่ในเครือข่ายเดียวกัน' })
       } else {
-        let transferCode = await serialModel.getSerial(db, 'TR');
+        const date = _summary.transferDate;
+        let year = moment(date, 'YYYY-MM-DD').get('year');
+        const month = moment(date, 'YYYY-MM-DD').get('month') + 1;
+        if (month >= 10) {
+          year += 1;
+        }
+        // year = ปีงบ
+        // count
+        let no = await transferModel.getTransferCount(db, year);
+        no = no[0];
+        no = +no[0].count + 1;
+        let transferCode = await serialModel.getSerialNew(db, 'TR', no, year);
         let transfer = {
           transfer_code: transferCode,
           transfer_date: _summary.transferDate,
@@ -313,7 +324,9 @@ router.post('/approve-all', co(async (req, res, next) => {
         isValid = false;
       }
     }
-    if (isValid) {
+    let checkDup:any = await transferModel.checkDuplicatedApprove(db,transferIds)
+    transferIds = _.map(checkDup,'transfer_id')
+    if (isValid && transferIds.length) {
       await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
       await approve(db, transferIds, warehouseId, peopleUserId);
       res.send({ ok: true });

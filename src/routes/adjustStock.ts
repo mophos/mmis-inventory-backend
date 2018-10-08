@@ -33,7 +33,28 @@ router.get('/list', async (req, res, next) => {
     db.destroy();
   }
 });
-
+router.get('/list/search', async (req, res, next) => {
+  const db = req.db;
+  const warehouseId = req.decoded.warehouseId;
+  const limit = +req.query.limit;
+  const offset = +req.query.offset;
+  const query = req.query.query
+  try {
+    const rs = await adjustStockModel.searchlist(db, warehouseId, limit, offset,query);
+    const rsTotal = await adjustStockModel.totalsearchList(db, warehouseId,query);
+    for (const r of rs) {
+      const rsGeneric = await adjustStockModel.getGeneric(db, r.adjust_id);
+      if (rsGeneric) {
+        r.generics = rsGeneric;
+      }
+    }
+    res.send({ ok: true, rows: rs, total: rsTotal[0].total });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
 router.get('/generic', async (req, res, next) => {
   const db = req.db;
   const adjustId = req.query.adjustId;
@@ -54,7 +75,6 @@ router.post('/check/password', async (req, res, next) => {
   try {
     let encPassword = crypto.createHash('md5').update(password).digest('hex');
     const rs = await adjustStockModel.checkPassword(db, peopleUserId, encPassword);
-    console.log(rs);
     if (rs.length) {
       res.send({ ok: true });
     } else {
@@ -90,25 +110,27 @@ router.post('/', async (req, res, next) => {
           old_qty: d.old_qty,
           new_qty: d.qty
         }
+
         const adjustGenericId = await adjustStockModel.saveGeneric(db, generic);
+
         for (const p of d.products) {
           const product = {
             adjust_generic_id: adjustGenericId,
             wm_product_id: p.wm_product_id,
             old_qty: p.old_qty,
-            new_qty: p.qty || 0
+            new_qty: +p.qty || 0
           }
           await adjustStockModel.saveProduct(db, product);
           await adjustStockModel.updateQty(db, p.wm_product_id, p.qty);
           const balanceGeneric = await adjustStockModel.getBalanceGeneric(db, d.generic_id, warehouseId);
           const balanceProduct = await adjustStockModel.getBalanceProduct(db, p.product_id, warehouseId);
-          let data = {};
-          if (p.qty > 0) {
+          // let data = {};
+          if (p.qty > 0 || p.old_qty != p.qty) {
             if (p.old_qty > p.qty) {
-              // ปรับยอดลดลง
+              //     // ปรับยอดลดลง
               const adjQty = p.old_qty - p.qty;
-              data = {
-                stock_date: moment.tz('Asia/Bangkok').format('YYYY-MM-DD HH:mm:ss'),
+              const data = {
+                stock_date: moment().format('YYYY-MM-DD HH:mm:ss'),
                 product_id: p.product_id,
                 generic_id: d.generic_id,
                 transaction_type: 'ADJUST',
@@ -125,13 +147,14 @@ router.post('/', async (req, res, next) => {
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
                 unit_generic_id: p.unit_generic_id,
-                expired_date: p.expired_date
+                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null
               }
-            } else {
+              await adjustStockModel.saveStockCard(db, data);
+            } else if (p.old_qty < p.qty) {
               // ปรับยอดเพิ่มขึ้น
               const adjQty = p.qty - p.old_qty;
-              data = {
-                stock_date: moment.tz('Asia/Bangkok').format('YYYY-MM-DD HH:mm:ss'),
+              const data = {
+                stock_date: moment().format('YYYY-MM-DD HH:mm:ss'),
                 product_id: p.product_id,
                 generic_id: d.generic_id,
                 transaction_type: 'ADJUST',
@@ -147,10 +170,15 @@ router.post('/', async (req, res, next) => {
                 ref_src: warehouseId,
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
-                expired_date: p.expired_date
+                unit_generic_id: p.unit_generic_id,
+                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null
               }
+              console.log('data', data);
+
+              const r = await adjustStockModel.saveStockCard(db, data);
+              console.log('r', r);
+
             }
-            await adjustStockModel.saveStockCard(db, data);
           }
         }
       }

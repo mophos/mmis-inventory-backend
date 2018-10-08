@@ -48,21 +48,21 @@ html
                 td #{s+1}.
                 td(style="font-size: 12pt;") &nbsp;#{a.generic_name}
                 td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
-                td.right(style="font-size: 12pt;") &nbsp;#{a.requisition_qty } #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
+                td.right(style="font-size: 12pt;") &nbsp;#{a.requisition_qty } #{a.small_unit}
                 - s++
               else
                 if ( c[y-2].generic_name !== a.generic_name )  
                   td #{s+1}.
                   td(style="font-size: 12pt;") &nbsp;#{a.generic_name}
                   td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
-                  td.right(style="font-size: 12pt;") &nbsp;#{a.requisition_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
+                  td.right(style="font-size: 12pt;") &nbsp;#{a.requisition_qty} #{a.small_unit}
                   - s++
                 else 
                   td 
                   td 
                   td 
                   td.right 
-              td.right(style="font-size: 12pt;") &nbsp;#{a.confirm_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit}) 
+              td.right(style="font-size: 12pt;") &nbsp;#{a.confirm_qty} #{a.small_unit}
               td.right(style="font-size: 12pt; padding-right:8px;") &nbsp;#{a.cost}
               td(style="font-size: 12pt; word-break:break-all;") #{a.lot_no}
               td.right(style="font-size: 12pt;") &nbsp;#{a.expired_date}

@@ -15,7 +15,7 @@ html
     title report
   body
     button.btn.btn-sm.btn-success(onclick='window.print()') Print
-    - for(var i in _genericId)
+    - for(var i of data)
       span.page
       table.table
         thead
@@ -26,14 +26,14 @@ html
           tr 
             td.center(colspan='12') ตั้งแต่วันที่ #{startDate} ถึง #{endDate}
           tr 
-            td.left(colspan='6') รหัสเวชภัณฑ์ #{genericCode[i]}
+            td.left(colspan='6') รหัสเวชภัณฑ์ #{i.generic_code}
             td.right(colspan='6') คลัง #{warehouseName}
             //- td.right(colspan='5') หน่วย #{unit[i]}
           tr 
-            td.left(colspan='6') ชื่อสามัญ #{generic_name[i]}
+            td.left(colspan='6') ชื่อสามัญ #{i.generic_name}
             td.right(colspan='6') 
-              if(dosage_name[i])
-                | รูปแบบ #{dosage_name[i]}
+              if(i.dosage_name)
+                | รูปแบบ #{i.dosage_name}
           tr 
             td.left(colspan='12') #{printDate}
           tr
@@ -51,51 +51,9 @@ html
             th(style="border-style: solid;border-width: 2px 1px 2px 1px;") วันหมดอายุ
         tbody
         - var y=0
-        for g in _summit[i]
+        - for(var a of i.generic_stock)
           - y++
           tr
-            td(style="border:1px solid; padding:0.2em;") #{g.stock_date}
-            td(style="border:1px solid; padding:0.2em;") #{g.document_ref}
-              if(g.delivery_code)
-                br
-                | #{g.delivery_code}
-              if(g.delivery_code_other)
-                br
-                | #{g.delivery_code_other}
-            td(style="border:1px solid; padding:0.2em;") #{g.comment}
-              if(g.receive_type_name)
-                br
-                | #{g.receive_type_name}
-            td(style="border:1px solid; padding:0.2em;") #{g.warehouse_name}
-            if(g.in_qty_show === '-')
-              td.center(style="border:1px solid; padding:0.2em;") #{g.in_qty_show}
-            else
-              td.right(style="border:1px solid; padding:0.2em;") #{g.in_qty_show}
-            if(g.out_qty_show === '-')
-              td.center(style="border:1px solid; padding:0.2em;") #{g.out_qty_show}
-            else
-              td.right(style="border:1px solid; padding:0.2em;") #{g.out_qty_show}
-            td.right(style="border:1px solid; padding:0.2em;") 
-              if(g.in_qty_base != 0)
-                | #{g.in_qty_base} 
-              else
-                | #{g.out_qty_base}
-            td.right(style="border:1px solid; padding:0.2em;") #{g.balance_generic_qty}
-            td.right(style="border:1px solid; padding:0.2em;") #{g.balance_unit_cost}
-            td.right(style="border:1px solid; padding:0.2em;")
-              if(g.in_qty != 0)
-                | #{g.in_cost}
-              else
-                | #{g.out_cost}
-            td.right(style="border:1px solid; padding:0.2em;") #{g.lot_no}
-            if(g.expired_date === '-')
-              td.center(style="border:1px solid; padding:0.2em;") #{g.expired_date}
-            else
-              td(style="border:1px solid; padding:0.2em;") #{g.expired_date}      
-
-        for a in _generic_stock[i]
-          - y++
-          tr 
             td(style="border:1px solid; padding:0.2em;") #{a.stock_date}
             td(style="border:1px solid; padding:0.2em;") #{a.document_ref}
               if(a.delivery_code)
@@ -140,7 +98,7 @@ html
           td(colspan='12') &nbsp;
         tr
           td(colspan='12') คงคลัง ณ วันที่ #{endDate}
-        for s in _inventory_stock[i]
+        for s in i.inventory_stock
           if(s.in_qty > 0)
             tr
               td(colspan='12') #{s.show_qty}

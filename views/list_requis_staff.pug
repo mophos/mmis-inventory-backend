@@ -41,15 +41,15 @@ html
                       td รหัสยา 
                       td(width="55%") : #{title.generic_code}
                       td จำนวนขอเบิก
-                      td : #{title.requisition_qty} #{title.requisition_large_unit} (#{title.requisition_conversion_qty} #{title.requisition_small_unit})
+                      td : #{title.requisition_qty} #{title.requisition_small_unit} 
                     tr
                       td ชื่อสามัญ
                       td(width="55%") : #{title.generic_name}
                       td จำนวนเบิก
-                      td : #{title.confirm_qty} #{title.large_unit} (#{title.unit_qty} #{title.small_unit})
+                      td : #{title.confirm_qty} #{title.small_unit}
                     tr
-                      td หน่วยบรรจุ
-                      td : #{title.large_unit}
+                      td 
+                      td 
                       td รูปแบบ
                       td : #{title.dosage_name}
               tr
@@ -67,7 +67,7 @@ html
                         td #{item.confirm_qty}
                         td #{item.expired_date}
                         td #{item.lot_no}
-                        td #{item.remain} #{item.large_unit} (#{item.conversion_qty} #{item.small_unit})
+                        td #{item.remain}  #{item.small_unit}
               tr.dash-bottom
                 td(colspan='10')
         .pagebreak
