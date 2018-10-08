@@ -2990,7 +2990,6 @@ router.post('/receives/other/approve', co(async (req, res, next) => {
       // save stockcard
       let data = [];
 
-<<<<<<< HEAD
       products.forEach(v => {
         let obj: any = {};
         obj.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -3016,10 +3015,6 @@ router.post('/receives/other/approve', co(async (req, res, next) => {
           balances[idx].balance += v.qty;
           balances[idx].balance_generic += v.qty;
         }
-=======
-    // save stockcard
-    let data = [];
->>>>>>> ba733eb31e3910e5e8613dee88a7ed5499f7ebab
 
         obj.balance_qty = balance;
         obj.balance_generic_qty = balance_generic;
