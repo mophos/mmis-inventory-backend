@@ -2860,11 +2860,11 @@ router.get('/report/generics-no-movement/:warehouseId/:startdate/:enddate', wrap
   });
 }));
 
-router.get('/report/receive/export/:startdate/:enddate', async (req, res, next) => {
+router.get('/report/receive/export', async (req, res, next) => {
 
   const db = req.db;
-  let startdate = req.params.startdate
-  let enddate = req.params.enddate
+  let startdate = req.query.startdate
+  let enddate = req.query.enddate
 
   // get tmt data
   let rs: any = await inventoryReportModel.productReceive(db, startdate, enddate);
