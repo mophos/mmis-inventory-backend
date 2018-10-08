@@ -1121,9 +1121,9 @@ router.post('/issue-transaction', co(async (req, res, next) => {
     if (monthST >= 10) {
       yearST += 1;
     }
-    let countST:any = await issueModel.getCountCode(db,yearST)
+    let countST: any = await issueModel.getCountCode(db, yearST)
 
-    let serialCode = await serialModel.getSerialNew(db, 'ST',countST[0].count+1,yearST);
+    let serialCode = await serialModel.getSerialNew(db, 'ST', countST[0].count + 1, yearST);
     _summary.issue_code = serialCode;
 
     let id = await issueModel.saveSummary(db, _summary);
@@ -2199,22 +2199,21 @@ router.post('/his-transaction/upload', upload.single('file'), co(async (req, res
     let _data: any = [];
     // x = 0 = header      
     for (let x = 1; x < maxRecord; x++) {
-      let hisWarehouse = excelData[x][5].toString();
-
-      let obj: any = {
-        date_serv: moment(excelData[x][0], 'YYYYMMDD').format('YYYY-MM-DD'),
-        seq: excelData[x][1],
-        hn: excelData[x][2],
-        drug_code: excelData[x][3],
-        qty: excelData[x][4],
-        his_warehouse: hisWarehouse,
-        mmis_warehouse: warehouseId,
-        hospcode: hospcode,
-        people_user_id: req.decoded.people_user_id,
-        created_at: moment().format('YYYY-MM-DD HH:mm:ss')
+      if (excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] && excelData[x][5]) {
+        let obj: any = {
+          date_serv: moment(excelData[x][0], 'YYYYMMDD').format('YYYY-MM-DD'),
+          seq: excelData[x][1],
+          hn: excelData[x][2],
+          drug_code: excelData[x][3],
+          qty: excelData[x][4],
+          his_warehouse: excelData[x][5],
+          mmis_warehouse: warehouseId,
+          hospcode: hospcode,
+          people_user_id: req.decoded.people_user_id,
+          created_at: moment().format('YYYY-MM-DD HH:mm:ss')
+        }
+        _data.push(obj);
       }
-
-      _data.push(obj);
     }
 
     if (_data.length) {
@@ -2251,12 +2250,28 @@ router.post('/his-transaction/list', co(async (req, res, next) => {
   }
 }));
 
-router.delete('/his-transaction/remove', co(async (req, res, next) => {
+router.delete('/his-transaction/remove/:warehoseId', co(async (req, res, next) => {
   let db = req.db;
   let hospcode = req.decoded.his_hospcode;
+  let warehouseId = req.params.warehoseId;
 
   try {
-    let rs = await hisTransactionModel.removeHisTransaction(db, hospcode);
+    let rs = await hisTransactionModel.removeHisTransactionStaff(db, hospcode, warehouseId);
+    res.send({ ok: true });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.delete('/his-transaction/remove-transaction-select/:tsID', co(async (req, res, next) => {
+  let db = req.db;
+  let hospcode = req.decoded.his_hospcode;
+  let tsID = req.params.tsID;
+
+  try {
+    let rs = await hisTransactionModel.removeHisTransactionSelect(db, tsID);
     res.send({ ok: true });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -2286,15 +2301,18 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
       let cutStockIds = [];
       let stockCards = [];
 
-      await Promise.all(hisProducts.map(async (h, z) => {
+      // await Promise.all(hisProducts.map(async (h, z) => {
+      let z = 0;
+      for (const h of hisProducts) {
 
+        // }
         if (!wmProducts.length) {
           // ถ้าไม่มีรายการในคงคลังให้ยกเลิกการตัดสต๊อก
           unCutStockIds.push(h.transaction_id);
         } else {
           cutStockIds.push(h.transaction_id);
-          await Promise.all(wmProducts.map(async (v, i) => {
-
+          let i = 0;
+          for (const v of wmProducts) {
             if (v.qty > 0) {
               if (v.product_id === h.product_id && +v.warehouse_id === +h.warehouse_id) {
                 let obj: any = {};
@@ -2328,23 +2346,27 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
 
                 wmProducts[i].qty = obj.remainQty;
                 hisProducts[z].qty = h.qty;
+                console.log(obj.wm_product_id, obj.cutQty);
 
                 await hisTransactionModel.decreaseProductQty(db, obj.wm_product_id, obj.cutQty);
-
+                let unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, h.generic_id);
+                let balance = await hisTransactionModel.getHisForStockCard(db, h.warehouse_id, h.product_id);
                 //get balance 
-                let balance = await hisTransactionModel.getHisForStockCard(db, h.transaction_id, h.product_id);
                 balance = balance[0];
-                const idx = _.findIndex(balance, { product_id: h.product_id })
+                // const idx = _.findIndex(balance, { product_id: h.product_id });
                 let out_unit_cost;
                 let balance_qty;
                 let balance_generic_qty;
                 let balance_unit_cost;
-                if (idx > -1) {
-                  out_unit_cost = balance[idx].balance_unit_cost;
-                  balance_qty = balance[idx].balance_qty;
-                  balance_generic_qty = balance[idx].balance_generic_qty;
-                  balance_unit_cost = balance[idx].balance_unit_cost;
-                }
+                // if (idx > -1) {
+                //   console.log('idx',idx);
+
+                // }
+                out_unit_cost = balance[0].balance_unit_cost;
+                balance_qty = balance[0].balance_qty;
+                balance_generic_qty = balance[0].balance_generic_qty;
+                balance_unit_cost = balance[0].balance_unit_cost;
+
                 let data = {
                   stock_date: moment(h.date_serv).format('YYYY-MM-DD HH:mm:ss'),
                   product_id: h.product_id,
@@ -2354,7 +2376,7 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
                   document_ref: null,
                   in_qty: 0,
                   in_unit_cost: 0,
-                  out_qty: h.qty,
+                  out_qty: obj.cutQty,
                   out_unit_cost: balance_unit_cost,
                   balance_qty: balance_qty,
                   balance_generic_qty: balance_generic_qty,
@@ -2362,18 +2384,23 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
                   ref_src: h.warehouse_id,
                   ref_dst: h.hn,
                   comment: 'ตัดจ่าย HIS',
-                  unit_generic_id: null,
+                  unit_generic_id: unitId[0].unit_generic_id,
                   lot_no: v.lot_no,
                   expired_date: v.expired_date
                 };
-                stockCards.push(data);
+                if (obj.cutQty > 0) {
+                  stockCards.push(data);
+                }
               }
             }
-          }));
+            i++;
+            // }));
+          }
 
         }
-      }));
-
+        z++;
+      }
+      // }));
 
       // save transaction status
       let peopleUserId = req.decoded.people_user_id;
@@ -2386,6 +2413,8 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
       res.send({ ok: true, un_cut_stock: unCutStockIds });
 
     } catch (error) {
+      console.log(error);
+
       res.send({ ok: false, error: error.message });
     } finally {
       db.destroy();
@@ -2628,8 +2657,8 @@ router.get('/adjust-stock/list/search', async (req, res, next) => {
   const offset = +req.query.offset;
   const query = req.query.query
   try {
-    const rs = await adjustStockModel.searchlist(db, warehouseId, limit, offset,query);
-    const rsTotal = await adjustStockModel.totalsearchList(db, warehouseId,query);
+    const rs = await adjustStockModel.searchlist(db, warehouseId, limit, offset, query);
+    const rsTotal = await adjustStockModel.totalsearchList(db, warehouseId, query);
     for (const r of rs) {
       const rsGeneric = await adjustStockModel.getGeneric(db, r.adjust_id);
       if (rsGeneric) {
@@ -2944,10 +2973,6 @@ router.post('/receives/other/approve', co(async (req, res, next) => {
     let balances = await receiveModel.getProductRemainByReceiveOtherIds(db, receiveIds, warehouseId);
     balances = balances[0];
 
-    console.log('******************************');
-    console.log(balances);
-    console.log('******************************');
-
     // save stockcard
     let data = [];
 
@@ -3066,7 +3091,6 @@ router.post('/receives/other', co(async (req, res, next) => {
     try {
 
       let receiveCode = await serialModel.getSerialSatff(db, 'RO', warehoseId);
-      console.log(receiveCode, '******************************');
       // let receiveId = moment().format('x');
 
       const data: any = {

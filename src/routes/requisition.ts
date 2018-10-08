@@ -1064,6 +1064,9 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
     approveData.approve_date = approveDate;
     approveData.approve_people_id = peopleId;
 
+    const checkApprove = await orderModel.checkDuplicatedApprove(db, confirmId);
+      if (checkApprove[0].total == 0) {
+
     // get confirm detail
     let rs: any = await orderModel.getRequisitionFromConfirm(db, confirmId);
 
@@ -1246,6 +1249,9 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
     } else {
       res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการอนุมัติ' });
     }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการอนุมัติ' });
+  }
 
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -1268,8 +1274,11 @@ router.post('/unpaid/confirm', async (req, res, next) => {
   objSummary.people_id = peopleId;
   objSummary.confirm_date = confirmDate;
   objSummary.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
-
+  
+  
   try {
+    const checkApprove = await orderModel.checkDuplicatedApprove(db, unpaidId);
+    if (checkApprove[0].total == 0) {
     let rsSummary: any = await orderModel.saveConfirmUnpaid(db, objSummary);
     let orderUnpaidId = rsSummary[0];
 
@@ -1431,6 +1440,9 @@ router.post('/unpaid/confirm', async (req, res, next) => {
     await orderModel.decreaseQty(db, dstProducts);
 
     res.send({ ok: true });
+    } else {
+    res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการอนุมัติ' });
+  }
   } catch (error) {
     console.log(error);
     res.send({ ok: false, error: error.message });

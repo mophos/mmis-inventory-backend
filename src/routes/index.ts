@@ -181,11 +181,13 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
     const rs: any = await inventoryReportModel.issueYear(db, year, warehouseId, genericType);
     rs[0].forEach(v => {
       v.unit_price = inventoryReportModel.comma(v.cost);
-      v.balance = inventoryReportModel.commaQty(v.balance / v.qty);
+      // v.balance = +v.balance / +v.qty
+      v.amount = inventoryReportModel.comma(+v.balance * +v.cost);
+      v.balance = inventoryReportModel.commaQty(+v.balance / +v.qty);
       v.in_qty = inventoryReportModel.commaQty(v.in_qty);
       v.out_qty = inventoryReportModel.commaQty(v.out_qty);
-      v.summit = inventoryReportModel.commaQty(v.summit / v.qty);
-      v.amount = inventoryReportModel.comma(v.balance * v.cost);
+      v.summit = inventoryReportModel.commaQty(+v.summit / +v.qty);
+      
     });
     let committee: any = []
     for (let peopleId of people) {
@@ -193,6 +195,7 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
       let pe: any = await inventoryReportModel.peopleFullName(db, peopleId)
       committee.push(pe[0])
     }
+    // res.send({rs:rs[0]})
     res.render('issue_year', {
       syear: year + 542,
       rs: rs[0],
