@@ -319,10 +319,16 @@ export class BorrowModel {
 
   detail(knex: Knex, borrowId: string) {
     let sql = `
-    select bp.*
-    , FLOOR(bp.qty/ug.qty) as product_pack_qty
-    , mp.product_name, mg.generic_name, wp.lot_no, wp.expired_date
-    , fu.unit_name as from_unit_name, ug.qty as conversion_qty, tu.unit_name as to_unit_name
+    select 
+		bp.borrow_product_id,
+		bp.borrow_id,
+		bp.borrow_generic_id,
+		bp.wm_product_id,
+		bp.qty,
+		st.balance_qty,
+		FLOOR(bp.qty/ug.qty) as product_pack_qty,
+    mp.product_name, mg.generic_name, wp.lot_no, wp.expired_date,
+    fu.unit_name as from_unit_name, ug.qty as conversion_qty, tu.unit_name as to_unit_name
     from wm_borrow_product as bp
     join wm_products as wp on wp.wm_product_id = bp.wm_product_id
     join mm_products as mp on mp.product_id = wp.product_id
@@ -330,7 +336,7 @@ export class BorrowModel {
     join mm_unit_generics as ug on ug.unit_generic_id = wp.unit_generic_id
     join mm_units as fu on fu.unit_id = ug.from_unit_id
     join mm_units as tu on tu.unit_id = ug.to_unit_id
-    where bp.borrow_id = ? and bp.qty != 0
+		join wm_stock_card as st on st.document_ref_id = bp.borrow_id and st.transaction_type = 'TRN_IN'where bp.borrow_id = ? and bp.qty != 0
     order by mp.product_name`;
     return knex.raw(sql, [borrowId]);
   }
@@ -343,7 +349,7 @@ export class BorrowModel {
           (wm_product_id, warehouse_id, product_id, qty, cost
             , lot_no, expired_date, unit_generic_id, people_user_id
             , created_at)
-          VALUES('${v.wm_product_id}', '${v.dst_warehouse_id}', '${v.product_id}', ${v.qty}, ${v.cost}
+          VALUES('${v.wm_product_id}', '${v.dst_warehouse_id}', '${v.product_id}', ${v.updateQty}, ${v.cost}
           , '${v.lot_no}',`
       if (v.expired_date == null) {
         sql += `null`;
@@ -353,10 +359,8 @@ export class BorrowModel {
       sql += `, ${v.unit_generic_id}, '${v.people_user_id}'
           , '${v.created_at}')
           ON DUPLICATE KEY UPDATE
-          qty = qty + ${v.qty}
+          qty = qty + ${v.updateQty}
         `;
-      console.log('xxxxxxxxxxxxxx', sql);
-
       sqls.push(sql);
     });
 
@@ -369,14 +373,12 @@ export class BorrowModel {
     data.forEach(v => {
       let _sql = `
       UPDATE wm_products
-      SET qty = qty-${v.qty}
+      SET qty = qty-${v.updateQty}
       WHERE lot_no <=> '${v.lot_no}'
       AND expired_date <=> ${v.expired_date ? '\'' + v.expired_date + '\'' : null}
       AND warehouse_id = ${v.src_warehouse_id}
       AND product_id = '${v.product_id}'
       `;
-      console.log('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', sql);
-
       sql.push(_sql);
     });
 
@@ -857,5 +859,10 @@ export class BorrowModel {
     return knex('wm_borrow')
       .select(knex.raw('count(*) as total'))
       .whereRaw(`borrow_date >= '${year}-10-01' AND borrow_date <= '${year + 1}-09-30'`);
+  }
+
+  getConversion(knex: Knex, unitGenericId: any) {
+    return knex('mm_unit_generics')
+      .where('unit_generic_id', unitGenericId);
   }
 }

@@ -23,6 +23,7 @@ html
         tr
           th(style="width:5%") #
           th.left(style="width:11%") วันที่รับเข้า
+          th.left รหัสเวชภัณฑ์
           th.left(style="width:30%") ชื่อเวชภัณฑ์
           th.left(style="width:10%;padding-left: 2px") จำนวนที่รับ
           th.right(style="width:10%") ราคาต่อหน่วย
@@ -40,6 +41,7 @@ html
           tr
             td.center #{y}
             td.left #{b.receive_date}
+            td #{b.working_code}
             td #{b.generic_name}
             td.left(style="padding-left: 2px") #{b.receive_qty} #{b.large_unit_name} (#{b.qty} #{b.small_unit_name})
             td.right #{b.cost}
