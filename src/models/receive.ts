@@ -516,7 +516,10 @@ export class ReceiveModel {
       .count('* as total')
       .where('receive_other_id', receiveId);
   }
-
+  checkDuplicatedApproveOtherStaff(knex: Knex, receiveId: any) {
+    return knex('wm_receive_approve')
+      .whereIn('receive_other_id', receiveId);
+  }
   getApproveStatus(knex: Knex, receiveId: any) {
     return knex('wm_receive_approve')
       .where('receive_id', receiveId);
@@ -1237,7 +1240,7 @@ WHERE
     return knex('wm_receives')
       .count('* as count').as('count')
       .whereBetween('receive_date', [(+year - 1) + '-10-01', +year + '-09-30'])
-      .whereNotNull('purchase_order_id')
+      // .whereNotNull('purchase_order_id')
   }
 
   getReceiveNumber(knex: Knex, year: any) {

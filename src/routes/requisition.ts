@@ -1277,7 +1277,7 @@ router.post('/unpaid/confirm', async (req, res, next) => {
   
   
   try {
-    const checkApprove = await orderModel.checkDuplicatedApprove(db, unpaidId);
+    const checkApprove = await orderModel.checkDuplicatedApproveUnpaid(db, unpaidId);
     if (checkApprove[0].total == 0) {
     let rsSummary: any = await orderModel.saveConfirmUnpaid(db, objSummary);
     let orderUnpaidId = rsSummary[0];

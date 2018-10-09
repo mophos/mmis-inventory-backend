@@ -442,7 +442,13 @@ router.put('/:receiveId', co(async (req, res, next) => {
             } else {
               let temp = summary.receiveCode.split('-');
               if (temp[0] === 'RT') {
-                let receiveCode = await serialModel.getSerial(db, 'RV');
+                let year = moment().get('year');
+            let month = moment().get('month') + 1;
+            if (month >= 10) {
+              year += 1;
+            }
+            let rsPO: any = await receiveModel.getReceiveNumberPO(req.db, year)
+                let receiveCode = await serialModel.getSerialNew(db, 'RV', rsPO[0].count + 1, year);
                 data.receive_code = receiveCode;
               }
 
@@ -930,7 +936,7 @@ router.post('/approve', co(async (req, res, next) => {
       await receiveModel.adjustCost(db, adjust_price);
       res.send({ ok: true });
 
-      try { // close pick
+      try { // stockcard pick
         let rdPick: any = await receiveModel.getPickCheck(db, receiveIds)
         let rsWp = []
         let dstProducts = []
@@ -951,12 +957,12 @@ router.post('/approve', co(async (req, res, next) => {
               if (item.pick_qty != 0) {
                 // wmProductIds.push(v.wm_product_id);
                 dstProducts.push({
-                  qty: item.pick_qty,
+                  qty: item.pick_qty* item.conversion_qty,
                   wm_product_id: item.wm_product_id,
                   warehouse_id: 505
                 });
                 items.push({
-                  qty: item.pick_qty,
+                  qty: item.pick_qty* item.conversion_qty,
                   wm_product_id: item.wm_product_id
                 });
               }
