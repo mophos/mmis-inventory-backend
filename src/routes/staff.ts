@@ -3498,4 +3498,26 @@ router.put('/receives/other/:receiveOtherId', co(async (req, res, next) => {
   }
 
 }));
+
+router.delete('/other/:receiveOtherId', co(async (req, res, next) => {
+
+  let db = req.db;
+  let receiveOtherId = req.params.receiveOtherId;
+
+  if (receiveOtherId) {
+    try {
+      let peopleUserId: any = req.decoded.people_user_id;
+      await receiveModel.removeReceiveOther(db, receiveOtherId, peopleUserId);
+      res.send({ ok: true });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการลบ' });
+  }
+
+}));
 export default router;
