@@ -508,20 +508,17 @@ export class ReceiveModel {
   checkDuplicatedApprove(knex: Knex, receiveId: any) {
     return knex('wm_receive_approve')
       .count('* as total')
-      .where('receive_id', receiveId)
-      .andWhere('is_approve','Y');
+      .where('receive_id', receiveId);
   }
 
   checkDuplicatedApproveOther(knex: Knex, receiveId: any) {
     return knex('wm_receive_approve')
       .count('* as total')
-      .where('receive_other_id', receiveId)
-      .andWhere('is_approve','Y')
+      .where('receive_other_id', receiveId);
   }
   checkDuplicatedApproveOtherStaff(knex: Knex, receiveId: any) {
     return knex('wm_receive_approve')
-      .whereIn('receive_other_id', receiveId)
-      .andWhere('is_approve','Y');
+      .whereIn('receive_other_id', receiveId);
   }
   getApproveStatus(knex: Knex, receiveId: any) {
     return knex('wm_receive_approve')

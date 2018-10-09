@@ -920,15 +920,17 @@ export class RequisitionOrderModel {
     let query = sql.join(';');
     return knex.raw(query);
   }
-  checkDuplicatedUnpaidApprove(knex: Knex, unpaidId: any) {
-    return knex('wm_requisition_order_unpaids')
-      .count('* as total')
-      .where('requisition_order_unpaid_id', unpaidId);
-  }
+
   checkDuplicatedApprove(knex: Knex, requisitionId: any) {
     return knex('wm_requisition_confirms')
       .count('* as total')
-      .where('requisition_order_id', requisitionId);
+      .where('requisition_order_id', requisitionId)
+      .andWhere('is_approve','Y');
+  }
+  checkDuplicatedApproveUnpaid(knex: Knex, requisitionId: any) {
+    return knex('wm_requisition_confirm_unpaids')
+      .count('* as total')
+      .where('requisition_order_unpaid_id', requisitionId)
   }
   getRequisitionFromConfirm(knex: Knex, confirmId: any) {
     return knex('wm_requisition_confirms as rc')
