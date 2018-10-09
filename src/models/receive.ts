@@ -1237,7 +1237,7 @@ WHERE
     return knex('wm_receives')
       .count('* as count').as('count')
       .whereBetween('receive_date', [(+year - 1) + '-10-01', +year + '-09-30'])
-      .whereNotNull('purchase_order_id')
+      // .whereNotNull('purchase_order_id')
   }
 
   getReceiveNumber(knex: Knex, year: any) {
