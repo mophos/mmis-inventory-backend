@@ -2919,7 +2919,35 @@ router.get('/receives/other/product-list/:receiveOtherId', co(async (req, res, n
     db.destroy();
   }
 }));
+router.post('/basic/checkApprove', async (req, res, next) => {
+  let db = req.db;
+  try {
+    let username = req.body.username;
+    let password = req.body.password;
+    let action = req.body.action;
+    const warehouseId = req.decoded.warehouseId;
+    password = crypto.createHash('md5').update(password).digest('hex');
+    const isCheck = await basicModel.checkApprove(db, username, password, warehouseId);
+    if (isCheck.length) {
+      let access_right;
+      isCheck.forEach(v => {
+        access_right = v.access_right + ',';
+      });
+      let rights = access_right.split(',');
+      if (_.indexOf(rights, action) > -1) {
+        res.send({ ok: true })
+      } else {
+        res.send({ ok: false });
+      }
+    } else {
+      res.send({ ok: false });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error });
+  }
 
+});
 router.post('/receives/other/approve', co(async (req, res, next) => {
   let db = req.db;
   let userId = req.decoded.id;
@@ -2929,8 +2957,18 @@ router.post('/receives/other/approve', co(async (req, res, next) => {
   let approveDate = req.body.approveDate;
   receiveIds = Array.isArray(receiveIds) ? receiveIds : [receiveIds];
   try {
-    const checkApprove = await receiveModel.checkDuplicatedApproveOther(db, receiveIds);
-    receiveIds = _.map(checkApprove,'receive_other_id')
+    const checkApprove:any = await receiveModel.checkDuplicatedApproveOtherStaff(db, receiveIds);
+    console.log(checkApprove);
+    
+    if (checkApprove.length > 0) {
+      for (const v of checkApprove) {
+          const idx = _.indexOf(receiveIds, v.receive_other_id);
+          if (idx > -1) {
+            receiveIds.splice(idx, 1);
+          }
+      }
+    }
+    // receiveIds = _.map(checkApprove,'receive_other_id')
     if(receiveIds.length) {
       let approveDatas = [];
       _.forEach(receiveIds, (v: any) => {
