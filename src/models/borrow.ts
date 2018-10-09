@@ -325,7 +325,7 @@ export class BorrowModel {
 		bp.borrow_generic_id,
 		bp.wm_product_id,
 		bp.qty,
-		st.balance_qty,
+		wp.qty as balance_qty,
 		FLOOR(bp.qty/ug.qty) as product_pack_qty,
     mp.product_name, mg.generic_name, wp.lot_no, wp.expired_date,
     fu.unit_name as from_unit_name, ug.qty as conversion_qty, tu.unit_name as to_unit_name
@@ -336,7 +336,7 @@ export class BorrowModel {
     join mm_unit_generics as ug on ug.unit_generic_id = wp.unit_generic_id
     join mm_units as fu on fu.unit_id = ug.from_unit_id
     join mm_units as tu on tu.unit_id = ug.to_unit_id
-		join wm_stock_card as st on st.document_ref_id = bp.borrow_id and st.transaction_type = 'TRN_IN'where bp.borrow_id = ? and bp.qty != 0
+		where bp.borrow_id = ? and bp.qty != 0
     order by mp.product_name`;
     return knex.raw(sql, [borrowId]);
   }
