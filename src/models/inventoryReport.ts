@@ -990,7 +990,7 @@ WHERE
         FROM
             view_stock_card_warehouse AS vscw
             JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
-            JOIN mm_generic_accounts AS mga ON mg.account_id = mga.account_id
+            LEFT JOIN mm_generic_accounts AS mga ON mg.account_id = mga.account_id
             LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
         WHERE
             vscw.warehouse_id LIKE '${warehouseId}' 
@@ -1005,6 +1005,7 @@ WHERE
         ORDER BY
             q.generic_type_id
         `
+
         return (knex.raw(sql))
     }
 
