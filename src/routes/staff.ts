@@ -768,6 +768,7 @@ router.post('/transfer/save', co(async (req, res, next) => {
   let _summary = req.body.summary;
   let _generics = req.body.generics;
   let peopleUserId = req.decoded.people_user_id;
+  let warehouseId = req.decoded.warehouseId;
   const approveAuto = req.decoded.WM_TRANSFER_APPROVE === 'N' ? true : false;
 
   if (_generics.length && _summary) {
@@ -778,18 +779,13 @@ router.post('/transfer/save', co(async (req, res, next) => {
       if (rsShipping[0].total == 0) {
         res.send({ ok: false, error: 'ไม่สามารถโอนได้เนื่องจากไม่ได้อยู่ในเครือข่ายเดียวกัน' })
       } else {
-        const date = _summary.transferDate;
-        let year = moment(date, 'YYYY-MM-DD').get('year');
-        const month = moment(date, 'YYYY-MM-DD').get('month') + 1;
+        let year = moment(_summary.transferDate, 'YYYY-MM-DD').get('year');
+        const month = moment(_summary.transferDate, 'YYYY-MM-DD').get('month') + 1;
         if (month >= 10) {
           year += 1;
         }
         // year = ปีงบ
-        // count
-        let no = await transferModel.getTransferCount(db, year);
-        no = no[0];
-        no = +no[0].count + 1;
-        let transferCode = await serialModel.getSerialNew(db, 'TR', no, year);
+        let transferCode = await serialModel.getSerial(db, 'TR', year, warehouseId);
         let transfer = {
           transfer_code: transferCode,
           transfer_date: _summary.transferDate,
@@ -1116,14 +1112,13 @@ router.post('/issue-transaction', co(async (req, res, next) => {
     _summary.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
     _summary.ref_document = summary.refDocument;
     _summary.warehouse_id = warehouseId;
-    let yearST = moment().get('year');
-    let monthST = moment().get('month') + 1;
-    if (monthST >= 10) {
-      yearST += 1;
+    let year = moment(summary.issueDate, 'YYYY-MM-DD').get('year');
+    let month = moment(summary.issueDate, 'YYYY-MM-DD').get('month') + 1;
+    if (month >= 10) {
+      year += 1;
     }
-    let countST: any = await issueModel.getCountCode(db, yearST)
 
-    let serialCode = await serialModel.getSerialNew(db, 'ST', countST[0].count + 1, yearST);
+    let serialCode = await serialModel.getSerial(db, 'ST', year, warehouseId);
     _summary.issue_code = serialCode;
 
     let id = await issueModel.saveSummary(db, _summary);
@@ -1287,17 +1282,17 @@ router.post('/issue-transaction/approve', co(async (req, res, next) => {
     const decoded = req.decoded;
     const warehouseId = decoded.warehouseId;
     const checkApprove = await issueModel.checkDuplicatedApprove(db, issueIds);
-    issueIds = _.map(checkApprove,'issue_id')
-    if(issueIds.length) {
+    issueIds = _.map(checkApprove, 'issue_id')
+    if (issueIds.length) {
       for (let v of issueIds) {
         let summary = {
           approved: 'Y',
           approve_date: moment().format('YYYY-MM-DD'),
           approve_people_user_id: req.decoded.people_user_id
         }
-  
+
         let rs = await issueModel.getIssueApprove(db, v, warehouseId);
-  
+
         let data = [];
         let _cutProduct = [];
         rs[0].forEach(e => {
@@ -1323,25 +1318,25 @@ router.post('/issue-transaction/approve', co(async (req, res, next) => {
             objStockcard.balance_generic_qty = e.balance_generic;
             objStockcard.lot_no = e.lot_no;
             objStockcard.expired_date = e.expired_date;
-  
+
             data.push(objStockcard)
             cutProduct.cutQty = e.out_qty;
             cutProduct.wm_product_id = e.wm_product_id;
             _cutProduct.push(cutProduct);
           }
         });
-  
+
         let a = await issueModel.updateSummaryApprove(db, v, summary);
         // update wm_product
         let b = await issueModel.saveProductStock(db, _cutProduct);
         let c = await stockCardModel.saveFastStockTransaction(db, data);
       }
-  
+
       res.send({ ok: true });
     } else {
       res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการอนุมัติ' });
     }
-    
+
 
   } catch (error) {
     console.log(error);
@@ -1540,7 +1535,7 @@ router.get('/issue-transaction/generic-list/:issueId', co(async (req, res, next)
 router.post('/requisition/orders', async (req, res, next) => {
   let db = req.db;
   let people_id = req.decoded.people_id;
-
+  let warehouseId = req.decoded.warehouseId;
   try {
     let order: any = req.body.order;
     let products = req.body.products;
@@ -1549,14 +1544,12 @@ router.post('/requisition/orders', async (req, res, next) => {
     let month = moment(order.requisition_date, 'YYYY-MM-DD').get('month') + 1;
 
 
-    const no = await orderModel.getCountOrder(db, year);
     if (month >= 10) {
       year += 1;
     }
 
-    const count = +no[0].total + 1;
 
-    let serial: any = order.is_temp !== 'Y' ? await serialModel.getSerialNew(db, 'RQ', count, year) : null;
+    let serial: any = order.is_temp !== 'Y' ? await serialModel.getSerial(db, 'RQ', year, order.wm_withdraw) : null;
 
     order.requisition_code = serial;
     order.people_id = people_id;
@@ -1589,7 +1582,7 @@ router.put('/requisition/orders/:requisitionId', async (req, res, next) => {
   let db = req.db;
   let people_id = req.decoded.people_id;
   let requisitionId: any = req.params.requisitionId;
-
+  let warehouseId = req.decoded.warehouseId;
   try {
     let order: any = req.body.order;
     let products = req.body.products;
@@ -1604,15 +1597,12 @@ router.put('/requisition/orders/:requisitionId', async (req, res, next) => {
     let year = moment(order.requisition_date, 'YYYY-MM-DD').get('year');
     let month = moment(order.requisition_date, 'YYYY-MM-DD').get('month') + 1
 
-    const no = await orderModel.getCountOrder(db, year);
     if (month >= 10) {
       year += 1;
     }
 
-    const count = +no[0].total + 1;
-
     if (order.is_temp === 'N' && !order.requisition_code) {
-      _order.requisition_code = order.is_temp !== 'Y' ? await serialModel.getSerialNew(db, 'RQ', count, year) : null;
+      _order.requisition_code = order.is_temp !== 'Y' ? await serialModel.getSerial(db, 'RQ', year, order.wm_withdraw) : null;
     }
 
     let rsOrder: any = await orderModel.updateOrder(db, requisitionId, _order);
@@ -2720,7 +2710,12 @@ router.post('/adjust-stock/', async (req, res, next) => {
   const head = req.body.head;
   const detail = req.body.detail;
   try {
-    const adjustCode = await serialModel.getSerial(db, 'ADJ');
+    let year = moment().get('year');
+    const month = moment().get('month') + 1;
+    if (month >= 10) {
+      year += 1;
+    }
+    const adjustCode = await serialModel.getSerial(db, 'ADJ', year, warehouseId);
     head.adjust_code = adjustCode;
     head.adjust_date = moment.tz('Asia/Bangkok').format('YYYY-MM-DD HH:mm:ss');
     head.people_user_id = peopleUserId;
@@ -2957,19 +2952,19 @@ router.post('/receives/other/approve', co(async (req, res, next) => {
   let approveDate = req.body.approveDate;
   receiveIds = Array.isArray(receiveIds) ? receiveIds : [receiveIds];
   try {
-    const checkApprove:any = await receiveModel.checkDuplicatedApproveOtherStaff(db, receiveIds);
+    const checkApprove: any = await receiveModel.checkDuplicatedApproveOtherStaff(db, receiveIds);
     console.log(checkApprove);
-    
+
     if (checkApprove.length > 0) {
       for (const v of checkApprove) {
-          const idx = _.indexOf(receiveIds, v.receive_other_id);
-          if (idx > -1) {
-            receiveIds.splice(idx, 1);
-          }
+        const idx = _.indexOf(receiveIds, v.receive_other_id);
+        if (idx > -1) {
+          receiveIds.splice(idx, 1);
+        }
       }
     }
     // receiveIds = _.map(checkApprove,'receive_other_id')
-    if(receiveIds.length) {
+    if (receiveIds.length) {
       let approveDatas = [];
       _.forEach(receiveIds, (v: any) => {
         let _approveData = {
@@ -3069,9 +3064,9 @@ router.post('/receives/other/approve', co(async (req, res, next) => {
       await stockCardModel.saveFastStockTransaction(db, data);
 
       res.send({ ok: true });
-  } else {
-    res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการอนุมัติ' });
-  }
+    } else {
+      res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการอนุมัติ' });
+    }
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {

@@ -37,9 +37,6 @@ router.post('/', co(async (req, res, next) => {
   let generics = req.body.products;
   let warehouseId = req.decoded.warehouseId;
 
-  console.log('xxxxxxxxxxxxxxxxxx', summary);
-  console.log('yyyyyyyyyyyyyyyy', generics);
-
 
   try {
     let _summary: any = {};
@@ -50,8 +47,12 @@ router.post('/', co(async (req, res, next) => {
     _summary.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
     _summary.src_warehouse_name = summary.srcWarehouseName;
     _summary.warehouse_id = warehouseId;
-
-    let serialCode = await serialModel.getSerial(db, 'BO');
+    let year = moment(_summary.borrow_other_date, 'YYYY-MM-DD').get('year');
+    const month = moment(_summary.borrow_other_date, 'YYYY-MM-DD').get('month') + 1;
+    if (month >= 10) {
+      year += 1;
+    }
+    let serialCode = await serialModel.getSerial(db, 'BO', year, warehouseId);
     _summary.borrow_other_code = serialCode;
 
     let id = await models.saveSummary(db, _summary);
