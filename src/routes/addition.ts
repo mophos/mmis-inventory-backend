@@ -215,7 +215,7 @@ router.get('/print/transactions', async (req, res, next) => {
   let addition_id = req.query.addition_id;
   let rs: any = []
   let header: any = []
-  let detail:any = []
+  let detail: any = []
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
@@ -223,31 +223,31 @@ router.get('/print/transactions', async (req, res, next) => {
     let today = moment().format('DD MMMM ') + (moment().get('year') + 543);
     addition_id = Array.isArray(addition_id) ? addition_id : [addition_id];
     for (let h of addition_id) {
-      let _detail:any = []
-      let _d:any = {}
+      let _detail: any = []
+      let _d: any = {}
       const rsh: any = await additionModel.printAdditionHeadTransaction(db, h);
       _d.header = rsh[0][0]
       let rsg: any = await additionModel.printAdditionReports(db, h);
       _d.generic = rsg[0]
-       
-      for(let d of _d.generic){
-        let _detail_:any =[] 
-        let rsp: any = await additionModel.printAdditionReportDetail(db,h,d.product_id)
+
+      for (let d of _d.generic) {
+        let _detail_: any = []
+        let rsp: any = await additionModel.printAdditionReportDetail(db, h, d.product_id)
         d.product = rsp[0]
       }
       detail.push(_d)
     }
-    _.forEach(detail,(obj)=>{
-      obj.header.addition_date =  moment(obj.header.addition_date).format('D MMMM ') + (moment(obj.header.addition_date).get('year') + 543);
-      obj.header.update_date =  moment(obj.header.update_date).format('D MMMM ') + (moment(obj.header.update_date).get('year') + 543);
-      _.forEach(obj.generic,(g)=>{
-        g.dosage_name = g.dosage_name ? g.dosage_name: '-';
+    _.forEach(detail, (obj) => {
+      obj.header.addition_date = moment(obj.header.addition_date).format('D MMMM ') + (moment(obj.header.addition_date).get('year') + 543);
+      obj.header.update_date = moment(obj.header.update_date).format('D MMMM ') + (moment(obj.header.update_date).get('year') + 543);
+      _.forEach(obj.generic, (g) => {
+        g.dosage_name = g.dosage_name ? g.dosage_name : '-';
         g.to_refill = inventoryReportModel.commaQty(Math.round(g.to_refill))
         g.total_addition_qty = inventoryReportModel.commaQty(Math.round(g.total_addition_qty))
-        _.forEach(g.product,(p)=>{
+        _.forEach(g.product, (p) => {
           p.addition_qty = inventoryReportModel.commaQty(Math.round(p.addition_qty / p.unit_qty))
-          p.expired_date = moment(p.expired_date).isValid() ? moment(p.expired_date).format('D MMMM ') + (moment(p.expired_date).get('year') + 543) : '-'; 
-          p.location_name = p.location_name ? p.location_name : '-'; 
+          p.expired_date = moment(p.expired_date).isValid() ? moment(p.expired_date).format('D MMMM ') + (moment(p.expired_date).get('year') + 543) : '-';
+          p.location_name = p.location_name ? p.location_name : '-';
           p.remainQty = inventoryReportModel.commaQty(Math.round(p.remainQty / p.unit_qty))
         })
       })
@@ -255,9 +255,9 @@ router.get('/print/transactions', async (req, res, next) => {
     // res.send(detail)
     res.render('additions', {
       detail: detail,
-        hospitalName: hospitalName,
-        today: today
-      });
+      hospitalName: hospitalName,
+      today: today
+    });
 
   } catch (error) {
     console.log(error)
@@ -447,9 +447,15 @@ router.post('/warehouse', co(async (req, res, next) => {
 router.post('/open', co(async (req, res, next) => {
   let db = req.db;
   let transactionIds = req.body.transactionIds;
+  let warehouseId = req.decoded.warehouseId;
+  let year = moment().get('year');
+  const month = moment().get('month') + 1;
+  if (month >= 10) {
+    year += 1;
+  }
   try {
     for (let t of transactionIds) {
-      const _additionCode = await serialModel.getSerial(db, 'AD');
+      const _additionCode = await serialModel.getSerial(db, 'AD', year, warehouseId);
       let _data = {
         'addition_code': _additionCode,
         'status': 'OPEN',

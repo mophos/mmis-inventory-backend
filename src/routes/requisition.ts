@@ -57,7 +57,7 @@ router.post('/orders', async (req, res, next) => {
   let order: any = req.body.order;
   let products = req.body.products;
   let people_id = req.decoded.people_id;
-
+  let warehouseId = req.decoded.warehouseId;
   let year = moment(order.requisition_date, 'YYYY-MM-DD').get('year');
   let month = moment(order.requisition_date, 'YYYY-MM-DD').get('month') + 1;
 
@@ -68,14 +68,11 @@ router.post('/orders', async (req, res, next) => {
   } else {
     try {
       // get serial
-      const no = await serialModel.getCountOrder(db, year);
       if (month >= 10) {
         year += 1;
       }
 
-      const count = +no[0].total + 1;
-
-      let serial = await serialModel.getSerialNew(db, 'RQ', count, year);
+      let serial = await serialModel.getSerial(db, 'RQ', year, order.wm_withdraw);
       order.requisition_code = serial;
       order.people_id = people_id;
       order.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -110,7 +107,7 @@ router.post('/fast/orders', async (req, res, next) => {
   let order: any = req.body.order;
   let generics = req.body.generics;
   let people_id = req.decoded.people_id;
-
+  let warehouseId = req.decoded.warehouseId;
   let year = moment(order.requisition_date, 'YYYY-MM-DD').get('year');
   let month = moment(order.requisition_date, 'YYYY-MM-DD').get('month') + 1;
 
@@ -121,14 +118,11 @@ router.post('/fast/orders', async (req, res, next) => {
   } else {
     try {
       // get serial
-      const no = await serialModel.getCountOrder(db, year);
       if (month >= 10) {
         year += 1;
       }
 
-      const count = +no[0].total + 1;
-
-      let serial = await serialModel.getSerialNew(db, 'RQ', count, year);
+      let serial = await serialModel.getSerial(db, 'RQ', year, order.wm_withdraw);
 
       order.requisition_code = serial;
       order.people_id = people_id;
@@ -641,7 +635,7 @@ router.post('/orders/unpaid/reorder', async (req, res, next) => {
   let db = req.db;
   let requisitionOrderUnpaidId = req.body.requisitionOrderUnpaidId;
   let requisitionOrderId = req.body.requisitionOrderId;
-
+  let warehouseId = req.decoded.warehouseId;
   let requisitionOrderDate = moment().format('YYYY-MM-DD');
 
   let year = moment(requisitionOrderDate, 'YYYY-MM-DD').get('year');
@@ -664,14 +658,10 @@ router.post('/orders/unpaid/reorder', async (req, res, next) => {
 
         let orders: any = {};
 
-        const no = await serialModel.getCountOrder(db, year);
         if (month >= 10) {
           year += 1;
         }
-
-        const count = +no[0].total + 1;
-
-        let serial = await serialModel.getSerialNew(db, 'RQ', count, year);
+        let serial = await serialModel.getSerial(db, 'RQ', year, _order.wm_withdraw);
 
         orders.requisition_date = _order.requisition_date;
         orders.wm_requisition = _order.wm_requisition;

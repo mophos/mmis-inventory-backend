@@ -195,7 +195,7 @@ router.post('/', co(async (req, res, next) => {
   let summary = req.body.summary;
   let products = req.body.products;
   let closePurchase = req.body.closePurchase;
-
+  let warehouseId = req.decoded.warehouseId;
   if (summary.deliveryCode && summary.deliveryDate &&
     summary.supplierId && summary.receiveDate && products.length) {
 
@@ -243,17 +243,15 @@ router.post('/', co(async (req, res, next) => {
             let _receiveCode: null;
             let _receiveTmpCode: null;
 
-            let year = moment().get('year');
-            let month = moment().get('month') + 1;
+            let year = moment(summary.receiveDate, 'YYYY-MM-DD').get('year');
+            let month = moment(summary.receiveDate, 'YYYY-MM-DD').get('month') + 1;
             if (month >= 10) {
               year += 1;
             }
-            let rsPO: any = await receiveModel.getReceiveNumberPO(req.db, year)
-            let rs: any = await receiveModel.getReceiveNumber(req.db, year)
             if (summary.purchaseOrderId) {
-              _receiveCode = await serialModel.getSerialNew(db, 'RV', rsPO[0].count + 1, year);
+              _receiveCode = await serialModel.getSerial(db, 'RV', year, warehouseId);
             } else {
-              _receiveCode = await serialModel.getSerialNew(db, 'RT', rs[0].count + 1, year);
+              _receiveCode = await serialModel.getSerial(db, 'RT', year, warehouseId);
               _receiveTmpCode = _receiveCode;
             }
 
@@ -337,7 +335,7 @@ router.put('/:receiveId', co(async (req, res, next) => {
   let receiveId = req.params.receiveId;
   let summary = req.body.summary;
   let closePurchase = req.body.closePurchase;
-
+  let warehouseId = req.decoded.warehouseId;
   let products: any = [];
   products = req.body.products;
   if (receiveId && summary.deliveryCode && summary.deliveryDate && summary.supplierId && summary.receiveDate && products.length) {
@@ -442,7 +440,12 @@ router.put('/:receiveId', co(async (req, res, next) => {
             } else {
               let temp = summary.receiveCode.split('-');
               if (temp[0] === 'RT') {
-                let receiveCode = await serialModel.getSerial(db, 'RV');
+                let year = moment(summary.receiveDate, 'YYYY-MM-DD').get('year');
+                const month = moment(summary.receiveDate, 'YYYY-MM-DD').get('month') + 1;
+                if (month >= 10) {
+                  year += 1;
+                }
+                let receiveCode = await serialModel.getSerial(db, 'RV', year, warehouseId);
                 data.receive_code = receiveCode;
               }
 
@@ -662,18 +665,17 @@ router.post('/other', co(async (req, res, next) => {
   let db = req.db;
   let summary = req.body.summary;
   let products: any = [];
+  let warehouseId = req.decoded.warehouseId;
   products = req.body.products;
 
   if (summary.receiveDate && summary.receiveTypeId && summary.donatorId && products.length) {
     try {
-      let yearRo = moment().get('year');
-      let monthRo = moment().get('month') + 1;
+      let yearRo = moment(summary.receiveDate, 'YYYY-MM-DD').get('year');
+      let monthRo = moment(summary.receiveDate, 'YYYY-MM-DD').get('month') + 1;
       if (monthRo >= 10) {
         yearRo += 1;
       }
-      let countRo: any = await receiveModel.getReceiveOtherNumber(db, yearRo)
-      let receiveCode = await serialModel.getSerialNew(db, 'RO', countRo[0].count + 1, yearRo);
-      // let receiveId = moment().format('x');
+      let receiveCode = await serialModel.getSerial(db, 'RO', yearRo, warehouseId);
 
       const data: any = {
         receive_code: receiveCode,

@@ -180,11 +180,7 @@ router.post('/save', co(async (req, res, next) => {
           year += 1;
         }
         // year = ปีงบ
-        // count
-        let no = await transferModel.getTransferCount(db, year);
-        no = no[0];
-        no = +no[0].count + 1;
-        let transferCode = await serialModel.getSerialNew(db, 'TR', no, year);
+        let transferCode = await serialModel.getSerial(db, 'TR', year, warehouseId);
         let transfer = {
           transfer_code: transferCode,
           transfer_date: _summary.transferDate,

@@ -295,10 +295,15 @@ router.post('/save', co(async (req, res, next) => {
   let db = req.db;
   let _summary = req.body.summary;
   let _generics = req.body.generics;
-
+  let warehouseId = req.decoded.warehouseId;
   if (_generics.length && _summary) {
     try {
-      let borrowCode = await serialModel.getSerial(db, 'BR');
+      let year = moment(_summary.borrowDate, 'YYYY-MM-DD').get('year');
+      const month = moment(_summary.borrowDate, 'YYYY-MM-DD').get('month') + 1;
+      if (month >= 10) {
+        year += 1;
+      }
+      let borrowCode = await serialModel.getSerial(db, 'BR', year, warehouseId);
       let borrow = {
         borrow_code: borrowCode,
         borrow_date: _summary.borrowDate,
@@ -537,7 +542,7 @@ router.post('/returned/approved', co(async (req, res, next) => {
         await borrowModel.updateReturnedApproveOther(db, returnedIds);
       }
     }
-    
+
     await borrowModel.changeApproveStatusReturned(db, returnedIds, peopleUserId);
     await borrowModel.saveProducts(db, products);
     await stockCard.saveFastStockTransaction(db, data);
@@ -778,13 +783,17 @@ router.post('/returned-product', co(async (req, res, next) => {
   let db = req.db;
   let summary = req.body.summary;
   let products = req.body.products;
-
+  let warehouseId = req.decoded.warehouseId
   if (products.length) {
     let productsData = [];
     try {
       let _returnedCode: null;
-
-      _returnedCode = await serialModel.getSerial(db, 'BT');
+      let year = moment(summary.returnedDate, 'YYYY-MM-DD').get('year');
+      const month = moment(summary.returnedDate, 'YYYY-MM-DD').get('month') + 1;
+      if (month >= 10) {
+        year += 1;
+      }
+      _returnedCode = await serialModel.getSerial(db, 'BT', year, warehouseId);
       await borrowModel.updateBorrowReturnedCode(db, summary.borrowCode, summary.borrowType, _returnedCode);
 
       const data: any = {
@@ -792,7 +801,7 @@ router.post('/returned-product', co(async (req, res, next) => {
         returned_date: summary.returnedDate,
         people_user_id: req.decoded.people_user_id,
         comment: summary.comment,
-        warehouse_id: req.decoded.warehouseId,
+        warehouse_id: warehouseId,
         created_at: moment().format('YYYY-MM-DD HH:mm:ss')
       }
 

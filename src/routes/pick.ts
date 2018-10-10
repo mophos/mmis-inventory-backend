@@ -153,10 +153,10 @@ router.put('/savePick', async (req, res, next) => {
   let user_create_id = req.decoded.people_user_id;
   let remark = req.body.remark
   let pickId = req.body.pickId
+  let warehouseId = req.decoded.warehouseId;
   try {
     let update = pickId ? true : false
     let pick_id = pickId || null
-    console.log(pickDate);
     let headPick: any = {
       people_id: people_id,
       wm_pick: wmPick,
@@ -183,7 +183,12 @@ router.put('/savePick', async (req, res, next) => {
         await pickModel.gerSaveEditPick(db, headPick, pick_id);
         await pickModel.gerRemovePickDetail(db, pick_id);
       } else {
-        let pickCode = await serialModel.getSerial(db, 'PI');
+        let year = moment(pickDate, 'YYYY-MM-DD').get('year');
+        const month = moment(pickDate, 'YYYY-MM-DD').get('month') + 1;
+        if (month >= 10) {
+          year += 1;
+        }
+        let pickCode = await serialModel.getSerial(db, 'PI', year, warehouseId);
         headPick.pick_code = pickCode;
         let rs: any = await pickModel.savePick(db, headPick);
         pick_id = rs[0]
