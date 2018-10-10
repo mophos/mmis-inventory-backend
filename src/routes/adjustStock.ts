@@ -94,8 +94,13 @@ router.post('/', async (req, res, next) => {
   const peopleUserId = req.decoded.people_user_id;
   const head = req.body.head;
   const detail = req.body.detail;
+  let year = moment().get('year');
+  const month = moment().get('month') + 1;
+  if (month >= 10) {
+    year += 1;
+  }
   try {
-    const adjustCode = await serialModel.getSerial(db, 'ADJ');
+    const adjustCode = await serialModel.getSerial(db, 'ADJ', year, warehouseId);
     head.adjust_code = adjustCode;
     head.adjust_date = moment.tz('Asia/Bangkok').format('YYYY-MM-DD HH:mm:ss');
     head.people_user_id = peopleUserId;
