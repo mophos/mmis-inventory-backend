@@ -82,13 +82,13 @@ export class BorrowNoteModel {
   }
   getListReport(db: Knex, query: any) {
     let sql = db('wm_borrow_notes as bn')
-      .select('bn.*', 't.title_name', 'p.fname', 'p.lname', 'w.warehouse_name as wm_borrow_name','w1.warehouse_name as wm_withdarw_name')
+      .select('bn.*', 't.title_name', 'p.fname', 'p.lname', 'w.warehouse_name as wm_borrow_name', 'w1.warehouse_name as wm_withdarw_name')
       .leftJoin('um_people as p', 'p.people_id', 'bn.people_id')
       .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
       .innerJoin('wm_warehouses as w', 'w.warehouse_id', 'bn.wm_borrow')
       .innerJoin('wm_warehouses as w1', 'w1.warehouse_id', 'bn.wm_withdarw')
-      .whereIn('bn.borrow_note_id',query)
-    
+      .whereIn('bn.borrow_note_id', query)
+
 
     return sql.orderBy('bn.borrow_date', 'DESC');
   }
@@ -112,17 +112,18 @@ export class BorrowNoteModel {
 
     return sql.orderBy('bn.borrow_date', 'DESC');
   }
-  
-  getListTotal(db: Knex, query: any) {
+
+  getListTotal(db: Knex, query: any, warehouse: any) {
     let sql = db('wm_borrow_notes as bn')
       .select(db.raw('count(*) as total'))
       .leftJoin('um_people as p', 'p.people_id', 'bn.people_id')
       .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
-      .innerJoin('wm_warehouses as w', 'w.warehouse_id', 'bn.wm_borrow');
+      .innerJoin('wm_warehouses as w', 'w.warehouse_id', 'bn.wm_borrow')
+      .where('bn.wm_borrow', 'like', warehouse)
     if (query) {
       let _query = `%${query}%`;
-      sql.where(w => {
-        w.where('p.fname', 'like', _query)
+      sql.orWhere(w => {
+        w.orWhere('p.fname', 'like', _query)
           .orWhere('p.lname', 'like', _query)
           .orWhereRaw(`concat(p.fname, " ", p.lname) like "${_query}"`)
           .orWhere('w.warehouse_name', 'like', _query)
@@ -152,8 +153,8 @@ export class BorrowNoteModel {
 
   getItemsWithGenerics(db: Knex, warehouseId: any, genericIds: any[], requisitionId: any) {
     let ugid = db('wm_requisition_order_items')
-                    .select('unit_generic_id')
-                    .where ('requisition_order_id',requisitionId);
+      .select('unit_generic_id')
+      .where('requisition_order_id', requisitionId);
     // ugid = Array.isArray(ugid) ? ugid : [ugid];
     return db('wm_borrow_note_detail as d')
       .select('d.borrow_note_detail_id', 'd.generic_id', 'd.qty', 'd.unit_generic_id', 'g.generic_name',
@@ -168,7 +169,7 @@ export class BorrowNoteModel {
       .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
       .whereIn('d.generic_id', genericIds)
       .where('n.wm_borrow', warehouseId)
-      .whereIn( 'ug.unit_generic_id'  , ugid)
+      .whereIn('ug.unit_generic_id', ugid)
       .whereNull('requisition_order_id');
   }
 
@@ -179,14 +180,14 @@ export class BorrowNoteModel {
         requisition_people_user_id: requisitionPeopleUserId,
         requisition_order_id: requisitionOrderId
       });
-  }  
-  
+  }
+
   // approveRequisitionQtyForBorrowNote(db: Knex, borrowNoteDetailId: any) {
-    //   return db('wm_borrow_note_detail')
-    //     .where('borrow_note_detail_id', borrowNoteDetailId)
-    //     .update({
-    //       requisition_people_user_id: requisitionPeopleUserId,
-    //       requisition_order_id: requisitionOrderId
-    //     });
-    // }
+  //   return db('wm_borrow_note_detail')
+  //     .where('borrow_note_detail_id', borrowNoteDetailId)
+  //     .update({
+  //       requisition_people_user_id: requisitionPeopleUserId,
+  //       requisition_order_id: requisitionOrderId
+  //     });
+  // }
 }

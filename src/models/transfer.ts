@@ -255,6 +255,7 @@ export class TransferModel {
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
       .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'p.unit_generic_id')
       .whereIn('d.transfer_id', transferIds)
+      .andWhere('t.approved','N')
       .groupByRaw('d.wm_product_id');
   }
 
@@ -283,7 +284,12 @@ export class TransferModel {
         approve_people_user_id: peopleUserId
       });
   }
-
+  checkDuplicatedApprove(knex: Knex, transferIds: any) {
+    return knex('wm_transfer')
+      .select('transfer_id')
+      .whereIn('transfer_id', transferIds)
+      .andWhere('approved','N');
+  }
   changeConfirmStatusIds(knex: Knex, transferIds: any[], peopleUserId: any) {
     return knex('wm_transfer')
       .whereIn('transfer_id', transferIds)

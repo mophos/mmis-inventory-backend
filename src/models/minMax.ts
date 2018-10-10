@@ -59,8 +59,8 @@ export class MinMaxModel {
     let sql = `
       select mp.generic_id, mg.working_code, mg.generic_name, sum(wp.qty) qty, mu.unit_name 
       , IFNULL(sc.use_total, 0) use_total, IFNULL(sc.use_per_day, 0) use_per_day
-      , IFNULL(gp.safety_min_day, (select IFNULL(a.value, a.default) from sys_settings a where a.action_name = 'WM_SAFETY_MIN_DAY')) safety_min_day
-      , IFNULL(gp.safety_max_day, (select IFNULL(b.value, b.default) from sys_settings b where b.action_name = 'WM_SAFETY_MAX_DAY')) safety_max_day
+      , (select IFNULL(a.value, a.default) from sys_settings a where a.action_name = 'WM_SAFETY_MIN_DAY') safety_min_day
+      , (select IFNULL(b.value, b.default) from sys_settings b where b.action_name = 'WM_SAFETY_MAX_DAY') safety_max_day
       , IFNULL(gp.lead_time_day, 0) lead_time_day
       , IFNULL(gp.rop_qty, 0) rop_qty
       , IFNULL(gp.ordering_cost, 0) ordering_cost

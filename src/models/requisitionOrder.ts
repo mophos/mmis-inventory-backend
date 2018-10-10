@@ -921,6 +921,17 @@ export class RequisitionOrderModel {
     return knex.raw(query);
   }
 
+  checkDuplicatedApprove(knex: Knex, requisitionId: any) {
+    return knex('wm_requisition_confirms')
+      .count('* as total')
+      .where('requisition_order_id', requisitionId)
+      .andWhere('is_approve','Y');
+  }
+  checkDuplicatedApproveUnpaid(knex: Knex, requisitionId: any) {
+    return knex('wm_requisition_confirm_unpaids')
+      .count('* as total')
+      .where('requisition_order_unpaid_id', requisitionId)
+  }
   getRequisitionFromConfirm(knex: Knex, confirmId: any) {
     return knex('wm_requisition_confirms as rc')
       .select('rc.confirm_date', 'rc.confirm_id', 'ro.requisition_date')
@@ -1122,6 +1133,12 @@ export class RequisitionOrderModel {
     let sql = `insert into wm_requisition_confirm_item_temp 
     select * from wm_requisition_confirm_items where confirm_id = ${confirmId}`;
     return db.raw(sql);
+  }
+
+  getCountOrder(knex: Knex, year: any) {
+    return knex('wm_requisition_orders')
+      .select(knex.raw('count(*) as total'))
+      .whereRaw(`requisition_date >= '${year}-10-01' AND requisition_date <= '${year + 1}-09-30'`);
   }
 
 }

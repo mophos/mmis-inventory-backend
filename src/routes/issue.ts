@@ -237,10 +237,16 @@ router.post('/approve', co(async (req, res, next) => {
 
   let db = req.db;
   let issueIds = req.body.issueIds;
+  issueIds = Array.isArray(issueIds) ? issueIds : [issueIds];
   try {
+
     const decoded = req.decoded;
     const warehouseId = decoded.warehouseId;
+    const checkApprove = await issueModel.checkDuplicatedApprove(db, issueIds);
+    issueIds = _.map(checkApprove,'issue_id')
+    if(issueIds.length) {
 
+    
     for (let v of issueIds) {
       let summary = {
         approved: 'Y',
@@ -325,9 +331,11 @@ router.post('/approve', co(async (req, res, next) => {
       await issueModel.saveProductStock(db, _cutProduct);
       await stockCardModel.saveFastStockTransaction(db, data);
     }
-
+  
     res.send({ ok: true });
-
+  } else {
+    res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการอนุมัติ' });
+  }
   } catch (error) {
     console.log(error);
     res.send({ ok: false, error: error.message });

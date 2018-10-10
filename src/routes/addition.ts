@@ -232,7 +232,7 @@ router.get('/print/transactions', async (req, res, next) => {
 
       for (let d of _d.generic) {
         let _detail_: any = []
-        let rsp: any = await additionModel.printAdditionReportDetail(db, h, d.product_id)
+        let rsp: any = await additionModel.printAdditionReportDetail(db, h, d.product_id, _d.header.withdraw_warehouse_name)
         d.product = rsp[0]
       }
       detail.push(_d)

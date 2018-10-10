@@ -2,6 +2,94 @@ import Knex = require('knex');
 import * as moment from 'moment';
 
 export class PayRequisitionModel {
+  getOrderUnpaidItems(db: Knex, unpaidId: any) {
+    let sql = `
+      select oui.generic_id, oui.unpaid_qty as unpaid_qty, g.generic_name, roi.requisition_qty as requisition_qty, u1.unit_name as from_unit_name, 
+      u2.unit_name as to_unit_name, ug.qty as conversion_qty, g.working_code
+      from wm_requisition_order_unpaid_items as oui
+      inner join mm_generics as g on g.generic_id=oui.generic_id
+      inner join wm_requisition_order_items as roi on roi.generic_id=oui.generic_id
+      inner join mm_unit_generics as ug on ug.unit_generic_id=roi.unit_generic_id
+      left join mm_units as u1 on u1.unit_id=ug.from_unit_id
+      left join mm_units as u2 on u2.unit_id=ug.to_unit_id
+      where oui.requisition_order_unpaid_id=?
+      
+      group by oui.generic_id
+      -- having unpaid_qty>0
+    `;
+    return db.raw(sql, [unpaidId]);
+  }
+  getOrderItemsPayByRequisition(db: Knex, requisitionId: any, confirmId: any) {
+    let sql = `
+    select requisition_order_item_id, roi.requisition_order_id, 
+    roi.generic_id, roi.unit_generic_id, 
+    mg.generic_name, mg.working_code, 
+    roi.requisition_qty as small_requisition_qty,
+    floor(roi.requisition_qty) as requisition_qty,
+    ugo.qty as order_conversion_qty, uof.unit_name as order_from_unit_name,
+    uot.unit_name as order_to_unit_name,
+   	(rci.confirm_qty) as small_confirm_qty,
+    floor(sum(rci.confirm_qty)) as confirm_qty, ugc.qty as confirm_conversion_qty, 
+    ucf.unit_name as confirm_from_unit_name, uct.unit_name as confirm_to_unit_name
+    from wm_requisition_order_items as roi
+        
+    inner join mm_generics as mg on mg.generic_id=roi.generic_id
+    left join mm_unit_generics as ugo on ugo.unit_generic_id=roi.unit_generic_id
+    left join wm_requisition_confirms as rc on rc.requisition_order_id=roi.requisition_order_id
+    left join wm_requisition_confirm_items as rci on rci.confirm_id=rc.confirm_id and rci.generic_id=roi.generic_id
+    left join wm_products as wp on wp.wm_product_id=rci.wm_product_id
+    left join mm_unit_generics as ugc on ugc.unit_generic_id=wp.unit_generic_id
+    left join mm_units as uof on uof.unit_id=ugo.from_unit_id
+    left join mm_units as uot on uot.unit_id=ugo.to_unit_id
+    left join mm_units as ucf on ucf.unit_id=ugc.from_unit_id
+    left join mm_units as uct on uct.unit_id=ugc.to_unit_id
+    where roi.requisition_order_id=? and rc.confirm_id=?
+    group by roi.generic_id
+    `;
+    return db.raw(sql, [requisitionId, confirmId]);
+  }
+  getOrderItemsByRequisition(db: Knex, requisitionId: any) {
+    let sql = `
+      select ro.temp_confirm_id,roi.requisition_order_item_id, roi.requisition_order_id, roi.generic_id, 
+    roi.requisition_qty as requisition_qty, roi.unit_generic_id, mg.generic_name, mg.working_code,
+    ug.qty as conversion_qty, u1.unit_name as from_unit_name, u2.unit_name as to_unit_name,
+    (
+      select sum(rci.confirm_qty) as confirmed_qty
+      from wm_requisition_confirm_items as rci
+      inner join wm_requisition_confirms as rc on rc.confirm_id=rci.confirm_id
+      where rc.is_approve='Y' and rci.generic_id=roi.generic_id
+      and rc.requisition_order_id=roi.requisition_order_id
+      group by rci.generic_id
+    ) as confirm_qty,
+    
+    (
+	  select sum(vr.remain_qty) as remain_qty
+      from view_product_reserve as vr
+      
+      where vr.warehouse_id=ro.wm_withdraw and vr.generic_id=roi.generic_id
+
+      
+    ) as remain_qty,
+    
+(
+	  select sum(vr.stock_qty) as stock_qty
+      from view_product_reserve as vr
+      
+      where vr.warehouse_id=ro.wm_withdraw and vr.generic_id=roi.generic_id
+
+      
+    ) as stock_qty
+    
+    from wm_requisition_order_items as roi
+    inner join mm_generics as mg on mg.generic_id=roi.generic_id
+    inner join wm_requisition_orders as ro on ro.requisition_order_id=roi.requisition_order_id
+    left join mm_unit_generics as ug on ug.unit_generic_id=roi.unit_generic_id
+    left join mm_units as u1 on u1.unit_id=ug.from_unit_id
+    left join mm_units as u2 on u2.unit_id=ug.to_unit_id
+    where roi.requisition_order_id=?
+    `;
+    return db.raw(sql, [requisitionId]);
+  }
   list(knex: Knex) {
     let sql = `
       select re.requisition_id,wh1.warehouse_name as wm_requisition_name ,wh2.warehouse_name as wm_withdraw_name,

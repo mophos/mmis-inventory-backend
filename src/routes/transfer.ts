@@ -320,7 +320,9 @@ router.post('/approve-all', co(async (req, res, next) => {
         isValid = false;
       }
     }
-    if (isValid) {
+    let checkDup:any = await transferModel.checkDuplicatedApprove(db,transferIds)
+    transferIds = _.map(checkDup,'transfer_id')
+    if (isValid && transferIds.length) {
       await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
       await approve(db, transferIds, warehouseId, peopleUserId);
       res.send({ ok: true });
