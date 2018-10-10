@@ -239,7 +239,7 @@ router.get('/detail/:borrowId', co(async (req, res, next) => {
   let borrowId = req.params.borrowId;
 
   try {
-    let rows = await borrowModel.detail(db, borrowId);
+    let rows = await borrowModel.detail(db, borrowId, req.decoded.warehouseId);
     res.send({ ok: true, rows: rows[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
