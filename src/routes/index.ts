@@ -314,7 +314,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
         _.forEach(values, value => {
           value.sPage = page;
           value.nPage = approve_requis[i].length;
-          value.full_name = warehouse_id === 505 ? '' : value.full_name
+          // value.full_name = warehouse_id === 505 ? '' : value.full_name
           value.total_cost = inventoryReportModel.comma(value.total_cost);
           value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
@@ -370,7 +370,7 @@ router.get('/report/staff/approve/requis', wrap(async (req, res, next) => {
         _.forEach(values, value => {
           value.sPage = page;
           value.nPage = approve_requis[i].length;
-          value.full_name = warehouse_id === 505 ? '' : value.full_name
+          // value.full_name = warehouse_id === 505 ? '' : value.full_name
           value.total_cost = inventoryReportModel.comma(value.total_cost);
           value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);

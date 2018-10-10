@@ -482,7 +482,7 @@ export class Addition {
     ORDER BY adh.addition_code`
     return knex.raw(sql, [transactionId])
   }
-  printAdditionReportDetail(knex: Knex, additionId: any, productId: any) {
+  printAdditionReportDetail(knex: Knex, additionId: any, productId: any,withdrawWarehouseId:any) {
     let sql = `SELECT * from (
       SELECT
           IF( sq1.addition_qty > 0, sq1.product_name, 'คงคลัง' ) AS product_name,
@@ -502,7 +502,7 @@ export class Addition {
       WHERE
         wp2.lot_no = wp1.lot_no 
         AND wp2.product_id = wp1.product_id 
-        AND wp2.warehouse_id = 505 
+        AND wp2.warehouse_id = ${withdrawWarehouseId} 
         ) AS remainQty 
       FROM
         wm_products AS wp1
@@ -526,7 +526,7 @@ export class Addition {
         left join mm_units as mu2 on mu2.unit_id = mug.from_unit_id
       WHERE
         wp1.product_id = ${productId}   
-        AND wp1.warehouse_id = 505 
+        AND wp1.warehouse_id = ${withdrawWarehouseId}  
       GROUP BY
         wp1.product_id,
         wp1.unit_generic_id,
