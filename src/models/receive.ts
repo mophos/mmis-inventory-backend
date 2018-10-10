@@ -591,15 +591,15 @@ export class ReceiveModel {
 
 
   }
-  getWmProduct(knex: Knex, item: any) {
+  getWmProduct(knex: Knex, item: any,warehouseId:any) {
     return knex('wm_products')
       // .select('*')
       .where('product_id', item.product_id)
       .andWhere('lot_no', item.lot_no)
       .andWhere('unit_generic_id', item.unit_generic_id)
-      .andWhere('warehouse_id', 505)
+      .andWhere('warehouse_id', warehouseId)
   }
-  getStockItem(knex: Knex, pick_id: any) {
+  getStockItem(knex: Knex, pick_id: any,warehouseId:any) {
     let sql =
       `
     SELECT
@@ -619,7 +619,7 @@ p.pick_id,
         FROM
           wm_products wmp
         WHERE
-          wmp.product_id = wp.product_id and wmp.warehouse_id = 505
+          wmp.product_id = wp.product_id and wmp.warehouse_id = ${warehouseId}
         GROUP BY
           wmp.product_id
       ) AS src_balance_qty,
@@ -634,12 +634,12 @@ p.pick_id,
           wmp.product_id
       ) AS dst_balance_qty,
       p.wm_pick as dst_warehouse,
-      505 as src_warehouse
+      ${warehouseId} as src_warehouse
 FROM
 	 wm_pick as p
 join 	wm_pick_detail as pd on p.pick_id = pd.pick_id
 join mm_unit_generics as ug on ug.unit_generic_id = pd.unit_generic_id
-JOIN wm_products wp ON wp.lot_no = pd.lot_no and wp.product_id = pd.product_id and wp.unit_generic_id = pd.unit_generic_id and wp.warehouse_id = 505
+JOIN wm_products wp ON wp.lot_no = pd.lot_no and wp.product_id = pd.product_id and wp.unit_generic_id = pd.unit_generic_id and wp.warehouse_id = ${warehouseId}
 JOIN mm_products as mp on mp.product_id = pd.product_id
 join mm_generics as mg on mg.generic_id = mp.generic_id
 WHERE

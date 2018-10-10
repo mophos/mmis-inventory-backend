@@ -948,7 +948,7 @@ router.post('/approve', co(async (req, res, next) => {
           res.send({ ok: true });
         } else {
           for (let item of rdPick) {
-            let _rsWp: any = await receiveModel.getWmProduct(db, item)
+            let _rsWp: any = await receiveModel.getWmProduct(db, item,warehouseId)
             if (_rsWp[0]) {
               _rsWp[0].wm_pick = item.wm_pick
               item.wm_product_id = _rsWp[0].wm_product_id
@@ -959,7 +959,7 @@ router.post('/approve', co(async (req, res, next) => {
                 dstProducts.push({
                   qty: item.pick_qty* item.conversion_qty,
                   wm_product_id: item.wm_product_id,
-                  warehouse_id: 505
+                  warehouse_id: warehouseId
                 });
                 items.push({
                   qty: item.pick_qty* item.conversion_qty,
@@ -995,7 +995,7 @@ router.post('/approve', co(async (req, res, next) => {
               products2.push(obj);
             }
           });
-          rsStock = await receiveModel.getStockItem(db, pickIds)
+          rsStock = await receiveModel.getStockItem(db, pickIds,warehouseId)
           rsStock = rsStock[0]
           let balances = [];
           for (let s of rsStock) {
