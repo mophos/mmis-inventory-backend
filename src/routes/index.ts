@@ -293,8 +293,9 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
   let approve_requis: any = []
   let sum: any = []
   const line = await inventoryReportModel.getLine(db, 'AR');
+  const signature = await inventoryReportModel.getSignature(db, 'AR')
   let page_re: any = line[0].line;
-
+  
   let warehouse_id: any = req.decoded.warehouseId
   // console.log(req.decoded);
 
@@ -314,7 +315,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
         _.forEach(values, value => {
           value.sPage = page;
           value.nPage = approve_requis[i].length;
-          // value.full_name = warehouse_id === 505 ? '' : value.full_name
+          value.full_name = signature[0].signature === 'N' ? '' : value.full_name
           value.total_cost = inventoryReportModel.comma(value.total_cost);
           value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
@@ -348,6 +349,7 @@ router.get('/report/staff/approve/requis', wrap(async (req, res, next) => {
   let db = req.db;
   let approve_requis: any = []
   let sum: any = []
+  const signature = await inventoryReportModel.getSignature(db, 'AR')
   const line = await inventoryReportModel.getLine(db, 'AR');
   let page_re: any = line[0].line;
 
@@ -370,7 +372,7 @@ router.get('/report/staff/approve/requis', wrap(async (req, res, next) => {
         _.forEach(values, value => {
           value.sPage = page;
           value.nPage = approve_requis[i].length;
-          // value.full_name = warehouse_id === 505 ? '' : value.full_name
+          value.full_name = signature[0].signature === 'N' ? '' : value.full_name
           value.total_cost = inventoryReportModel.comma(value.total_cost);
           value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);

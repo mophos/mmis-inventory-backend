@@ -3119,7 +3119,12 @@ GROUP BY
             .where('report_type', reportType)
             .where('is_active', 'Y')
     }
-
+    getSignature(knex: Knex, reportType) {
+        return knex('um_report_detail')
+        .select('signature')
+            .where('report_type', reportType)
+            .where('is_active', 'Y')
+    }
     peopleFullName(knex: Knex, people_id: any) {
         return knex('um_people as u')
             .select('*', 'p.position_name as pname')
