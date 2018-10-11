@@ -317,26 +317,33 @@ export class BorrowModel {
       .count('* as s');
   }
 
-  detail(knex: Knex, borrowId: string) {
+  detail(knex: Knex, borrowId: string, warehouseId: any) {
     let sql = `
     select 
+    b.approved,
 		bp.borrow_product_id,
 		bp.borrow_id,
+		ws.out_qty,
 		bp.borrow_generic_id,
 		bp.wm_product_id,
+		vr.reserve_qty,
 		bp.qty,
 		wp.qty as balance_qty,
 		FLOOR(bp.qty/ug.qty) as product_pack_qty,
     mp.product_name, mg.generic_name, wp.lot_no, wp.expired_date,
     fu.unit_name as from_unit_name, ug.qty as conversion_qty, tu.unit_name as to_unit_name
     from wm_borrow_product as bp
+		join wm_borrow b on b.borrow_id = bp.borrow_id
     join wm_products as wp on wp.wm_product_id = bp.wm_product_id
     join mm_products as mp on mp.product_id = wp.product_id
     join mm_generics as mg on mg.generic_id = mp.generic_id
     join mm_unit_generics as ug on ug.unit_generic_id = wp.unit_generic_id
     join mm_units as fu on fu.unit_id = ug.from_unit_id
     join mm_units as tu on tu.unit_id = ug.to_unit_id
-		where bp.borrow_id = ? and bp.qty != 0
+		left join view_stock_card_warehouse ws on ws.product_id = wp.product_id and ws.lot_no = wp.lot_no and ws.document_ref_id = b.borrow_id and ws.unit_generic_id = wp.unit_generic_id and ws.transaction_type = 'TRN_OUT'
+		left join view_product_reserve vr on vr.lot_no = wp.lot_no and vr.reserve_qty > 0
+    where bp.borrow_id = ? and bp.qty != 0
+    and wp.warehouse_id = ${warehouseId}
     order by mp.product_name`;
     return knex.raw(sql, [borrowId]);
   }
