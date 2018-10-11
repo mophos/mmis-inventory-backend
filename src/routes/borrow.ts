@@ -239,7 +239,7 @@ router.get('/detail/:borrowId', co(async (req, res, next) => {
   let borrowId = req.params.borrowId;
 
   try {
-    let rows = await borrowModel.detail(db, borrowId);
+    let rows = await borrowModel.detail(db, borrowId, req.decoded.warehouseId);
     res.send({ ok: true, rows: rows[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -295,24 +295,17 @@ router.post('/save', co(async (req, res, next) => {
   let db = req.db;
   let _summary = req.body.summary;
   let _generics = req.body.generics;
-
+  let warehouseId = req.decoded.warehouseId;
   if (_generics.length && _summary) {
     try {
-
       let year = moment(_summary.borrowDate, 'YYYY-MM-DD').get('year');
-      let month = moment(_summary.borrowDate, 'YYYY-MM-DD').get('month') + 1;
-
-      const no = await borrowModel.getCountOrder(db, year);
+      const month = moment(_summary.borrowDate, 'YYYY-MM-DD').get('month') + 1;
       if (month >= 10) {
         year += 1;
       }
-
-      const count = +no[0].total + 1;
-
-      let serial = await serialModel.getSerialNew(db, 'BR', count, year);
-
+      let borrowCode = await serialModel.getSerial(db, 'BR', year, warehouseId);
       let borrow = {
-        borrow_code: serial,
+        borrow_code: borrowCode,
         borrow_date: _summary.borrowDate,
         src_warehouse_id: _summary.srcWarehouseId,
         dst_warehouse_id: _summary.dstWarehouseId,
@@ -838,13 +831,17 @@ router.post('/returned-product', co(async (req, res, next) => {
   let db = req.db;
   let summary = req.body.summary;
   let products = req.body.products;
-
+  let warehouseId = req.decoded.warehouseId
   if (products.length) {
     let productsData = [];
     try {
       let _returnedCode: null;
-
-      _returnedCode = await serialModel.getSerial(db, 'BT');
+      let year = moment(summary.returnedDate, 'YYYY-MM-DD').get('year');
+      const month = moment(summary.returnedDate, 'YYYY-MM-DD').get('month') + 1;
+      if (month >= 10) {
+        year += 1;
+      }
+      _returnedCode = await serialModel.getSerial(db, 'BT', year, warehouseId);
       await borrowModel.updateBorrowReturnedCode(db, summary.borrowCode, summary.borrowType, _returnedCode);
 
       const data: any = {
@@ -852,7 +849,7 @@ router.post('/returned-product', co(async (req, res, next) => {
         returned_date: summary.returnedDate,
         people_user_id: req.decoded.people_user_id,
         comment: summary.comment,
-        warehouse_id: req.decoded.warehouseId,
+        warehouse_id: warehouseId,
         created_at: moment().format('YYYY-MM-DD HH:mm:ss')
       }
 
