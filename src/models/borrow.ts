@@ -326,7 +326,7 @@ export class BorrowModel {
 		ws.out_qty,
 		bp.borrow_generic_id,
 		bp.wm_product_id,
-		sg.reserve_qty,
+		vr.reserve_qty,
 		bp.qty,
 		wp.qty as balance_qty,
 		FLOOR(bp.qty/ug.qty) as product_pack_qty,
@@ -341,11 +341,7 @@ export class BorrowModel {
     join mm_units as fu on fu.unit_id = ug.from_unit_id
     join mm_units as tu on tu.unit_id = ug.to_unit_id
 		left join view_stock_card_warehouse ws on ws.product_id = wp.product_id and ws.lot_no = wp.lot_no and ws.document_ref_id = b.borrow_id and ws.unit_generic_id = wp.unit_generic_id and ws.transaction_type = 'TRN_OUT'
-		join (
-			select pr.wm_product_id,pr.warehouse_id, pr.generic_id, sum(pr.reserve_qty) as reserve_qty
-			from view_product_reserve pr
-			group by pr.warehouse_id, pr.generic_id
-		) sg on sg.wm_product_id= bp.wm_product_id and sg.warehouse_id = wp.warehouse_id
+		left join view_product_reserve vr on vr.lot_no = wp.lot_no and vr.reserve_qty > 0
     where bp.borrow_id = ? and bp.qty != 0
     and wp.warehouse_id = ${warehouseId}
     order by mp.product_name`;
