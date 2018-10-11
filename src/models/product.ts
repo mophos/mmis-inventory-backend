@@ -219,7 +219,7 @@ export class ProductModel {
 
   // admin/products
 
-  adminGetAllProducts(knex: Knex, genericType: any, limit: number, offset: number, sort: any = {}) {
+  adminGetAllProducts(knex: Knex, genericType: any, warehouseId: any, limit: number, offset: number, sort: any = {}) {
     let query = knex('wm_products as p')
       .select('p.wm_product_id', 'p.product_id', 'mp.working_code', knex.raw('sum(p.qty) as qty'), knex.raw('ifnull(sum(v.reserve_qty),0) as reserve_qty'), knex.raw('sum(p.qty * p.cost) as total_cost'),
         'mp.product_name', 'g.generic_name', 'g.working_code as generic_working_code', 'mp.primary_unit_id', 'u.unit_name as primary_unit_name',
@@ -231,6 +231,11 @@ export class ProductModel {
       .where('mp.mark_deleted', 'N')
       .whereIn('g.generic_type_id', genericType);
 
+    if (warehouseId != 0) {
+      query.andWhere('p.warehouse_id', warehouseId);
+      query.andWhereRaw('p.qty > 0')
+    }
+
     if (sort.by) {
       let reverse = sort.reverse ? 'DESC' : 'ASC';
 
@@ -239,23 +244,27 @@ export class ProductModel {
       }
     } else {
       query.orderBy('g.generic_name')
+      return query.groupBy('p.product_id')
+        .limit(limit)
+        .offset(offset);
     }
-
-    return query.groupBy('p.product_id')
-      .limit(limit)
-      .offset(offset);
   }
 
-  adminGetAllProductTotal(knex: Knex, genericType: any) {
+  adminGetAllProductTotal(knex: Knex, genericType: any, warehouseId: any) {
     let query = knex('wm_products as p')
       .select(knex.raw('count(distinct p.product_id) as total'))
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
       .innerJoin('mm_generics as mg', 'mp.generic_id', 'mg.generic_id')
-      .whereIn('mg.generic_type_id', genericType);
+      .whereIn('mg.generic_type_id', genericType)
+
+    if (warehouseId != 0) {
+      query.andWhere('p.warehouse_id', warehouseId);
+      query.andWhereRaw('p.qty > 0')
+    }
     return query;
   }
 
-  adminGetAllProductsDetailList(knex: Knex, productId: any) {
+  adminGetAllProductsDetailList(knex: Knex, productId: any, warehouseId: any) {
     let sql = `
     select mp.product_name,mp.working_code,p.wm_product_id, p.product_id, sum(p.qty) as qty, floor(sum(p.qty)/ug.qty) as pack_qty, sum(p.cost*p.qty) as total_cost, p.cost, p.warehouse_id,
     w.warehouse_name, p.lot_no, p.expired_date, mpp.max_qty, mpp.min_qty, u1.unit_name as from_unit_name, ug.qty as conversion_qty,
@@ -268,12 +277,14 @@ export class ProductModel {
     left join mm_units as u1 on u1.unit_id=ug.from_unit_id
     left join mm_units as u2 on u2.unit_id=ug.to_unit_id
     left join view_product_reserve v on v.wm_product_id = p.wm_product_id
-    where p.product_id=?
-    group by p.lot_no, p.expired_date, p.warehouse_id
+    where p.product_id=? `;
+    if (warehouseId != 0){
+      sql += ` and p.warehouse_id = ${warehouseId} `
+    }
+    sql += `group by p.lot_no, p.expired_date, p.warehouse_id
     HAVING sum(p.qty) != 0
-    order by w.warehouse_name
-    `;
-    return knex.raw(sql, [productId]);
+    order by w.warehouse_name`
+      return knex.raw(sql, [productId]);
   }
 
   adminGetAllProductsDetailListGeneric(knex: Knex, genericId: any) {
@@ -714,7 +725,7 @@ group by mpp.product_id
   }
 
   // search product
-  adminSearchProducts(knex: Knex, query: any, productGroups: any = [], genericType: any, limit: number, offset: number, sort: any = {}) {
+  adminSearchProducts(knex: Knex, query: any, productGroups: any = [], genericType: any, warehouseId: any, limit: number, offset: number, sort: any = {}) {
     let _query = `%${query}%`;
     if (genericType) {
       let sql = `
@@ -733,8 +744,13 @@ group by mpp.product_id
         g.working_code=? or 
         mp.working_code=? or 
         mp.keywords like ?)
-      and g.generic_type_id in (?)
-      group by p.product_id`;
+      and g.generic_type_id in (?)`;
+
+      if (warehouseId != 0) {
+        sql += ` and p.warehouse_id = ${warehouseId} and p.qty > 0 `
+      }
+
+      sql += `group by p.product_id`
 
       if (sort.by) {
         let reverse = sort.reverse ? 'DESC' : 'ASC';
@@ -769,7 +785,7 @@ group by mpp.product_id
     }
   }
 
-  adminSearchProductsTotal(knex: Knex, query: any, productGroups: any = [], genericType: any) {
+  adminSearchProductsTotal(knex: Knex, query: any, productGroups: any = [], genericType: any, warehouseId: any) {
     let _query = `%${query}%`;
     if (genericType) {
       let sql = `
@@ -780,11 +796,14 @@ group by mpp.product_id
       left join mm_generics as g on g.generic_id=mp.generic_id
       left join mm_units as u on u.unit_id=mp.primary_unit_id
       where mp.mark_deleted='N'
-      and (mp.product_name like ? or g.generic_name like ? or mp.working_code=? or mp.keywords=?)
-      and g.generic_type_id in (?)
-      group by p.product_id `;
-
-      return knex.raw(sql, [_query, _query, _query, _query, genericType]);
+      and (mp.product_name like ? or g.generic_name like ? or mp.working_code=? or g.working_code = ? or mp.keywords=?)
+      and g.generic_type_id in (?) `;
+      if (warehouseId != 0) {
+        sql += ` and p.warehouse_id = ${warehouseId} and p.qty > 0 `
+      }
+      sql += `group by p.product_id
+              order by mp.product_name`
+      return knex.raw(sql, [_query, _query, query, query, _query, genericType]);
     } else {
       let sql = `
     select p.wm_product_id, p.product_id, sum(p.qty) as qty, sum(p.qty * p.cost) as total_cost,
@@ -794,12 +813,14 @@ group by mpp.product_id
     left join mm_generics as g on g.generic_id=mp.generic_id
     left join mm_units as u on u.unit_id=mp.primary_unit_id
     where mp.mark_deleted='N'
-    and (mp.product_name like ? or g.generic_name like ? or mp.working_code=? or mp.keywords=?)
-    and g.generic_type_id in (?)
-    group by p.product_id
-    order by mp.product_name
-    `;
-      return knex.raw(sql, [_query, _query, _query, _query, productGroups]);
+    and (mp.product_name like ? or g.generic_name like ? or mp.working_code=? or g.working_code = ? or mp.keywords=?)
+    and g.generic_type_id in (?)`;
+      if (warehouseId != 0) {
+        sql += ` and p.warehouse_id = ${warehouseId} and p.qty > 0 `
+      }
+      sql += `group by p.product_id
+            order by mp.product_name`
+      return knex.raw(sql, [_query, _query, query, query, _query, productGroups]);
     }
   }
 
