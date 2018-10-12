@@ -373,14 +373,15 @@ router.post('/stock/products/all', async (req, res, next) => {
   let limit = req.body.limit || 10;
   let offset = req.body.offset || 0;
   let genericType = req.body.genericType;
+  let warehouseId = req.body.warehouseId;
   let sort = req.body.sort;
   if (typeof genericType === 'string') {
     genericType = [genericType];
   }
   if (genericType) {
     try {
-      let rsTotal = await productModel.adminGetAllProductTotal(db, genericType);
-      let rs = await productModel.adminGetAllProducts(db, genericType, limit, offset, sort);
+      let rsTotal = await productModel.adminGetAllProductTotal(db, genericType, warehouseId);
+      let rs = await productModel.adminGetAllProducts(db, genericType, warehouseId, limit, offset, sort);
       res.send({ ok: true, rows: rs, total: rsTotal[0].total });
     } catch (error) {
       res.send({ ok: false, error: error.message });
@@ -400,6 +401,7 @@ router.post('/stock/products/search', async (req, res, next) => {
   let query = req.body.query;
   let genericType = req.body.genericType;
   let sort = req.body.sort;
+  let warehouseId = req.body.warehouseId;
 
   let productGroups = req.decoded.generic_type_id;
   let _pgs = [];
@@ -410,8 +412,9 @@ router.post('/stock/products/search', async (req, res, next) => {
       _pgs.push(v);
     });
     try {
-      let rsTotal = await productModel.adminSearchProductsTotal(db, query, _pgs, genericType);
-      let rs = await productModel.adminSearchProducts(db, query, _pgs, genericType, limit, offset, sort);
+      let rsTotal = await productModel.adminSearchProductsTotal(db, query, _pgs, genericType, warehouseId);
+      console.log(rsTotal[0].length);
+      let rs = await productModel.adminSearchProducts(db, query, _pgs, genericType, warehouseId, limit, offset, sort);
       res.send({ ok: true, rows: rs[0], total: rsTotal[0].length });
     } catch (error) {
       res.send({ ok: false, error: error.message });
@@ -426,10 +429,11 @@ router.post('/stock/products/search', async (req, res, next) => {
 router.post('/stock/products/total', async (req, res, next) => {
   let db = req.db;
   let genericType = req.body.genericType;
+  let warehouseId = req.body.warehouseId;
 
   try {
     if (genericType) {
-      let rs = await productModel.adminGetAllProductTotal(db, genericType);
+      let rs = await productModel.adminGetAllProductTotal(db, genericType, warehouseId);
       res.send({ ok: true, total: rs[0].total });
     } else {
       res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
@@ -444,12 +448,13 @@ router.post('/stock/products/total', async (req, res, next) => {
 });
 
 // รายการสินค้าคงเหลือแยกตามคลัง และ lot
-router.get('/stock/remain/:productId', async (req, res, next) => {
+router.get('/stock/remain/:productId/:warehouseId', async (req, res, next) => {
   let db = req.db;
   let productId = req.params.productId;
-
+  let warehouseId = req.params.warehouseId;
+  console.log(productId, warehouseId);
   try {
-    let rs = await productModel.adminGetAllProductsDetailList(db, productId);
+    let rs = await productModel.adminGetAllProductsDetailList(db, productId, warehouseId);
     res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
