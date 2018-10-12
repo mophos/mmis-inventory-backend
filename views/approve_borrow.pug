@@ -1,0 +1,143 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    - var l=0
+    for i in approve_borrow
+      for c in i
+        span.page
+        table.table(style="font-size: 13pt;")
+          thead
+            tr 
+              td.center.bold(colspan='9')(style="font-size: 15pt;") #{hospitalName} 
+            tr 
+              td.center.bold(colspan='9')(style="font-size: 15pt;") ใบอนุมัติยืม
+            tr 
+              td.left(colspan='4')(style="font-size: 15pt;") เลขที่ใบยืม #{c[0].borrow_code}
+            //-   td.right(colspan='5')(style="font-size: 15pt;") วันที่อนุมัติ #{c[0].borrow_date}
+            tr 
+              td.left(colspan='4')(style="font-size: 15pt;") หน่วยงานที่ยืม #{c[0].warehouse_name}
+              td.right(colspan='5')(style="font-size: 15pt;") วันที่ยืม #{c[0].borrow_date}
+            tr 
+              td.left(colspan='9')(style="font-size: 15pt;") ณ วันที่ #{c[0].today}
+            tr 
+              td.left(colspan='9')(style="font-size: 15pt; padding-bottom: 10px;") อนุมัติให้ยืมเวชภัณฑ์ตามรายการนี้
+            tr 
+              th.left(style="width: 1%;") #
+              th.left(style="width: 32%;") ชื่อเวชภัณฑ์
+              th.left(style="width: 3%;") รูปแบบ
+              th.right(style="width: 14%;") จำนวนขอยืม
+              th.right(style="width: 14%;") จำนวนอนุมัติ
+              th.right(style="width: 10%;") มูลค่า/แพ็ค
+              th.left(style="width: 8%;") &nbsp;lot
+              th.right(style="width: 8%;") วันหมดอายุ
+              th.right(style="width: 10%;") รวมมูลค่า
+          tbody
+          - var y=0
+          - var s=0
+          for a in c
+            - y++
+            tr
+              if ( (y-1) === 0)
+                td #{s+1}.
+                td(style="font-size: 12pt;") &nbsp;#{a.product_name}
+                  br
+                  | &nbsp;(#{a.generic_name})
+                td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
+                td.right(style="font-size: 12pt;") &nbsp;#{a.qty } #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
+                - s++
+              else
+                if ( c[y-2].product_id !== a.product_id )  
+                  td #{s+1}.
+                  td(style="font-size: 12pt;") &nbsp;#{a.product_name}
+                    br
+                    | &nbsp;(#{a.generic_name})
+                  td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
+                  td.right(style="font-size: 12pt;") &nbsp;#{a.qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
+                  - s++
+                else 
+                  td 
+                  td 
+                  td 
+                  td.right 
+              td.right(style="font-size: 12pt;") &nbsp;#{a.confirm_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
+              td.right(style="font-size: 12pt;") &nbsp;#{a.cost}
+              td(style="font-size: 12pt; word-break:break-all;") &nbsp;#{a.lot_no}
+              td.right(style="font-size: 12pt;") &nbsp;#{a.expired_date}
+              td.right(style="font-size: 12pt;") &nbsp;#{a.total_cost}
+            .pagebreak
+            .pagebreak
+          tfoot
+            tr.dash-top
+              td(colspan='9' height='10px;')
+            tr
+              td.right(colspan='9') รวมทั้งหมด #{s} รายการ | คิดเป็นมูลค่า #{sum[l]} บาท
+            tr 
+              td(colspan='9') &nbsp; 
+            tr 
+              td(colspan='9') &nbsp; 
+            tr 
+              td(colspan='9') &nbsp; 
+            table.table(style="font-size: 13pt;")
+              tr
+                if(c[0].full_name) 
+                  td.right ลงชื่อ
+                  td.center(style="border-bottom:1px dashed black;width:25%;" ) #{c[0].full_name}
+                  td.left (ผู้ยืม)
+                  
+                else
+                  td.right ลงชื่อ
+                  td.center(style="border-bottom:1px dashed black;width:25%;")
+                  td.left (ผู้ยืม)
+                td
+                td.right ลงชื่อ
+                td.center(style="border-bottom:1px dashed black;width:25%;")
+                td.left (ผู้จ่าย)    
+              tr
+                td(colspan='7') &nbsp;
+              tr
+                if(c[0].full_name)
+                  td.right (
+                  td.center(style="border-bottom:1px dashed black;width:25%;") #{c[0].full_name} 
+                  td.left ) 
+                else
+                  td.right (
+                  td.center(style="border-bottom:1px dashed black;width:25%;")
+                  td.left ) 
+                td
+                td.right (
+                td.center(style="border-bottom:1px dashed black;width:25%;")
+                td.left ) 
+              tr
+                td(colspan="7")
+                  br
+                  br
+                  br
+                  br
+              tr
+                td.right ลงชื่อ
+                td.center(style="border-bottom:1px dashed black;width:25%;")
+                td.left (ผู้อนุมัติ)  
+                td
+                td.right ลงชื่อ
+                td.center(style="border-bottom:1px dashed black;width:25%;")
+                td.left (ผู้รับ)    
+              tr
+                td(colspan='7') &nbsp;
+              tr
+                td.right (
+                td.center(style="border-bottom:1px dashed black;width:25%;")
+                td.left ) 
+                td
+                td.right (
+                td.center(style="border-bottom:1px dashed black;width:25%;")
+                td.left ) 
+        - l++
+        //- div(content)
+        //-   div(pageFooter)
+      .pagebreak
+      

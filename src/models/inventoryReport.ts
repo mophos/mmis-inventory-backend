@@ -208,6 +208,43 @@ export class InventoryReportModel {
         return knex.raw(sql, requisId)
     }
 
+    approve_borrow2(knex: Knex, borrowId: any) {
+        let sql = `SELECT
+        b.borrow_code,
+        b.borrow_date,
+        mg.generic_name,
+        w.warehouse_name,
+        mp.product_name,
+        md.dosage_name,
+        bp.qty,
+        vs.out_qty/mug.qty as confirm_qty,
+        u1.unit_name as large_unit,
+        mug.qty as conversion_qty,
+        u2.unit_name as small_unit,
+        wp.cost,
+        wp.expired_date,
+        wp.cost*vs.out_qty as total_cost
+        FROM
+        wm_borrow b
+        JOIN wm_borrow_generic bg ON bg.borrow_id = b.borrow_id
+        JOIN wm_borrow_product bp ON bp.borrow_generic_id = bg.borrow_generic_id
+        JOIN mm_generics mg ON mg.generic_id = bg.generic_id
+        JOIN wm_warehouses w ON w.warehouse_id = b.dst_warehouse_id
+        LEFT JOIN mm_generic_dosages md ON md.dosage_id = mg.dosage_id
+        LEFT JOIN mm_unit_generics mug ON mug.unit_generic_id = bg.unit_generic_id
+        LEFT JOIN mm_units u1 ON u1.unit_id = mug.from_unit_id
+        LEFT JOIN mm_units u2 ON u2.unit_id = mug.to_unit_id
+        LEFT JOIN wm_products wp ON wp.wm_product_id = bp.wm_product_id
+        LEFT JOIN mm_products mp ON mp.product_id = wp.product_id
+        LEFT JOIN view_stock_card_warehouse vs ON vs.document_ref_id = b.borrow_id 
+        AND vs.unit_generic_id = wp.unit_generic_id AND vs.warehouse_id = b.src_warehouse_id
+        WHERE b.borrow_id = ${borrowId}
+        GROUP BY wp.wm_product_id
+        ORDER BY mp.product_name`;
+
+        return knex.raw(sql);
+    }
+
     totalcost_warehouse(knex: Knex, sDate, eDate, wareHouse) {
         let sql = `SELECT
 	mgt.generic_type_name,
@@ -2526,6 +2563,14 @@ OR sc.ref_src like ?
         return knex.raw(sql);
     }
 
+    getHeadBorrow(knex: Knex, borrowId: any) {
+        return knex('wm_borrow as b')
+            .select('b.borrow_id','b.borrow_date','b.borrow_code','ws.warehouse_name','wr.warehouse_name')
+            .join('wm_warehouses as ws', 'ws.warehouse_id', 'b.src_warehouse_id')
+            .join('wm_warehouses as wr', 'wr.warehouse_id', 'b.dst_warehouse_id')
+            .where('b.borrow_id', borrowId)
+    }
+
     purchasingNotGiveaway(knex: Knex, startDate: any, endDate: any) {
         let sql = `SELECT
         ppo.purchase_order_number,
@@ -3094,7 +3139,7 @@ GROUP BY
     }
     getSignature(knex: Knex, reportType) {
         return knex('um_report_detail')
-        .select('signature')
+            .select('signature')
             .where('report_type', reportType)
             .where('is_active', 'Y')
     }
