@@ -3138,8 +3138,12 @@ router.post('/receives/other', co(async (req, res, next) => {
 
   if (summary.receiveDate && summary.receiveTypeId && summary.donatorId && products.length) {
     try {
-
-      let receiveCode = await serialModel.getSerialSatff(db, 'RO', warehoseId);
+      let yearS = moment(summary.receiveDate, 'YYYY-MM-DD').get('year');
+      const monthS = moment(summary.receiveDate, 'YYYY-MM-DD').get('month') + 1;
+      if (monthS >= 10) {
+        yearS += 1;
+      }
+      let receiveCode = await serialModel.getSerial(db, 'RO', yearS, warehoseId);
       // let receiveId = moment().format('x');
 
       const data: any = {
