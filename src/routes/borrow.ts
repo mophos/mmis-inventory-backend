@@ -529,7 +529,7 @@ router.post('/returned/approved', co(async (req, res, next) => {
       obj.balance_unit_cost = v.cost;
       obj.ref_src = v.donator_id;
       obj.ref_dst = v.warehouse_id;
-      obj.comment = 'คืนสินค้า';
+      obj.comment = 'คืน';
       obj.lot_no = v.lot_no;
       obj.expired_date = v.expired_date;
       data.push(obj);
@@ -605,6 +605,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       let rsLots: any = await borrowModel.getLotbalance(db, v.src_warehouse_id, v.product_id, v.lot_no);
       let rsProducts: any = await borrowModel.getProductbalance(db, v.src_warehouse_id, v.product_id, v.lot_no)
 
+      obj.old_wm_product_id = v.wm_product_id;
       obj.remain_src = rsLots[0].lot_balance;
       obj.remain_cost = rsLots[0].cost;
       obj.remain_qty = rsProducts[0].balance;
@@ -775,6 +776,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
 
   await borrowModel.saveDstProducts(db, dstProducts);
   await borrowModel.decreaseQty(db, dstProducts);
+  await borrowModel.updateConfirm(db, dstProducts);
   await borrowModel.changeApproveStatusIds(db, borrowIds, peopleUserId);
   await stockCard.saveFastStockTransaction(db, data);
 

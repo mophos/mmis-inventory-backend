@@ -61,7 +61,7 @@ export class BorrowModel {
 
   all(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_borrow as wmt')
-      .select('wmt.borrow_id','wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
+      .select('wmt.borrow_id', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
         'src.warehouse_name as src_warehouse_name', 'src.short_code as src_warehouse_code', 'wmt.mark_deleted',
         'dst.warehouse_name as dst_warehouse_name', 'dst.short_code as dst_warehouse_code', 'wmt.approved', 'wmt.confirmed')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
@@ -152,7 +152,7 @@ export class BorrowModel {
 
   approved(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_borrow as wmt')
-      .select('wmt.borrow_id','wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
+      .select('wmt.borrow_id', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
         'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code',
         'dst.warehouse_name as dst_warehouse_name', 'wmt.approved')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
@@ -207,7 +207,7 @@ export class BorrowModel {
 
   notApproved(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_borrow as wmt')
-      .select('wmt.borrow_id','wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
+      .select('wmt.borrow_id', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
         'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'wmt.confirmed',
         'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
@@ -264,7 +264,7 @@ export class BorrowModel {
 
   markDeleted(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_borrow as wmt')
-      .select('wmt.borrow_id','wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
+      .select('wmt.borrow_id', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
         'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'wmt.confirmed',
         'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
@@ -389,6 +389,20 @@ export class BorrowModel {
       sql.push(_sql);
     });
 
+    let query = sql.join(';');
+    return knex.raw(query);
+  }
+
+  updateConfirm(knex: Knex, data: any[]) {
+    let sql = [];
+    data.forEach(v => {
+      let _sql = `
+      UPDATE wm_borrow_product
+      SET confirm_qty = ${v.updateQty}
+      WHERE wm_product_id = '${v.old_wm_product_id}'
+      `;
+      sql.push(_sql);
+    });
     let query = sql.join(';');
     return knex.raw(query);
   }

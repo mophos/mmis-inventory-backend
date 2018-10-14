@@ -1,0 +1,73 @@
+include css.pug
+doctype html
+style(type='text/css' media='print').
+   @page{
+   margin-top: 1cm;
+  }
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    - for(var borrowId of list_borrow)
+      - for(var head of borrowId)
+        .page
+        table.table
+          tbody
+            tr
+              td.right #{head.sPage}/#{head.ePage}
+            tr 
+              td.center.bold #{hospitalName} 
+            tr 
+              td.center.bold ใบจัดเวชภัณฑ์ตามใบยืม
+            tr 
+              td.center วันที่ยืม #{head.borrow_date}
+            tr 
+              td.left ใบยืมเลขที่ #{head.borrow_code}
+            tr 
+              td.left วันที่อนุมัติยืม #{head.confirm_date}
+            tr 
+              td.left หน่วยงานที่ยืม #{head.warehouse_name}
+            tr 
+              td.left หน่วยงานที่จ่าย #{head.withdraw_warehouse_name}
+            tr 
+              td.left #{printDate}
+            - for(var title of head.title)
+              tr.dash-top
+                td
+                  table.table
+                    tr
+                      td รหัสยา 
+                      td(width="55%") : #{title.generic_code}
+                      td จำนวนขอยืม
+                      td : #{title.borrow_qty} #{title.borrow_large_unit} (#{title.conversion_qty} #{title.borrow_small_unit})
+                    tr
+                      td ชื่อสามัญ
+                      td(width="55%") : #{title.generic_name}
+                      td จำนวนยืม
+                      td : #{title.confirm_qty} #{title.large_unit} (#{title.unit_qty} #{title.small_unit})
+                    tr
+                      td หน่วยบรรจุ
+                      td : #{title.large_unit}
+                      td รูปแบบ
+                      td : #{title.dosage_name}
+              tr
+                td
+                  table.table
+                    tr
+                      td.center(width="40%") ชื่อทางการค้า 
+                      td จำนวนยืม
+                      td วันหมดอายุ
+                      td lot no.
+                      td คงเหลือ
+                    - for(var item of title.items)
+                      tr
+                        td #{item.product_name}
+                        td #{item.confirm_qty}
+                        td #{item.expired_date}
+                        td #{item.lot_no}
+                        td #{item.remain} #{item.large_unit} (#{item.conversion_qty} #{item.small_unit})
+              tr.dash-bottom
+                td(colspan='10')
+        .pagebreak
