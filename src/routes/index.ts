@@ -296,7 +296,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
   const line = await inventoryReportModel.getLine(db, 'AR');
   const signature = await inventoryReportModel.getSignature(db, 'AR')
   let page_re: any = line[0].line;
-  
+
   let warehouse_id: any = req.decoded.warehouseId
   // console.log(req.decoded);
 
@@ -346,6 +346,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
   }
 
 }));
+
 router.get('/report/staff/approve/requis', wrap(async (req, res, next) => {
   let db = req.db;
   let approve_requis: any = []
@@ -762,6 +763,7 @@ router.get('/report/staff/list/requis', wrap(async (req, res, next) => {
     db.destroy();
   }
 }));
+
 router.get('/report/list/requis', wrap(async (req, res, next) => {
   let db = req.db;
   try {
@@ -3926,5 +3928,185 @@ router.get('/report/getGenericInStockcrad', wrap(async (req, res, next) => {
   res.send({ ok: true, rows: rs[0].length })
 }));
 // --------------------------------------------------------------------------------------- //
+
+router.get('/report/approve/borrow', wrap(async (req, res, next) => {
+  let db = req.db;
+  let approve_borrow: any = []
+  let sum: any = []
+  const line = await inventoryReportModel.getLine(db, 'AR');
+  const signature = await inventoryReportModel.getSignature(db, 'AR')
+  let page_re: any = line[0].line;
+
+  let warehouse_id: any = req.decoded.warehouseId
+  // console.log(req.decoded);
+
+  try {
+    let borrowId = req.query.borrow_id;
+    borrowId = Array.isArray(borrowId) ? borrowId : [borrowId]
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    for (let i in borrowId) {
+      const _approve_borrow = await inventoryReportModel.approve_borrow2(db, borrowId[i]);
+      approve_borrow.push(_approve_borrow[0])
+      approve_borrow[i] = _.chunk(approve_borrow[i], page_re)
+      let page = 0;
+      _.forEach(approve_borrow[i], values => {
+        sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
+        page++;
+        _.forEach(values, value => {
+          value.sPage = page;
+          value.nPage = approve_borrow[i].length;
+          value.full_name = signature[0].signature === 'N' ? '' : value.full_name
+          value.total_cost = inventoryReportModel.comma(value.total_cost);
+          value.borrow_date = moment(value.borrow_date).format('D MMMM ') + (moment(value.borrow_date).get('year') + 543);
+          value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
+          // value.updated_at ? value.confirm_date = moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) : value.confirm_date = moment(value.created_at).format('D MMMM ') + (moment(value.created_at).get('year') + 543)
+          value.cost = inventoryReportModel.comma(value.cost);
+          value.qty = inventoryReportModel.commaQty(value.qty / value.conversion_qty);
+          value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
+          value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
+          value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
+          value.today = printDate(req.decoded.SYS_PRINT_DATE);
+          if (req.decoded.SYS_PRINT_DATE_EDIT === 'Y') {
+            value.today += (value.updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) + moment(value.updated_at).format(', HH:mm') + ' น.' : '';
+          }
+        })
+      })
+    }
+    // res.send({approve_borrow:approve_borrow,page_re:page_re,sum:sum})
+    res.render('approve_borrow', {
+      hospitalName: hospitalName,
+      approve_borrow: approve_borrow,
+      sum: sum
+    });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+
+router.get('/report/list-borrow', wrap(async (req, res, next) => {
+  let db = req.db;
+  try {
+    let test;
+    let borrowId = req.query.borrow_id;
+    borrowId = Array.isArray(borrowId) ? borrowId : [borrowId]
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    const rline = await inventoryReportModel.getLine(db, 'LR')
+    const line = rline[0].line;
+    // const dateApprove = req.decoded.WM_REQUIS_LIST_DATE_APPROVE
+    let _list_borrow = [];
+    for (let id of borrowId) {
+      let sPage = 1;
+      let ePage = 1;
+      let array = [];
+      let num = 0;
+      let count = 0;
+      let header = await inventoryReportModel.getHeadBorrow(db, id);
+      
+      if (header[0] === undefined) { res.render('error404'); }
+      const objHead: any = {
+        sPage: sPage,
+        ePage: ePage,
+        borrow_date: dateToDDMMYYYY(header[0].borrow_date),
+        borrow_code: header[0].borrow_code,
+        confirm_date: dateToDDMMYYYY(header[0].borrow_date),
+        warehouse_name: header[0].dst_warehouse,
+        withdraw_warehouse_name: header[0].src_warehouse,
+        title: []
+      }
+      array[num] = _.clone(objHead);
+      
+      let title = await inventoryReportModel.list_borrowAll(db, header[0].borrow_id);
+      let numTitle = 0;
+      
+      count += 7;
+      for (let tv of title[0]) {
+        let rs = await inventoryReportModel.getdetailListBorrow(db, tv.borrow_id, tv.withdraw_warehouse_id, tv.generic_id);
+        
+        count += 5;
+        if (count + rs[0].length >= line) {
+          numTitle = 0;
+          count = 0;
+          sPage++;
+          ePage++;
+          count += 7;
+          for (const v of array) {
+            v.ePage = ePage;
+          }
+          num++;
+          const objHead: any = {
+            sPage: sPage,
+            ePage: ePage,
+            borrow_date: dateToDDMMYYYY(header[0].borrow_date),
+            borrow_code: header[0].borrow_code,
+            confirm_date: dateToDDMMYYYY(header[0].borrow_date),
+            warehouse_name: header[0].warehouse_name,
+            withdraw_warehouse_name: header[0].withdraw_warehouse_name,
+            title: []
+          }
+          array[num] = _.clone(objHead);
+        }
+        const objTitle = {
+          generic_code: tv.working_code,
+          generic_name: tv.generic_name,
+          product_name: tv.product_name,
+          generic_id: tv.generic_id,
+          product_id: tv.product_id,
+          borrow_qty: commaQty(+tv.borrow_qty / +tv.conversion_qty),
+          conversion_qty: tv.conversion_qty,
+          borrow_large_unit: commaQty(+tv.borrow_qty / +tv.conversion_qty),
+          borrow_small_unit: commaQty(+tv.borrow_qty),
+          large_unit: tv.large_unit,
+          unit_qty: tv.conversion_qty,
+          small_unit: tv.small_unit,
+          confirm_qty: commaQty(tv.confirm_qty / tv.conversion_qty),
+          remain: tv.remain,
+          dosage_name: tv.dosage_name,
+          items: []
+        }
+        array[num].title[numTitle] = _.clone(objTitle);
+        for (const v of rs[0]) {
+          count++;
+          if (v.generic_code == 0 || v.confirm_qty != 0) {
+            const objItems: any = {};
+            objItems.generic_name = v.generic_name;
+            objItems.product_name = v.product_name;
+            objItems.large_unit = v.large_unit;
+            objItems.small_unit = v.small_unit;
+            objItems.confirm_qty = v.generic_code == 0 ? '' : (v.confirm_qty / v.conversion_qty) + ' ' + v.large_unit + ' (' + v.conversion_qty + ' ' + v.small_unit + ' )';
+            objItems.remain = v.remain;
+            objItems.lot_no = v.lot_no;
+            objItems.expired_date = dateToDMMYYYY(v.expired_date);
+            objItems.conversion_qty = v.conversion_qty;
+            objItems.is_approve = v.approved;
+            objItems.location_name = v.location_name !== null ? v.location_name : '-';
+            if (v.approved == "N") {
+              objItems.remain = commaQty(Math.round((+v.remain - +v.confirm_qty) / +v.conversion_qty));
+            } else {
+              objItems.remain = commaQty(Math.round(+v.remain / +v.conversion_qty));
+            }
+            array[num].title[numTitle].items.push(_.clone(objItems));
+          }
+        }
+        numTitle++;
+      }
+      _list_borrow.push(array);
+    }
+    res.render('borrow', {
+      hospitalName: hospitalName,
+      printDate: printDate(req.decoded.SYS_PRINT_DATE),
+      list_borrow: _list_borrow,
+    });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message })
+  } finally {
+    db.destroy();
+  }
+}));
 
 export default router;

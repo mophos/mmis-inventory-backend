@@ -97,6 +97,8 @@ import borrowOtherRoute from './routes/borrow-other';
 
 import toolsRoute from './routes/tools';
 import returnBudgetRoute from "./routes/returnBudget";
+import staffBorrowRoute from './routes/staffBorrow';
+import staffBorrowOtherRoute from './routes/staffBorrowOther';
 
 const app: express.Express = express();
 
@@ -252,7 +254,6 @@ app.use('/donators', checkAuth, adminAuth, donatorRoute)
 app.use('/counting', checkAuth, adminAuth, countingRoute)
 app.use('/shipping-networks', checkAuth, adminAuth, shippingNetworkRoute)
 app.use('/issues', checkAuth, adminAuth, issueRoute)
-app.use('/borrow-other', checkAuth, adminAuth, borrowOtherRoute)
 app.use('/his-transaction', checkAuth, adminAuth, hisTransactionRoute)
 app.use('/adjust-stock', checkAuth, adminAuth, AdjustStockRoute)
 app.use('/return-budget', checkAuth, adminAuth, returnBudgetRoute);
@@ -268,9 +269,11 @@ app.use('/staff/borrow-notes', checkAuth, staffAuth, borrowNoteRoute);
 app.use('/borrow-notes', checkAuth, adminAuth, borrowNoteRoute);
 // staff
 app.use('/staff/pay-requisition', checkAuth, staffAuth, payRequisitionRoute);
+app.use('/staff/borrow', checkAuth, staffAuth, staffBorrowRoute);
 app.use('/staff', checkAuth, staffAuth, staffRoute);
 
 app.use('/users', checkAuth, userRoute);
+app.use('/borrow-other', checkAuth, borrowOtherRoute)
 
 app.use('/units', checkAuth, unitsRoute);
 app.use('/min-max', checkAuth, minMaxRoute)
@@ -279,7 +282,7 @@ app.use('/setting', checkAuth, settingRoute);
 // tools
 app.use('/tools', checkAuth, adminAuth, toolsRoute);
 
-app.use('/',checkAuth, indexRoute);
+app.use('/', checkAuth, indexRoute);
 //temperature
 app.use('/temperature', temperatureRoute);
 

@@ -234,6 +234,21 @@ router.get('/info-detail-edit/:transferId', co(async (req, res, next) => {
 
 }));
 
+router.get('/detail/:borrowId', co(async (req, res, next) => {
+  let db = req.db;
+  let borrowId = req.params.borrowId;
+
+  try {
+    let rows = await borrowModel.detail(db, borrowId, req.decoded.warehouseId);
+    res.send({ ok: true, rows: rows[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
 router.delete('/:borrowId', co(async (req, res, next) => {
   let db = req.db;
   let borrowId = req.params.borrowId;
@@ -864,6 +879,20 @@ router.post('/returned-product', co(async (req, res, next) => {
     }
   } else {
     res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
+  }
+}));
+
+router.get('/returned/product-list/:returnedId', co(async (req, res, next) => {
+  let db = req.db;
+  let returnedId = req.params.returnedId;
+
+  try {
+    let rs = await borrowModel.getReturnedProductList(db, returnedId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
   }
 }));
 
