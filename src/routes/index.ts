@@ -4006,15 +4006,16 @@ router.get('/report/list-borrow', wrap(async (req, res, next) => {
       let num = 0;
       let count = 0;
       let header = await inventoryReportModel.getHeadBorrow(db, id);
+      
       if (header[0] === undefined) { res.render('error404'); }
       const objHead: any = {
         sPage: sPage,
         ePage: ePage,
-        requisition_date: dateToDDMMYYYY(header[0].requisition_date),
-        requisition_code: header[0].requisition_code,
-        confirm_date: dateToDDMMYYYY(header[0].confirm_date),
-        warehouse_name: header[0].warehouse_name,
-        withdraw_warehouse_name: header[0].withdraw_warehouse_name,
+        borrow_date: dateToDDMMYYYY(header[0].borrow_date),
+        borrow_code: header[0].borrow_code,
+        confirm_date: dateToDDMMYYYY(header[0].borrow_date),
+        warehouse_name: header[0].dst_warehouse,
+        withdraw_warehouse_name: header[0].src_warehouse,
         title: []
       }
       array[num] = _.clone(objHead);
@@ -4025,7 +4026,6 @@ router.get('/report/list-borrow', wrap(async (req, res, next) => {
       count += 7;
       for (let tv of title[0]) {
         let rs = await inventoryReportModel.getdetailListBorrow(db, tv.borrow_id, tv.withdraw_warehouse_id, tv.generic_id);
-        console.log('yuydsdddddddddddddddddddddd',rs);
         
         count += 5;
         if (count + rs[0].length >= line) {
