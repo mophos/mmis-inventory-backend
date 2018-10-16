@@ -66,7 +66,7 @@ export class BorrowModel {
         'dst.warehouse_name as dst_warehouse_name', 'dst.short_code as dst_warehouse_code', 'wmt.approved', 'wmt.confirmed')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
-      .where('wmt.src_warehouse_id', warehouseId)
+      .where('wmt.dst_warehouse_id', warehouseId)
       .orderBy('wmt.borrow_id', 'DESC')
       .limit(limit)
       .offset(offset);
@@ -88,7 +88,7 @@ export class BorrowModel {
         'dst.warehouse_name as dst_warehouse_name', 'dst.short_code as dst_warehouse_code', 'wmt.approved', 'wmt.confirmed')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
-      .where('wmt.src_warehouse_id', warehouseId)
+      .where('wmt.dst_warehouse_id', warehouseId)
       .andWhere('wmt.returned_approved', 'N')
       .andWhere('wmt.mark_deleted', 'N')
       .andWhere('wmt.approved', 'Y')
@@ -157,7 +157,7 @@ export class BorrowModel {
         'dst.warehouse_name as dst_warehouse_name', 'wmt.approved')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
-      .where('wmt.src_warehouse_id', warehouseId)
+      .where('wmt.dst_warehouse_id', warehouseId)
       .andWhere('wmt.approved', 'Y')
       .limit(limit)
       .offset(offset)
@@ -186,7 +186,7 @@ export class BorrowModel {
 
   totalApproved(knex: Knex, warehouseId: any) {
     return knex('wm_borrow as wmt')
-      .where('wmt.src_warehouse_id', warehouseId)
+      .where('wmt.dst_warehouse_id', warehouseId)
       .andWhere('wmt.approved', 'Y')
       .count('* as total');
   }
@@ -212,7 +212,7 @@ export class BorrowModel {
         'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
-      .where('wmt.src_warehouse_id', warehouseId)
+      .where('wmt.dst_warehouse_id', warehouseId)
       .andWhereNot('wmt.mark_deleted', 'Y')
       .andWhereNot('wmt.approved', 'Y')
       .limit(limit)
@@ -242,7 +242,7 @@ export class BorrowModel {
 
   totalNotApproved(knex: Knex, warehouseId: any) {
     return knex('wm_borrow as wmt')
-      .where('wmt.src_warehouse_id', warehouseId)
+      .where('wmt.dst_warehouse_id', warehouseId)
       .andWhereNot('wmt.mark_deleted', 'Y')
       .andWhereNot('wmt.approved', 'Y')
       .count('* as total');
@@ -269,7 +269,7 @@ export class BorrowModel {
         'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
-      .where('wmt.src_warehouse_id', warehouseId)
+      .where('wmt.dst_warehouse_id', warehouseId)
       .andWhere('wmt.mark_deleted', 'Y')
       .limit(limit)
       .offset(offset)
@@ -278,7 +278,7 @@ export class BorrowModel {
 
   totalMarkDelete(knex: Knex, warehouseId: any) {
     return knex('wm_borrow as wmt')
-      .where('wmt.src_warehouse_id', warehouseId)
+      .where('wmt.dst_warehouse_id', warehouseId)
       .andWhere('wmt.mark_deleted', 'Y')
       .count('* as total');
   }
@@ -315,11 +315,6 @@ export class BorrowModel {
       .where('r.warehouse_id', warehouseId)
       .andWhere('r.is_cancel', 'N')
       .count('* as s');
-  }
-
-  getDetailDst(knex: Knex, borrowId: any) {
-    return knex('wm_borrow as b')
-      .where('b.borrow_id', borrowId)
   }
 
   detail(knex: Knex, borrowId: string, warehouseId: any) {
@@ -415,6 +410,11 @@ export class BorrowModel {
   getProductForSave(knex: Knex, ids: any[]) {
     return knex('wm_products')
       .whereIn('wm_product_id', ids);
+  }
+
+  getDetailDst(knex: Knex, borrowId: any) {
+    return knex('wm_borrow as b')
+      .where('b.borrow_id', borrowId)
   }
 
   getProductList(knex: Knex, borrowId: any) {

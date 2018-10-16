@@ -8,7 +8,7 @@ import { BasicModel } from '../models/basic';
 import { GenericModel } from '../models/generic';
 import { RequisitionModel } from '../models/staff/requisition';
 import { ProductModel } from '../models/product';
-import { BorrowModel} from '../models/borrow';
+import { BorrowModel } from '../models/borrow';
 import _ = require('lodash');
 
 const router = express.Router();
@@ -413,6 +413,22 @@ router.get('/borrow-detail/:borrowId', co(async (req, res, next) => {
 
   try {
     let rows = await borrowModel.detail(db, borrowId, req.decoded.warehouseId);
+    res.send({ ok: true, rows: rows[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/dst-borrow/detail/:borrowId', co(async (req, res, next) => {
+  let db = req.db;
+  let borrowId = req.params.borrowId;
+
+  try {
+    let rs = await borrowModel.getDetailDst(db, borrowId);
+    let rows = await borrowModel.detail(db, borrowId, rs[0].src_warehouse_id);
     res.send({ ok: true, rows: rows[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });

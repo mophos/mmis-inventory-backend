@@ -2,7 +2,7 @@ const uuid = require('uuid/v4');
 import Knex = require('knex');
 
 import { WarehouseModel } from '../models/warehouse';
-import { BorrowModel } from '../models/borrow';
+import { BorrowModel } from '../models/staff/borrow';
 import { SerialModel } from '../models/serial';
 import { StockCard } from '../models/stockcard';
 
@@ -193,7 +193,8 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
-    const rsGenerics = await borrowModel.getGenericInfo(db, borrowId, srcWarehouseId);
+    let rs = await borrowModel.getDetailDst(db, borrowId);
+    const rsGenerics = await borrowModel.getGenericInfo(db, borrowId, rs[0].src_warehouse_id);
     let _generics = rsGenerics[0];
     for (const g of _generics) {
       const rsProducts = await borrowModel.getProductsInfo(db, borrowId, g.borrow_generic_id);
