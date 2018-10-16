@@ -12,7 +12,7 @@ html
       tr 
         td.center.bold(colspan='9') ใบรายการค้างจ่าย
       tr 
-        td.center(colspan='9') ณ วันที่ #{today}
+        td.left(colspan='9') #{today}
     - var ss=0
       for i in unPaid
         .page
@@ -39,7 +39,7 @@ html
                   td(colspan='4') #{v}
                   td(colspan='4') #{a.generic_id}
                   td(colspan='4') #{a.generic_name}
-                  td(colspan='4') #{a.unpaid_qty} #{a.from_unit_name} (#{a.conversion_qty} #{a.to_unit_name})
+                  td(colspan='4') #{a.show_qty}
                 tr.dash-bottom
                   td(colspan='4') 
                   td(colspan='4') 
