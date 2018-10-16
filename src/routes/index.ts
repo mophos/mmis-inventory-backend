@@ -458,7 +458,7 @@ router.get('/report/UnPaid/requis', wrap(async (req, res, next) => {
     let warehouseId = req.decoded.warehouseId;
     let requisId = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
-    let rs: any = await inventoryReportModel.getUnPaidOrders(db, warehouseId);
+    let rs: any = await inventoryReportModel.getUnPaidOrders(db, null, warehouseId);
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
     _.forEach(requisId, object => {
@@ -468,17 +468,31 @@ router.get('/report/UnPaid/requis', wrap(async (req, res, next) => {
       unPaid.push(tmp)
     })
     for (let i in unPaid) {
-      const rs: any = await inventoryReportModel.getOrderUnpaidItems(db, unPaid[i].requisition_order_unpaid_id);
-
+      const rs: any = await inventoryReportModel.getOrderUnpaidItemsStaff(db, unPaid[i].requisition_order_unpaid_id);
+      rs[0].forEach(v => {
+        v.qty_pack = inventoryReportModel.commaQty(Math.floor(v.unpaid_qty / v.conversion_qty));
+        v.qty_base = inventoryReportModel.commaQty(Math.floor(v.unpaid_qty % v.conversion_qty));
+        if (v.qty_pack != 0 && v.qty_base != 0) {
+          v.show_qty = v.qty_pack + ' ' + v.from_unit_name + ' ' + v.qty_base + ' ' + v.to_unit_name + ' (' + v.conversion_qty + ' ' + v.to_unit_name + ')'
+        } else if (v.qty_pack != 0) {
+          v.show_qty = v.qty_pack + ' ' + v.from_unit_name + ' (' + v.conversion_qty + ' ' + v.to_unit_name + ')'
+        } else if (v.qty_base != 0) {
+          v.show_qty = v.qty_base + ' ' + v.to_unit_name + ' (' + v.conversion_qty + ' ' + v.to_unit_name + ')'
+        }
+      });
       list_UnPaid.push(rs[0])
     }
+    let today = printDate(req.decoded.SYS_PRINT_DATE)
+    signale.info(req.decoded.SYS_PRINT_DATE)
     // res.send({ requisId: requisId,unPaid:unPaid,list_UnPaid:list_UnPaid})
     res.render('list_requisition', {
       hospitalName: hospitalName,
       unPaid: unPaid,
-      list_UnPaid: list_UnPaid
+      list_UnPaid: list_UnPaid,
+      today: today
     });
   } catch (error) {
+    console.log(error);
     res.send({ ok: false, error: error.message })
   } finally {
     db.destroy();
@@ -492,7 +506,7 @@ router.get('/report/staff/UnPaid/requis', wrap(async (req, res, next) => {
     let warehouseId = req.decoded.warehouseId;
     let requisId = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
-    let rs: any = await inventoryReportModel.getUnPaidOrders(db, warehouseId);
+    let rs: any = await inventoryReportModel.getUnPaidOrders(db, warehouseId, null);
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
     _.forEach(requisId, object => {
@@ -503,6 +517,17 @@ router.get('/report/staff/UnPaid/requis', wrap(async (req, res, next) => {
     })
     for (let i in unPaid) {
       const rs: any = await inventoryReportModel.getOrderUnpaidItemsStaff(db, unPaid[i].requisition_order_unpaid_id);
+      rs[0].forEach(v => {
+        v.qty_pack = inventoryReportModel.commaQty(Math.floor(v.unpaid_qty / v.conversion_qty));
+        v.qty_base = inventoryReportModel.commaQty(Math.floor(v.unpaid_qty % v.conversion_qty));
+        if (v.qty_pack != 0 && v.qty_base != 0) {
+          v.show_qty = v.qty_pack + ' ' + v.from_unit_name + ' ' + v.qty_base + ' ' + v.to_unit_name + ' (' + v.conversion_qty + ' ' + v.to_unit_name + ')'
+        } else if (v.qty_pack != 0) {
+          v.show_qty = v.qty_pack + ' ' + v.from_unit_name + ' (' + v.conversion_qty + ' ' + v.to_unit_name + ')'
+        } else if (v.qty_base != 0) {
+          v.show_qty = v.qty_base + ' ' + v.to_unit_name + ' (' + v.conversion_qty + ' ' + v.to_unit_name + ')'
+        }
+      });
       list_UnPaid.push(rs[0])
     }
     let today = printDate(req.decoded.SYS_PRINT_DATE)
@@ -3464,7 +3489,6 @@ router.get('/report/generic/stock', wrap(async (req, res, next) => {
         //มี unit_generic_id จะโชว์เป็น pack
         if (e.unit_generic_id) {
           e.qty = +e.in_qty - +e.out_qty
-          console.log(e.qty);
           e.qty_pack = inventoryReportModel.commaQty(Math.floor(e.qty / e.conversion_qty));
           e.qty_base = inventoryReportModel.commaQty(Math.floor(e.qty % e.conversion_qty));
           if (e.qty_pack != 0 && e.qty_base != 0) {
@@ -3601,7 +3625,6 @@ router.get('/report/generic/stock/staff', wrap(async (req, res, next) => {
         //มี unit_generic_id จะโชว์เป็น pack
         if (e.unit_generic_id) {
           e.qty = +e.in_qty - +e.out_qty
-          console.log(e.qty);
           e.qty_pack = inventoryReportModel.commaQty(Math.floor(e.qty / e.conversion_qty));
           e.qty_base = inventoryReportModel.commaQty(Math.floor(e.qty % e.conversion_qty));
           if (e.qty_pack != 0 && e.qty_base != 0) {
