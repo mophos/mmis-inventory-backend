@@ -246,4 +246,11 @@ export class HisTransactionModel {
             .andWhere(`is_deleted`, 'N')
             .andWhere(`qty`, 1)
     }
+
+    getConversionHis(knex: Knex, hospcode: any, his: any) {
+        return knex(`wm_his_mappings`)
+            .select('conversion')
+            .where(`hospcode`, hospcode)
+            .andWhere(`his`, his)
+    }
 } 
