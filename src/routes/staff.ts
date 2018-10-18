@@ -3657,5 +3657,29 @@ router.get('/warehouses/getwarehouseproducttemplate-issue', co(async (req, res, 
     db.destroy();
   }
 }));
+router.get('/issue/generic-template-list/:id', co(async (req, res, next) => {
+  let db = req.db;
+  let id = req.params.id;
+  try {
+    let rs = await issueModel.getGenericTemplateList(db, id);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+router.get('/issue/_getissuestemplate/:warehouseId', co(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.decoded.warehouseId;
 
+  try {
+    let rows = await issueModel._getissuesTemplate(db, warehouseId);
+    res.send({ ok: true, rows: rows });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
 export default router;
