@@ -20,7 +20,18 @@ const warehouseModel = new WarehouseModel();
 const serialModel = new SerialModel();
 const stockCard = new StockCard();
 
-
+router.get('/templates-items/:templateId', async (req, res, next) => {
+  let db = req.db;
+  let templateId = req.params.templateId;
+  try {
+    let rs: any = await transferModel.getTemplateItems(db, templateId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
 router.get('/list', co(async (req, res, next) => {
   let db = req.db;
   let type = +req.query.t || 1;

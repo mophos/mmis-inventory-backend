@@ -516,7 +516,18 @@ router.get('/getallproductintemplate/:templateId', async (req, res, next) => {
     db.destroy();
   }
 });
-
+router.get('/getallproductintemplate-issue/:templateId', async (req, res, next) => {
+  let db = req.db;
+  let templateId = req.params.templateId;
+  try {
+    let results = await productModel.getAllProductInTemplateIssue(db, templateId);
+    res.send({ ok: true, rows: results[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
 router.get('/searchallproduct/:query', async (req, res, next) => {
   let db = req.db;
   let query = req.params.query;

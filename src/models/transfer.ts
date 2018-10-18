@@ -3,6 +3,50 @@ import * as moment from 'moment';
 
 export class TransferModel {
 
+  getTemplateItems(db: Knex, templateId: any) {
+    let sql = `
+    SELECT
+	td.*,
+	g.generic_name,
+	g.working_code,
+	(
+	SELECT
+		ifnull( sum( wm.qty ), 0 ) 
+	FROM
+		wm_products AS wm
+		INNER JOIN mm_products AS mp ON mp.product_id = wm.product_id 
+	WHERE
+		mp.generic_id = g.generic_id 
+		AND wm.warehouse_id = rt.dst_warehouse_id 
+	) AS qty,
+	(
+	SELECT
+		sum( vp.reserve_qty ) 
+	FROM
+		view_product_reserve AS vp 
+	WHERE
+		vp.generic_id = g.generic_id 
+		AND vp.warehouse_id = rt.dst_warehouse_id 
+	GROUP BY
+		vp.generic_id 
+	) AS reserve_qty,
+	ug.to_unit_id AS primary_unit_id,
+	u.unit_name AS primary_unit_name 
+FROM
+	wm_requisition_template_detail AS td
+	INNER JOIN mm_generics AS g ON g.generic_id = td.generic_id
+	INNER JOIN wm_requisition_template AS rt ON rt.template_id = td.template_id
+	INNER JOIN mm_unit_generics AS ug ON ug.generic_id = td.generic_id
+	INNER JOIN mm_units AS u ON u.unit_id = ug.to_unit_id 
+WHERE
+	td.template_id = ?
+	group by g.generic_id
+ORDER BY
+	td.id
+    `;
+
+    return db.raw(sql, [templateId]);
+  }
   saveTransfer(knex: Knex, data) {
     return knex('wm_transfer')
       .insert(data, 'transfer_id');
