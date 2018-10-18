@@ -8,6 +8,7 @@ import { BasicModel } from '../models/basic';
 import { GenericModel } from '../models/generic';
 import { RequisitionModel } from '../models/staff/requisition';
 import { ProductModel } from '../models/product';
+import { BorrowModel } from '../models/borrow';
 import _ = require('lodash');
 
 const router = express.Router();
@@ -16,6 +17,7 @@ const basicModel = new BasicModel();
 const genericModel = new GenericModel();
 const requisitionModel = new RequisitionModel();
 const productModel = new ProductModel();
+const borrowModel = new BorrowModel();
 
 router.get('/product-vendors/:genericId', co(async (req, res, next) => {
 
@@ -404,5 +406,51 @@ router.post('/checkApprove', async (req, res, next) => {
   }
 
 });
+
+router.get('/borrow-detail/:borrowId', co(async (req, res, next) => {
+  let db = req.db;
+  let borrowId = req.params.borrowId;
+
+  try {
+    let rows = await borrowModel.detail(db, borrowId, req.decoded.warehouseId);
+    res.send({ ok: true, rows: rows[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/dst-borrow/detail/:borrowId', co(async (req, res, next) => {
+  let db = req.db;
+  let borrowId = req.params.borrowId;
+
+  try {
+    let rs = await borrowModel.getDetailDst(db, borrowId);
+    let rows = await borrowModel.detail(db, borrowId, rs[0].src_warehouse_id);
+    res.send({ ok: true, rows: rows[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/returned/product-list/:returnedId', co(async (req, res, next) => {
+  let db = req.db;
+  let returnedId = req.params.returnedId;
+
+  try {
+    let rs = await borrowModel.getReturnedProductList(db, returnedId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
 
 export default router;

@@ -2,7 +2,7 @@ const uuid = require('uuid/v4');
 import Knex = require('knex');
 
 import { WarehouseModel } from '../models/warehouse';
-import { BorrowModel } from '../models/borrow';
+import { BorrowModel } from '../models/staff/borrow';
 import { SerialModel } from '../models/serial';
 import { StockCard } from '../models/stockcard';
 
@@ -193,7 +193,8 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
-    const rsGenerics = await borrowModel.getGenericInfo(db, borrowId, srcWarehouseId);
+    let rs = await borrowModel.getDetailDst(db, borrowId);
+    const rsGenerics = await borrowModel.getGenericInfo(db, borrowId, rs[0].src_warehouse_id);
     let _generics = rsGenerics[0];
     for (const g of _generics) {
       const rsProducts = await borrowModel.getProductsInfo(db, borrowId, g.borrow_generic_id);
@@ -226,6 +227,21 @@ router.get('/info-detail-edit/:transferId', co(async (req, res, next) => {
       g.products = _products;
     }
     res.send({ ok: true, rows: _generics });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/detail/:borrowId', co(async (req, res, next) => {
+  let db = req.db;
+  let borrowId = req.params.borrowId;
+
+  try {
+    let rows = await borrowModel.detail(db, borrowId, req.decoded.warehouseId);
+    res.send({ ok: true, rows: rows[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -864,6 +880,20 @@ router.post('/returned-product', co(async (req, res, next) => {
     }
   } else {
     res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
+  }
+}));
+
+router.get('/returned/product-list/:returnedId', co(async (req, res, next) => {
+  let db = req.db;
+  let returnedId = req.params.returnedId;
+
+  try {
+    let rs = await borrowModel.getReturnedProductList(db, returnedId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
   }
 }));
 

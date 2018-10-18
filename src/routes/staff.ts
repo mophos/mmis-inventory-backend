@@ -2197,12 +2197,15 @@ router.post('/his-transaction/upload', upload.single('file'), co(async (req, res
     // x = 0 = header      
     for (let x = 1; x < maxRecord; x++) {
       if (excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] && excelData[x][5]) {
+
+        let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3])
+        let qty = Math.ceil(excelData[x][4] / conversion[0].conversion);        
         let obj: any = {
           date_serv: moment(excelData[x][0], 'YYYYMMDD').format('YYYY-MM-DD'),
           seq: excelData[x][1],
           hn: excelData[x][2],
           drug_code: excelData[x][3],
-          qty: excelData[x][4],
+          qty: qty,
           his_warehouse: excelData[x][5],
           mmis_warehouse: warehouseId,
           hospcode: hospcode,
@@ -2237,8 +2240,9 @@ router.post('/his-transaction/list', co(async (req, res, next) => {
   let db = req.db;
   let hospcode = req.decoded.his_hospcode;
   let genericType = req.body.genericTypes;
+  let warehouseId = req.body.warehouseId;
   try {
-    let rs: any = await hisTransactionModel.getHisTransaction(db, hospcode, genericType);
+    let rs: any = await hisTransactionModel.getHisTransactionStaff(db, hospcode, genericType, warehouseId);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -3138,8 +3142,12 @@ router.post('/receives/other', co(async (req, res, next) => {
 
   if (summary.receiveDate && summary.receiveTypeId && summary.donatorId && products.length) {
     try {
-
-      let receiveCode = await serialModel.getSerialSatff(db, 'RO', warehoseId);
+      let yearS = moment(summary.receiveDate, 'YYYY-MM-DD').get('year');
+      const monthS = moment(summary.receiveDate, 'YYYY-MM-DD').get('month') + 1;
+      if (monthS >= 10) {
+        yearS += 1;
+      }
+      let receiveCode = await serialModel.getSerial(db, 'RO', yearS, warehoseId);
       // let receiveId = moment().format('x');
 
       const data: any = {
