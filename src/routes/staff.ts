@@ -2199,7 +2199,7 @@ router.post('/his-transaction/upload', upload.single('file'), co(async (req, res
       if (excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] && excelData[x][5]) {
 
         let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3])
-        let qty = excelData[x][4] / conversion[0].conversion;        
+        let qty = Math.ceil(excelData[x][4] / conversion[0].conversion);        
         let obj: any = {
           date_serv: moment(excelData[x][0], 'YYYYMMDD').format('YYYY-MM-DD'),
           seq: excelData[x][1],

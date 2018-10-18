@@ -74,7 +74,7 @@ router.post('/upload', upload.single('file'), co(async (req, res, next) => {
       if (idx > -1 && excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] && excelData[x][5]) {
 
         let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3])
-        let qty = excelData[x][4] / conversion[0].conversion;
+        let qty = Math.ceil(excelData[x][4] / conversion[0].conversion);
         mmisWarehouse = rsWarehouseMapping[idx].mmis_warehouse;
         let obj: any = {
           date_serv: moment(excelData[x][0], 'YYYYMMDD').format('YYYY-MM-DD'),
