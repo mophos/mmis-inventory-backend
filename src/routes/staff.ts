@@ -1,5 +1,5 @@
-import { AlertExpiredModel } from '../models/alertExpired';
 import { WarehouseModel } from './../models/warehouse';
+import { AlertExpiredModel } from '../models/alertExpired';
 import { StaffModel } from './../models/staff';
 import { ProductModel } from '../models/product';
 import { TransferModel } from '../models/transfer';
@@ -2197,12 +2197,15 @@ router.post('/his-transaction/upload', upload.single('file'), co(async (req, res
     // x = 0 = header      
     for (let x = 1; x < maxRecord; x++) {
       if (excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] && excelData[x][5]) {
+
+        let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3])
+        let qty = Math.ceil(excelData[x][4] / conversion[0].conversion);        
         let obj: any = {
           date_serv: moment(excelData[x][0], 'YYYYMMDD').format('YYYY-MM-DD'),
           seq: excelData[x][1],
           hn: excelData[x][2],
           drug_code: excelData[x][3],
-          qty: excelData[x][4],
+          qty: qty,
           his_warehouse: excelData[x][5],
           mmis_warehouse: warehouseId,
           hospcode: hospcode,
@@ -2237,8 +2240,9 @@ router.post('/his-transaction/list', co(async (req, res, next) => {
   let db = req.db;
   let hospcode = req.decoded.his_hospcode;
   let genericType = req.body.genericTypes;
+  let warehouseId = req.body.warehouseId;
   try {
-    let rs: any = await hisTransactionModel.getHisTransaction(db, hospcode, genericType);
+    let rs: any = await hisTransactionModel.getHisTransactionStaff(db, hospcode, genericType, warehouseId);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -3518,5 +3522,164 @@ router.delete('/other/:receiveOtherId', co(async (req, res, next) => {
     res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการลบ' });
   }
 
+}));
+
+router.delete('/issue/remove-template/:templateId', co(async (req, res, next) => {
+  let db = req.db;
+  try {
+
+    let templateId = req.params.templateId;
+
+    await warehouseModel.deleteTemplateIssue(db, templateId);
+    await warehouseModel.deleteTemplateItemsIssue(db, templateId);
+    res.send({ ok: true });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+router.post('/warehouses/savewarehouseproducttemplate-issue', co(async (req, res, next) => {
+  let templateSummary = req.body.templateSummary;
+  let products = req.body.products;
+  let db = req.db;
+  console.log('-----');
+  if (templateSummary && products.length) {
+    try {
+      //prepare summary data
+      const summary: any = {
+        warehouse_id: templateSummary.warehouseId,
+        template_subject: templateSummary.templateSubject,
+        people_user_id: req.decoded.people_user_id,
+        created_date: moment().format('YYYY-MM-DD HH:mm:ss')
+      }
+      let rsSummary = await warehouseModel.saveIssueTemplate(db, summary);
+      //prepare items data
+      let _products: Array<any> = [];
+      products.forEach((v: any) => {
+        let obj: any = {
+          template_id: rsSummary[0],
+          generic_id: v.generic_id,
+          unit_generic_id: v.unit_generic_id
+        };
+        _products.push(obj);
+      });
+
+      await warehouseModel.saveIssueTemplateDetail(db, _products);
+      res.send({ ok: true });
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
+  }
+}));
+router.get('/warehouses/warehousetemplate-issue/:templateId', co(async (req, res, next) => {
+  let db = req.db;
+  try {
+
+    let templateId = req.params.templateId;
+
+    let reqult = await warehouseModel.getIssueTemplate(db, templateId);
+    res.send({ ok: true, rows: reqult[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+router.get('/warehouses/warehouseproducttemplate-issue/search', co(async (req, res, next) => {
+  let db = req.db;
+  let query = req.query.query;
+  let warehouse_id = req.decoded.warehouseId
+  try {
+    let reqult = await warehouseModel.getallRequisitionTemplateSearchIssueStaff(db, query,warehouse_id);
+    res.send({ ok: true, rows: reqult[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+router.post('/warehouses/updatewarehouseproducttemplate-issue', co(async (req, res, next) => {
+  let templateId = req.body.templateId;
+  let templateSubject = req.body.templateSubject;
+  let products = req.body.products;
+
+  let db = req.db;
+  //prepare items data
+  let _products: Array<any> = [];
+  products.forEach((v: any) => {
+    let obj: any = {
+      template_id: templateId,
+      generic_id: v.generic_id,
+      unit_generic_id: v.unit_generic_id
+    };
+    _products.push(obj);
+  });
+
+  if (templateId && templateSubject && _products.length) {
+    try {
+      //ลบ template detail ออกก่อน
+      await warehouseModel.deleteTemplateItemsIssue(db, templateId);
+      //แล้ว insert กลับเข้าไปใหม่
+      await warehouseModel.saveIssueTemplateDetail(db, _products);
+      // update template subject
+      await warehouseModel.updateIssueTemplate(db, templateId, templateSubject);
+      res.send({ ok: true });
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
+  }
+}));
+
+router.get('/warehouses/getwarehouseproducttemplate-issue', co(async (req, res, next) => {
+  let db = req.db;
+  let warehouse_id = req.decoded.warehouseId
+  console.log(warehouse_id);
+  
+  try {
+    let reqult = await warehouseModel.getallRequisitionTemplateIssueStaff(db,warehouse_id);
+    res.send({ ok: true, rows: reqult[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+router.get('/issue/generic-template-list/:id', co(async (req, res, next) => {
+  let db = req.db;
+  let id = req.params.id;
+  try {
+    let rs = await issueModel.getGenericTemplateList(db, id);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+router.get('/issue/_getissuestemplate/:warehouseId', co(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.decoded.warehouseId;
+
+  try {
+    let rows = await issueModel._getissuesTemplate(db, warehouseId);
+    res.send({ ok: true, rows: rows });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
 }));
 export default router;

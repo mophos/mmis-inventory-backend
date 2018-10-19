@@ -247,6 +247,10 @@ export class IssueModel {
     return knex('wm_issue_summary as wis')
     // .where('wis.warehouse_id', id)
   }
+  _getissuesTemplate(knex: Knex, id: string) {
+    return knex('wm_issue_template as wis')
+    .where('wis.warehouse_id', id)
+  }
   getIssues(knex: Knex, id: string) {
     let sql = `SELECT
     wis.issue_code,
@@ -393,6 +397,41 @@ export class IssueModel {
       sd.issue_id =?`;
 
     return knex.raw(sql, [issueId]);
+  }
+  getGenericTemplateList(knex: Knex, id: any) {
+    let sql = `
+    SELECT
+  sd.*, w.warehouse_name,
+  g.generic_id,
+	g.generic_name,
+	uf.unit_name AS from_unit_name,
+	ut.unit_name AS unit_name,
+  ug.qty AS conversion_qty,
+  (
+    SELECT
+      sum(wm.qty) AS qty
+    FROM
+      wm_products wm
+    JOIN mm_products mp2 ON wm.product_id = mp2.product_id
+    WHERE
+      mp2.generic_id = sd.generic_id
+    AND wm.warehouse_id = ss.warehouse_id
+    GROUP BY
+      mp2.generic_id
+  ) AS qty,
+  (select sum(vp.reserve_qty) from view_product_reserve as vp where vp.generic_id = sd.generic_id and vp.warehouse_id = ss.warehouse_id GROUP BY vp.generic_id) as reserve_qty
+FROM
+wm_issue_template as ss join wm_issue_template_detail AS sd on ss.template_id = sd.template_id
+LEFT JOIN wm_warehouses AS w ON w.warehouse_id = ss.warehouse_id
+LEFT JOIN mm_generics AS g ON g.generic_id = sd.generic_id
+LEFT JOIN mm_unit_generics AS ug ON ug.unit_generic_id = sd.unit_generic_id
+LEFT JOIN mm_units AS uf ON uf.unit_id = ug.from_unit_id
+LEFT JOIN mm_units AS ut ON ut.unit_id = ug.to_unit_id
+WHERE
+	sd.template_id = ?
+    `;
+
+    return knex.raw(sql, [id]);
   }
   getGenericList(knex: Knex, issueId: any) {
     let sql = `

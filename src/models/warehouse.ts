@@ -545,10 +545,23 @@ export class WarehouseModel {
       .update({ template_subject: templateSubject })
       .where('template_id', templateId);
   }
+  saveIssueTemplate(knex: Knex, datas: any) {
+    return knex('wm_issue_template')
+      .insert(datas, 'template_id');
+  }
 
+  updateIssueTemplate(knex: Knex, templateId: any, templateSubject: any) {
+    return knex('wm_issue_template')
+      .update({ template_subject: templateSubject })
+      .where('template_id', templateId);
+  }
 
   saveRequisitionTemplateDetail(knex: Knex, datas: any) {
     return knex('wm_requisition_template_detail')
+      .insert(datas, 'id');
+  }
+  saveIssueTemplateDetail(knex: Knex, datas: any) {
+    return knex('wm_issue_template_detail')
       .insert(datas, 'id');
   }
 
@@ -562,6 +575,18 @@ export class WarehouseModel {
 
   deleteTemplate(knex: Knex, templateId: string) {
     return knex('wm_requisition_template')
+      .where('template_id', templateId)
+      .del();
+  }
+  deleteTemplateItemsIssue(knex: Knex, templateId: string) {
+    return knex('wm_issue_template_detail')
+      .where('template_id', templateId)
+      .del();
+  }
+
+
+  deleteTemplateIssue(knex: Knex, templateId: string) {
+    return knex('wm_issue_template')
       .where('template_id', templateId)
       .del();
   }
@@ -581,6 +606,48 @@ export class WarehouseModel {
 
     return knex.raw(sql);
   }
+  getallRequisitionTemplateIssue(knex: Knex,warehouse_id:any) {
+    // let sql = `
+    // select wrt.template_id, wrt.warehouse_id,
+    // ws.warehouse_name as warehouse_name, 
+    // wrt.template_subject, wrt.created_date
+    // from wm_issue_template as wrt
+    // inner join wm_warehouses as ws on wrt.warehouse_id = ws.warehouse_id
+    // where wrt.warehouse_id = ${warehouse_id}
+    // order by wrt.template_subject
+    //   `;
+      let sql = `
+      select wrt.template_id, wrt.warehouse_id,
+      ws.warehouse_name as warehouse_name, 
+      wrt.template_subject, wrt.created_date
+      from wm_issue_template as wrt
+      inner join wm_warehouses as ws on wrt.warehouse_id = ws.warehouse_id
+      
+      order by wrt.template_subject
+        `;
+    return knex.raw(sql);
+  }
+  getallRequisitionTemplateIssueStaff(knex: Knex,warehouse_id:any) {
+    let sql = `
+    select wrt.template_id, wrt.warehouse_id,
+    ws.warehouse_name as warehouse_name, 
+    wrt.template_subject, wrt.created_date
+    from wm_issue_template as wrt
+    inner join wm_warehouses as ws on wrt.warehouse_id = ws.warehouse_id
+    where wrt.warehouse_id = ${warehouse_id}
+    order by wrt.template_subject
+      `;
+      // let sql = `
+      // select wrt.template_id, wrt.warehouse_id,
+      // ws.warehouse_name as warehouse_name, 
+      // wrt.template_subject, wrt.created_date
+      // from wm_issue_template as wrt
+      // inner join wm_warehouses as ws on wrt.warehouse_id = ws.warehouse_id
+      
+      // order by wrt.template_subject
+      //   `;
+    return knex.raw(sql);
+  }
 
   getallRequisitionTemplateSearch(knex: Knex, query: string) {
     let _q = `%${query}%`;
@@ -593,6 +660,33 @@ export class WarehouseModel {
     inner join wm_warehouses as ws on wrt.src_warehouse_id = ws.warehouse_id
     inner join wm_warehouses as wd on wrt.dst_warehouse_id = wd.warehouse_id
     where wrt.template_subject like '${_q}' or ws.warehouse_name like '${_q}' or wd.warehouse_name like '${_q}'
+    order by wrt.template_subject`;
+
+    return knex.raw(sql);
+  }
+  getallRequisitionTemplateSearchIssueStaff(knex: Knex, query: string,warehouse_id:any) {
+    let _q = `%${query}%`;
+    let sql = `
+    select wrt.template_id, wrt.warehouse_id,
+      ws.warehouse_name as warehouse_name, 
+      wrt.template_subject, wrt.created_date
+      from wm_issue_template as wrt
+      inner join wm_warehouses as ws on wrt.warehouse_id = ws.warehouse_id
+
+    where (wrt.template_subject like '${_q}' or ws.warehouse_name like '${_q}') and wrt.warehouse_id=${warehouse_id}
+    order by wrt.template_subject`;
+
+    return knex.raw(sql);
+  }
+  getallRequisitionTemplateSearchIssue(knex: Knex, query: string) {
+    let _q = `%${query}%`;
+    let sql = `
+    select wrt.template_id, wrt.warehouse_id,
+      ws.warehouse_name as warehouse_name, 
+      wrt.template_subject, wrt.created_date
+      from wm_issue_template as wrt
+      inner join wm_warehouses as ws on wrt.warehouse_id = ws.warehouse_id
+    where wrt.template_subject like '${_q}' or ws.warehouse_name like '${_q}'
     order by wrt.template_subject`;
 
     return knex.raw(sql);
@@ -655,6 +749,18 @@ export class WarehouseModel {
       from wm_requisition_template as wrt
       inner join wm_warehouses as ws on wrt.src_warehouse_id = ws.warehouse_id
       inner join wm_warehouses as wd on wrt.dst_warehouse_id = wd.warehouse_id
+      where wrt.template_id = ?
+      `;
+    return knex.raw(sql, [templateId]);
+  }
+  getIssueTemplate(knex: Knex, templateId: any) {
+    let sql = `
+      select wrt.template_id, wrt.warehouse_id,
+      ws.warehouse_name as warehouse_name,
+      ws.short_code as warehouse_code,
+      wrt.template_subject, wrt.created_date
+      from wm_issue_template as wrt
+      inner join wm_warehouses as ws on wrt.warehouse_id = ws.warehouse_id
       where wrt.template_id = ?
       `;
     return knex.raw(sql, [templateId]);
