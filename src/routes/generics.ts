@@ -365,9 +365,10 @@ router.post('/allocate', async (req, res, next) => {
     let allocate = [];
     let rsProducts: any = [];
     for (const d of data) {
+      console.log(d,warehouseId);
+      
       rsProducts = await genericModel.getProductInWarehousesByGeneric(db, d.genericId, warehouseId);
-      console.log('rsProducts', rsProducts);
-
+      
       for (const p of rsProducts) {
         const remainQty = p.remain_qty;
         let qty = Math.floor(d.genericQty / p.conversion_qty) * p.conversion_qty;

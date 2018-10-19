@@ -229,7 +229,7 @@ export class InventoryReportModel {
         FROM
         wm_borrow b
         JOIN wm_borrow_generic bg ON bg.borrow_id = b.borrow_id
-        JOIN wm_borrow_product bp ON bp.borrow_generic_id = bg.borrow_generic_id
+        JOIN wm_borrow_product bp ON bp.borrow_generic_id = bg.borrow_generic_id and bp.qty > 0
         JOIN mm_generics mg ON mg.generic_id = bg.generic_id
         JOIN wm_warehouses w ON w.warehouse_id = b.dst_warehouse_id
         LEFT JOIN mm_generic_dosages md ON md.dosage_id = mg.dosage_id
@@ -2577,7 +2577,7 @@ OR sc.ref_src like ?
           FROM
             wm_borrow b
                   JOIN wm_borrow_generic bg ON bg.borrow_id = b.borrow_id
-                  JOIN wm_borrow_product bp ON bp.borrow_generic_id = bg.borrow_generic_id
+                  JOIN wm_borrow_product bp ON bp.borrow_generic_id = bg.borrow_generic_id and bp.qty > 0
                   JOIN wm_products wp ON wp.wm_product_id = bp.wm_product_id
                   JOIN mm_generics AS mg ON mg.generic_id = bg.generic_id
           JOIN mm_products mp ON wp.product_id = mp.product_id
@@ -2629,7 +2629,7 @@ OR sc.ref_src like ?
                   wm_borrow b
                 JOIN wm_borrow_generic bg ON bg.borrow_id = b.borrow_id
                 JOIN wm_borrow_product bp ON bp.borrow_generic_id = bp.borrow_generic_id
-                JOIN wm_products AS wp ON wp.wm_product_id = bp.wm_product_id
+                JOIN wm_products AS wp ON wp.wm_product_id = bp.wm_product_id and wp.qty > 0
                 AND wp.warehouse_id = b.src_warehouse_id
                 WHERE
                   b.borrow_id = ${borrowId} and bg.generic_id = ${genericId}
