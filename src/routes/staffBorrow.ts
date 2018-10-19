@@ -332,19 +332,16 @@ router.post('/save', co(async (req, res, next) => {
         let rsBorrowGeneric = await borrowModel.saveBorrowGeneric(db, generics);
 
         let products = [];
-        g.products.forEach(p => {
-          // if (p.product_qty != 0) { // เอาออกเพื่อให้แก้ไขแล้วเปลี่ยน lot ได้
+        for (let p = 0; p < g.products.data.length; p++) {
           products.push({
             borrow_id: borrowId,
             borrow_generic_id: rsBorrowGeneric[0],
-            wm_product_id: p.wm_product_id,
-            qty: p.product_qty * p.conversion_qty,
+            wm_product_id: g.products.data[0][p].wm_product_id,
+            qty: g.products.data[0][p].product_qty,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
           });
-          // }
-
-        });
+        }
         await borrowModel.saveBorrowProduct(db, products);
       }
       res.send({ ok: true });
