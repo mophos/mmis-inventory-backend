@@ -463,7 +463,7 @@ mgt.generic_type_id `
                 AND '${endDate} 23:59:59' 
                 ) AS q
             ORDER BY
-            q.stock_card_id`
+	            abs(q.stock_card_id)`
         return knex.raw(sql)
     }
 

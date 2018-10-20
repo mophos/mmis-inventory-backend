@@ -253,4 +253,9 @@ export class HisTransactionModel {
             .where(`hospcode`, hospcode)
             .andWhere(`his`, his)
     }
+
+    insertUnitId(db: Knex, generic_id: any) {
+        let sql = ``
+        return db.raw(sql)
+    }
 } 

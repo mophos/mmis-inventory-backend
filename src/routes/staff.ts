@@ -31,6 +31,7 @@ import { RequisitionTypeModel } from '../models/requisitionType';
 import { AdjustStockModel } from '../models/adjustStock';
 import { ReceiveModel } from '../models/receive';
 import { BasicModel } from '../models/basic';
+import { GenericModel } from '../models/generic';
 
 
 const router = express.Router();
@@ -51,6 +52,7 @@ const periodModel = new PeriodModel();
 const adjustStockModel = new AdjustStockModel();
 const receiveModel = new ReceiveModel();
 const basicModel = new BasicModel();
+const genericModel = new GenericModel();
 
 let uploadDir = path.join(process.env.MMIS_DATA, 'uploaded');
 var moment = require('moment');
@@ -3682,4 +3684,30 @@ router.get('/issue/_getissuestemplate/:warehouseId', co(async (req, res, next) =
     db.destroy();
   }
 }));
+
+router.get('/generics/types', co(async (req, res, next) => {
+  let db = req.db;
+  let productGroups = req.decoded.generic_type_id;
+  let _pgs = [];
+
+  if (productGroups) {
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+
+    try {
+      let rs = await genericModel.getGenericTypes(db, _pgs);
+
+      res.send({ ok: true, rows: rs });
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  }
+}));
+
 export default router;
