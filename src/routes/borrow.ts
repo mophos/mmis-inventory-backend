@@ -294,6 +294,7 @@ router.post('/save', co(async (req, res, next) => {
         borrow_date: _summary.borrowDate,
         src_warehouse_id: _summary.srcWarehouseId,
         dst_warehouse_id: _summary.dstWarehouseId,
+        people_id: _summary.peopleId,
         people_user_id: req.decoded.people_user_id,
         created_at: moment().format('YYYY-MM-DD HH:mm:ss')
       }
