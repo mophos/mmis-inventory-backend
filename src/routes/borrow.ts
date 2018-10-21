@@ -361,6 +361,7 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
         let borrow = {
           src_warehouse_id: _summary.srcWarehouseId,
           dst_warehouse_id: _summary.dstWarehouseId,
+          people_id: _summary.peopleId,
           borrow_date: _summary.borrowDate,
           people_user_id: req.decoded.people_user_id
         }
