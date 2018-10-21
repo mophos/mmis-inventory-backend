@@ -196,14 +196,14 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
     let rs = await borrowModel.getDetailDst(db, borrowId);
     const rsGenerics = await borrowModel.getGenericInfo(db, borrowId, rs[0].src_warehouse_id);
     let _generics = rsGenerics[0];
-    for (const g of _generics) {
-      const rsProducts = await borrowModel.getProductsInfo(db, borrowId, g.borrow_generic_id);
-      let _products = rsProducts[0];
-      g.products = _products;
+    // for (const g of _generics) {
+    //   const rsProducts = await borrowModel.getProductsInfo(db, borrowId, g.borrow_generic_id);
+    //   let _products = rsProducts[0];
+    //   g.products = _products;
       // g.transfer_qty = _.sumBy(_products, function (e: any) {
       //   return e.product_qty * e.conversion_qty;
       // });
-    }
+    // }
     res.send({ ok: true, rows: _generics });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -310,6 +310,7 @@ router.post('/save', co(async (req, res, next) => {
         borrow_date: _summary.borrowDate,
         src_warehouse_id: _summary.srcWarehouseId,
         dst_warehouse_id: _summary.dstWarehouseId,
+        people_id: _summary.peopleId,
         people_user_id: req.decoded.people_user_id,
         created_at: moment().format('YYYY-MM-DD HH:mm:ss')
       }
@@ -373,6 +374,7 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
         let borrow = {
           src_warehouse_id: _summary.srcWarehouseId,
           dst_warehouse_id: _summary.dstWarehouseId,
+          people_id: _summary.peopleId,
           borrow_date: _summary.borrowDate,
           people_user_id: req.decoded.people_user_id
         }
@@ -386,25 +388,26 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
             borrow_id: borrowId,
             generic_id: g.generic_id,
             qty: g.borrow_qty,
-            unit_generic_id: g.unit_generic_id,
             primary_unit_id: g.primary_unit_id,
             location_id: g.location_id,
+            unit_generic_id: g.unit_generic_id,
+            // conversion_qty: g.conversion_qty,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
           };
           let rsBorrowGeneric = await borrowModel.saveBorrowGeneric(db, generics);
-
+  
           let products = [];
-          g.products.forEach(p => {
+          for (let p = 0; p < g.products.data.length; p++) {
             products.push({
               borrow_id: borrowId,
               borrow_generic_id: rsBorrowGeneric[0],
-              wm_product_id: p.wm_product_id,
-              qty: p.product_qty * p.conversion_qty,
+              wm_product_id: g.products.data[0][p].wm_product_id,
+              qty: g.products.data[0][p].product_qty,
               create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
               create_by: req.decoded.people_user_id
             });
-          });
+          }
           await borrowModel.saveBorrowProduct(db, products);
         }
 

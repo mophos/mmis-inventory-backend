@@ -534,8 +534,11 @@ export class BorrowModel {
   }
 
   getSummaryInfo(knex: Knex, borrowId: any) {
-    return knex('wm_borrow')
-      .where('borrow_id', borrowId);
+    return knex('wm_borrow as b')
+      .select('b.*', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
+      .leftJoin('um_people as up', 'up.people_id', 'b.people_id')
+      .leftJoin('um_titles as t', 't.title_id', 'up.title_id')
+      .where('b.borrow_id', borrowId);
   }
 
   getProductsInfo(knex: Knex, borrowId: any, transferGenericId: any) {
@@ -594,7 +597,9 @@ export class BorrowModel {
 
   getGenericInfo(knex: Knex, borrowId: any, srcWarehouseId: any) {
     let sql = `
-    select b.*
+    select b.*,
+    ug.qty as conversion_qty
+    , ug.unit_generic_id
     , b.qty as borrow_qty
     , mg.working_code, mg.generic_name
     , sg.remain_qty
