@@ -2992,7 +2992,8 @@ OR sc.ref_src like ?
 	mg.working_code,
 	mp.product_name,
 	vs.balance_amount,
-	ml.labeler_name AS m_labeler_name,
+    ml.labeler_name AS m_labeler_name,
+    ml2.labeler_name AS v_labeler_name,
 	mga.account_name,
 	mgt.generic_type_name,
 	mgd.dosage_name,
@@ -3035,7 +3036,8 @@ FROM
 	JOIN mm_unit_generics mug ON mug.unit_generic_id = vs.unit_generic_id
 	JOIN mm_units mu1 ON mu1.unit_id = mug.from_unit_id
 	JOIN mm_units mu2 ON mu2.unit_id = mug.to_unit_id
-	JOIN mm_labelers ml ON ml.labeler_id = mp.m_labeler_id
+    JOIN mm_labelers ml ON ml.labeler_id = mp.m_labeler_id
+    JOIN mm_labelers ml2 ON ml2.labeler_id = mp.v_labeler_id
 	left JOIN (
 	SELECT
 	warehouse_id,
