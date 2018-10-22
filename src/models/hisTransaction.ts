@@ -254,8 +254,14 @@ export class HisTransactionModel {
             .andWhere(`his`, his)
     }
 
-    insertUnitId(db: Knex, generic_id: any) {
-        let sql = ``
-        return db.raw(sql)
+    insertUnitId(db: Knex, data: any[]) {
+        return db('mm_unit_generics')
+      .insert(data);
+    }
+
+    getUnitGenericId(knex: Knex, generic_id: any) {
+        return knex(`mm_unit_generics`)
+            .where(`generic_id`, generic_id)
+            .andWhere(`is_deleted`, 'N')
     }
 } 
