@@ -333,7 +333,7 @@ router.post('/save', co(async (req, res, next) => {
         let rsBorrowGeneric = await borrowModel.saveBorrowGeneric(db, generics);
 
         let products = [];
-        for (let p = 0; p < g.products.data.length; p++) {
+        for (let p = 0; p < g.products.data[0].length; p++) {
           products.push({
             borrow_id: borrowId,
             borrow_generic_id: rsBorrowGeneric[0],
@@ -398,7 +398,7 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
           let rsBorrowGeneric = await borrowModel.saveBorrowGeneric(db, generics);
   
           let products = [];
-          for (let p = 0; p < g.products.data.length; p++) {
+          for (let p = 0; p < g.products.data[0].length; p++) {
             products.push({
               borrow_id: borrowId,
               borrow_generic_id: rsBorrowGeneric[0],
