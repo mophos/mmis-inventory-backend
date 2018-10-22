@@ -442,7 +442,7 @@ router.post('/allocate-borrow', async (req, res, next) => {
         allocate.push(obj);
       }
     }
-    console.log('rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr',allocate)
+    
     res.send({ ok: true, rows: allocate });
   } catch (error) {
     res.send({ ok: false, error: error.message });
