@@ -63,9 +63,11 @@ export class BorrowModel {
     return knex('wm_borrow as wmt')
       .select('wmt.borrow_id', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
         'src.warehouse_name as src_warehouse_name', 'src.short_code as src_warehouse_code', 'wmt.mark_deleted',
-        'dst.warehouse_name as dst_warehouse_name', 'dst.short_code as dst_warehouse_code', 'wmt.approved', 'wmt.confirmed')
+        'dst.warehouse_name as dst_warehouse_name', 'dst.short_code as dst_warehouse_code', 'wmt.approved', 'wmt.confirmed', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
+      .leftJoin('um_people as up', 'up.people_id', 'wmt.people_id')
+      .leftJoin('um_titles as t', 't.title_id', 'up.title_id')
       .where('wmt.dst_warehouse_id', warehouseId)
       .orderBy('wmt.borrow_id', 'DESC')
       .limit(limit)
@@ -154,9 +156,11 @@ export class BorrowModel {
     return knex('wm_borrow as wmt')
       .select('wmt.borrow_id', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
         'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code',
-        'dst.warehouse_name as dst_warehouse_name', 'wmt.approved')
+        'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
+      .leftJoin('um_people as up', 'up.people_id', 'wmt.people_id')
+      .leftJoin('um_titles as t', 't.title_id', 'up.title_id')
       .where('wmt.dst_warehouse_id', warehouseId)
       .andWhere('wmt.approved', 'Y')
       .limit(limit)
@@ -209,9 +213,11 @@ export class BorrowModel {
     return knex('wm_borrow as wmt')
       .select('wmt.borrow_id', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
         'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'wmt.confirmed',
-        'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code')
+        'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
+      .leftJoin('um_people as up', 'up.people_id', 'wmt.people_id')
+      .leftJoin('um_titles as t', 't.title_id', 'up.title_id')
       .where('wmt.dst_warehouse_id', warehouseId)
       .andWhereNot('wmt.mark_deleted', 'Y')
       .andWhereNot('wmt.approved', 'Y')
@@ -266,9 +272,11 @@ export class BorrowModel {
     return knex('wm_borrow as wmt')
       .select('wmt.borrow_id', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
         'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'wmt.confirmed',
-        'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code')
+        'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
+      .leftJoin('um_people as up', 'up.people_id', 'wmt.people_id')
+      .leftJoin('um_titles as t', 't.title_id', 'up.title_id')
       .where('wmt.dst_warehouse_id', warehouseId)
       .andWhere('wmt.mark_deleted', 'Y')
       .limit(limit)
@@ -534,8 +542,11 @@ export class BorrowModel {
   }
 
   getSummaryInfo(knex: Knex, borrowId: any) {
-    return knex('wm_borrow')
-      .where('borrow_id', borrowId);
+    return knex('wm_borrow as b')
+      .select('b.*', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
+      .leftJoin('um_people as up', 'up.people_id', 'b.people_id')
+      .leftJoin('um_titles as t', 't.title_id', 'up.title_id')
+      .where('b.borrow_id', borrowId);
   }
 
   getProductsInfo(knex: Knex, borrowId: any, transferGenericId: any) {
@@ -594,7 +605,9 @@ export class BorrowModel {
 
   getGenericInfo(knex: Knex, borrowId: any, srcWarehouseId: any) {
     let sql = `
-    select b.*
+    select b.*,
+    ug.qty as conversion_qty
+    , ug.unit_generic_id
     , b.qty as borrow_qty
     , mg.working_code, mg.generic_name
     , sg.remain_qty
