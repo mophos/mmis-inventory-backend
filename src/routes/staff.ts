@@ -2349,7 +2349,6 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
 
                 wmProducts[i].qty = obj.remainQty;
                 hisProducts[z].qty = h.qty;
-                console.log(obj.wm_product_id, obj.cutQty);
 
                 await hisTransactionModel.decreaseProductQty(db, obj.wm_product_id, obj.cutQty);
                 let unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, h.generic_id);
