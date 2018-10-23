@@ -415,14 +415,22 @@ router.post('/allocate-borrow', async (req, res, next) => {
     for (const d of data) {
       rsProducts = await genericModel.getGenericQty(db, d.genericId, warehouseId);
       for (const p of rsProducts) {
-        if(d.genericId === p.generic_id){
-          d.genericQty -= p.qty;
+        if (d.genericId === p.generic_id) {
+          const remainQty = p.qty;
+          let qty = d.genericQty;
+          if (qty > remainQty) {
+            qty = remainQty
+          }
+          p.qty -= qty;
+          d.genericQty -= qty;
           const obj = {
             wm_product_id: p.wm_product_id,
-            product_qty: p.qty,
+            product_qty: qty,
             generic_id: p.generic_id
           }
-          allocate.push(obj);
+          if(qty > 0){
+            allocate.push(obj);
+          }
         }
         // const remainQty = p.remain_qty;
         // let qty = Math.floor(d.genericQty) * p.conversion_qty;
