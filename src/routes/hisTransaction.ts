@@ -266,23 +266,36 @@ router.post('/import', co(async (req, res, next) => {
 
                 wmProducts[i].qty = obj.remainQty;
                 hisProducts[z].qty = h.qty;
-                console.log(obj.wm_product_id, obj.cutQty);
 
-                await hisTransactionModel.decreaseProductQty(db, obj.wm_product_id, obj.cutQty);
+                //getUnitGeneric
                 let unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, h.generic_id);
+                let insertUnit = [];
+                //เช็ค unitId
+                if (!unitId.length) {
+                  let unit = await hisTransactionModel.getUnitGenericId(db, h.generic_id);
+                  //สร้าง unit 1 ต่อ 1 ใหม่
+                  let newUnit = {
+                    from_unit_id: unit[0].to_unit_id,
+                    to_unit_id: unit[0].to_unit_id,
+                    qty: 1,
+                    cost: unit[0].cost / unit.qty,
+                    generic_id: unit[0].generic_id
+                  }
+                  insertUnit.push(newUnit)
+                  //insert UnitGeneric
+                  await hisTransactionModel.insertUnitId(db, insertUnit);
+                  unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, h.generic_id);
+                }
+
                 let balance = await hisTransactionModel.getHisForStockCard(db, h.warehouse_id, h.product_id);
                 //get balance 
                 balance = balance[0];
-                // console.log('balance', balance);
-                // const idx = _.findIndex(balance, { product_id: h.product_id });
+
                 let out_unit_cost;
                 let balance_qty;
                 let balance_generic_qty;
                 let balance_unit_cost;
-                // if (idx > -1) {
-                //   console.log('idx',idx);
 
-                // }
                 out_unit_cost = balance[0].balance_unit_cost;
                 balance_qty = balance[0].balance_qty;
                 balance_generic_qty = balance[0].balance_generic_qty;
@@ -312,10 +325,10 @@ router.post('/import', co(async (req, res, next) => {
                 if (obj.cutQty > 0) {
                   stockCards.push(data);
                 }
+                await hisTransactionModel.decreaseProductQty(db, obj.wm_product_id, obj.cutQty);
               }
             }
             i++;
-            // }));
           }
         }
         z++;

@@ -2201,7 +2201,7 @@ router.post('/his-transaction/upload', upload.single('file'), co(async (req, res
       if (excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] && excelData[x][5]) {
 
         let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3])
-        let qty = Math.ceil(excelData[x][4] / conversion[0].conversion);        
+        let qty = Math.ceil(excelData[x][4] / conversion[0].conversion);
         let obj: any = {
           date_serv: moment(excelData[x][0], 'YYYYMMDD').format('YYYY-MM-DD'),
           seq: excelData[x][1],
@@ -2304,15 +2304,13 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
       let cutStockIds = [];
       let stockCards = [];
 
-      // await Promise.all(hisProducts.map(async (h, z) => {
       let z = 0;
       for (const h of hisProducts) {
-
-        // }
         if (!wmProducts.length) {
           // ถ้าไม่มีรายการในคงคลังให้ยกเลิกการตัดสต๊อก
           unCutStockIds.push(h.transaction_id);
         } else {
+
           cutStockIds.push(h.transaction_id);
           let i = 0;
           for (const v of wmProducts) {
@@ -2349,22 +2347,36 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
 
                 wmProducts[i].qty = obj.remainQty;
                 hisProducts[z].qty = h.qty;
-                console.log(obj.wm_product_id, obj.cutQty);
 
-                await hisTransactionModel.decreaseProductQty(db, obj.wm_product_id, obj.cutQty);
+                //getUnitGeneric
                 let unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, h.generic_id);
+                let insertUnit = [];
+                //เช็ค unitId
+                if (!unitId.length) {
+                  let unit = await hisTransactionModel.getUnitGenericId(db, h.generic_id);
+                  //สร้าง unit 1 ต่อ 1 ใหม่
+                  let newUnit = {
+                    from_unit_id: unit[0].to_unit_id,
+                    to_unit_id: unit[0].to_unit_id,
+                    qty: 1,
+                    cost: unit[0].cost / unit.qty,
+                    generic_id: unit[0].generic_id
+                  }
+                  insertUnit.push(newUnit)
+                  //insert UnitGeneric
+                  await hisTransactionModel.insertUnitId(db, insertUnit);
+                  unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, h.generic_id);
+                }
+
                 let balance = await hisTransactionModel.getHisForStockCard(db, h.warehouse_id, h.product_id);
                 //get balance 
                 balance = balance[0];
-                // const idx = _.findIndex(balance, { product_id: h.product_id });
+                
                 let out_unit_cost;
                 let balance_qty;
                 let balance_generic_qty;
                 let balance_unit_cost;
-                // if (idx > -1) {
-                //   console.log('idx',idx);
 
-                // }
                 out_unit_cost = balance[0].balance_unit_cost;
                 balance_qty = balance[0].balance_qty;
                 balance_generic_qty = balance[0].balance_generic_qty;
@@ -2394,16 +2406,16 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
                 if (obj.cutQty > 0) {
                   stockCards.push(data);
                 }
+
+                //ตัดคงตลัง
+                await hisTransactionModel.decreaseProductQty(db, obj.wm_product_id, obj.cutQty);
               }
             }
             i++;
-            // }));
           }
-
         }
         z++;
       }
-      // }));
 
       // save transaction status
       let peopleUserId = req.decoded.people_user_id;
@@ -3599,7 +3611,7 @@ router.get('/warehouses/warehouseproducttemplate-issue/search', co(async (req, r
   let query = req.query.query;
   let warehouse_id = req.decoded.warehouseId
   try {
-    let reqult = await warehouseModel.getallRequisitionTemplateSearchIssueStaff(db, query,warehouse_id);
+    let reqult = await warehouseModel.getallRequisitionTemplateSearchIssueStaff(db, query, warehouse_id);
     res.send({ ok: true, rows: reqult[0] });
   } catch (error) {
     console.log(error);
@@ -3648,9 +3660,9 @@ router.get('/warehouses/getwarehouseproducttemplate-issue', co(async (req, res, 
   let db = req.db;
   let warehouse_id = req.decoded.warehouseId
   console.log(warehouse_id);
-  
+
   try {
-    let reqult = await warehouseModel.getallRequisitionTemplateIssueStaff(db,warehouse_id);
+    let reqult = await warehouseModel.getallRequisitionTemplateIssueStaff(db, warehouse_id);
     res.send({ ok: true, rows: reqult[0] });
   } catch (error) {
     console.log(error);
