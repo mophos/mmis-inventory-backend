@@ -406,7 +406,6 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
               create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
               create_by: req.decoded.people_user_id
             }
-            console.log('xxxxxxxxxxxxxxxxxxxxxx',g.generic_id,g.products.data[0][p].generic_id)
             if (g.generic_id === g.products.data[0][p].generic_id) {
               products.push(data)
             }
