@@ -608,7 +608,7 @@ export class BorrowModel {
     select b.*,
     ug.qty as conversion_qty
     , ug.unit_generic_id
-    , b.qty as borrow_qty
+    , b.qty/ug.qty as borrow_qty
     , mg.working_code, mg.generic_name
     , sg.remain_qty
     , mg.primary_unit_id, mu.unit_name as primary_unit_name

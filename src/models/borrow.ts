@@ -336,15 +336,19 @@ export class BorrowModel {
     b.approved,
 		bp.borrow_product_id,
 		bp.borrow_id,
-		bp.confirm_qty as out_qty,
+		SUM(bp.confirm_qty/ug.qty )as out_qty,
 		bp.borrow_generic_id,
 		bp.wm_product_id,
 		vr.reserve_qty,
-		bg.qty,
+		bg.qty/ug.qty as qty,
 		wp.qty as balance_qty,
 		FLOOR(bp.qty/ug.qty) as product_pack_qty,
-    mp.product_name, mg.generic_name, wp.lot_no, wp.expired_date,
-    fu.unit_name as from_unit_name, ug.qty as conversion_qty, tu.unit_name as to_unit_name
+    mp.product_name, mg.generic_name, 
+    wp.lot_no, 
+    wp.expired_date,
+    fu.unit_name as from_unit_name, 
+    ug.qty as conversion_qty, 
+    tu.unit_name as to_unit_name
     from wm_borrow_product as bp
 		join wm_borrow_generic bg on bg.borrow_generic_id = bp.borrow_generic_id
 		join wm_borrow b on b.borrow_id = bp.borrow_id
@@ -356,10 +360,10 @@ export class BorrowModel {
     join mm_units as tu on tu.unit_id = ug.to_unit_id
 		left join view_product_reserve vr on vr.wm_product_id = wp.wm_product_id and vr.lot_no = wp.lot_no
     where bp.borrow_id = ?
-    and wp.warehouse_id = ${warehouseId}
+    and wp.warehouse_id = ?
 		GROUP BY mg.generic_id
     order by mp.product_name`;
-    return knex.raw(sql, [borrowId]);
+    return knex.raw(sql, [borrowId, warehouseId]);
   }
 
   saveDstProducts(knex: Knex, data: any[]) {
@@ -550,12 +554,12 @@ export class BorrowModel {
       .where('b.borrow_id', borrowId);
   }
 
-  getProductsInfo(knex: Knex, borrowId: any, transferGenericId: any) {
+  getProductsInfo(knex: Knex, borrowId: any, borrowGenericId: any) {
     let sql = `SELECT
     bp.*,
     bp.qty / ug.qty as product_qty,
-    FLOOR(IF(vr.remain_qty<0,0,vr.reserve_qty )/ ug.qty) as pack_remain_qty,
-    IF(vr.remain_qty<0,0,vr.reserve_qty ) AS small_remain_qty,
+    FLOOR(wp.qty/ ug.qty) as pack_remain_qty,
+    wp.qty AS small_remain_qty,
     wp.lot_no,
     wp.expired_date,
     mp.product_name,
@@ -564,6 +568,7 @@ export class BorrowModel {
     tu.unit_name AS to_unit_name 
   FROM
     wm_borrow_product AS bp
+		JOIN wm_borrow_generic AS bg ON bg.borrow_generic_id = bp.borrow_generic_id
     JOIN wm_products AS wp ON wp.wm_product_id = bp.wm_product_id
     JOIN mm_unit_generics AS ug ON ug.unit_generic_id = wp.unit_generic_id
     JOIN mm_products AS mp ON mp.product_id = wp.product_id
@@ -571,10 +576,10 @@ export class BorrowModel {
     JOIN mm_units AS tu ON tu.unit_id = ug.to_unit_id 
 		LEFT JOIN view_product_reserve vr ON vr.wm_product_id = wp.wm_product_id AND vr.lot_no = wp.lot_no
     WHERE
-    bp.borrow_id = ? 
-    and bp.borrow_generic_id = ?
+    bp.borrow_id = ?
+    and bg.borrow_generic_id = ?
     `;
-    return knex.raw(sql, [borrowId, transferGenericId]);
+    return knex.raw(sql, [borrowId, borrowGenericId]);
   }
 
   getProductsInfoEdit(knex: Knex, borrowId: any, transferGenericId: any) {
@@ -609,6 +614,7 @@ export class BorrowModel {
     let sql = `
     select b.*
     , b.qty as borrow_qty
+    , ug.qty as conversion_qty
     , mg.working_code, mg.generic_name
     , sg.remain_qty
     , mg.primary_unit_id, mu.unit_name as primary_unit_name
