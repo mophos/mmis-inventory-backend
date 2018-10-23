@@ -308,9 +308,7 @@ router.post('/save', co(async (req, res, next) => {
           generic_id: g.generic_id,
           qty: g.borrow_qty,
           primary_unit_id: g.primary_unit_id,
-          location_id: g.location_id,
           unit_generic_id: g.unit_generic_id,
-          // conversion_qty: g.conversion_qty,
           create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
           create_by: req.decoded.people_user_id
         };
@@ -377,7 +375,6 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
             qty: g.borrow_qty,
             unit_generic_id: g.unit_generic_id,
             primary_unit_id: g.primary_unit_id,
-            location_id: g.location_id,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
           };

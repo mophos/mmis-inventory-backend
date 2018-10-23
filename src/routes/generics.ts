@@ -394,7 +394,6 @@ router.post('/allocate', async (req, res, next) => {
           allocate.push(obj);
         }
       }
-
     }
 
     res.send({ ok: true, rows: allocate });
@@ -414,35 +413,39 @@ router.post('/allocate-borrow', async (req, res, next) => {
     let allocate = [];
     let rsProducts: any = [];
     for (const d of data) {
-      rsProducts = await genericModel.getProductInWarehousesByGeneric(db, d.genericId, warehouseId);
-
+      rsProducts = await genericModel.getGenericQty(db, d.genericId, warehouseId);
       for (const p of rsProducts) {
-        const remainQty = p.remain_qty;
-        let qty = Math.floor(d.genericQty / p.conversion_qty) * p.conversion_qty;
-        if (qty > remainQty) {
-          qty = (Math.floor(remainQty / p.conversion_qty) * p.conversion_qty) / rsProducts.length
+        if(d.genericId === p.generic_id){
+          d.genericQty -= p.qty;
+          const obj = {
+            wm_product_id: p.wm_product_id,
+            product_qty: p.qty,
+            generic_id: p.generic_id
+          }
+          allocate.push(obj);
         }
-        p.remain_qty -= qty;
-        d.genericQty -= qty;
-        const obj: any = {
-          wm_product_id: p.wm_product_id,
-          unit_generic_id: p.unit_generic_id,
-          conversion_qty: p.conversion_qty,
-          generic_id: p.generic_id,
-          pack_remain_qty: Math.floor(remainQty / p.conversion_qty),
-          small_remain_qty: remainQty,
-          product_name: p.product_name,
-          from_unit_name: p.from_unit_name,
-          to_unit_name: p.to_unit_name,
-          expired_date: p.expired_date,
-          lot_no: p.lot_no,
-          product_id: p.product_id,
-          product_qty: qty > remainQty ? 0 : qty,
-        }
-        allocate.push(obj);
+        // const remainQty = p.remain_qty;
+        // let qty = Math.floor(d.genericQty) * p.conversion_qty;
+        // p.remain_qty -= qty;
+        // d.genericQty -= qty;
+        // const obj: any = {
+        //   wm_product_id: p.wm_product_id,
+        //   unit_generic_id: p.unit_generic_id,
+        //   conversion_qty: p.conversion_qty,
+        //   generic_id: p.generic_id,
+        //   pack_remain_qty: Math.floor(remainQty / p.conversion_qty),
+        //   small_remain_qty: remainQty,
+        //   product_name: p.product_name,
+        //   from_unit_name: p.from_unit_name,
+        //   to_unit_name: p.to_unit_name,
+        //   expired_date: p.expired_date,
+        //   lot_no: p.lot_no,
+        //   product_id: p.product_id,
+        //   product_qty: remainQty < qty ? qty : remainQty,
+        // }
       }
     }
-    
+
     res.send({ ok: true, rows: allocate });
   } catch (error) {
     res.send({ ok: false, error: error.message });

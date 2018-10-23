@@ -200,9 +200,9 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
     //   const rsProducts = await borrowModel.getProductsInfo(db, borrowId, g.borrow_generic_id);
     //   let _products = rsProducts[0];
     //   g.products = _products;
-      // g.transfer_qty = _.sumBy(_products, function (e: any) {
-      //   return e.product_qty * e.conversion_qty;
-      // });
+    // g.transfer_qty = _.sumBy(_products, function (e: any) {
+    //   return e.product_qty * e.conversion_qty;
+    // });
     // }
     res.send({ ok: true, rows: _generics });
   } catch (error) {
@@ -324,24 +324,25 @@ router.post('/save', co(async (req, res, next) => {
           generic_id: g.generic_id,
           qty: g.borrow_qty,
           primary_unit_id: g.primary_unit_id,
-          location_id: g.location_id,
           unit_generic_id: g.unit_generic_id,
-          // conversion_qty: g.conversion_qty,
           create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
           create_by: req.decoded.people_user_id
-        };
+        }
         let rsBorrowGeneric = await borrowModel.saveBorrowGeneric(db, generics);
 
         let products = [];
         for (let p = 0; p < g.products.data[0].length; p++) {
-          products.push({
+          const data = {
             borrow_id: borrowId,
             borrow_generic_id: rsBorrowGeneric[0],
             wm_product_id: g.products.data[0][p].wm_product_id,
             qty: g.products.data[0][p].product_qty,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
-          });
+          }
+          if (g.generic_id === g.products.data[0][p].generic_id) {
+            products.push(data)
+          }
         }
         await borrowModel.saveBorrowProduct(db, products);
       }
@@ -383,33 +384,35 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
         await borrowModel.deleteBorrowProduct(db, borrowId);
         await borrowModel.updateBorrowSummary(db, borrowId, borrow);
 
+        let products = [];
         for (const g of _generics) {
           let generics = {
             borrow_id: borrowId,
             generic_id: g.generic_id,
             qty: g.borrow_qty,
             primary_unit_id: g.primary_unit_id,
-            location_id: g.location_id,
             unit_generic_id: g.unit_generic_id,
-            // conversion_qty: g.conversion_qty,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
           };
           let rsBorrowGeneric = await borrowModel.saveBorrowGeneric(db, generics);
-  
-          let products = [];
+
           for (let p = 0; p < g.products.data[0].length; p++) {
-            products.push({
+            const data = {
               borrow_id: borrowId,
               borrow_generic_id: rsBorrowGeneric[0],
               wm_product_id: g.products.data[0][p].wm_product_id,
               qty: g.products.data[0][p].product_qty,
               create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
               create_by: req.decoded.people_user_id
-            });
+            }
+            console.log('xxxxxxxxxxxxxxxxxxxxxx',g.generic_id,g.products.data[0][p].generic_id)
+            if (g.generic_id === g.products.data[0][p].generic_id) {
+              products.push(data)
+            }
           }
-          await borrowModel.saveBorrowProduct(db, products);
         }
+        await borrowModel.saveBorrowProduct(db, products);
 
         res.send({ ok: true });
 
