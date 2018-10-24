@@ -246,4 +246,22 @@ export class HisTransactionModel {
             .andWhere(`is_deleted`, 'N')
             .andWhere(`qty`, 1)
     }
+
+    getConversionHis(knex: Knex, hospcode: any, his: any) {
+        return knex(`wm_his_mappings`)
+            .select('conversion')
+            .where(`hospcode`, hospcode)
+            .andWhere(`his`, his)
+    }
+
+    insertUnitId(db: Knex, data: any[]) {
+        return db('mm_unit_generics')
+      .insert(data);
+    }
+
+    getUnitGenericId(knex: Knex, generic_id: any) {
+        return knex(`mm_unit_generics`)
+            .where(`generic_id`, generic_id)
+            .andWhere(`is_deleted`, 'N')
+    }
 } 

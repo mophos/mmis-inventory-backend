@@ -1,5 +1,5 @@
-import { AlertExpiredModel } from '../models/alertExpired';
 import { WarehouseModel } from './../models/warehouse';
+import { AlertExpiredModel } from '../models/alertExpired';
 import { StaffModel } from './../models/staff';
 import { ProductModel } from '../models/product';
 import { TransferModel } from '../models/transfer';
@@ -31,6 +31,7 @@ import { RequisitionTypeModel } from '../models/requisitionType';
 import { AdjustStockModel } from '../models/adjustStock';
 import { ReceiveModel } from '../models/receive';
 import { BasicModel } from '../models/basic';
+import { GenericModel } from '../models/generic';
 
 
 const router = express.Router();
@@ -51,6 +52,7 @@ const periodModel = new PeriodModel();
 const adjustStockModel = new AdjustStockModel();
 const receiveModel = new ReceiveModel();
 const basicModel = new BasicModel();
+const genericModel = new GenericModel();
 
 let uploadDir = path.join(process.env.MMIS_DATA, 'uploaded');
 var moment = require('moment');
@@ -2197,12 +2199,15 @@ router.post('/his-transaction/upload', upload.single('file'), co(async (req, res
     // x = 0 = header      
     for (let x = 1; x < maxRecord; x++) {
       if (excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] && excelData[x][5]) {
+
+        let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3])
+        let qty = Math.ceil(excelData[x][4] / conversion[0].conversion);
         let obj: any = {
           date_serv: moment(excelData[x][0], 'YYYYMMDD').format('YYYY-MM-DD'),
           seq: excelData[x][1],
           hn: excelData[x][2],
           drug_code: excelData[x][3],
-          qty: excelData[x][4],
+          qty: qty,
           his_warehouse: excelData[x][5],
           mmis_warehouse: warehouseId,
           hospcode: hospcode,
@@ -2237,8 +2242,9 @@ router.post('/his-transaction/list', co(async (req, res, next) => {
   let db = req.db;
   let hospcode = req.decoded.his_hospcode;
   let genericType = req.body.genericTypes;
+  let warehouseId = req.body.warehouseId;
   try {
-    let rs: any = await hisTransactionModel.getHisTransaction(db, hospcode, genericType);
+    let rs: any = await hisTransactionModel.getHisTransactionStaff(db, hospcode, genericType, warehouseId);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -2298,15 +2304,13 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
       let cutStockIds = [];
       let stockCards = [];
 
-      // await Promise.all(hisProducts.map(async (h, z) => {
       let z = 0;
       for (const h of hisProducts) {
-
-        // }
         if (!wmProducts.length) {
           // ถ้าไม่มีรายการในคงคลังให้ยกเลิกการตัดสต๊อก
           unCutStockIds.push(h.transaction_id);
         } else {
+
           cutStockIds.push(h.transaction_id);
           let i = 0;
           for (const v of wmProducts) {
@@ -2343,22 +2347,36 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
 
                 wmProducts[i].qty = obj.remainQty;
                 hisProducts[z].qty = h.qty;
-                console.log(obj.wm_product_id, obj.cutQty);
 
-                await hisTransactionModel.decreaseProductQty(db, obj.wm_product_id, obj.cutQty);
+                //getUnitGeneric
                 let unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, h.generic_id);
+                let insertUnit = [];
+                //เช็ค unitId
+                if (!unitId.length) {
+                  let unit = await hisTransactionModel.getUnitGenericId(db, h.generic_id);
+                  //สร้าง unit 1 ต่อ 1 ใหม่
+                  let newUnit = {
+                    from_unit_id: unit[0].to_unit_id,
+                    to_unit_id: unit[0].to_unit_id,
+                    qty: 1,
+                    cost: unit[0].cost / unit.qty,
+                    generic_id: unit[0].generic_id
+                  }
+                  insertUnit.push(newUnit)
+                  //insert UnitGeneric
+                  await hisTransactionModel.insertUnitId(db, insertUnit);
+                  unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, h.generic_id);
+                }
+
                 let balance = await hisTransactionModel.getHisForStockCard(db, h.warehouse_id, h.product_id);
                 //get balance 
                 balance = balance[0];
-                // const idx = _.findIndex(balance, { product_id: h.product_id });
+                
                 let out_unit_cost;
                 let balance_qty;
                 let balance_generic_qty;
                 let balance_unit_cost;
-                // if (idx > -1) {
-                //   console.log('idx',idx);
 
-                // }
                 out_unit_cost = balance[0].balance_unit_cost;
                 balance_qty = balance[0].balance_qty;
                 balance_generic_qty = balance[0].balance_generic_qty;
@@ -2388,16 +2406,16 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
                 if (obj.cutQty > 0) {
                   stockCards.push(data);
                 }
+
+                //ตัดคงตลัง
+                await hisTransactionModel.decreaseProductQty(db, obj.wm_product_id, obj.cutQty);
               }
             }
             i++;
-            // }));
           }
-
         }
         z++;
       }
-      // }));
 
       // save transaction status
       let peopleUserId = req.decoded.people_user_id;
@@ -3519,4 +3537,189 @@ router.delete('/other/:receiveOtherId', co(async (req, res, next) => {
   }
 
 }));
+
+router.delete('/issue/remove-template/:templateId', co(async (req, res, next) => {
+  let db = req.db;
+  try {
+
+    let templateId = req.params.templateId;
+
+    await warehouseModel.deleteTemplateIssue(db, templateId);
+    await warehouseModel.deleteTemplateItemsIssue(db, templateId);
+    res.send({ ok: true });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+router.post('/warehouses/savewarehouseproducttemplate-issue', co(async (req, res, next) => {
+  let templateSummary = req.body.templateSummary;
+  let products = req.body.products;
+  let db = req.db;
+  console.log('-----');
+  if (templateSummary && products.length) {
+    try {
+      //prepare summary data
+      const summary: any = {
+        warehouse_id: templateSummary.warehouseId,
+        template_subject: templateSummary.templateSubject,
+        people_user_id: req.decoded.people_user_id,
+        created_date: moment().format('YYYY-MM-DD HH:mm:ss')
+      }
+      let rsSummary = await warehouseModel.saveIssueTemplate(db, summary);
+      //prepare items data
+      let _products: Array<any> = [];
+      products.forEach((v: any) => {
+        let obj: any = {
+          template_id: rsSummary[0],
+          generic_id: v.generic_id,
+          unit_generic_id: v.unit_generic_id
+        };
+        _products.push(obj);
+      });
+
+      await warehouseModel.saveIssueTemplateDetail(db, _products);
+      res.send({ ok: true });
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
+  }
+}));
+router.get('/warehouses/warehousetemplate-issue/:templateId', co(async (req, res, next) => {
+  let db = req.db;
+  try {
+
+    let templateId = req.params.templateId;
+
+    let reqult = await warehouseModel.getIssueTemplate(db, templateId);
+    res.send({ ok: true, rows: reqult[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+router.get('/warehouses/warehouseproducttemplate-issue/search', co(async (req, res, next) => {
+  let db = req.db;
+  let query = req.query.query;
+  let warehouse_id = req.decoded.warehouseId
+  try {
+    let reqult = await warehouseModel.getallRequisitionTemplateSearchIssueStaff(db, query, warehouse_id);
+    res.send({ ok: true, rows: reqult[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+router.post('/warehouses/updatewarehouseproducttemplate-issue', co(async (req, res, next) => {
+  let templateId = req.body.templateId;
+  let templateSubject = req.body.templateSubject;
+  let products = req.body.products;
+
+  let db = req.db;
+  //prepare items data
+  let _products: Array<any> = [];
+  products.forEach((v: any) => {
+    let obj: any = {
+      template_id: templateId,
+      generic_id: v.generic_id,
+      unit_generic_id: v.unit_generic_id
+    };
+    _products.push(obj);
+  });
+
+  if (templateId && templateSubject && _products.length) {
+    try {
+      //ลบ template detail ออกก่อน
+      await warehouseModel.deleteTemplateItemsIssue(db, templateId);
+      //แล้ว insert กลับเข้าไปใหม่
+      await warehouseModel.saveIssueTemplateDetail(db, _products);
+      // update template subject
+      await warehouseModel.updateIssueTemplate(db, templateId, templateSubject);
+      res.send({ ok: true });
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
+  }
+}));
+
+router.get('/warehouses/getwarehouseproducttemplate-issue', co(async (req, res, next) => {
+  let db = req.db;
+  let warehouse_id = req.decoded.warehouseId
+  console.log(warehouse_id);
+
+  try {
+    let reqult = await warehouseModel.getallRequisitionTemplateIssueStaff(db, warehouse_id);
+    res.send({ ok: true, rows: reqult[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+router.get('/issue/generic-template-list/:id', co(async (req, res, next) => {
+  let db = req.db;
+  let id = req.params.id;
+  try {
+    let rs = await issueModel.getGenericTemplateList(db, id);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+router.get('/issue/_getissuestemplate/:warehouseId', co(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.decoded.warehouseId;
+
+  try {
+    let rows = await issueModel._getissuesTemplate(db, warehouseId);
+    res.send({ ok: true, rows: rows });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/generics/types', co(async (req, res, next) => {
+  let db = req.db;
+  let productGroups = req.decoded.generic_type_id;
+  let _pgs = [];
+
+  if (productGroups) {
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+
+    try {
+      let rs = await genericModel.getGenericTypes(db, _pgs);
+
+      res.send({ ok: true, rows: rs });
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  }
+}));
+
 export default router;

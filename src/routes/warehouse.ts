@@ -512,6 +512,163 @@ router.post('/warehouseproduct', wrap(async (req, res, next) => {
 }));
 
 
+
+
+//แสดง template ทั้งหมด
+router.get('/warehouseproducttemplate', wrap(async (req, res, next) => {
+  let db = req.db;
+  try {
+    let reqult = await warehouseModel.getallRequisitionTemplate(db);
+    res.send({ ok: true, rows: reqult[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+router.get('/warehouseproducttemplate-issue', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouse_id = req.decoded.warehouseId
+  try {
+    let reqult = await warehouseModel.getallRequisitionTemplateIssue(db,warehouse_id);
+    res.send({ ok: true, rows: reqult[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+router.get('/warehouseproducttemplate/search', wrap(async (req, res, next) => {
+  let db = req.db;
+  let query = req.query.query;
+  try {
+    let reqult = await warehouseModel.getallRequisitionTemplateSearch(db, query);
+    res.send({ ok: true, rows: reqult[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+router.get('/warehouseproducttemplate-issue/search', wrap(async (req, res, next) => {
+  let db = req.db;
+  let query = req.query.query;
+  try {
+    let reqult = await warehouseModel.getallRequisitionTemplateSearchIssue(db, query);
+    res.send({ ok: true, rows: reqult[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+router.post('/updatewarehouseproducttemplate-issue', wrap(async (req, res, next) => {
+  let templateId = req.body.templateId;
+  let templateSubject = req.body.templateSubject;
+  let products = req.body.products;
+
+  let db = req.db;
+  //prepare items data
+  let _products: Array<any> = [];
+  products.forEach((v: any) => {
+    let obj: any = {
+      template_id: templateId,
+      generic_id: v.generic_id,
+      unit_generic_id: v.unit_generic_id
+    };
+    _products.push(obj);
+  });
+
+  if (templateId && templateSubject && _products.length) {
+    try {
+      //ลบ template detail ออกก่อน
+      await warehouseModel.deleteTemplateItemsIssue(db, templateId);
+      //แล้ว insert กลับเข้าไปใหม่
+      await warehouseModel.saveIssueTemplateDetail(db, _products);
+      // update template subject
+      await warehouseModel.updateIssueTemplate(db, templateId, templateSubject);
+      res.send({ ok: true });
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
+  }
+}));
+router.get('/warehousetemplate-issue/:templateId', wrap(async (req, res, next) => {
+  let db = req.db;
+  try {
+
+    let templateId = req.params.templateId;
+
+    let reqult = await warehouseModel.getIssueTemplate(db, templateId);
+    res.send({ ok: true, rows: reqult[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+router.get('/warehousetemplate/:templateId', wrap(async (req, res, next) => {
+  let db = req.db;
+  try {
+
+    let templateId = req.params.templateId;
+
+    let reqult = await warehouseModel.getRequisitionTemplate(db, templateId);
+    res.send({ ok: true, rows: reqult[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.post('/updatewarehouseproducttemplate', wrap(async (req, res, next) => {
+  let templateId = req.body.templateId;
+  let templateSubject = req.body.templateSubject;
+  let products = req.body.products;
+
+  let db = req.db;
+  //prepare items data
+  let _products: Array<any> = [];
+  products.forEach((v: any) => {
+    let obj: any = {
+      template_id: templateId,
+      generic_id: v.generic_id,
+      unit_generic_id: v.unit_generic_id
+    };
+    _products.push(obj);
+  });
+
+  if (templateId && templateSubject && _products.length) {
+    try {
+      //ลบ template detail ออกก่อน
+      await warehouseModel.deleteTemplateItems(db, templateId);
+      //แล้ว insert กลับเข้าไปใหม่
+      await warehouseModel.saveRequisitionTemplateDetail(db, _products);
+      // update template subject
+      await warehouseModel.updateRequisitionTemplate(db, templateId, templateSubject);
+      res.send({ ok: true });
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
+  }
+}));
+
+
 router.post('/warehouseproducttemplate', wrap(async (req, res, next) => {
   let templateSummary = req.body.templateSummary;
   let products = req.body.products;
@@ -559,37 +716,54 @@ router.post('/warehouseproducttemplate', wrap(async (req, res, next) => {
   } else {
     res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
   }
-
 }));
-
-//แสดง template ทั้งหมด
-router.get('/warehouseproducttemplate', wrap(async (req, res, next) => {
+router.post('/warehouseproducttemplate-issue', wrap(async (req, res, next) => {
+  let templateSummary = req.body.templateSummary;
+  let products = req.body.products;
+  console.log(products);
+  // let SourceWarehouseId = req.body.SourceWarehouseId;
   let db = req.db;
-  try {
-    let reqult = await warehouseModel.getallRequisitionTemplate(db);
-    res.send({ ok: true, rows: reqult[0] });
-  } catch (error) {
-    console.log(error);
-    res.send({ ok: false, error: error.messge });
-  } finally {
-    db.destroy();
+
+  if (templateSummary && products.length) {
+
+    try {
+      //prepare summary data
+      const summary: any = {
+        warehouse_id: templateSummary.warehouseId,
+        template_subject: templateSummary.templateSubject,
+        people_user_id: req.decoded.people_user_id,
+        created_date: moment().format('YYYY-MM-DD HH:mm:ss')
+      }
+
+      let rsSummary = await warehouseModel.saveIssueTemplate(db, summary);
+      //prepare items data
+      let _products: Array<any> = [];
+      products.forEach((v: any) => {
+        let obj: any = {
+          template_id: rsSummary[0],
+          // warehouse_id: templateSummary.WarehouseId,
+          // source_warehouse_id: templateSummary.SourceWarehouseId,
+          // product_id: v.product_id,
+          generic_id: v.generic_id,
+          unit_generic_id: v.unit_generic_id
+          // unit_id: v.unit_id || 0,
+          // min_qty: v.min_qty || 0,
+          // max_qty: v.max_qty || 0
+        };
+        _products.push(obj);
+      });
+
+      await warehouseModel.saveIssueTemplateDetail(db, _products);
+      res.send({ ok: true });
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+  } else {
+    res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
   }
 }));
-
-router.get('/warehouseproducttemplate/search', wrap(async (req, res, next) => {
-  let db = req.db;
-  let query = req.query.query;
-  try {
-    let reqult = await warehouseModel.getallRequisitionTemplateSearch(db, query);
-    res.send({ ok: true, rows: reqult[0] });
-  } catch (error) {
-    console.log(error);
-    res.send({ ok: false, error: error.messge });
-  } finally {
-    db.destroy();
-  }
-}));
-
 // remove req template
 router.delete('/requisition/remove-template/:templateId', wrap(async (req, res, next) => {
   let db = req.db;
@@ -607,7 +781,22 @@ router.delete('/requisition/remove-template/:templateId', wrap(async (req, res, 
     db.destroy();
   }
 }));
+router.delete('/issue/remove-template/:templateId', wrap(async (req, res, next) => {
+  let db = req.db;
+  try {
 
+    let templateId = req.params.templateId;
+
+    await warehouseModel.deleteTemplateIssue(db, templateId);
+    await warehouseModel.deleteTemplateItemsIssue(db, templateId);
+    res.send({ ok: true });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
 //แสดง template ทั้งหมด ของ warehouse นี้
 router.get('/alltemplateinwarehouse', wrap(async (req, res, next) => {
   let db = req.db;
@@ -734,57 +923,7 @@ router.delete('/:warehouseId', (req, res, next) => {
     });
 });
 
-router.get('/warehousetemplate/:templateId', wrap(async (req, res, next) => {
-  let db = req.db;
-  try {
 
-    let templateId = req.params.templateId;
-
-    let reqult = await warehouseModel.getRequisitionTemplate(db, templateId);
-    res.send({ ok: true, rows: reqult[0] });
-  } catch (error) {
-    console.log(error);
-    res.send({ ok: false, error: error.messge });
-  } finally {
-    db.destroy();
-  }
-}));
-
-router.post('/updatewarehouseproducttemplate', wrap(async (req, res, next) => {
-  let templateId = req.body.templateId;
-  let templateSubject = req.body.templateSubject;
-  let products = req.body.products;
-
-  let db = req.db;
-  //prepare items data
-  let _products: Array<any> = [];
-  products.forEach((v: any) => {
-    let obj: any = {
-      template_id: templateId,
-      generic_id: v.generic_id,
-      unit_generic_id: v.unit_generic_id
-    };
-    _products.push(obj);
-  });
-
-  if (templateId && templateSubject && _products.length) {
-    try {
-      //ลบ template detail ออกก่อน
-      await warehouseModel.deleteTemplateItems(db, templateId);
-      //แล้ว insert กลับเข้าไปใหม่
-      await warehouseModel.saveRequisitionTemplateDetail(db, _products);
-      // update template subject
-      await warehouseModel.updateRequisitionTemplate(db, templateId, templateSubject);
-      res.send({ ok: true });
-    } catch (error) {
-      res.send({ ok: false, error: error.message });
-    } finally {
-      db.destroy();
-    }
-  } else {
-    res.send({ ok: false, error: 'ข้อมูลไม่ครบถ้วน' });
-  }
-}));
 
 router.get('/reqshipingnetwork/:warehouseId', wrap(async (req, res, next) => {
   let db = req.db;

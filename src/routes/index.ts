@@ -2820,6 +2820,7 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
         'รหัส_Generics': v.working_code,
         'ชื่อสามัญ': v.generic_name,
         'ผู้จำหน่าย': v.m_labeler_name,
+        'ผู้ผลิต': v.v_labeler_name,
         'CONVERSION': v.qty,
         'หน่วยเล็กสุด': v.small_unit,
         'บัญชียา': v.account_name,

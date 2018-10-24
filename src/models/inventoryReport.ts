@@ -229,7 +229,7 @@ export class InventoryReportModel {
         FROM
         wm_borrow b
         JOIN wm_borrow_generic bg ON bg.borrow_id = b.borrow_id
-        JOIN wm_borrow_product bp ON bp.borrow_generic_id = bg.borrow_generic_id
+        JOIN wm_borrow_product bp ON bp.borrow_generic_id = bg.borrow_generic_id and bp.qty > 0
         JOIN mm_generics mg ON mg.generic_id = bg.generic_id
         JOIN wm_warehouses w ON w.warehouse_id = b.dst_warehouse_id
         LEFT JOIN mm_generic_dosages md ON md.dosage_id = mg.dosage_id
@@ -463,7 +463,7 @@ mgt.generic_type_id `
                 AND '${endDate} 23:59:59' 
                 ) AS q
             ORDER BY
-            q.stock_card_id`
+	            abs(q.stock_card_id)`
         return knex.raw(sql)
     }
 
@@ -2577,7 +2577,7 @@ OR sc.ref_src like ?
           FROM
             wm_borrow b
                   JOIN wm_borrow_generic bg ON bg.borrow_id = b.borrow_id
-                  JOIN wm_borrow_product bp ON bp.borrow_generic_id = bg.borrow_generic_id
+                  JOIN wm_borrow_product bp ON bp.borrow_generic_id = bg.borrow_generic_id and bp.qty > 0
                   JOIN wm_products wp ON wp.wm_product_id = bp.wm_product_id
                   JOIN mm_generics AS mg ON mg.generic_id = bg.generic_id
           JOIN mm_products mp ON wp.product_id = mp.product_id
@@ -2629,7 +2629,7 @@ OR sc.ref_src like ?
                   wm_borrow b
                 JOIN wm_borrow_generic bg ON bg.borrow_id = b.borrow_id
                 JOIN wm_borrow_product bp ON bp.borrow_generic_id = bp.borrow_generic_id
-                JOIN wm_products AS wp ON wp.wm_product_id = bp.wm_product_id
+                JOIN wm_products AS wp ON wp.wm_product_id = bp.wm_product_id and wp.qty > 0
                 AND wp.warehouse_id = b.src_warehouse_id
                 WHERE
                   b.borrow_id = ${borrowId} and bg.generic_id = ${genericId}
@@ -2992,7 +2992,8 @@ OR sc.ref_src like ?
 	mg.working_code,
 	mp.product_name,
 	vs.balance_amount,
-	ml.labeler_name AS m_labeler_name,
+    ml.labeler_name AS m_labeler_name,
+    ml2.labeler_name AS v_labeler_name,
 	mga.account_name,
 	mgt.generic_type_name,
 	mgd.dosage_name,
@@ -3035,7 +3036,8 @@ FROM
 	JOIN mm_unit_generics mug ON mug.unit_generic_id = vs.unit_generic_id
 	JOIN mm_units mu1 ON mu1.unit_id = mug.from_unit_id
 	JOIN mm_units mu2 ON mu2.unit_id = mug.to_unit_id
-	JOIN mm_labelers ml ON ml.labeler_id = mp.m_labeler_id
+    JOIN mm_labelers ml ON ml.labeler_id = mp.m_labeler_id
+    JOIN mm_labelers ml2 ON ml2.labeler_id = mp.v_labeler_id
 	left JOIN (
 	SELECT
 	warehouse_id,

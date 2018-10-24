@@ -63,9 +63,11 @@ export class BorrowModel {
     return knex('wm_borrow as wmt')
       .select('wmt.borrow_id', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
         'src.warehouse_name as src_warehouse_name', 'src.short_code as src_warehouse_code', 'wmt.mark_deleted',
-        'dst.warehouse_name as dst_warehouse_name', 'dst.short_code as dst_warehouse_code', 'wmt.approved', 'wmt.confirmed')
+        'dst.warehouse_name as dst_warehouse_name', 'dst.short_code as dst_warehouse_code', 'wmt.approved', 'wmt.confirmed', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
+      .leftJoin('um_people as up', 'up.people_id', 'wmt.people_id')
+      .leftJoin('um_titles as t', 't.title_id', 'up.title_id')
       .where('wmt.src_warehouse_id', warehouseId)
       .orderBy('wmt.borrow_id', 'DESC')
       .limit(limit)
@@ -154,9 +156,11 @@ export class BorrowModel {
     return knex('wm_borrow as wmt')
       .select('wmt.borrow_id', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
         'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code',
-        'dst.warehouse_name as dst_warehouse_name', 'wmt.approved')
+        'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
+      .leftJoin('um_people as up', 'up.people_id', 'wmt.people_id')
+      .leftJoin('um_titles as t', 't.title_id', 'up.title_id')
       .where('wmt.src_warehouse_id', warehouseId)
       .andWhere('wmt.approved', 'Y')
       .limit(limit)
@@ -209,9 +213,11 @@ export class BorrowModel {
     return knex('wm_borrow as wmt')
       .select('wmt.borrow_id', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
         'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'wmt.confirmed',
-        'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code')
+        'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
+      .leftJoin('um_people as up', 'up.people_id', 'wmt.people_id')
+      .leftJoin('um_titles as t', 't.title_id', 'up.title_id')
       .where('wmt.src_warehouse_id', warehouseId)
       .andWhereNot('wmt.mark_deleted', 'Y')
       .andWhereNot('wmt.approved', 'Y')
@@ -266,9 +272,11 @@ export class BorrowModel {
     return knex('wm_borrow as wmt')
       .select('wmt.borrow_id', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
         'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'wmt.confirmed',
-        'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code')
+        'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
       .leftJoin('wm_warehouses as dst', 'dst.warehouse_id', 'wmt.dst_warehouse_id')
+      .leftJoin('um_people as up', 'up.people_id', 'wmt.people_id')
+      .leftJoin('um_titles as t', 't.title_id', 'up.title_id')
       .where('wmt.src_warehouse_id', warehouseId)
       .andWhere('wmt.mark_deleted', 'Y')
       .limit(limit)
@@ -328,29 +336,34 @@ export class BorrowModel {
     b.approved,
 		bp.borrow_product_id,
 		bp.borrow_id,
-		ws.out_qty,
+		SUM(bp.confirm_qty/ug.qty )as out_qty,
 		bp.borrow_generic_id,
 		bp.wm_product_id,
 		vr.reserve_qty,
-		bp.qty,
+		bg.qty/ug.qty as qty,
 		wp.qty as balance_qty,
 		FLOOR(bp.qty/ug.qty) as product_pack_qty,
-    mp.product_name, mg.generic_name, wp.lot_no, wp.expired_date,
-    fu.unit_name as from_unit_name, ug.qty as conversion_qty, tu.unit_name as to_unit_name
+    mp.product_name, mg.generic_name, 
+    wp.lot_no, 
+    wp.expired_date,
+    fu.unit_name as from_unit_name, 
+    ug.qty as conversion_qty, 
+    tu.unit_name as to_unit_name
     from wm_borrow_product as bp
+		join wm_borrow_generic bg on bg.borrow_generic_id = bp.borrow_generic_id
 		join wm_borrow b on b.borrow_id = bp.borrow_id
     join wm_products as wp on wp.wm_product_id = bp.wm_product_id
     join mm_products as mp on mp.product_id = wp.product_id
     join mm_generics as mg on mg.generic_id = mp.generic_id
-    join mm_unit_generics as ug on ug.unit_generic_id = wp.unit_generic_id
+    join mm_unit_generics as ug on ug.unit_generic_id = bg.unit_generic_id
     join mm_units as fu on fu.unit_id = ug.from_unit_id
     join mm_units as tu on tu.unit_id = ug.to_unit_id
-		left join view_stock_card_warehouse ws on ws.product_id = wp.product_id and ws.lot_no = wp.lot_no and ws.document_ref_id = b.borrow_id and ws.unit_generic_id = wp.unit_generic_id and ws.transaction_type = 'TRN_OUT'
-		left join view_product_reserve vr on vr.lot_no = wp.lot_no and vr.reserve_qty > 0
-    where bp.borrow_id = ? and bp.qty != 0
-    and wp.warehouse_id = ${warehouseId}
+		left join view_product_reserve vr on vr.wm_product_id = wp.wm_product_id and vr.lot_no = wp.lot_no
+    where bp.borrow_id = ?
+    and wp.warehouse_id = ?
+		GROUP BY mg.generic_id
     order by mp.product_name`;
-    return knex.raw(sql, [borrowId]);
+    return knex.raw(sql, [borrowId, warehouseId]);
   }
 
   saveDstProducts(knex: Knex, data: any[]) {
@@ -534,15 +547,18 @@ export class BorrowModel {
   }
 
   getSummaryInfo(knex: Knex, borrowId: any) {
-    return knex('wm_borrow')
-      .where('borrow_id', borrowId);
+    return knex('wm_borrow as b')
+      .select('b.*', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
+      .leftJoin('um_people as up', 'up.people_id', 'b.people_id')
+      .leftJoin('um_titles as t', 't.title_id', 'up.title_id')
+      .where('b.borrow_id', borrowId);
   }
 
-  getProductsInfo(knex: Knex, borrowId: any, transferGenericId: any) {
+  getProductsInfo(knex: Knex, borrowId: any, borrowGenericId: any) {
     let sql = `SELECT
     bp.*,
     bp.qty / ug.qty as product_qty,
-    FLOOR(wp.qty / ug.qty) as pack_remain_qty,
+    FLOOR(wp.qty/ ug.qty) as pack_remain_qty,
     wp.qty AS small_remain_qty,
     wp.lot_no,
     wp.expired_date,
@@ -552,16 +568,18 @@ export class BorrowModel {
     tu.unit_name AS to_unit_name 
   FROM
     wm_borrow_product AS bp
+		JOIN wm_borrow_generic AS bg ON bg.borrow_generic_id = bp.borrow_generic_id
     JOIN wm_products AS wp ON wp.wm_product_id = bp.wm_product_id
     JOIN mm_unit_generics AS ug ON ug.unit_generic_id = wp.unit_generic_id
     JOIN mm_products AS mp ON mp.product_id = wp.product_id
     JOIN mm_units AS fu ON fu.unit_id = ug.from_unit_id
     JOIN mm_units AS tu ON tu.unit_id = ug.to_unit_id 
-  WHERE
-    bp.borrow_id = ? 
-    and bp.borrow_generic_id = ?
+		LEFT JOIN view_product_reserve vr ON vr.wm_product_id = wp.wm_product_id AND vr.lot_no = wp.lot_no
+    WHERE
+    bp.borrow_id = ?
+    and bg.borrow_generic_id = ?
     `;
-    return knex.raw(sql, [borrowId, transferGenericId]);
+    return knex.raw(sql, [borrowId, borrowGenericId]);
   }
 
   getProductsInfoEdit(knex: Knex, borrowId: any, transferGenericId: any) {
@@ -596,6 +614,7 @@ export class BorrowModel {
     let sql = `
     select b.*
     , b.qty as borrow_qty
+    , ug.qty as conversion_qty
     , mg.working_code, mg.generic_name
     , sg.remain_qty
     , mg.primary_unit_id, mu.unit_name as primary_unit_name
