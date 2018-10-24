@@ -311,6 +311,7 @@ router.post('/save', co(async (req, res, next) => {
         src_warehouse_id: _summary.srcWarehouseId,
         dst_warehouse_id: _summary.dstWarehouseId,
         people_id: _summary.peopleId,
+        remark: _summary.remark,
         people_user_id: req.decoded.people_user_id,
         created_at: moment().format('YYYY-MM-DD HH:mm:ss')
       }
@@ -376,6 +377,7 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
           src_warehouse_id: _summary.srcWarehouseId,
           dst_warehouse_id: _summary.dstWarehouseId,
           people_id: _summary.peopleId,
+          remark: _summary.remark,
           borrow_date: _summary.borrowDate,
           people_user_id: req.decoded.people_user_id
         }
