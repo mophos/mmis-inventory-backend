@@ -295,6 +295,7 @@ router.post('/save', co(async (req, res, next) => {
         src_warehouse_id: _summary.srcWarehouseId,
         dst_warehouse_id: _summary.dstWarehouseId,
         people_id: _summary.peopleId,
+        remark: _summary.remark,
         people_user_id: req.decoded.people_user_id,
         created_at: moment().format('YYYY-MM-DD HH:mm:ss')
       }
@@ -360,6 +361,7 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
           src_warehouse_id: _summary.srcWarehouseId,
           dst_warehouse_id: _summary.dstWarehouseId,
           people_id: _summary.peopleId,
+          remark: _summary.remark,
           borrow_date: _summary.borrowDate,
           people_user_id: req.decoded.people_user_id
         }
@@ -382,10 +384,11 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
 
           let products = [];
           g.products.forEach(p => {
+            console.log('vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv', p)
             products.push({
               borrow_id: borrowId,
               borrow_generic_id: rsBorrowGeneric[0],
-              wm_product_id: p.wm_product_id,
+              wm_product_id: p.wm_product_id ? p.wm_product_id : '',
               qty: p.product_qty * p.conversion_qty,
               create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
               create_by: req.decoded.people_user_id

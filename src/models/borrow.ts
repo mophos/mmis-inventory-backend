@@ -330,6 +330,30 @@ export class BorrowModel {
       .where('b.borrow_id', borrowId)
   }
 
+  detailBorrow(knex: Knex, borrowId: string, warehouseId: any) {
+    let sql = `select 
+    b.approved,
+		b.borrow_id,
+		bg.borrow_generic_id,
+		bg.qty/ug.qty as qty,
+		FLOOR(bg.qty/ug.qty) as product_pack_qty,
+    mp.product_name, mg.generic_name, 
+    fu.unit_name as from_unit_name, 
+    ug.qty as conversion_qty, 
+    tu.unit_name as to_unit_name
+    from wm_borrow_generic as bg
+		join wm_borrow b on b.borrow_id = bg.borrow_id
+		join mm_products as mp on mp.generic_id = bg.generic_id
+		join mm_generics as mg on mg.generic_id = mp.generic_id
+    join mm_unit_generics as ug on ug.unit_generic_id = bg.unit_generic_id
+    join mm_units as fu on fu.unit_id = ug.from_unit_id
+    join mm_units as tu on tu.unit_id = ug.to_unit_id
+    where bg.borrow_id = ?
+    and b.src_warehouse_id = ?
+   	GROUP BY bg.borrow_generic_id`;
+    return knex.raw(sql, [borrowId, warehouseId])
+  }
+
   detail(knex: Knex, borrowId: string, warehouseId: any) {
     let sql = `
     select 
@@ -557,7 +581,7 @@ export class BorrowModel {
   getProductsInfo(knex: Knex, borrowId: any, borrowGenericId: any) {
     let sql = `SELECT
     bp.*,
-    bp.qty / ug.qty as product_qty,
+    CEIL(bp.qty / ug.qty) as product_qty,
     FLOOR(wp.qty/ ug.qty) as pack_remain_qty,
     wp.qty AS small_remain_qty,
     wp.lot_no,
@@ -676,6 +700,14 @@ export class BorrowModel {
       .where('wp.warehouse_id', warehouseId)
       .andWhere('wp.product_id', productId)
       .andWhere('wp.lot_no', lot_no)
+  }
+
+  getBorrowGenerics(knex: Knex, borrowId: any) {
+    return knex('wm_borrow as b')
+      .select('b.borrow_id', 'bg.generic_id', 'bg.qty', 'bp.wm_product_id', 'bg.unit_generic_id', 'b.src_warehouse_id as src_warehouse', 'b.dst_warehouse_id as dst_warehouse')
+      .leftJoin('wm_borrow_generic as bg', 'bg.borrow_id', 'b.borrow_id')
+      .leftJoin('wm_borrow_product as bp', 'bp.borrow_generic_id', 'bg.borrow_generic_id')
+      .where('b.borrow_id', borrowId)
   }
 
   getProductbalance(knex: Knex, warehouseId: any, productId: any, lot_no: any) {
