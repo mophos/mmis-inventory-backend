@@ -591,7 +591,7 @@ export class ReceiveModel {
 
 
   }
-  getWmProduct(knex: Knex, item: any,warehouseId:any) {
+  getWmProduct(knex: Knex, item: any, warehouseId: any) {
     return knex('wm_products')
       // .select('*')
       .where('product_id', item.product_id)
@@ -599,7 +599,7 @@ export class ReceiveModel {
       .andWhere('unit_generic_id', item.unit_generic_id)
       .andWhere('warehouse_id', warehouseId)
   }
-  getStockItem(knex: Knex, pick_id: any,warehouseId:any) {
+  getStockItem(knex: Knex, pick_id: any, warehouseId: any) {
     let sql =
       `
     SELECT
@@ -743,7 +743,7 @@ WHERE
     VALUES('${v.wm_product_id}', '${v.warehouse_id}', '${v.product_id}', ${v.qty}, ${v.cost},
       ${ v.price}, '${v.lot_no}', '${v.expired_date}', ${v.location_id},
       ${ v.unit_generic_id}, ${v.people_user_id}, '${v.created_at}')
-    ON DUPLICATE KEY UPDATE qty = qty + ${ v.qty}, cost = (
+    ON DUPLICATE KEY UPDATE qty = qty + ${ v.qty}, unit_generic_id = '${v.unit_generic_id}',cost = (
       select(sum(w.qty * w.cost) + ${ totalCost}) / (sum(w.qty) + ${v.qty})
     from wm_products as w
     where w.product_id = '${v.product_id}' and w.lot_no = '${v.lot_no}'
@@ -1240,7 +1240,7 @@ WHERE
     return knex('wm_receives')
       .count('* as count').as('count')
       .whereBetween('receive_date', [(+year - 1) + '-10-01', +year + '-09-30'])
-      // .whereNotNull('purchase_order_id')
+    // .whereNotNull('purchase_order_id')
   }
 
   getReceiveNumber(knex: Knex, year: any) {

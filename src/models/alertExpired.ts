@@ -8,15 +8,15 @@ export class AlertExpiredModel {
       .leftJoin('wm_generic_expired_alert as ge', 'ge.generic_id', 'mg.generic_id')
       .orderBy('mg.generic_name');
   }
-  getAllSearchGenerics(knex: Knex, data: any, query:any) {
+  getAllSearchGenerics(knex: Knex, data: any, query: any) {
     return knex('mm_generics as mg')
       .select('mg.*', 'ge.num_days', 'gt.*')
       .leftJoin('wm_generic_expired_alert as ge', 'ge.generic_id', 'mg.generic_id')
       .leftJoin('mm_generic_types as gt', 'gt.generic_type_id', 'mg.generic_type_id')
       .whereIn('gt.generic_type_id', data)
-      .where((w)=>{
-        w.where('mg.working_code','like','%'+query+'%')
-        .orWhere('mg.generic_name','like','%'+query+'%')
+      .where((w) => {
+        w.where('mg.working_code', 'like', '%' + query + '%')
+          .orWhere('mg.generic_name', 'like', '%' + query + '%')
       })
       .orderBy('mg.generic_name')
   }
@@ -75,7 +75,7 @@ export class AlertExpiredModel {
     set num_days = ${numDays} where mg.generic_type_id in (${type})`
     return knex.raw(sql);
   }
-  
+
   productExpired(knex: Knex, genericTypeId, warehouseId) {
     return knex('wm_generic_expired_alert as xp')
       .select('xp.generic_id', 'mg.working_code', 'mg.generic_name', 'mp.working_code as product_code', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', knex.raw('DATEDIFF(wp.expired_date, CURDATE()) AS diff'), 'xp.num_days', 'wp.warehouse_id', 'ww.warehouse_name')
@@ -84,6 +84,7 @@ export class AlertExpiredModel {
       .join('wm_products as wp', 'wp.product_id', 'mp.product_id')
       .join('wm_warehouses as ww', 'ww.warehouse_id', 'wp.warehouse_id')
       .whereRaw(`DATEDIFF(wp.expired_date, CURDATE()) < xp.num_days and mg.generic_type_id in (${genericTypeId}) and ww.warehouse_id in (${warehouseId})`)
+      .whereRaw(`sum(wp.sum) > 0`)
       .groupBy('wp.product_id', 'wp.lot_no', 'wp.expired_date', 'wp.warehouse_id')
   }
 
