@@ -13,15 +13,15 @@ html
           tr 
             td.center.bold #{hospitalName} 
           tr 
-            td.center.bold ใบรายการยืมยา
+            td.center.bold ใบรายการเบิกด่วน
           tr
-            td หน่วยที่ขอยืม : #{list.wm_borrow_name}
+            td หน่วยที่ขอเบิกด่วน : #{list.wm_borrow_name}
           tr
             td หน่วยที่จ่าย : #{list.wm_withdarw_name}
           tr 
             td หมายเหตุ : #{list.remark}
           tr
-            td วันที่ยืม : #{list.borrow_date}
+            td วันที่เบิกด่วน : #{list.borrow_date}
           tr 
             td.left #{printDate}
         tbody
@@ -45,7 +45,7 @@ html
           tr 
             td(colspan='9') &nbsp; 
           tr 
-            td.center(colspan='4' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้ยืม)
+            td.center(colspan='4' style="padding-right:2%;") ลงชื่อ.....................................................................(ผู้เบิกด่วน)
               br
               br
               if(list.fullname)
