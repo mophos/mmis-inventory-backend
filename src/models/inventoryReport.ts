@@ -460,7 +460,8 @@ mgt.generic_type_id `
                 vscw.warehouse_id = '${warehouseId}' 
                 AND vscw.generic_id = '${genericId}' 
                 AND vscw.stock_date BETWEEN '${startDate} 00:00:00' 
-                AND '${endDate} 23:59:59' 
+                AND '${endDate} 23:59:59'
+                AND (vscw.in_qty != 0 OR vscw.out_qty != 0)
                 ) AS q
             ORDER BY
 	            abs(q.stock_card_id)`
