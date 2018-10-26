@@ -278,7 +278,7 @@ router.post('/import', co(async (req, res, next) => {
                     from_unit_id: unit[0].to_unit_id,
                     to_unit_id: unit[0].to_unit_id,
                     qty: 1,
-                    cost: unit[0].cost / unit.qty,
+                    cost: unit[0].cost / unit[0].qty,
                     generic_id: unit[0].generic_id
                   }
                   insertUnit.push(newUnit)
@@ -287,6 +287,7 @@ router.post('/import', co(async (req, res, next) => {
                   unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, h.generic_id);
                 }
 
+                await hisTransactionModel.decreaseProductQty(db, obj.wm_product_id, obj.cutQty);
                 let balance = await hisTransactionModel.getHisForStockCard(db, h.warehouse_id, h.product_id);
                 //get balance 
                 balance = balance[0];
@@ -325,7 +326,6 @@ router.post('/import', co(async (req, res, next) => {
                 if (obj.cutQty > 0) {
                   stockCards.push(data);
                 }
-                await hisTransactionModel.decreaseProductQty(db, obj.wm_product_id, obj.cutQty);
               }
             }
             i++;
