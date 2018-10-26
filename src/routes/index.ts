@@ -2354,13 +2354,14 @@ router.get('/report/product/receive/other', wrap(async (req, res, next) => {
   });
 }));
 
-router.get('/report/product/balance/:productId', wrap(async (req, res, next) => {
+router.get('/report/product/balance', wrap(async (req, res, next) => {
   let db = req.db;
-  let productId = req.params.productId;
+  let productId = req.query.productId;
+  let warehouseId = req.query.warehouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let productBalance = await inventoryReportModel.productBalance(db, productId);
-  let productBalanceSum = await inventoryReportModel.productBalanceSum(db, productId);
+  let productBalance = await inventoryReportModel.productBalance(db, productId, warehouseId);
+  let productBalanceSum = await inventoryReportModel.productBalanceSum(db, productId, warehouseId);
   productBalanceSum.forEach(value => {
     value.cost = inventoryReportModel.comma(value.cost * value.qty);
     value.qty = inventoryReportModel.commaQty(value.qty);
@@ -4030,7 +4031,7 @@ router.get('/report/list-borrow', wrap(async (req, res, next) => {
       let num = 0;
       let count = 0;
       let header = await inventoryReportModel.getHeadBorrow(db, id);
-      
+
       if (header[0] === undefined) { res.render('error404'); }
       const objHead: any = {
         sPage: sPage,
@@ -4043,14 +4044,14 @@ router.get('/report/list-borrow', wrap(async (req, res, next) => {
         title: []
       }
       array[num] = _.clone(objHead);
-      
+
       let title = await inventoryReportModel.list_borrowAll(db, header[0].borrow_id);
       let numTitle = 0;
-      
+
       count += 7;
       for (let tv of title[0]) {
         let rs = await inventoryReportModel.getdetailListBorrow(db, tv.borrow_id, tv.withdraw_warehouse_id, tv.generic_id);
-        
+
         count += 5;
         if (count + rs[0].length >= line) {
           numTitle = 0;
