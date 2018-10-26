@@ -20,15 +20,15 @@ html
             tr 
               td.center.bold #{hospitalName} 
             tr 
-              td.center.bold ใบจัดเวชภัณฑ์ตามใบยืม
+              td.center.bold ใบจัดเวชภัณฑ์ตามใบเบิกด่วน
             tr 
-              td.center วันที่ยืม #{head.borrow_date}
+              td.center วันที่เบิกด่วน #{head.borrow_date}
             tr 
-              td.left ใบยืมเลขที่ #{head.borrow_code}
+              td.left ใบเบิกด่วนเลขที่ #{head.borrow_code}
             tr 
-              td.left วันที่อนุมัติยืม #{head.confirm_date}
+              td.left วันที่อนุมัติเบิกด่วน #{head.confirm_date}
             tr 
-              td.left หน่วยงานที่ยืม #{head.warehouse_name}
+              td.left หน่วยงานที่เบิกด่วน #{head.warehouse_name}
             tr 
               td.left หน่วยงานที่จ่าย #{head.withdraw_warehouse_name}
             tr 
@@ -40,12 +40,12 @@ html
                     tr
                       td รหัสยา 
                       td(width="55%") : #{title.generic_code}
-                      td จำนวนขอยืม
+                      td จำนวนขอเบิกด่วน
                       td : #{title.borrow_qty} #{title.large_unit} (#{title.conversion_qty} #{title.small_unit})
                     tr
                       td ชื่อสามัญ
                       td(width="55%") : #{title.generic_name}
-                      td จำนวนยืม
+                      td จำนวนเบิกด่วน
                       td : #{title.confirm_qty} #{title.large_unit} (#{title.unit_qty} #{title.small_unit})
                     tr
                       td หน่วยบรรจุ
@@ -57,7 +57,7 @@ html
                   table.table
                     tr
                       td.center(width="40%") ชื่อทางการค้า 
-                      td จำนวนยืม
+                      td จำนวนเบิกด่วน
                       td วันหมดอายุ
                       td lot no.
                       td คงเหลือ
