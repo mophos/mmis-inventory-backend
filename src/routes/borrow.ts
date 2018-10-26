@@ -371,7 +371,6 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
         await borrowModel.updateBorrowSummary(db, borrowId, borrow);
 
         for (const g of _generics) {
-          console.log('vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv', g)
           let generics = {
             borrow_id: borrowId,
             generic_id: g.generic_id,

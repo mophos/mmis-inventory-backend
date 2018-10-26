@@ -3986,8 +3986,8 @@ router.get('/report/approve/borrow', wrap(async (req, res, next) => {
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
           // value.updated_at ? value.confirm_date = moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) : value.confirm_date = moment(value.created_at).format('D MMMM ') + (moment(value.created_at).get('year') + 543)
           value.cost = inventoryReportModel.comma(value.cost);
-          value.qty = inventoryReportModel.commaQty(value.qty / value.conversion_qty);
-          value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
+          value.qty = inventoryReportModel.commaQty(value.qty);
+          value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty);
           value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
           value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
           value.today = printDate(req.decoded.SYS_PRINT_DATE);
