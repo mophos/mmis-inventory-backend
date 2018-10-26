@@ -384,7 +384,6 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
 
           let products = [];
           g.products.forEach(p => {
-            console.log('vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv', p)
             products.push({
               borrow_id: borrowId,
               borrow_generic_id: rsBorrowGeneric[0],

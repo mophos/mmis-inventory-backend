@@ -219,7 +219,7 @@ export class InventoryReportModel {
         mp.product_name,
         md.dosage_name,
         bp.qty,
-        bp.confirm_qty/mug.qty as confirm_qty,
+        bp.confirm_qty as confirm_qty,
         u1.unit_name as large_unit,
         mug.qty as conversion_qty,
         u2.unit_name as small_unit,
@@ -2625,32 +2625,14 @@ OR sc.ref_src like ?
               wp.expired_date
             FROM
               wm_products wp
-            JOIN mm_products mp ON wp.product_id = mp.product_id
+            JOIN mm_products mp ON wp.product_id = mp.product_id AND mp.generic_id = ${genericId}
             JOIN mm_unit_generics mug ON wp.unit_generic_id = mug.unit_generic_id
             LEFT JOIN mm_units AS mul ON mug.from_unit_id = mul.unit_id
             LEFT JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
-            WHERE
-              wp.product_id IN (
-                SELECT
-                  wp.product_id
-                FROM
-                  wm_borrow b
-                JOIN wm_borrow_generic bg ON bg.borrow_id = b.borrow_id
-                JOIN wm_borrow_product bp ON bp.borrow_generic_id = bp.borrow_generic_id
-                JOIN wm_products AS wp ON wp.wm_product_id = bp.wm_product_id and wp.qty > 0
-                AND wp.warehouse_id = b.src_warehouse_id
-                WHERE
-                  b.borrow_id = ${borrowId} and bg.generic_id = ${genericId}
-                GROUP BY
-                  wp.product_id
-              )
-            AND wp.warehouse_id = ${warehouseId}
-            GROUP BY
-              wp.product_id,
-              wp.lot_no
-                  ) as sq1 where sq1.remain > 0
+            WHERE wp.warehouse_id = ${warehouseId}
+            GROUP BY wp.lot_no
+            ) as sq1 where sq1.remain > 0
           ) as a
-          group by a.product_id,a.lot_no
           ORDER BY a.generic_code desc, a.product_id asc`
         return knex.raw(sql);
     }
