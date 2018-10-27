@@ -2329,26 +2329,33 @@ OR sc.ref_src like ?
         return knex.raw(sql);
     }
 
-    productBalance(knex: Knex, productId) {
-        return knex('wm_products as wp')
+    productBalance(knex: Knex, productId, warehouseId) {
+        let query = knex('wm_products as wp')
             .select('wp.expired_date', 'wp.lot_no', 'wh.warehouse_name', 'wp.warehouse_id', 'wp.product_id', 'wp.unit_generic_id', 'mg.generic_name', 'mp.product_name')
             .sum('wp.qty as qty').sum('wp.cost as cost')
             .join('mm_products as mp', 'wp.product_id', 'mp.product_id')
             .join('mm_generics as mg', 'mp.generic_id', 'mg.generic_id')
             .join('wm_warehouses as wh', 'wh.warehouse_id', 'wp.warehouse_id')
             .where('wp.product_id', productId)
-            .groupBy('wp.warehouse_id').groupBy('wp.lot_no')
+        if (warehouseId != 0) {
+            query.andWhere('wp.warehouse_id', warehouseId)
+        }
+        query.groupBy('wp.warehouse_id').groupBy('wp.lot_no')
+        return query;
     }
-    productBalanceSum(knex: Knex, productId) {
-        return knex('wm_products as wp').select('wp.warehouse_id', 'wp.product_id', 'wp.unit_generic_id', 'mg.generic_name', 'mp.product_name', 'mu.unit_name')
+    productBalanceSum(knex: Knex, productId, warehouseId) {
+        let query = knex('wm_products as wp').select('wp.warehouse_id', 'wp.product_id', 'wp.unit_generic_id', 'mg.generic_name', 'mp.product_name', 'mu.unit_name')
             .sum('wp.qty as qty').avg('wp.cost as cost')
             .join('mm_products as mp', 'wp.product_id', 'mp.product_id')
             .join('mm_generics as mg', 'mp.generic_id', 'mg.generic_id')
             .join('mm_unit_generics as mug', 'mug.unit_generic_id', 'wp.unit_generic_id')
             .join('mm_units as mu', 'mug.to_unit_id', 'mu.unit_id')
-
             .where('wp.product_id', productId)
-            .groupBy('wp.product_id')
+        if (warehouseId != 0) {
+            query.andWhere('wp.warehouse_id', warehouseId)
+        }
+        query.groupBy('wp.product_id')
+        return query;
     }
     productBalanceWarehouse(knex: Knex, warehouseId) {
         return knex('wm_products as wp')
