@@ -14,7 +14,7 @@ export class BorrowOther {
 
   getWarehouses(knex: Knex, borrowId: any) {
     return knex('wm_borrow_other_summary')
-      .select('src_warehouse_name')
+      .select('src_warehouse_name','comment')
       .where('borrow_other_id', borrowId);
   }
 

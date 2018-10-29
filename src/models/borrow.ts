@@ -61,7 +61,7 @@ export class BorrowModel {
 
   all(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_borrow as wmt')
-      .select('wmt.borrow_id', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
+      .select('wmt.borrow_id','wmt.remark', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
         'src.warehouse_name as src_warehouse_name', 'src.short_code as src_warehouse_code', 'wmt.mark_deleted',
         'dst.warehouse_name as dst_warehouse_name', 'dst.short_code as dst_warehouse_code', 'wmt.approved', 'wmt.confirmed', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
@@ -85,7 +85,7 @@ export class BorrowModel {
 
   returnedAll(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_borrow as wmt')
-      .select('wmt.borrow_id', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
+      .select('wmt.borrow_id','wmt.remark', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
         'src.warehouse_name as src_warehouse_name', 'src.short_code as src_warehouse_code', 'wmt.mark_deleted',
         'dst.warehouse_name as dst_warehouse_name', 'dst.short_code as dst_warehouse_code', 'wmt.approved', 'wmt.confirmed')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
@@ -154,7 +154,7 @@ export class BorrowModel {
 
   approved(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_borrow as wmt')
-      .select('wmt.borrow_id', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
+      .select('wmt.borrow_id','wmt.remark', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
         'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code',
         'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
@@ -211,7 +211,7 @@ export class BorrowModel {
 
   notApproved(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_borrow as wmt')
-      .select('wmt.borrow_id', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
+      .select('wmt.borrow_id','wmt.remark', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
         'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'wmt.confirmed',
         'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
@@ -270,7 +270,7 @@ export class BorrowModel {
 
   markDeleted(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_borrow as wmt')
-      .select('wmt.borrow_id', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
+      .select('wmt.borrow_id','wmt.remark', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
         'src.warehouse_name as src_warehouse_name', 'wmt.mark_deleted', 'wmt.confirmed',
         'dst.warehouse_name as dst_warehouse_name', 'wmt.approved', 'dst.short_code as dst_warehouse_code', 'src.short_code as src_warehouse_code', knex.raw('concat(t.title_name, up.fname, " ", up.lname) as fullname'))
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
@@ -722,7 +722,7 @@ export class BorrowModel {
 
   transferRequest(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_transfer as wmt')
-      .select('wmt.borrow_id', 'wmt.transfer_code', 'wmt.mark_deleted', 'wmt.transfer_date',
+      .select('wmt.borrow_id','wmt.remark', 'wmt.transfer_code', 'wmt.mark_deleted', 'wmt.transfer_date',
         'src.warehouse_name as src_warehouse_name',
         'dst.warehouse_name as dst_warehouse_name', 'wmt.approved')
       .leftJoin('wm_warehouses as src', 'src.warehouse_id', 'wmt.src_warehouse_id')
