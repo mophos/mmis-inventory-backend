@@ -180,7 +180,7 @@ export class InventoryReportModel {
             mg.generic_name,
             ro.updated_at,
             mgd.dosage_name,
-            ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
+            ROUND(wsc.out_unit_cost * rci.confirm_qty, 2) AS total_cost,
             concat(up.fname, ' ', up.lname) as full_name,
             rci.wm_product_id
             FROM
