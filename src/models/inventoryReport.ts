@@ -166,7 +166,7 @@ export class InventoryReportModel {
             mp.product_name,
             mp.working_code AS trade_code,
             roi.requisition_qty,
-            wp.cost,
+            wsc.out_unit_cost as cost,
             wp.lot_no,
             wp.expired_date,
             sum(rci.confirm_qty) AS confirm_qty,
@@ -198,6 +198,8 @@ export class InventoryReportModel {
             JOIN mm_units AS mul ON mug.from_unit_id = mul.unit_id
             JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
             join um_people as up on up.people_id = ro.people_id
+            join wm_stock_card as wsc on wsc.document_ref_id = ro.requisition_order_id and wsc.transaction_type = 'req_out' 
+				and wsc.product_id = wp.product_id and wsc.unit_generic_id = wp.unit_generic_id and wsc.lot_no = wp.lot_no
             WHERE
                 ro.requisition_order_id = ?
             AND rci.confirm_qty > 0
