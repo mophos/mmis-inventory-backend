@@ -684,7 +684,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
   srcProducts = _.clone(dstProducts);
 
   // =================================== BORROW IN ========================
-  let data = [];
+  let data: any = [];
 
   for (const v of dstProducts) {
     if (v.qty != 0) {
@@ -705,7 +705,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       });
 
       if (dstIdx > -1) {
-        objIn.balance_qty = v.oldQty > v.remain_src ? v.remain_src + v.balances[dstIdx].balance : balances[dstIdx].balance + v.qty;
+        objIn.balance_qty = v.oldQty > v.remain_src ? v.remain_src + balances[dstIdx].balance : balances[dstIdx].balance + v.qty;
         objIn.balance_generic_qty = v.genericQty > v.remain_qty ? v.remain_qty + balances[dstIdx].balance_generic : balances[dstIdx].balance_generic + v.qty;
       } else {
         objIn.balance_qty = v.oldQty > v.remain_src ? v.remain_src : v.qty;
@@ -722,7 +722,6 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
   };
 
   for (const v of srcProducts) {
-
     if (v.qty != 0) {
       let objOut: any = {};
 
