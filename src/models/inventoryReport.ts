@@ -2120,7 +2120,7 @@ OR sc.ref_src like ?
         waa.approve_date,
         ppo.order_date as podate,
         wr.delivery_code,
-        ROUND(sum(wrd.receive_qty*wrd.cost),2) AS total_price,
+        ROUND(sum(if(wrd.is_free = 'N',wrd.receive_qty*wrd.cost,0)),2) AS total_price,
         wrd.receive_qty,
         wrt.receive_type_name,
         wr.purchase_order_id,
@@ -2164,7 +2164,7 @@ OR sc.ref_src like ?
         wr.receive_date,
         wr.delivery_code,
         ppo.order_date as podate,
-        ROUND(sum(wrd.receive_qty*wrd.cost),2) AS total_price,
+        ROUND(sum(if(wrd.is_free = 'N',wrd.receive_qty*wrd.cost,0)),2) AS total_price,
         wrd.receive_qty,
         wrt.receive_type_name,
         wr.purchase_order_id,
@@ -2238,7 +2238,8 @@ OR sc.ref_src like ?
             .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
             .leftJoin('um_purchasing_officer as up', 'up.people_id', 'u.people_id')
             .leftJoin('um_purchasing_officer_type as upt', 'upt.type_id', 'up.type_id')
-            .where('upt.type_code', 'STAFF_RECEIVE');
+            .where('upt.type_code', 'STAFF_RECEIVE')
+            .andWhere('up.is_deleted','N');
     }
 
     balance(knex: Knex, productId, warehouseId) {
