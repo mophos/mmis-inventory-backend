@@ -31,7 +31,7 @@ export class BorrowNoteModel {
   getNotesDetail(db: Knex, borrowNoteId: any) {
     return db('wm_borrow_notes as n')
       .select('n.*', db.raw('concat(t.title_name, p.fname, " ", p.lname) as fullname'))
-      .innerJoin('um_people as p', 'p.people_id', 'n.people_id')
+      .leftJoin('um_people as p', 'p.people_id', 'n.people_id')
       .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
       .where('n.borrow_note_id', borrowNoteId)
   }

@@ -414,8 +414,11 @@ router.post('/allocate-borrow', async (req, res, next) => {
     let rsProducts: any = [];
     for (const d of data) {
       rsProducts = await genericModel.getGenericQty(db, d.genericId, warehouseId);
+      let idx: number = 0;
       if (rsProducts.length) {
         for (const p of rsProducts) {
+          d.genericQty = d.genericQty * p.conversion_qty;
+
           if (d.genericId === p.generic_id) {
             const remainQty = p.qty;
             let qty = d.genericQty;
@@ -431,6 +434,14 @@ router.post('/allocate-borrow', async (req, res, next) => {
             }
             if (qty > 0) {
               allocate.push(obj);
+              idx++;
+            } else if (idx === 0 && qty === 0) {
+              allocate.push({
+                wm_product_id: p.wm_product_id,
+                product_qty: d.genericQty,
+                generic_id: d.genericId
+              });
+              idx++;
             }
           }
         }
