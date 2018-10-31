@@ -102,7 +102,7 @@ export class GenericModel {
     return knex.raw(sql);
   }
 
-  
+
   warehouseSearchAutocomplete(knex: Knex, warehouseId: any, q: any) {
     let q_ = `${q}%`;
     let _q_ = `%${q}%`;
@@ -170,7 +170,11 @@ export class GenericModel {
                   generic_name
                 LIMIT 10
               ) AS s
-      ) AS a`
+      ) AS a
+      where
+			a.generic_id in (
+			SELECT mp.generic_id from wm_products as wp join mm_products as mp on mp.product_id = wp.product_id WHERE wp.warehouse_id = ${warehouseId} group by mp.generic_id
+			)`
     return knex.raw(sql);
   }
   searchGenericSetZeroWarehouse(knex: Knex, query: any, warehouseId: any) {
