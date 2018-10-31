@@ -102,6 +102,7 @@ export class GenericModel {
     return knex.raw(sql);
   }
 
+  
   warehouseSearchAutocomplete(knex: Knex, warehouseId: any, q: any) {
     let q_ = `${q}%`;
     let _q_ = `%${q}%`;
