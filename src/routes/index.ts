@@ -317,11 +317,11 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
           value.sPage = page;
           value.nPage = approve_requis[i].length;
           value.full_name = signature[0].signature === 'N' ? '' : value.full_name
-          value.total_cost = inventoryReportModel.comma(value.total_cost);
+          value.total_cost = inventoryReportModel.comma(value.unit_cost * (value.confirm_qty * value.conversion_qty));
           value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
           // value.updated_at ? value.confirm_date = moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) : value.confirm_date = moment(value.created_at).format('D MMMM ') + (moment(value.created_at).get('year') + 543)
-          value.cost = inventoryReportModel.comma(value.cost);
+          value.unit_cost = inventoryReportModel.comma(value.unit_cost);
           value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.conversion_qty);
           value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
           value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name

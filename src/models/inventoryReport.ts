@@ -182,7 +182,8 @@ export class InventoryReportModel {
             mgd.dosage_name,
             ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
             concat(up.fname, ' ', up.lname) as full_name,
-            rci.wm_product_id
+            rci.wm_product_id,
+            rci.unit_cost
             FROM
                 wm_requisition_orders ro
             JOIN wm_requisition_order_items roi ON ro.requisition_order_id = roi.requisition_order_id
@@ -829,7 +830,7 @@ mgt.generic_type_id `
         ORDER BY
         b.borrow_id
      `;
-     return knex.raw(sql);
+        return knex.raw(sql);
     }
 
     list_requiAll(knex: Knex, requisId) {
@@ -2645,7 +2646,7 @@ OR sc.ref_src like ?
           ) as a
           group by a.product_id,a.lot_no
           ORDER BY a.generic_code desc, a.product_id asc`
-          return knex.raw(sql);
+        return knex.raw(sql);
     }
 
     getListHeadPick(knex: Knex, pickId: any) {

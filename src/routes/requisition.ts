@@ -772,8 +772,8 @@ router.post('/orders/confirm-without-unpaid', async (req, res, next) => {
   try {
     let requisitionId = req.body.requisitionId;
     let items = req.body.items;
+
     let _items = [];
-    let wmProductIds = [];
 
     let confirm_date = moment().format('YYYY-MM-DD HH:mm:ss');
     let created_at = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -794,7 +794,8 @@ router.post('/orders/confirm-without-unpaid', async (req, res, next) => {
         confirm_id: confirmId,
         generic_id: v.generic_id,
         wm_product_id: v.wm_product_id,
-        confirm_qty: v.confirm_qty // หน่วยย่อย
+        confirm_qty: v.confirm_qty, // หน่วยย่อย
+        unit_cost: v.cost
       });
     });
     // remove old data
@@ -813,9 +814,10 @@ router.put('/orders/confirm-without-unpaid/:confirmId', async (req, res, next) =
   let db = req.db;
 
   try {
-    let requisitionId = req.body.requisitionId;
+    // let requisitionId = req.body.requisitionId;
     let items = req.body.items;
     let confirmId = req.params.confirmId;
+    console.log('items', items);
 
     let _items = [];
     let wmProductIds = [];
@@ -832,7 +834,8 @@ router.put('/orders/confirm-without-unpaid/:confirmId', async (req, res, next) =
         confirm_id: confirmId,
         generic_id: v.generic_id,
         wm_product_id: v.wm_product_id,
-        confirm_qty: v.confirm_qty // หน่วยย่อย
+        confirm_qty: v.confirm_qty, // หน่วยย่อย
+        unit_cost: v.cost
       });
     });
     // remove old data
@@ -876,7 +879,8 @@ router.post('/orders/confirm-with-unpaid', async (req, res, next) => {
         confirm_id: confirmId,
         generic_id: v.generic_id,
         wm_product_id: v.wm_product_id,
-        confirm_qty: v.confirm_qty // หน่วยย่อย
+        confirm_qty: v.confirm_qty, // หน่วยย่อย
+        unit_cost: v.cost
       });
     });
     // remove old data
@@ -939,7 +943,8 @@ router.put('/orders/confirm-with-unpaid/:confirmId', async (req, res, next) => {
         confirm_id: confirmId,
         generic_id: v.generic_id,
         wm_product_id: v.wm_product_id,
-        confirm_qty: v.confirm_qty // หน่วยย่อย
+        confirm_qty: v.confirm_qty, // หน่วยย่อย
+        unit_cost: v.cost
       });
     });
     // remove old data
