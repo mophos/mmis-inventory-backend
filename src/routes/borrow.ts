@@ -649,7 +649,6 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
     let rsLots: any = await borrowModel.getLotbalance(db, v.src_warehouse_id, v.product_id, v.lot_no);
 
     if (+v.qty > rsLots[0].lot_balance) {
-
       v.qty -= rsLots[0].lot_balance;
 
       const idx = _.findIndex(returnData, { 'src_warehouse_id': v.src_warehouse_id, 'dst_warehouse_id': v.dst_warehouse_id });

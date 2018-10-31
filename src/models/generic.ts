@@ -268,12 +268,13 @@ export class GenericModel {
 
   getGenericQty(knex: Knex, generics: any, warehouseId: any) {
     return knex('wm_products as wp')
-      .select('wp.wm_product_id', 'wp.product_id', 'mug.unit_generic_id', 'mp.generic_id', 'wp.qty')
+      .select('wp.wm_product_id', 'wp.product_id', 'mug.unit_generic_id', 'mp.generic_id', 'wp.qty', 'mug.qty as conversion_qty')
       .join('mm_products as mp', 'mp.product_id', 'wp.product_id')
       .join('mm_unit_generics as mug', 'mug.unit_generic_id', 'wp.unit_generic_id')
       .where('wp.warehouse_id', warehouseId)
       .andWhere('mp.generic_id', generics)
-      .andWhereRaw('wp.qty>0')
+      .orderBy('wp.qty', 'DESC')
+    // .andWhereRaw('wp.qty>0')
   }
 
   getProductInWarehousesByGenericsBase(knex: Knex, generics: any[], warehouseId: any) {
