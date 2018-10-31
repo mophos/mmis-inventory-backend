@@ -1085,16 +1085,16 @@ WHERE
       .join('wm_locations as l','rd.location_id',' l.location_id ')
       .where('rd.product_id',productId)
       .andWhere('rd.warehouse_id',warehouseId)
-      .orderBy('rd.updated_at','ASC')
+      .orderBy('rd.receive_detail_id','ASC')
       .limit(1)
   }
   getLastLocationOther(knex: Knex,warehouseId,productId){
-    return knex('wm_receive_detail as rd')
+    return knex('wm_receive_other_detail as rd')
       .select('l.location_id')
       .join('wm_locations as l','rd.location_id',' l.location_id ')
       .where('rd.product_id',productId)
       .andWhere('rd.warehouse_id',warehouseId)
-      .orderBy('rd.updated_at','ASC')
+      .orderBy('rd.receive_detail_id','ASC')
       .limit(1)
   }
 
