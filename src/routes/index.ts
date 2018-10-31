@@ -2404,13 +2404,14 @@ router.get('/report/product/receive/other', wrap(async (req, res, next) => {
   });
 }));
 
-router.get('/report/product/balance/:productId', wrap(async (req, res, next) => {
+router.get('/report/product/balance', wrap(async (req, res, next) => {
   let db = req.db;
-  let productId = req.params.productId;
+  let productId = req.query.productId;
+  let warehouseId = req.query.warehouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let productBalance = await inventoryReportModel.productBalance(db, productId);
-  let productBalanceSum = await inventoryReportModel.productBalanceSum(db, productId);
+  let productBalance = await inventoryReportModel.productBalance(db, productId, warehouseId);
+  let productBalanceSum = await inventoryReportModel.productBalanceSum(db, productId, warehouseId);
   productBalanceSum.forEach(value => {
     value.cost = inventoryReportModel.comma(value.cost * value.qty);
     value.qty = inventoryReportModel.commaQty(value.qty);

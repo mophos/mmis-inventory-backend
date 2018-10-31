@@ -1078,6 +1078,26 @@ WHERE
     return knex.raw(sql);
 
   }
+
+  getLastLocation(knex: Knex,warehouseId,productId){
+    return knex('wm_receive_detail as rd')
+      .select('l.location_id')
+      .join('wm_locations as l','rd.location_id',' l.location_id ')
+      .where('rd.product_id',productId)
+      .andWhere('rd.warehouse_id',warehouseId)
+      .orderBy('rd.updated_at','ASC')
+      .limit(1)
+  }
+  getLastLocationOther(knex: Knex,warehouseId,productId){
+    return knex('wm_receive_detail as rd')
+      .select('l.location_id')
+      .join('wm_locations as l','rd.location_id',' l.location_id ')
+      .where('rd.product_id',productId)
+      .andWhere('rd.warehouse_id',warehouseId)
+      .orderBy('rd.updated_at','ASC')
+      .limit(1)
+  }
+
   getPurchaseProductList(knex: Knex, purchaseOrderId: any) {
     let sql = `
     select pi.product_id, p.product_name, pi.unit_generic_id,

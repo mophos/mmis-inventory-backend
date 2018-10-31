@@ -166,7 +166,7 @@ export class InventoryReportModel {
             mp.product_name,
             mp.working_code AS trade_code,
             roi.requisition_qty,
-            wp.cost,
+            wp.cost as cost,
             wp.lot_no,
             wp.expired_date,
             sum(rci.confirm_qty) AS confirm_qty,
@@ -220,7 +220,7 @@ export class InventoryReportModel {
         mp.product_name,
         md.dosage_name,
         bp.qty,
-        bp.confirm_qty/mug.qty as confirm_qty,
+        bp.confirm_qty as confirm_qty,
         u1.unit_name as large_unit,
         mug.qty as conversion_qty,
         u2.unit_name as small_unit,
@@ -2119,7 +2119,7 @@ OR sc.ref_src like ?
         waa.approve_date,
         ppo.order_date as podate,
         wr.delivery_code,
-        ROUND(sum(wrd.receive_qty*wrd.cost),2) AS total_price,
+        ROUND(sum(if(wrd.is_free = 'N',wrd.receive_qty*wrd.cost,0)),2) AS total_price,
         wrd.receive_qty,
         wrt.receive_type_name,
         wr.purchase_order_id,
@@ -2163,7 +2163,7 @@ OR sc.ref_src like ?
         wr.receive_date,
         wr.delivery_code,
         ppo.order_date as podate,
-        ROUND(sum(wrd.receive_qty*wrd.cost),2) AS total_price,
+        ROUND(sum(if(wrd.is_free = 'N',wrd.receive_qty*wrd.cost,0)),2) AS total_price,
         wrd.receive_qty,
         wrt.receive_type_name,
         wr.purchase_order_id,
@@ -2237,7 +2237,8 @@ OR sc.ref_src like ?
             .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
             .leftJoin('um_purchasing_officer as up', 'up.people_id', 'u.people_id')
             .leftJoin('um_purchasing_officer_type as upt', 'upt.type_id', 'up.type_id')
-            .where('upt.type_code', 'STAFF_RECEIVE');
+            .where('upt.type_code', 'STAFF_RECEIVE')
+            .andWhere('up.is_deleted','N');
     }
 
     balance(knex: Knex, productId, warehouseId) {
@@ -2330,26 +2331,33 @@ OR sc.ref_src like ?
         return knex.raw(sql);
     }
 
-    productBalance(knex: Knex, productId) {
-        return knex('wm_products as wp')
+    productBalance(knex: Knex, productId, warehouseId) {
+        let query = knex('wm_products as wp')
             .select('wp.expired_date', 'wp.lot_no', 'wh.warehouse_name', 'wp.warehouse_id', 'wp.product_id', 'wp.unit_generic_id', 'mg.generic_name', 'mp.product_name')
             .sum('wp.qty as qty').sum('wp.cost as cost')
             .join('mm_products as mp', 'wp.product_id', 'mp.product_id')
             .join('mm_generics as mg', 'mp.generic_id', 'mg.generic_id')
             .join('wm_warehouses as wh', 'wh.warehouse_id', 'wp.warehouse_id')
             .where('wp.product_id', productId)
-            .groupBy('wp.warehouse_id').groupBy('wp.lot_no')
+        if (warehouseId != 0) {
+            query.andWhere('wp.warehouse_id', warehouseId)
+        }
+        query.groupBy('wp.warehouse_id').groupBy('wp.lot_no')
+        return query;
     }
-    productBalanceSum(knex: Knex, productId) {
-        return knex('wm_products as wp').select('wp.warehouse_id', 'wp.product_id', 'wp.unit_generic_id', 'mg.generic_name', 'mp.product_name', 'mu.unit_name')
+    productBalanceSum(knex: Knex, productId, warehouseId) {
+        let query = knex('wm_products as wp').select('wp.warehouse_id', 'wp.product_id', 'wp.unit_generic_id', 'mg.generic_name', 'mp.product_name', 'mu.unit_name')
             .sum('wp.qty as qty').avg('wp.cost as cost')
             .join('mm_products as mp', 'wp.product_id', 'mp.product_id')
             .join('mm_generics as mg', 'mp.generic_id', 'mg.generic_id')
             .join('mm_unit_generics as mug', 'mug.unit_generic_id', 'wp.unit_generic_id')
             .join('mm_units as mu', 'mug.to_unit_id', 'mu.unit_id')
-
             .where('wp.product_id', productId)
-            .groupBy('wp.product_id')
+        if (warehouseId != 0) {
+            query.andWhere('wp.warehouse_id', warehouseId)
+        }
+        query.groupBy('wp.product_id')
+        return query;
     }
     productBalanceWarehouse(knex: Knex, warehouseId) {
         return knex('wm_products as wp')
@@ -2619,32 +2627,14 @@ OR sc.ref_src like ?
               wp.expired_date
             FROM
               wm_products wp
-            JOIN mm_products mp ON wp.product_id = mp.product_id
+            JOIN mm_products mp ON wp.product_id = mp.product_id AND mp.generic_id = ${genericId}
             JOIN mm_unit_generics mug ON wp.unit_generic_id = mug.unit_generic_id
             LEFT JOIN mm_units AS mul ON mug.from_unit_id = mul.unit_id
             LEFT JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
-            WHERE
-              wp.product_id IN (
-                SELECT
-                  wp.product_id
-                FROM
-                  wm_borrow b
-                JOIN wm_borrow_generic bg ON bg.borrow_id = b.borrow_id
-                JOIN wm_borrow_product bp ON bp.borrow_generic_id = bp.borrow_generic_id
-                JOIN wm_products AS wp ON wp.wm_product_id = bp.wm_product_id and wp.qty > 0
-                AND wp.warehouse_id = b.src_warehouse_id
-                WHERE
-                  b.borrow_id = ${borrowId} and bg.generic_id = ${genericId}
-                GROUP BY
-                  wp.product_id
-              )
-            AND wp.warehouse_id = ${warehouseId}
-            GROUP BY
-              wp.product_id,
-              wp.lot_no
-                  ) as sq1 where sq1.remain > 0
+            WHERE wp.warehouse_id = ${warehouseId}
+            GROUP BY wp.lot_no
+            ) as sq1 where sq1.remain > 0
           ) as a
-          group by a.product_id,a.lot_no
           ORDER BY a.generic_code desc, a.product_id asc`
         return knex.raw(sql);
     }
