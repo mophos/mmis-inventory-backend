@@ -486,7 +486,7 @@ router.post('/returned/approved', co(async (req, res, next) => {
 
     products.forEach(v => {
       let obj: any = {};
-      obj.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+      // obj.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
       obj.product_id = v.product_id;
       obj.generic_id = v.generic_id;
       obj.unit_generic_id = v.unit_generic_id;
@@ -688,11 +688,11 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
   for (const v of dstProducts) {
     if (v.qty != 0) {
       let objIn: any = {};
-      objIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+      // objIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
       objIn.product_id = v.product_id;
       objIn.generic_id = v.generic_id;
       objIn.unit_generic_id = v.unit_generic_id;
-      objIn.transaction_type = TransactionType.TRANSFER_IN;
+      objIn.transaction_type = TransactionType.BORROW_IN;
       objIn.document_ref_id = v.borrow_id;
       objIn.document_ref = v.borrow_code;
       objIn.in_qty = v.oldQty > v.remain_src ? v.remain_src : v.qty;
@@ -724,11 +724,11 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
     if (v.qty != 0) {
       let objOut: any = {};
 
-      objOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+      // objOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
       objOut.product_id = v.product_id;
       objOut.generic_id = v.generic_id;
       objOut.unit_generic_id = v.unit_generic_id;
-      objOut.transaction_type = TransactionType.TRANSFER_OUT;
+      objOut.transaction_type = TransactionType.BORROW_OUT;
       objOut.document_ref = v.borrow_code;
       objOut.document_ref_id = v.borrow_id;
       objOut.out_qty = v.oldQty > v.remain_src ? v.remain_src : v.qty;
@@ -751,7 +751,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       objOut.ref_src = v.src_warehouse_id;
       objOut.ref_dst = v.dst_warehouse_id;
       objOut.balance_generic_qty = srcBalanceGeneric;
-      objOut.comment = 'ยืม';
+      objOut.comment = 'ให้ยืม';
       objOut.lot_no = v.lot_no;
       objOut.expired_date = v.expired_date;
       data.push(objOut);
