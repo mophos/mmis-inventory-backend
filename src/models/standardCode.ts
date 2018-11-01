@@ -4,7 +4,7 @@ import * as moment from 'moment';
 export class StandardCodeModel {
   getCountries(knex: Knex) {
     return knex('l_country')
-    .orderBy('thai_name')
+      .orderBy('thai_name')
   }
 
   getTambon(knex: Knex, ampurCode: string, provinceCode: string) {
@@ -18,7 +18,7 @@ export class StandardCodeModel {
   }
 
   getAmpur(knex: Knex, province_code: string) {
-    return knex('l_ampur')  
+    return knex('l_ampur')
       .where({
         province_code: province_code
       })
@@ -58,6 +58,12 @@ export class StandardCodeModel {
   getGenericSuppliesTypes(knex: Knex) {
     return knex('mm_generic_supplies_types')
       .orderBy('type_name');
+  }
+
+  getReport(knex: Knex, reportType) {
+    return knex('um_report_detail')
+      .where('report_type', reportType)
+      .where('is_active', 'Y')
   }
 
 }
