@@ -13,137 +13,201 @@ html
     title report
   body
     button.btn.btn-sm.btn-success.btnprint(onclick='window.print()') Print
-    - var c = 0
-      for v in receiveID
-        .center.bold บันทึกข้อความ
-        .left.bold ส่วนราชการ
-        br
-        table.table
-          tr
-            td.left ส่วนราชการ #{hospitalName}
-            td.center(style="padding-right:35px;") 
-          tr
-            td.left ที่ #{check_receive[c].receive_code}
-            td.left วันที่ #{check_receive[c].receive_date}
-        .left.bold.conleft
-          | เรื่อง&nbsp;
-        .noneBold รายงานการตรวจรับพัสดุ
-        .left.bold.conleft
-          | เรียน&nbsp;
-        .noneBold ผู้ว่าราชการจังหวัด#{province}
-        if(check_receive[c].purchase_order_book_number !== null)
-          .fontspace 
-          | ตามบันทึกข้อความที่ #{check_receive[c].purchase_order_book_number}&nbsp;
-        else
-          .fontspace 
-          | ตามบันทึกข้อความที่ #{check_receive[c].purchase_order_number}&nbsp;
-        | ลงวันที่ #{check_receive[c].podate} อนุมัติให้ดำเนินการจัดซื้อรวม #{check_receive[c].amount_qty} รายการ
-        | เป็นเงิน #{check_receive[c].total_price} บาท (#{bahtText[c]})
-        br
-        | ตามใบสั่งซื้อเลขที่ 
-        if(check_receive[c].purchase_order_book_number !== null)
-          | #{check_receive[c].purchase_order_book_number}
-        else
-          | #{check_receive[c].purchase_order_number}
-        | และแต่งตั้งให้ข้าพเจ้าเป็นผู้ตรวจรับพัสดุ นั้น
-        br
-        .fontspace
-        | บัดนี้ #{check_receive[c].labeler_name_po} ได้นำสิ่งของตามรายารและจำนวนดังกล่าว 
-        br
-        | มาส่งมอบ ณ #{hospitalName} ตามใบส่งของเลขที่ วันที่ใบส่งของ วันที่รับของ ดังรายการต่อไปนี้
-        br
-        table(style="width: 90%; margin-left: 5%;")
-          - var i = 0
-                for v in committee[c]
-                  - i++ 
-                    tr
-                      td
-                      td(style="height:20px;")
-                      td 
-                      td
-                    tr
-                      td.right(width="5%") (ลงชื่อ)
-                      td.center(width="50%") ........................................................... 
-                      td.left ตำแหน่ง #{v.pname}
-                      td.left &nbsp;#{v.position_name}
-                    tr
-                      td
-                      td.center (#{v.title_name}#{v.fname} #{v.lname})
-                      td.center 
-                      td
-        | ได้รับมอบพัสดุรายการข้างต้นจากคณะกรรมการตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
-        br
-        br
-        table(style="width: 80%;")
-          tr
-            td.right(width="5%") (ลงชื่อ)
-            td.center(width="20%") ...........................................................
-            td.left ตำแหน่ง #{staffReceive.position_name}
-            td.left &nbsp; #{staffReceive.type_name}
-          tr
-            td
-            td.center ( #{staffReceive.title_name}#{staffReceive.fname}  #{staffReceive.lname} )
-            td
-            td
-        br
-        | เรียน  ผู้ว่าราชการจังหวัด#{province}
-        br
-        .fontspace
-        | คณะกรรมการได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่ายเงินบำรุงโรงพยาบาลประจำปีงบประมาน #{serialYear} แก่ผู้ขายต่อไป
-        br
-        br
-        br
-        table(style='width:90%;margin-left:5%;')
-          tr
-            td.right(width="5%")
-            td.center(width="50%") ...........................................................
-            td.left 
-          if(!chief)
-            tr
-              td
-              td.center 
-              td
-            tr
-              td
-              td.center 
-              td
-            tr
-              td
-              td.center 
-              td
-          else
-            tr
-              td
-              td.center (#{chief.title}#{chief.fname}  #{chief.lname})
-              td
-            tr
-              td
-              td.center #{chief.position_name}
-              td
-            tr
-              td
-              td.center #{chief.position}
-              td
-          tr
-            td
-            td(style="height:20px;")
-            td
-          tr
-            td
-            td(style="height:70px;").center ทราบ
-            td
-          tr
-            td.right(width="5%")
-            td.center(width="50%") ...........................................................
-            td.left 
-          tr
-            td.center 
-            td.center  
-              | (#{master})
-              br
-              | ผู้อำนวยการ#{hospitalName}
-              br
-              | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{province}
-            td
-        - c++ 
-        .pagebreak
+    - for(var v of data)
+      .head.center.bold บันทึกข้อความ
+      br
+      table.table
+        tr
+          td.left 
+            .bold.conleft ส่วนราชการ &nbsp;
+            | #{hospitalName}
+          td.center(style="padding-right:35px;") 
+        tr
+          td.left 
+            .bold.conleft ที่ &nbsp;
+            | 
+          td.left วันที่ #{v.receive_date}
+      .left.bold.conleft
+        | เรื่อง&nbsp;
+      .noneBold รายงานการตรวจรับพัสดุ
+      hr
+      .left.bold.conleft
+        | เรียน&nbsp;
+      .noneBold ผู้ว่าราชการจังหวัด#{province}
+      if(v.purchase_order_book_number !== null)
+        .fontspace 
+        | ตามบันทึกข้อความที่ #{v.purchase_order_book_number}&nbsp;
+      else
+        .fontspace 
+        | ตามบันทึกข้อความที่ #{v.purchase_order_number}&nbsp;
+      | ลงวันที่ #{v.podate} อนุมัติให้ดำเนินการจัดซื้อรวม #{v.amount_qty} รายการ
+      | เป็นเงิน #{v.total_price} บาท (#{v.bath_text})
+      br
+      | ตามใบสั่งซื้อเลขที่ 
+      if(v.purchase_order_book_number !== null)
+        | #{v.purchase_order_book_number}&nbsp;
+      else
+        | #{v.purchase_order_number}&nbsp;
+      | และแต่งตั้งให้ข้าพเจ้าเป็นผู้ตรวจรับพัสดุ นั้น
+      br
+      .fontspace
+      | บัดนี้ #{v.labeler_name_po} ได้นำสิ่งของตามรายารและจำนวนดังกล่าว 
+      br
+      | มาส่งมอบ ณ #{hospitalName} ตามใบส่งของเลขที่ วันที่ใบส่งของ วันที่รับของ ดังรายการต่อไปนี้
+      br
+      table.table
+        tr
+          th
+          th เลขที่ใบส่งของ
+          th วันที่ใบส่งของ
+          th วันที่รับของ
+          th วันที่ตรวจรับของ
+          th วันที่ลงบัญชีรับของ
+          th จำนวนเงิน(บาท)
+        tr
+          td 1
+          td.center #{v.delivery_code}
+          td.center #{v.delivery_date}
+          td.center #{v.receive_date}
+          td.center #{v.receive_date}
+          td.center #{v.receive_date}
+          td.center #{v.total_price}
+        tr
+          td
+          td.center 
+          td.center 
+          td.center 
+          td.center
+          th.center รวมทั้งสิ้น
+          th.center #{v.total_price}
+      br
+      | ซึ่งข้าพเจ้าได้ทำการตรวจรับพัสดุตามใบส่งของเป็นการถูกต้องแล้ว ตามวันที่ตรวจรับของ ดังกล่าวข้างบน จึงได้ลงนามไว้เป็นหลักฐานและได้ส่งมอบพัสดุดังกล่าวให้กับเจ้่หน้าที่พัสดุแล้ว
+      br
+      table(style="width:60%;margin-left:50%")
+        tr
+          td.right(style="width:10%") ลงชื่อ
+          td.center(style="width:30%") ...........................................................
+          td.left #{v.supplierPosition}
+        tr
+          td.right
+          td.center (#{v.supplierName})
+          td.left
+      | เจ้าหน้าที่พัสดุได้รับมอบพัสดุตามรายการข้างต้นถูกต้องและได้ลงบัญชีพัสดุเรียบร้อยแล้ว
+      br
+      br
+      table(style="width:60%;margin-left:50%")
+        tr
+          td.right(style="width:10%") ลงชื่อ
+          td.center(style="width:30%") ...........................................................
+          td.left #{v.buyyerPosition}
+        tr
+          td.right
+          td.center (#{v.buyyerName})
+          td.left
+      table.table
+        tr
+          td(style="width:30%").center เรียน ผู้ว่าราชการจังหวัด#{province}
+          td(style="width:70%")
+        tr
+          td(style="width:30%").center เพื่อโปรดทราบ
+          td(style="width:70%")
+      br
+      br
+      table.table
+        tr
+          td(style="width:50%")
+            table.table
+              tr
+                td.right(style="width:10%") ลงชื่อ
+                td.center(style="width:30%") ...........................................................
+                td.left #{v.chiefPosition}
+              tr
+                td.right
+                td.center (#{v.chiefName})
+                td.left
+          td(style="width:50%")
+            table.table
+              tr
+                td.center(colspan=3)  
+              tr
+                td.center(colspan=3) (#{managerName})
+              tr
+                td.center(colspan=3) ผู้อำนวยการ#{hospitalName}
+              tr
+                td.center(colspan=3) ปฏิบัติราชการแทน ผู้ว่าราชการจังหวัด#{province}
+      //- | ได้รับมอบพัสดุรายการข้างต้นจากคณะกรรมการตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
+      //- br
+      //- br
+      //- table(style="width: 80%;")
+      //-   tr
+      //-     td.right(width="5%") (ลงชื่อ)
+      //-     td.center(width="20%") ...........................................................
+      //-     td.left ตำแหน่ง #{staffReceive.position_name}
+      //-     td.left &nbsp; #{staffReceive.type_name}
+      //-   tr
+      //-     td
+      //-     td.center ( #{staffReceive.title_name}#{staffReceive.fname}  #{staffReceive.lname} )
+      //-     td
+      //-     td
+      //- br
+      //- | เรียน  ผู้ว่าราชการจังหวัด#{province}
+      //- br
+      //- .fontspace
+      //- | คณะกรรมการได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่ายเงินบำรุงโรงพยาบาลประจำปีงบประมาน #{serialYear} แก่ผู้ขายต่อไป
+      //- br
+      //- br
+      //- br
+      //- table(style='width:90%;margin-left:5%;')
+      //-   tr
+      //-     td.right(width="5%")
+      //-     td.center(width="50%") ...........................................................
+      //-     td.left 
+      //-   if(!chief)
+      //-     tr
+      //-       td
+      //-       td.center 
+      //-       td
+      //-     tr
+      //-       td
+      //-       td.center 
+      //-       td
+      //-     tr
+      //-       td
+      //-       td.center 
+      //-       td
+      //-   else
+      //-     tr
+      //-       td
+      //-       td.center (#{chief.title}#{chief.fname}  #{chief.lname})
+      //-       td
+      //-     tr
+      //-       td
+      //-       td.center #{chief.position_name}
+      //-       td
+      //-     tr
+      //-       td
+      //-       td.center #{chief.position}
+      //-       td
+      //-   tr
+      //-     td
+      //-     td(style="height:20px;")
+      //-     td
+      //-   tr
+      //-     td
+      //-     td(style="height:70px;").center ทราบ
+      //-     td
+      //-   tr
+      //-     td.right(width="5%")
+      //-     td.center(width="50%") ...........................................................
+      //-     td.left 
+      //-   tr
+      //-     td.center 
+      //-     td.center  
+      //-       | (#{master})
+      //-       br
+      //-       | ผู้อำนวยการ#{hospitalName}
+      //-       br
+      //-       | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{province}
+      //-     td
+      //- - c++ 
+      .pagebreak
