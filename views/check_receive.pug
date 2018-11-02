@@ -92,11 +92,11 @@ html
           tr
             td.right(width="5%") (ลงชื่อ)
             td.center(width="20%") ...........................................................
-            td.left ตำแหน่ง #{staffReceive.position_name}
-            td.left &nbsp; #{staffReceive.type_name}
+            td.left ตำแหน่ง #{staffReceive[c].position_name}
+            td.left &nbsp; #{staffReceive[c].type_name}
           tr
             td
-            td.center ( #{staffReceive.title_name}#{staffReceive.fname}  #{staffReceive.lname} )
+            td.center ( #{staffReceive[c].title_name}#{staffReceive[c].fname}  #{staffReceive[c].lname} )
             td
             td
         br
