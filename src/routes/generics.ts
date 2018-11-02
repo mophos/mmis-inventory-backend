@@ -389,6 +389,7 @@ router.post('/allocate', async (req, res, next) => {
           lot_no: p.lot_no,
           product_id: p.product_id,
           product_qty: qty,
+          cost: p.cost
         }
         if (remainQty > 0) {
           allocate.push(obj);

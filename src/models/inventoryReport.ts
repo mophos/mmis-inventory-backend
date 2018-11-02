@@ -182,7 +182,8 @@ export class InventoryReportModel {
             mgd.dosage_name,
             ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
             concat(up.fname, ' ', up.lname) as full_name,
-            rci.wm_product_id
+            rci.wm_product_id,
+            rci.unit_cost
             FROM
                 wm_requisition_orders ro
             JOIN wm_requisition_order_items roi ON ro.requisition_order_id = roi.requisition_order_id
@@ -238,7 +239,7 @@ export class InventoryReportModel {
         LEFT JOIN mm_units u2 ON u2.unit_id = mug.to_unit_id
         LEFT JOIN wm_products wp ON wp.wm_product_id = bp.wm_product_id
         LEFT JOIN mm_products mp ON mp.product_id = wp.product_id
-        WHERE b.borrow_id = ${borrowId}
+        WHERE b.borrow_id = ${borrowId} and bp.confirm_qty > 0
         GROUP BY wp.wm_product_id
         ORDER BY mp.product_name`;
 
