@@ -11,5 +11,7 @@ export enum TransactionType {
   HIS = 'HIS',
   ADDITION_IN = 'ADD_IN',
   ADDITION_OUT = 'ADD_OUT',
-  RETURNED = 'RTN'
+  RETURNED = 'RTN',
+  BORROW_IN = 'BORROW_IN',
+  BORROW_OUT = 'BORROW_OUT'
 }
