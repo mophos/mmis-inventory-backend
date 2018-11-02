@@ -194,6 +194,8 @@ router.put('/orders/:requisitionId', async (req, res, next) => {
       _order.updated_at = moment().format('YYYY-MM-DD HH:mm:ss');
       _order.requisition_type_id = order.requisition_type_id;
       _order.requisition_date = order.requisition_date;
+      _order.wm_requisition = order.wm_requisition;
+      _order.wm_withdraw = order.wm_withdraw;
 
       let rsOrder: any = await orderModel.updateOrder(db, requisitionId, _order);
 
