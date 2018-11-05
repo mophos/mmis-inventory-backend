@@ -29,10 +29,9 @@ html
             th.center เลขที่
             th.left รหัสเวชภัณฑ์
             th.left(style="width:45%") รายการเวชภัณฑ์
-            th.right จำนวน
-            th.left &nbsp;หน่วย
-            th.right ราคาต่อหน่วย
-            th.right มูลค่า
+            th.left lot
+            th.left จำนวน
+            th.left มูลค่า
         tbody
         - var y=0
         for a in  list[i]
@@ -40,12 +39,11 @@ html
           - c++
           tr
             td.center #{c}
-            td.left #{a.working_code}
-            td.left #{a.generic_name}
-            td.right #{a.qty}
-            td.left &nbsp;#{a.small_unit}
-            td.right #{a.unit_cost}
-            td.right #{a.cost}
+            td.left #{a.product_code}
+            td.left #{a.product_name}
+            td.left #{a.lot_no}
+            td.left #{a.show}
+            td.left #{a.total_cost}
         tfooter 
           tr
             th(colspan='8')
