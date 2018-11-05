@@ -47,7 +47,7 @@ html
             tr
               td(colspan='4').right รวมเป็นเงินทั้งสิ้น
               td.right #{bahtText[s]} &nbsp;
-              td(colspan='4').left บาท (#{_bahtText[s]})
+              td(colspan='4').left บาท (#{bahtText[s]})
               br
         - else
           | ดังปรากฏรายละเอียดตรวจรับตามใบแนบเลขที่ 
@@ -84,11 +84,11 @@ html
           tr
             td.right(width="5%") (ลงชื่อ)
             td.center(width="20%") ...........................................................
-            td.left ตำแหน่ง #{staffReceive.position_name}
-            td.left &nbsp; #{staffReceive.type_name}
+            td.left ตำแหน่ง #{staffReceive[s].position_name}
+            td.left &nbsp; #{staffReceive[s].type_name}
           tr
             td
-            td.center ( #{staffReceive.title_name}#{staffReceive.fname}  #{staffReceive.lname} )
+            td.center ( #{staffReceive[s].title_name}#{staffReceive[s].fname}  #{staffReceive[s].lname} )
             td
             td
         | เรียน  ผู้ว่าราชการจังหวัด#{province}
