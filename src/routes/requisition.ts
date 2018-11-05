@@ -1089,9 +1089,10 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             let stockCard = []; // รายการ StockCard
             let requisitionWarehouseId = preReq[0].wm_requisition;
             let withdrawWarehouseId = preReq[0].wm_withdraw;
-
+            let underZero = true
+            // res.send(requisitionProducts)
             requisitionProducts.forEach(v => {
-              if (v.confirm_qty != 0) {
+              if (v.confirm_qty > 0) {
                 wmProductIds.push(v.wm_product_id);
                 dstProducts.push({
                   qty: v.confirm_qty,
@@ -1103,11 +1104,12 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
                   qty: v.confirm_qty,
                   wm_product_id: v.wm_product_id
                 });
+              } else if( v.confirm_qty < 0) {
+                underZero = false
               }
             });
-
+            if(underZero){
             let rsWmProducts = await orderModel.getWmProducs(db, wmProductIds);
-
             // product items
             let products: any = [];
 
@@ -1239,6 +1241,9 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             await orderModel.decreaseQty(db, dstProducts);
 
             res.send({ ok: true });
+            } else {
+              res.send({ ok: false, error: 'มีรายการจ่าที่เป็นติดลบ' });
+            }
           }
         } else {
           res.send({ ok: false, error: 'วันที่เบิกไม่ถูกต้อง' });
