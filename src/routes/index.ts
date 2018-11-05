@@ -1225,10 +1225,10 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
     wareHouseName: wareHouseName, genericName: genericName, startDate: startDate, endDate: endDate, sum: sum, day: day
   });
 }));//ทำFrontEndแล้ว //ตรวจสอบแล้ว 14-9-60  // ตรวจสอบแล้ว 27/9/60
-router.get('/report/check/receive/issue/:year', wrap(async (req, res, next) => {
+router.get('/report/check/receive/issue', wrap(async (req, res, next) => {
   let db = req.db;
 
-  let year = req.params.year;
+  let year = req.query.year;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let startDate = (year - 1) + '-10-1'
@@ -1541,7 +1541,7 @@ router.get('/report/list/receivePoCheck/:sID/:eID', wrap(async (req, res, next) 
   })
 
   if (committees === undefined) { res.render('no_commitee'); }
-  let chief = await inventoryReportModel.getChief(db, 'CHIEF')
+  let chief = await inventoryReportModel.getStaff(db, 'CHIEF')
 
   res.render('check_receives', {
     totalPrice: totalPrice,
@@ -1596,7 +1596,7 @@ router.get('/report/list/receiveCodeCheck/:sID/:eID', wrap(async (req, res, next
     staffReceive.push(_staffReceive[0])
   }
   if (committee[0] === undefined) { res.render('no_commitee'); }
-  let chief = await inventoryReportModel.getChief(db, 'CHIEF');
+  let chief = await inventoryReportModel.getStaff(db, 'CHIEF');
   let serialYear = moment().get('year') + 543;
   let monthRo = moment().get('month') + 1;
   if (monthRo >= 10) {
@@ -1726,7 +1726,7 @@ router.get('/report/list/receiveDateCheck/:sDate/:eDate', wrap(async (req, res, 
      staffReceive.push(_staffReceive[0])
   }
   if (committee[0] === undefined) { res.render('no_commitee'); }
-  let chief = await inventoryReportModel.getChief(db, 'CHIEF');
+  let chief = await inventoryReportModel.getStaff(db, 'CHIEF');
 
   res.render('check_receive', {
     chief: chief[0],
@@ -2106,7 +2106,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   if (committee[0] === undefined) { res.render('no_commitee'); }
 
   let cName = []
-  let chief = await inventoryReportModel.getChief(db, 'CHIEF');
+  let chief = await inventoryReportModel.getStaff(db, 'CHIEF');
   let idxChiefPo = _.findIndex(chief, { people_id: chiefPo });
   idxChiefPo > -1 ? cName.push(chief[idxChiefPo]) : cName = [];
   let serialYear = moment().get('year') + 543;
@@ -2131,59 +2131,44 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
 
 router.get('/report/check/receive2', wrap(async (req, res, next) => {
   let db = req.db;
-  let receiveID = req.query.receiveID
-  receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
   let hosdetail = await inventoryReportModel.hospital(db);
-  let master = hosdetail[0].managerName;
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
-  let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
-
-  let chiefPo = null;
-
-  let bahtText: any = []
-  let committee: any = []
-  let invenChief: any = []
-  check_receive = check_receive[0];
-  for (const v of check_receive) {
-    chiefPo = v.chief_id;
-    v.receive_date = moment(v.receive_date).format('D MMMM ') + (moment(v.receive_date).get('year') + 543);
-    v.delivery_date = moment(v.delivery_date).format('D MMMM ') + (moment(v.delivery_date).get('year') + 543);
-    v.podate = moment(v.podate).format('D MMMM ') + (moment(v.podate).get('year') + 543);
-    v.approve_date = moment(v.approve_date).format('D MMMM ') + (moment(v.approve_date).get('year') + 543);
-    let _bahtText = inventoryReportModel.bahtText(v.total_price);
-    bahtText.push(_bahtText)
-    v.total_price = inventoryReportModel.comma(v.total_price);
-    let _committee = await inventoryReportModel.invenCommittee(db, v.receive_id);
-    committee.push(_committee[0]);
-    let _invenChief = await inventoryReportModel.inven2Chief(db, v.receive_id)
-    invenChief.push(_invenChief[0]);
+  let managerName = hosdetail[0].managerName;
+  let receiveID = req.query.receiveID
+  receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
+  try {
+    const data = [];
+    for (const id of receiveID) {
+      let rs = await inventoryReportModel.checkReceive(db, id);
+      rs = rs[0];
+      let supplier = await inventoryReportModel.getStaff(db, 'STAFF_RECEIVE');
+      rs[0].supplierName = supplier[0].title + supplier[0].fname + ' ' + supplier[0].lname;
+      rs[0].supplierPosition = supplier[0].position;
+      let buyyer = await inventoryReportModel.getStaff(db, 'BUYYER');
+      rs[0].buyyerName = buyyer[0].title + buyyer[0].fname + ' ' + buyyer[0].lname;
+      rs[0].buyyerPosition = buyyer[0].position;
+      let chief = await inventoryReportModel.getStaff(db, 'CHIEF');
+      rs[0].chiefName = chief[0].title + chief[0].fname + ' ' + chief[0].lname;
+      rs[0].chiefPosition = chief[0].position;
+      rs[0].receive_date = moment(rs[0].receive_date).format('D MMMM ') + (moment(rs[0].receive_date).get('year') + 543);
+      rs[0].delivery_date = moment(rs[0].delivery_date).format('D MMMM ') + (moment(rs[0].delivery_date).get('year') + 543);
+      rs[0].podate = moment(rs[0].podate).format('D MMMM ') + (moment(rs[0].podate).get('year') + 543);
+      rs[0].approve_date = moment(rs[0].approve_date).format('D MMMM ') + (moment(rs[0].approve_date).get('year') + 543);
+      rs[0].bath_text = inventoryReportModel.bahtText(rs[0].total_price);
+      rs[0].total_price = inventoryReportModel.comma(rs[0].total_price);
+      // }
+      data.push(rs[0]);
+    }
+    res.render('check_receive2', {
+      data: data,
+      hospitalName: hospitalName,
+      province: province,
+      managerName: managerName
+    })
+  } catch (error) {
+    res.send({ ok: false, error: error });
   }
-  if (committee[0] === undefined) { res.render('no_commitee'); }
-  let staffReceive = await inventoryReportModel.staffReceive(db);
-
-  let cName = []
-  let chief = await inventoryReportModel.getChief(db, 'CHIEF');
-  let idxChiefPo = _.findIndex(chief, { people_id: chiefPo });
-  idxChiefPo > -1 ? cName.push(chief[idxChiefPo]) : cName = [];
-  let serialYear = moment().get('year') + 543;
-  let monthRo = moment().get('month') + 1;
-  if (monthRo >= 10) {
-    serialYear += 1;
-  }
-  res.render('check_receive2', {
-    chief: cName[0],
-    staffReceive: staffReceive[0],
-    master: master,
-    hospitalName: hospitalName,
-    serialYear: serialYear,
-    check_receive: check_receive,
-    province: province,
-    bahtText: bahtText,
-    committee: committee,
-    invenChief: invenChief,
-    receiveID: receiveID
-  });
 }));
 
 router.get('/report/check/receives', wrap(async (req, res, next) => {
@@ -2259,7 +2244,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
   if (committees === undefined) { res.render('no_commitee'); }
 
   let cName = []
-  let chief = await inventoryReportModel.getChief(db, 'CHIEF');
+  let chief = await inventoryReportModel.getStaff(db, 'CHIEF');
   let idxChiefPo = _.findIndex(chief, { people_id: chiefPo });
   idxChiefPo > -1 ? cName.push(chief[idxChiefPo]) : cName = [];
   let serialYear = moment().get('year') + 543;
