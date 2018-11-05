@@ -239,7 +239,7 @@ export class InventoryReportModel {
         LEFT JOIN mm_units u2 ON u2.unit_id = mug.to_unit_id
         LEFT JOIN wm_products wp ON wp.wm_product_id = bp.wm_product_id
         LEFT JOIN mm_products mp ON mp.product_id = wp.product_id
-        WHERE b.borrow_id = ${borrowId}
+        WHERE b.borrow_id = ${borrowId} and bp.confirm_qty > 0
         GROUP BY wp.wm_product_id
         ORDER BY mp.product_name`;
 
@@ -1570,9 +1570,6 @@ FROM
         array.push(result);
         return array;
     }
-    hospname(knex: Knex) {
-        return knex.select('value').from('sys_settings').where('action_name="SYS_HOSPITAL"');
-    }
     comma(num) {
         if (num === null) { return ('0.00'); }
         let minus = false;
@@ -2126,6 +2123,7 @@ OR sc.ref_src like ?
         ml.labeler_name,
         ml.labeler_name_po,
         wr.delivery_date,
+        wr.delivery_code,
         ppo.purchase_order_book_number,
         ppo.purchase_order_number,
         ppo.chief_id,
@@ -2154,6 +2152,50 @@ OR sc.ref_src like ?
         LEFT JOIN mm_generic_types mgt ON ppo.generic_type_id = mgt.generic_type_id
         WHERE wr.receive_id in (${receiveID})
         GROUP BY wr.receive_id,ppo.purchase_order_id`
+        return (knex.raw(sql))
+    }
+
+    checkReceive2(knex: Knex, receiveID) {
+        let sql = `SELECT wr.receive_id,
+        wr.receive_code,
+        wr.receive_date,
+        waa.approve_date,
+        ppo.order_date as podate,
+        wr.delivery_code,
+        ROUND(sum(if(wrd.is_free = 'N',wrd.receive_qty*wrd.cost,0)),2) AS total_price,
+        wrd.receive_qty,
+        wrt.receive_type_name,
+        wr.purchase_order_id,
+        ml.labeler_name,
+        ml.labeler_name_po,
+        wr.delivery_date,
+        ppo.purchase_order_book_number,
+        ppo.purchase_order_number,
+        ppo.chief_id,
+        subq.amount_qty,
+        mgt.generic_type_name
+        FROM wm_receives wr
+        JOIN wm_receive_detail wrd ON wrd.receive_id=wr.receive_id
+        LEFT JOIN wm_receive_approve waa ON waa.receive_id = wr.receive_id
+        LEFT JOIN (SELECT q.receive_id, count(q.product_id) as amount_qty from (
+            SELECT
+               wrr.receive_id, wrdd.product_id
+            FROM
+                wm_receives wrr
+                JOIN wm_receive_detail wrdd ON wrdd.receive_id = wrr.receive_id
+                LEFT JOIN pc_purchasing_order ppoo ON ppoo.purchase_order_id = wrr.purchase_order_id
+                LEFT JOIN mm_products mp ON mp.product_id = wrdd.product_id
+                LEFT JOIN mm_generics mg ON mg.generic_id = mp.generic_id 
+                WHERE
+               wrr.receive_id in (${receiveID})
+							 GROUP BY wrr.receive_id ,wrdd.product_id , wrdd.is_free ) as q
+							 group by q.receive_id
+        ) as subq ON subq.receive_id = wr.receive_id
+        LEFT JOIN mm_labelers ml ON ml.labeler_id=wrd.vendor_labeler_id
+        LEFT JOIN wm_receive_types wrt ON wrt.receive_type_id=wr.receive_type_id
+        LEFT JOIN pc_purchasing_order ppo ON ppo.purchase_order_id=wr.purchase_order_id
+        LEFT JOIN mm_generic_types mgt ON ppo.generic_type_id = mgt.generic_type_id
+        WHERE wr.receive_id in (${receiveID})`
         return (knex.raw(sql))
     }
 
@@ -2210,7 +2252,7 @@ OR sc.ref_src like ?
         pc.committee_id`;
         return knex.raw(sql, receiveID);
     }
-    getChief(knex: Knex, typeCode: any) {
+    getStaff(knex: Knex, typeCode: any) {
         //ดึงหัวหน้าเจ้าหน้าที่พัสดุ ส่ง 4 เข้ามา
         return knex.select('upo.people_id', 't.title_name as title', 'p.fname', 'p.lname', 'upos.position_name', 'upot.type_name as position')
             .from('um_purchasing_officer as upo')
@@ -2219,11 +2261,9 @@ OR sc.ref_src like ?
             .join('um_positions as upos', 'upos.position_id', 'p.position_id')
             .join('um_purchasing_officer_type as upot', 'upot.type_id', 'upo.type_id')
             .where('upot.type_code', typeCode)
+            .andWhere('upo.is_deleted', 'N');
     }
-    getPoror(knex: Knex, id: any) {
-        return knex('view_um_purchasing_officer')
-            .where('type_id', id)
-    }
+
     inven2Chief(knex: Knex, receiveID) {
         return knex('wm_receives as wr')
             .leftJoin('pc_purchasing_order as po', 'po.purchase_order_id', 'wr.purchase_order_id')
@@ -2238,7 +2278,7 @@ OR sc.ref_src like ?
             .leftJoin('um_purchasing_officer as up', 'up.people_id', 'u.people_id')
             .leftJoin('um_purchasing_officer_type as upt', 'upt.type_id', 'up.type_id')
             .where('upt.type_code', 'STAFF_RECEIVE')
-            .andWhere('up.is_deleted','N');
+            .andWhere('up.is_deleted', 'N');
     }
 
     balance(knex: Knex, productId, warehouseId) {
