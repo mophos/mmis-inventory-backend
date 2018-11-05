@@ -711,8 +711,8 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
         objIn.balance_generic_qty = v.remain_qty;
       }
       objIn.balance_unit_cost = v.cost;
-      objIn.ref_src = v.src_warehouse_id;
-      objIn.ref_dst = v.dst_warehouse_id;
+      objIn.ref_src = v.dst_warehouse_id;
+      objIn.ref_dst = v.src_warehouse_id;
       objIn.lot_no = v.lot_no;
       objIn.expired_date = v.expired_date;
       objIn.comment = 'รับยืม';
