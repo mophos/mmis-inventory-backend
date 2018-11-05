@@ -1465,6 +1465,46 @@ router.get('/purchases/info/:purchaseOrderId', co(async (req, res, nex) => {
 
 }));
 
+router.get('/purchases/get-last-location', co(async (req, res, nex) => {
+
+  let db = req.db;
+  let productId: any = req.query.productId;
+  let warehouseId: any = req.query.warehouseId
+  try {
+    const rows = await receiveModel.getLastLocation(db,warehouseId, productId);
+    if(rows[0]){
+      res.send({ ok: true, detail: rows[0] });
+    } else {
+      res.send({ ok: false });
+    }
+    
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+router.get('/purchases/get-last-location-other', co(async (req, res, nex) => {
+
+  let db = req.db;
+  let productId: any = req.query.productId;
+  let warehouseId: any = req.query.warehouseId
+  try {
+    const rows = await receiveModel.getLastLocationOther(db,warehouseId, productId);
+    if(rows[0]){
+      res.send({ ok: true, detail: rows[0] });
+    } else {
+      res.send({ ok: false });
+    }
+    
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
 router.get('/purchases/product-list', co(async (req, res, nex) => {
 
   let db = req.db;
