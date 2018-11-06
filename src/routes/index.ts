@@ -2587,7 +2587,7 @@ router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req
   });
 }));
 
-router.get('/report/inventorystatus', wrap(async (req, res, next) => {
+router.get('/report/inventoryStatus/generic', wrap(async (req, res, next) => {
   let db = req.db;
   let warehouseId = req.query.warehouseId
   let statusDate = req.query.statusDate
@@ -2595,7 +2595,7 @@ router.get('/report/inventorystatus', wrap(async (req, res, next) => {
   let warehouseName = req.query.warehouseName
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.inventoryStatus(db, warehouseId, genericType, statusDate);
+  let rs = await inventoryReportModel.inventoryStatusGeneric(db, warehouseId, genericType, statusDate);
   let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
   let list = rs[0]
   let sumlist = [];
@@ -2605,10 +2605,10 @@ router.get('/report/inventorystatus', wrap(async (req, res, next) => {
   list = _.chunk(list, 35)
   // res.send({list:list});
   for (let i in list) {
-    sum = _.sumBy(list[i], 'cost')
+    sum = _.sumBy(list[i], 'total_cost')
     sumlist.push(sum)
     for (let ii in list[i]) {
-      list[i][ii].cost = inventoryReportModel.comma(list[i][ii].cost);
+      list[i][ii].total_cost = inventoryReportModel.comma(list[i][ii].total_cost);
       list[i][ii].unit_cost = inventoryReportModel.comma(list[i][ii].unit_cost);
       list[i][ii].qty = inventoryReportModel.commaQty(list[i][ii].qty);
     }
@@ -2620,7 +2620,7 @@ router.get('/report/inventorystatus', wrap(async (req, res, next) => {
   totalsumShow = inventoryReportModel.comma(totalsum);
   // res.send(sumlist);
 
-  res.render('inventorystatus', {
+  res.render('inventorystatusgeneric', {
     statusDate_text: statusDate_text,
     printDate: printDate(req.decoded.SYS_PRINT_DATE),
     hospitalName: hospitalName,
@@ -3071,7 +3071,7 @@ router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
   }
 }))
 
-router.get('/report/inventoryStatus/excel', wrap(async (req, res, next) => {
+router.get('/report/inventoryStatus/generic/excel', wrap(async (req, res, next) => {
   let db = req.db;
   let warehouseId = req.query.warehouseId
   let statusDate = req.query.statusDate
@@ -3079,23 +3079,25 @@ router.get('/report/inventoryStatus/excel', wrap(async (req, res, next) => {
   let warehouseName = req.query.warehouseName
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.inventoryStatus(db, warehouseId, genericType, statusDate);
+  let rs = await inventoryReportModel.inventoryStatusGeneric(db, warehouseId, genericType, statusDate);
   let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
   let json = [];
   let sum = 0;
   rs = rs[0];
 
   rs.forEach(v => {
+
     let obj: any = {
       'รหัสเวชภัณฑ์': v.working_code,
       'รายการเวชภัณฑ์': v.generic_name,
       'จำนวน': v.qty,
-      'หน่วย': v.small_unit,
+      'หน่วยย่อย': v.small_unit,
+      'หน่วยใหญ่': v.large_unit,
       'ราคาต่อหน่วย': v.unit_cost,
-      'มูลค่า': v.cost,
+      'มูลค่า': v.total_cost,
       'รวม': ''
     };
-    sum += v.cost;
+    sum += v.total_cost;
     json.push(obj);
   });
   let sumText = inventoryReportModel.comma(sum)
@@ -3105,10 +3107,10 @@ router.get('/report/inventoryStatus/excel', wrap(async (req, res, next) => {
   const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
   // create directory
   fse.ensureDirSync(exportDirectory);
-  const filePath = path.join(exportDirectory, 'รายงานสถานะเวชภัณฑ์คงคลัง ' + warehouseName + 'ณ วันที่' + statusDate_text + '.xlsx');
+  const filePath = path.join(exportDirectory, 'รายงานสถานะเวชภัณฑ์คงคลัง ' + warehouseName + 'ณ วันที่' + statusDate_text + '(Generic).xlsx');
   fs.writeFileSync(filePath, xls, 'binary');
   // force download
-  res.download(filePath, 'รายงานสถานะเวชภัณฑ์คงคลัง ' + warehouseName + 'ณ วันที่' + statusDate_text + '.xlsx');
+  res.download(filePath, 'รายงานสถานะเวชภัณฑ์คงคลัง ' + warehouseName + 'ณ วันที่' + statusDate_text + '(Generic).xlsx');
 }));
 
 router.get('/report/returnBudget/export', async (req, res, next) => {
@@ -4180,6 +4182,105 @@ router.get('/report/list-borrow', wrap(async (req, res, next) => {
   } finally {
     db.destroy();
   }
+}));
+
+router.get('/report/inventoryStatus/product', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.query.warehouseId
+  let statusDate = req.query.statusDate
+  let genericType = req.query.genericType
+  let warehouseName = req.query.warehouseName
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let rs = await inventoryReportModel.inventoryStatusProduct(db, warehouseId, genericType, statusDate);
+  let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
+  let list = rs[0]
+  let sumlist = [];
+  let sum = 0
+  let totalsum = 0;
+  let totalsumShow: any;
+  list = _.chunk(list, 35)
+
+  for (let i in list) {
+    sum = _.sumBy(list[i], 'total_cost')
+    sumlist.push(sum)
+    for (let ii in list[i]) {
+      list[i][ii].total_cost = inventoryReportModel.comma(list[i][ii].total_cost);
+      list[i][ii].unit_cost = inventoryReportModel.comma(list[i][ii].unit_cost);
+      list[i][ii].qty_pack = inventoryReportModel.commaQty(Math.floor(list[i][ii].qty / list[i][ii].conversion_qty));
+      list[i][ii].qty_base = inventoryReportModel.commaQty(Math.floor(list[i][ii].qty % list[i][ii].conversion_qty));
+      if (list[i][ii].qty_pack != 0 && list[i][ii].qty_base != 0) {
+        list[i][ii].show = list[i][ii].qty_pack + ' ' + list[i][ii].large_unit + ' ' + '(' + list[i][ii].conversion_qty + ' ' + list[i][ii].small_unit + ')' + ' ' + list[i][ii].qty_base + ' ' + list[i][ii].small_unit;
+      }
+      else if (list[i][ii].qty_pack != 0) {
+        list[i][ii].show = list[i][ii].qty_pack + ' ' + list[i][ii].large_unit + ' ' + '(' + list[i][ii].conversion_qty + ' ' + list[i][ii].small_unit + ')';
+      }
+      else if (list[i][ii].qty_base != 0) {
+        list[i][ii].show = list[i][ii].qty_base + ' ' + list[i][ii].small_unit;
+      }
+      list[i][ii].qty = list[i][ii].qty / list[i][ii].conversion_qty;
+    }
+  }
+  for (let s in sumlist) {
+    totalsum = totalsum + sumlist[s]
+    sumlist[s] = inventoryReportModel.comma(sumlist[s]);
+  }
+  totalsumShow = inventoryReportModel.comma(totalsum);
+  // res.send(sumlist);
+
+  res.render('inventorystatusproduct', {
+    statusDate_text: statusDate_text,
+    printDate: printDate(req.decoded.SYS_PRINT_DATE),
+    hospitalName: hospitalName,
+    list: list,
+    warehouseName: warehouseName,
+    sumlist: sumlist,
+    totalsum: totalsum,
+    totalsumShow: totalsumShow
+  });
+}));
+
+router.get('/report/inventoryStatus/product/excel', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.query.warehouseId
+  let statusDate = req.query.statusDate
+  let genericType = req.query.genericType
+  let warehouseName = req.query.warehouseName
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let rs = await inventoryReportModel.inventoryStatusProduct(db, warehouseId, genericType, statusDate);
+  let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
+  let json = [];
+  let sum = 0;
+  rs = rs[0];
+
+  rs.forEach(v => {
+
+    let obj: any = {
+      'รหัสเวชภัณฑ์': v.product_code,
+      'รายการเวชภัณฑ์': v.product_name,
+      'lot': v.lot_no,
+      'จำนวน': v.qty,
+      'หน่วยย่อย': v.small_unit,
+      'หน่วยใหญ่': v.large_unit,
+      'ราคาต่อหน่วย': v.unit_cost,
+      'มูลค่า': v.total_cost,
+      'รวม': ''
+    };
+    sum += v.total_cost;
+    json.push(obj);
+  });
+  let sumText = inventoryReportModel.comma(sum)
+  json[json.length - 1]['รวม'] = sumText
+
+  const xls = json2xls(json);
+  const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+  // create directory
+  fse.ensureDirSync(exportDirectory);
+  const filePath = path.join(exportDirectory, 'รายงานสถานะเวชภัณฑ์คงคลัง ' + warehouseName + 'ณ วันที่' + statusDate_text + '(Product).xlsx');
+  fs.writeFileSync(filePath, xls, 'binary');
+  // force download
+  res.download(filePath, 'รายงานสถานะเวชภัณฑ์คงคลัง ' + warehouseName + 'ณ วันที่' + statusDate_text + '(Product).xlsx');
 }));
 
 export default router;
