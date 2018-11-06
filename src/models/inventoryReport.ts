@@ -2802,34 +2802,6 @@ OR sc.ref_src like ?
         return knex.raw(sql);
     }
 
-    inventoryStatus(knex: Knex, warehouseId: any, genericTypeId: any, statusDate: any) {
-        let sql = `SELECT
-        vscw.generic_id,
-        vscw.generic_name,
-        mg.working_code,
-        sum( vscw.in_qty ) - sum( vscw.out_qty ) AS qty,
-        vscw.conversion_qty,
-        vscw.large_unit,
-        vscw.small_unit,
-        avg( vscw.balance_unit_cost ) AS unit_cost,
-        ( sum( vscw.in_qty ) - sum( vscw.out_qty ) ) * avg( vscw.balance_unit_cost ) AS cost
-    FROM
-        view_stock_card_warehouse AS vscw
-        JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id 
-    WHERE
-        vscw.stock_date <= '${statusDate} 23:59:59'
-        AND mg.generic_type_id in (${ genericTypeId})`
-        if (warehouseId != '0') {
-            sql += `AND vscw.warehouse_id = '${warehouseId}'`
-        }
-        sql += `GROUP BY
-            vscw.generic_id 
-        ORDER BY
-            mg.generic_name
-        `
-        return knex.raw(sql);
-    }
-
     summaryDisbursement(knex: Knex, startDate: any, endDate: any, warehouseId: any) {
         let sql = `SELECT
         ro.wm_requisition,
@@ -3432,6 +3404,94 @@ GROUP BY
             sql += ` LIMIT 150 OFFSET ${offset}`
         }
         // LIMIT 200 OFFSET 0
+        return knex.raw(sql)
+    }
+
+    inventoryStatusGeneric(knex: Knex, warehouseId: any, genericTypeId: any, statusDate: any) {
+        let sql = `SELECT
+            q.generic_id,
+            q.generic_name,
+            q.generic_code,
+            q.lot_no,
+            q.in_qty,
+            q.out_qty,
+            sum(q.qty) AS qty,
+            q.conversion_qty,
+            q.large_unit,
+            q.small_unit,
+            avg( q.unit_cost ) AS unit_cost,
+            sum(total_cost) AS total_cost
+        FROM
+            (
+        SELECT
+            vscw.generic_id,
+            vscw.generic_name,
+            mg.working_code AS generic_code,
+            vscw.lot_no,
+            sum( vscw.in_qty ) AS in_qty,
+            sum( vscw.out_qty ) AS out_qty,
+            sum( vscw.in_qty ) - sum( vscw.out_qty ) AS qty,
+            vscw.conversion_qty,
+            vscw.large_unit,
+            vscw.small_unit,
+            vscw.balance_unit_cost AS unit_cost,
+            (sum( vscw.in_qty ) - sum( vscw.out_qty ) )* avg(vscw.balance_unit_cost) AS total_cost
+        FROM
+            view_stock_card_warehouse AS vscw
+            JOIN mm_products AS mp ON mp.product_id = vscw.product_id
+            JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id 
+        WHERE
+            vscw.stock_date <= '${statusDate} 23:59:59' 
+            AND mg.generic_type_id IN ( ${ genericTypeId} ) `
+        if (warehouseId != '0') {
+            sql += `AND vscw.warehouse_id = '${warehouseId}'`
+        }
+        sql += ` GROUP BY
+            vscw.product_id,
+            vscw.lot_no 
+        HAVING
+            qty > 0 
+        ORDER BY
+            mg.generic_name 
+            ) AS q 
+        GROUP BY
+            q.generic_id
+        `
+        return knex.raw(sql);
+    }
+
+    inventoryStatusProduct(knex: Knex, warehouseId: string, genericTypeId: any, date: any) {
+        let sql = `SELECT
+            vscw.product_id,
+            mp.working_code AS product_code,
+            mp.product_name,
+            vscw.lot_no,
+            sum( vscw.in_qty ) AS in_qty,
+            sum( vscw.out_qty ) AS out_qty,
+            sum( vscw.in_qty ) - sum( vscw.out_qty ) AS qty,
+            vscw.conversion_qty,
+            vscw.large_unit,
+            vscw.small_unit,
+            vscw.balance_unit_cost AS unit_cost,
+            (sum( vscw.in_qty ) - sum( vscw.out_qty ) )* avg(vscw.balance_unit_cost) AS total_cost
+        FROM
+            view_stock_card_warehouse AS vscw
+            JOIN mm_products AS mp ON mp.product_id = vscw.product_id
+            JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id 
+        WHERE
+            vscw.stock_date <= '${date} 23:59:59' 
+            AND mg.generic_type_id IN ( ${ genericTypeId} )`
+        if (warehouseId != '0') {
+            sql += `AND vscw.warehouse_id = '${warehouseId}'`
+        }
+        sql += ` GROUP BY
+            vscw.product_id,
+            vscw.lot_no 
+        HAVING
+            qty > 0
+        ORDER BY
+            mp.product_name
+        `
         return knex.raw(sql)
     }
 
