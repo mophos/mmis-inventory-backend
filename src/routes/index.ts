@@ -1510,7 +1510,7 @@ router.get('/report/list/receivePoCheck/:sID/:eID', wrap(async (req, res, next) 
       _check_receive.push(_check[0][0]);
     }
     let _staffReceive = await inventoryReportModel.staffReceivePo(db, receiveID[i][0].purchase_order_id);
-     _staffReceive[0] ? '' : _staffReceive = await inventoryReportModel.staffReceive(db);
+    _staffReceive[0] ? '' : _staffReceive = await inventoryReportModel.staffReceive(db);
     committee = await inventoryReportModel.invenCommittee(db, receiveID[i][0].receive_id);
     committees.push(committee[0]);
     let _invenChief = await inventoryReportModel.inven2Chief(db, receiveID[i][0].receive_id)
@@ -1723,8 +1723,8 @@ router.get('/report/list/receiveDateCheck/:sDate/:eDate', wrap(async (req, res, 
     let _invenChief = await inventoryReportModel.inven2Chief(db, receiveID[i])
     invenChief.push(_invenChief[0]);
     let _staffReceive = await inventoryReportModel.staffReceivePo(db, check_receive[i].purchase_order_id);
-     _staffReceive[0] ? '' : _staffReceive = await inventoryReportModel.staffReceive(db);
-     staffReceive.push(_staffReceive[0])
+    _staffReceive[0] ? '' : _staffReceive = await inventoryReportModel.staffReceive(db);
+    staffReceive.push(_staffReceive[0])
   }
   if (committee[0] === undefined) { res.render('no_commitee'); }
   let chief = await inventoryReportModel.getStaff(db, 'CHIEF');
@@ -2101,8 +2101,8 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     let _invenChief = await inventoryReportModel.inven2Chief(db, v.receive_id)
     invenChief.push(_invenChief[0]);
     let _staffReceive = await inventoryReportModel.staffReceivePo(db, check_receive[v].purchase_order_id);
-     _staffReceive[0] ? '' : _staffReceive = await inventoryReportModel.staffReceive(db);
-     staffReceive.push(_staffReceive[0])
+    _staffReceive[0] ? '' : _staffReceive = await inventoryReportModel.staffReceive(db);
+    staffReceive.push(_staffReceive[0])
   }
   if (committee[0] === undefined) { res.render('no_commitee'); }
 
@@ -2194,7 +2194,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
   for (let i in receive) {
     const receivePo = await inventoryReportModel.receiveByPoId(db, receive[i].purchase_order_id)
     receiveID.push(receivePo)
-    
+
   }
 
   for (let i in receiveID) {
@@ -2211,8 +2211,8 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     length.push(_check_receive.length);
     check_receive.push(_check_receive);
     let _staffReceive = await inventoryReportModel.staffReceivePo(db, receiveID[i][0].purchase_order_id);
-     _staffReceive[0] ? '' : _staffReceive = await inventoryReportModel.staffReceive(db);
-     staffReceive.push(_staffReceive[0])
+    _staffReceive[0] ? '' : _staffReceive = await inventoryReportModel.staffReceive(db);
+    staffReceive.push(_staffReceive[0])
   }
 
   let chiefPo: any = null;
@@ -4012,9 +4012,6 @@ router.get('/report/approve/borrow', wrap(async (req, res, next) => {
   const signature = await inventoryReportModel.getSignature(db, 'AR')
   let page_re: any = line[0].line;
 
-  let warehouse_id: any = req.decoded.warehouseId
-  // console.log(req.decoded);
-
   try {
     let borrowId = req.query.borrow_id;
     borrowId = Array.isArray(borrowId) ? borrowId : [borrowId]
@@ -4022,6 +4019,7 @@ router.get('/report/approve/borrow', wrap(async (req, res, next) => {
     let hospitalName = hosdetail[0].hospname;
     for (let i in borrowId) {
       const _approve_borrow = await inventoryReportModel.approve_borrow2(db, borrowId[i]);
+      if (borrowId.length === 1 && _approve_borrow[0].length === 0) { res.render('error404'); }
       approve_borrow.push(_approve_borrow[0])
       approve_borrow[i] = _.chunk(approve_borrow[i], page_re)
       let page = 0;
