@@ -1494,7 +1494,7 @@ FROM
     }
     receiveByPoId(knex: Knex, ID: any) {
         return knex('wm_receives as wr')
-            .select('wr.receive_id','wr.purchase_order_id')
+            .select('wr.receive_id', 'wr.purchase_order_id')
             .where('wr.purchase_order_id', ID)
             .andWhere('wr.is_cancel', 'N')
             .orderBy('wr.receive_date', 'DESC')
@@ -2283,14 +2283,14 @@ OR sc.ref_src like ?
     staffReceivePo(knex: Knex, poId) {
         return knex('pc_purchasing_order as po')
             .select('upt.type_name', 't.title_name', 'u.fname', 'u.lname', 'p.position_name as pname')
-            .leftJoin('um_people as u','u.people_id','po.supply_id')
+            .leftJoin('um_people as u', 'u.people_id', 'po.supply_id')
             .leftJoin('um_positions as p', 'p.position_id', 'u.position_id')
             .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
             .leftJoin('um_purchasing_officer as up', 'up.people_id', 'u.people_id')
             .leftJoin('um_purchasing_officer_type as upt', 'upt.type_id', 'up.type_id')
-            .andWhere('po.purchase_order_id',poId)
+            .andWhere('po.purchase_order_id', poId)
             .where('upt.type_code', 'STAFF_RECEIVE')
-            .andWhere('up.is_deleted','N');
+            .andWhere('up.is_deleted', 'N');
     }
 
     balance(knex: Knex, productId, warehouseId) {
