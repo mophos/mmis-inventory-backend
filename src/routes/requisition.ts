@@ -1242,7 +1242,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
 
             res.send({ ok: true });
             } else {
-              res.send({ ok: false, error: 'มีรายการจ่าที่เป็นติดลบ' });
+              res.send({ ok: false, error: 'มีรายการที่เป็นติดลบ' });
             }
           }
         } else {
