@@ -296,7 +296,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
   const line = await inventoryReportModel.getLine(db, 'AR');
   const signature = await inventoryReportModel.getSignature(db, 'AR')
   let page_re: any = line[0].line;
-
+  const dateApprove = req.decoded.WM_REPORT_DATE_APPROVE; // Y = วันที่อนุมัติ
   let warehouse_id: any = req.decoded.warehouseId
   // console.log(req.decoded);
 
@@ -311,6 +311,11 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
       approve_requis[i] = _.chunk(approve_requis[i], page_re)
       let page = 0;
       _.forEach(approve_requis[i], values => {
+        if (dateApprove === 'Y' && values.confirm_date) {
+          values.approve_date = values.confirm_date;
+        } else {
+          values.approve_date = values.requisition_date;
+        }
         sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
         page++;
         _.forEach(values, value => {
@@ -318,9 +323,8 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
           value.nPage = approve_requis[i].length;
           value.full_name = signature[0].signature === 'N' ? '' : value.full_name
           value.total_cost = inventoryReportModel.comma(value.unit_cost * (value.confirm_qty * value.conversion_qty));
-          value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
+          value.approve_date = moment(value.approve_date).format('D MMMM ') + (moment(value.approve_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
-          // value.updated_at ? value.confirm_date = moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) : value.confirm_date = moment(value.created_at).format('D MMMM ') + (moment(value.created_at).get('year') + 543)
           value.unit_cost = inventoryReportModel.comma(value.unit_cost);
           value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.conversion_qty);
           value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
@@ -681,7 +685,7 @@ router.get('/report/staff/list/requis', wrap(async (req, res, next) => {
     let hospitalName = hosdetail[0].hospname;
     const rline = await inventoryReportModel.getLine(db, 'LR')
     const line = rline[0].line;
-    const dateApprove = req.decoded.WM_REQUIS_LIST_DATE_APPROVE
+    const dateApprove = req.decoded.WM_REPORT_DATE_APPROVE;
     let _list_requis = [];
     for (let id of requisId) {
       let sPage = 1;
@@ -800,7 +804,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
     let hospitalName = hosdetail[0].hospname;
     const rline = await inventoryReportModel.getLine(db, 'LR')
     const line = rline[0].line;
-    const dateApprove = req.decoded.WM_REQUIS_LIST_DATE_APPROVE
+    const dateApprove = req.decoded.WM_REPORT_DATE_APPROVE;
     let _list_requis = [];
     for (let id of requisId) {
       let sPage = 1;
@@ -4070,7 +4074,7 @@ router.get('/report/list-borrow', wrap(async (req, res, next) => {
     let hospitalName = hosdetail[0].hospname;
     const rline = await inventoryReportModel.getLine(db, 'LR')
     const line = rline[0].line;
-    // const dateApprove = req.decoded.WM_REQUIS_LIST_DATE_APPROVE
+    // const dateApprove = req.decoded.WM_REPORT_DATE_APPROVE;
     let _list_borrow = [];
     for (let id of borrowId) {
       let sPage = 1;
