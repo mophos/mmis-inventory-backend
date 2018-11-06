@@ -42,33 +42,18 @@ html
           for a in c
             - y++
             tr
-              if ( (y-1) === 0)
-                td #{s+1}.
-                td(style="font-size: 12pt;") &nbsp;#{a.product_name}
-                  br
-                  | &nbsp;(#{a.generic_name})
-                td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
-                td.right(style="font-size: 12pt;") &nbsp;#{a.qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
-                - s++
-              else
-                if ( c[y-2].product_id !== a.product_id )  
-                  td #{s+1}.
-                  td(style="font-size: 12pt;") &nbsp;#{a.product_name}
-                    br
-                    | &nbsp;(#{a.generic_name})
-                  td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
-                  td.right(style="font-size: 12pt;") &nbsp;#{a.qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
-                  - s++
-                else 
-                  td 
-                  td 
-                  td 
-                  td.right 
+              td #{s+1}.
+              td(style="font-size: 12pt;") &nbsp;#{a.product_name}
+                br
+                | &nbsp;(#{a.generic_name})
+              td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
+              td.right(style="font-size: 12pt;") &nbsp;#{a.qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
               td.right(style="font-size: 12pt;") &nbsp;#{a.confirm_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
               td.right(style="font-size: 12pt;") &nbsp;#{a.cost}
               td(style="font-size: 12pt; word-break:break-all;") &nbsp;#{a.lot_no}
               td.right(style="font-size: 12pt;") &nbsp;#{a.expired_date}
               td.right(style="font-size: 12pt;") &nbsp;#{a.total_cost}
+              - s++
             .pagebreak
             .pagebreak
           tfoot
