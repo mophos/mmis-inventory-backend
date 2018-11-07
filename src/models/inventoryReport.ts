@@ -3434,8 +3434,8 @@ GROUP BY
             vscw.conversion_qty,
             vscw.large_unit,
             vscw.small_unit,
-            vscw.balance_unit_cost AS unit_cost,
-            (sum( vscw.in_qty ) - sum( vscw.out_qty ) )* avg(vscw.balance_unit_cost) AS total_cost
+            sum(vscw.balance_unit_cost * vscw.in_qty) / sum(vscw.in_qty) AS unit_cost,
+            (sum( vscw.in_qty ) - sum( vscw.out_qty ) )* (sum(vscw.balance_unit_cost * vscw.in_qty) / sum(vscw.in_qty)) AS total_cost
         FROM
             view_stock_card_warehouse AS vscw
             JOIN mm_products AS mp ON mp.product_id = vscw.product_id
@@ -3472,8 +3472,8 @@ GROUP BY
             vscw.conversion_qty,
             vscw.large_unit,
             vscw.small_unit,
-            vscw.balance_unit_cost AS unit_cost,
-            (sum( vscw.in_qty ) - sum( vscw.out_qty ) )* avg(vscw.balance_unit_cost) AS total_cost
+            sum(vscw.balance_unit_cost * vscw.in_qty) / sum(vscw.in_qty) AS unit_cost,
+            (sum( vscw.in_qty ) - sum( vscw.out_qty ) )* (sum(vscw.balance_unit_cost * vscw.in_qty) / sum(vscw.in_qty)) AS total_cost
         FROM
             view_stock_card_warehouse AS vscw
             JOIN mm_products AS mp ON mp.product_id = vscw.product_id
