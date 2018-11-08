@@ -2125,7 +2125,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     committee.push(_committee[0]);
     let _invenChief = await inventoryReportModel.inven2Chief(db, v.receive_id)
     invenChief.push(_invenChief[0]);
-    let _staffReceive = await inventoryReportModel.staffReceivePo(db, check_receive[v].purchase_order_id);
+    let _staffReceive = await inventoryReportModel.staffReceivePo(db, v.purchase_order_id);
     _staffReceive[0] ? '' : _staffReceive = await inventoryReportModel.staffReceive(db);
     staffReceive.push(_staffReceive[0])
   }
