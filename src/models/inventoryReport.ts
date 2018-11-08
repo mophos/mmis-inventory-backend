@@ -3000,7 +3000,53 @@ OR sc.ref_src like ?
             .distinct('bg_year')
             .select(knex.raw('bg_year + 543 as bg_year'));
     }
-
+    monthlyReport(knex: Knex, month:any, year: any, genericType: any, wareHouseId: any){
+        let sql = `
+        SELECT
+ifnull(sum( q2.in_cost ),0) as in_cost,
+ifnull(sum( q1.out_ost ),0) AS out_cost,
+	ifnull(sum( q2.in_cost ),0) - ifnull(sum( q1.out_ost ),0) AS balance,
+	gt.generic_type_name,
+	ga.account_name 
+FROM
+	(
+	SELECT
+		ifnull(sum( sc.cost ),0) AS out_ost,
+		sc.generic_id 
+	FROM
+		view_stock_card_warehouse AS sc 
+	WHERE
+		( sc.out_qty > 0 AND sc.in_qty = 0 ) 
+		AND sc.warehouse_id = ${wareHouseId}
+		AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${month}-31 23:59:59'
+	GROUP BY
+		sc.generic_id 
+	)AS q1
+	left JOIN (
+	SELECT
+		ifnull(sum( sc.cost ),0) AS in_cost,
+		sc.generic_id 
+	FROM
+		view_stock_card_warehouse AS sc 
+	WHERE
+		( sc.in_qty > 0 AND sc.out_qty = 0 ) 
+		AND sc.warehouse_id = ${wareHouseId}
+		AND sc.stock_date  BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${month}-31 23:59:59'
+	 
+	GROUP BY
+		sc.generic_id
+	)  AS q2 ON q2.generic_id = q1.generic_id
+	JOIN mm_generics AS mg ON mg.generic_id = q1.generic_id
+	JOIN mm_generic_types AS gt ON gt.generic_type_id = mg.generic_type_id
+    JOIN mm_generic_accounts AS ga ON ga.account_id = mg.account_id 
+    where 
+    mg.generic_type_id in (${genericType})
+GROUP BY
+	mg.generic_type_id,
+    mg.account_id
+    `
+    return knex.raw(sql)
+    }
     issueYear(knex: Knex, year: any, wareHouseId: any, genericType: any) {
         return knex.raw(`
         SELECT
