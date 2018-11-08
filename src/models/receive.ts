@@ -713,7 +713,7 @@ WHERE
       .select(
         'rd.receive_detail_id', 'rd.receive_other_id', 'rd.product_id',
         'rd.lot_no', 'rd.expired_date', knex.raw('sum(rd.receive_qty) as receive_qty'),
-        'rd.manufacturer_labeler_id', 'rd.cost', 'rd.unit_generic_id',
+        'rd.manufacturer_labeler_id', knex.raw('(sum(rd.cost * rd.receive_qty) / sum(rd.receive_qty)) as cost'), 'rd.unit_generic_id',
         'rd.warehouse_id', 'rd.location_id',
         'ug.qty as conversion_qty', 'mp.generic_id', 'rt.receive_code', 'rt.donator_id', subBalance)
       .whereIn('rd.receive_other_id', receiveIds)
