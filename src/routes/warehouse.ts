@@ -121,12 +121,12 @@ router.post('/', wrap(async (req, res, next) => {
 
       res.send({ ok: true });
     } catch (error) {
-      res.send({ ok: false, error: error }) ;
+      res.send({ ok: false, error: error });
       // throw error;
     }
 
   } else {
-    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' }) ;
+    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' });
   }
 }));
 
@@ -176,7 +176,7 @@ router.put('/:warehouseId', wrap(async (req, res, next) => {
       res.send({ ok: false, error: error });
     }
   } else {
-    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' }) ;
+    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' });
   }
 }));
 
@@ -531,7 +531,7 @@ router.get('/warehouseproducttemplate-issue', wrap(async (req, res, next) => {
   let db = req.db;
   let warehouse_id = req.decoded.warehouseId
   try {
-    let reqult = await warehouseModel.getallRequisitionTemplateIssue(db,warehouse_id);
+    let reqult = await warehouseModel.getallRequisitionTemplateIssue(db, warehouse_id);
     res.send({ ok: true, rows: reqult[0] });
   } catch (error) {
     console.log(error);
@@ -1132,11 +1132,11 @@ router.get('/productImportList', wrap(async (req, res, next) => {
 
 router.post('/products/change-cost', async (req, res, next) => {
   let db = req.db;
-  let productId = req.body.productId;
+  let wmProductId = req.body.wmProductId;
   let cost = +req.body.cost;
 
   try {
-    await productModel.changeCost(db, productId, cost);
+    await productModel.changeCost(db, wmProductId, cost);
     res.send({ ok: true });
   } catch (error) {
     res.send({ ok: false, error: error.message });
