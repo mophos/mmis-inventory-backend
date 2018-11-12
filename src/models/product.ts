@@ -278,13 +278,13 @@ export class ProductModel {
     left join mm_units as u2 on u2.unit_id=ug.to_unit_id
     left join view_product_reserve v on v.wm_product_id = p.wm_product_id
     where p.product_id=? `;
-    if (warehouseId != 0){
+    if (warehouseId != 0) {
       sql += ` and p.warehouse_id = ${warehouseId} `
     }
     sql += `group by p.lot_no, p.expired_date, p.warehouse_id
     HAVING sum(p.qty) != 0
     order by w.warehouse_name`
-      return knex.raw(sql, [productId]);
+    return knex.raw(sql, [productId]);
   }
 
   adminGetAllProductsDetailListGeneric(knex: Knex, genericId: any) {
@@ -843,9 +843,9 @@ group by mpp.product_id
       .groupBy('wp.product_id')
   }
 
-  changeCost(knex: Knex, productId: any, cost: number) {
+  changeCost(knex: Knex, wmProductId: any, cost: number) {
     return knex('wm_products')
-      .where('product_id', productId)
+      .where('wm_product_id', wmProductId)
       .update({
         cost: cost
       });
