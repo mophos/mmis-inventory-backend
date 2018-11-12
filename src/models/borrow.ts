@@ -581,7 +581,7 @@ export class BorrowModel {
   getProductsInfo(knex: Knex, borrowId: any, borrowGenericId: any) {
     let sql = `SELECT
     bp.*,
-    CEIL((bp.qty / ug.qty) / ug.qty) as product_qty,
+    CEIL(bp.qty / ug.qty) as product_qty,
     FLOOR(wp.qty/ ug.qty) as pack_remain_qty,
     wp.qty AS small_remain_qty,
     wp.lot_no,
