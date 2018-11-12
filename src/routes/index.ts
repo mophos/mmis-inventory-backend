@@ -165,7 +165,28 @@ router.get('/report/getBudgetYear', wrap(async (req, res, next) => {
     res.send({ ok: false, error: error.message })
   }
 }))
+router.get('/report/monthlyReport', wrap(async (req, res, next) => {
+  const db = req.db;
+  const warehouseId: any = req.decoded.warehouseId
+  const month = req.query.month
+  const year = req.query.year
+  let genericType = req.query.genericTypes
+  genericType = Array.isArray(genericType) ? genericType : [genericType];
 
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+console.log(genericType);
+
+    const rs: any = await inventoryReportModel.monthlyReport(db, month, year, genericType, warehouseId);
+    res.send({rs:rs[0]})
+    // res.render('monthly-report', {
+    //   rs:rs[0]
+    // });
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  }
+}))
 router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
   const db = req.db;
   const year = req.params.year - 543
@@ -322,7 +343,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
           value.sPage = page;
           value.nPage = approve_requis[i].length;
           value.full_name = signature[0].signature === 'N' ? '' : value.full_name
-          value.total_cost = inventoryReportModel.comma(value.unit_cost * (value.confirm_qty * value.conversion_qty));
+          value.total_cost = inventoryReportModel.comma(value.unit_cost * value.confirm_qty);
           value.approve_date = moment(value.approve_date).format('D MMMM ') + (moment(value.approve_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
           value.unit_cost = inventoryReportModel.comma(value.unit_cost);

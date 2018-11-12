@@ -322,7 +322,7 @@ router.post('/save', co(async (req, res, next) => {
             borrow_id: borrowId,
             borrow_generic_id: rsBorrowGeneric[0],
             wm_product_id: p.wm_product_id,
-            qty: p.product_qty * p.conversion_qty,
+            qty: (p.product_qty * p.conversion_qty) / p.conversion_qty,
             create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             create_by: req.decoded.people_user_id
           });
@@ -658,7 +658,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
         returnData[idx].products.push({
           generic_id: v.generic_id,
           unit_generic_id: v.unit_generic_id,
-          qty: v.qty / pack[0].qty,
+          qty: (v.qty / pack[0].qty) / pack[0].qty,
           lot_no: v.lot_no
         })
       } else {
@@ -666,7 +666,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
         product.push({
           generic_id: v.generic_id,
           unit_generic_id: v.unit_generic_id,
-          qty: v.qty / pack[0].qty,
+          qty: (v.qty / pack[0].qty) / pack[0].qty,
           lot_no: v.lot_no
         })
         const obj: any = {
