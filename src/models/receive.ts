@@ -1079,22 +1079,22 @@ WHERE
 
   }
 
-  getLastLocation(knex: Knex,warehouseId,productId){
+  getLastLocation(knex: Knex, warehouseId, productId) {
     return knex('wm_receive_detail as rd')
       .select('l.location_id')
-      .join('wm_locations as l','rd.location_id',' l.location_id ')
-      .where('rd.product_id',productId)
-      .andWhere('rd.warehouse_id',warehouseId)
-      .orderBy('rd.receive_detail_id','desc')
+      .join('wm_locations as l', 'rd.location_id', ' l.location_id ')
+      .where('rd.product_id', productId)
+      .andWhere('rd.warehouse_id', warehouseId)
+      .orderBy('rd.receive_detail_id', 'desc')
       .limit(1)
   }
-  getLastLocationOther(knex: Knex,warehouseId,productId){
+  getLastLocationOther(knex: Knex, warehouseId, productId) {
     return knex('wm_receive_other_detail as rd')
       .select('l.location_id')
-      .join('wm_locations as l','rd.location_id',' l.location_id ')
-      .where('rd.product_id',productId)
-      .andWhere('rd.warehouse_id',warehouseId)
-      .orderBy('rd.receive_detail_id','desc')
+      .join('wm_locations as l', 'rd.location_id', ' l.location_id ')
+      .where('rd.product_id', productId)
+      .andWhere('rd.warehouse_id', warehouseId)
+      .orderBy('rd.receive_detail_id', 'desc')
       .limit(1)
   }
 
@@ -1946,5 +1946,11 @@ WHERE
       sql += ` and ra.receive_id is null`
     }
     return knex.raw(sql);
+  }
+
+  getunitGeneric(knex: Knex, unitGenericId) {
+    return knex('mm_unit_generics as mug')
+      .select('mug.cost')
+      .where('mug.unit_generic_id', unitGenericId)
   }
 }
