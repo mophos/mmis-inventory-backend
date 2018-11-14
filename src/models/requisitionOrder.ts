@@ -369,7 +369,7 @@ export class RequisitionOrderModel {
     w2.warehouse_name as withdraw_warehouse_name, rt.requisition_type, rc.confirm_id 
     from wm_requisition_orders as ro
     left join wm_warehouses as w1 on w1.warehouse_id = ro.wm_requisition
-    left join wm_warehouses as w2 on w1.warehouse_id = ro.wm_withdraw
+    left join wm_warehouses as w2 on w2.warehouse_id = ro.wm_withdraw
     left join wm_requisition_type as rt on rt.requisition_type_id = ro.requisition_type_id
     inner join wm_requisition_confirms as rc on rc.requisition_order_id = ro.requisition_order_id
     where rc.is_approve = 'Y' `;
