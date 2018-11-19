@@ -129,17 +129,23 @@ router.post('/upload/issue-his', upload.single('file'), co(async (req, res, next
 
   let header = excelData[0];
 
+  for (const v in header) {
+    header[v] = header[v].toUpperCase();
+  }
+
+  let icode = _.indexOf(header, 'HIS_CODE');
+  let qty = _.indexOf(header, 'QTY');
+
   // check headers 
-  if (header[0].toUpperCase() === 'ICODE' && header[2].toUpperCase() === 'QTY') {
+  if (icode > -1 && qty > -1) {
     let _data = [];
-    let genericIds = [];
     let id = uuid();
     // x = 0 = header      
     for (let x = 1; x < maxRecord; x++) {
       let obj: any = {
         uuid: id,
-        icode: excelData[x][0],
-        qty: excelData[x][2],
+        icode: excelData[x][icode],
+        qty: excelData[x][qty],
         people_user_id: req.decoded.people_user_id
       }
 
@@ -176,16 +182,23 @@ router.post('/upload/issue-mmis', upload.single('file'), co(async (req, res, nex
 
   let header = excelData[0];
 
+  for (const v in header) {
+    header[v] = header[v].toUpperCase();
+  }
+
+  let genericCode = _.indexOf(header, 'GENERIC_CODE');
+  let qty = _.indexOf(header, 'QTY');
+
   // check headers 
-  if (header[0].toUpperCase() === 'GENERIC_CODE' && header[1].toUpperCase() === 'QTY') {
+  if (genericCode > -1 && qty > -1) {
     let _data = [];
     let id = uuid();
     // x = 0 = header      
     for (let x = 1; x < maxRecord; x++) {
       let obj: any = {
         uuid: id,
-        icode: excelData[x][0],
-        qty: excelData[x][1],
+        icode: excelData[x][genericCode],
+        qty: excelData[x][qty],
         people_user_id: req.decoded.people_user_id
       }
 

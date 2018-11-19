@@ -210,7 +210,7 @@ export class HisTransactionModel {
             // .sum('vr.reserve_qty as reserve_qty')
             .sum('vr.remain_qty as remain_qty')
             // .select(db.raw(`(SELECT sum(wp.qty) FROM wm_products wp WHERE wp.product_id IN ( SELECT mp.product_id FROM mm_products mp WHERE mp.generic_id = g.generic_id  GROUP BY mp.product_id ) and wp.warehouse_id=${warehouseId} GROUP BY  wp.warehouse_id) as remain_qty`))
-            .innerJoin('mm_generics as g', 'g.generic_id', 't.icode')
+            .innerJoin('mm_generics as g', 'g.working_code', 't.icode')
             .leftJoin('mm_units as u', 'g.primary_unit_id', 'u.unit_id')
             .joinRaw(`left join view_product_reserve vr on vr.generic_id = g.generic_id and vr.warehouse_id = '${warehouseId}'`)
             .joinRaw(`join (

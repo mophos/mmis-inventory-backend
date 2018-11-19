@@ -2200,8 +2200,14 @@ router.post('/his-transaction/upload', upload.single('file'), co(async (req, res
     for (let x = 1; x < maxRecord; x++) {
       if (excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] && excelData[x][5]) {
 
-        let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3])
-        let qty = Math.ceil(excelData[x][4] / conversion[0].conversion);
+        let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3]);
+        let qty;
+        if (conversion.length) {
+          qty = Math.ceil(excelData[x][4] / conversion[0].conversion);
+        } else {
+          qty = 0;
+        }
+
         let obj: any = {
           date_serv: moment(excelData[x][0], 'YYYYMMDD').format('YYYY-MM-DD'),
           seq: excelData[x][1],
@@ -2609,17 +2615,22 @@ router.post('/upload/issue-his', upload.single('file'), co(async (req, res, next
 
   let header = excelData[0];
 
-  // check headers 
-  if (header[0].toUpperCase() === 'ICODE' && header[2].toUpperCase() === 'QTY') {
+  for (const v in header) {
+    header[v] = header[v].toUpperCase();
+  }
+
+  let icode = _.indexOf(header, 'HIS_CODE');
+  let qty = _.indexOf(header, 'QTY');
+
+  if (icode > -1 && icode > -1) {
     let _data = [];
-    let genericIds = [];
     let id = uuid();
     // x = 0 = header      
     for (let x = 1; x < maxRecord; x++) {
       let obj: any = {
         uuid: id,
-        icode: excelData[x][0],
-        qty: excelData[x][2],
+        icode: excelData[x][icode],
+        qty: excelData[x][qty],
         people_user_id: req.decoded.people_user_id,
       }
 
@@ -2654,16 +2665,23 @@ router.post('/upload/issue-mmis', upload.single('file'), co(async (req, res, nex
 
   let header = excelData[0];
 
+  for (const v in header) {
+    header[v] = header[v].toUpperCase();
+  }
+
+  let genericCode = _.indexOf(header, 'GENERIC_CODE');
+  let qty = _.indexOf(header, 'QTY');
+
   // check headers 
-  if (header[0].toUpperCase() === 'GENERIC_CODE' && header[1].toUpperCase() === 'QTY') {
+  if (genericCode > -1 && qty > -1) {
     let _data = [];
     let id = uuid();
     // x = 0 = header      
     for (let x = 1; x < maxRecord; x++) {
       let obj: any = {
         uuid: id,
-        icode: excelData[x][0],
-        qty: excelData[x][1],
+        icode: excelData[x][genericCode],
+        qty: excelData[x][qty],
         people_user_id: req.decoded.people_user_id,
       }
 
