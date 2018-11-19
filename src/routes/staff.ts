@@ -2207,7 +2207,7 @@ router.post('/his-transaction/upload', upload.single('file'), co(async (req, res
         } else {
           qty = 0;
         }
-
+        
         let obj: any = {
           date_serv: moment(excelData[x][0], 'YYYYMMDD').format('YYYY-MM-DD'),
           seq: excelData[x][1],
