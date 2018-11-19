@@ -176,10 +176,10 @@ router.get('/report/monthlyReport', wrap(async (req, res, next) => {
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
-console.log(genericType);
+    console.log(genericType);
 
     const rs: any = await inventoryReportModel.monthlyReport(db, month, year, genericType, warehouseId);
-    res.send({rs:rs[0]})
+    res.send({ rs: rs[0] })
     // res.render('monthly-report', {
     //   rs:rs[0]
     // });
@@ -2158,6 +2158,8 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
 router.get('/report/check/receive2', wrap(async (req, res, next) => {
   let db = req.db;
   let hosdetail = await inventoryReportModel.hospital(db);
+  let prefix = await inventoryReportModel.boox_prefix(db);
+  let book_prefix = prefix[0].value;
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
   let managerName = hosdetail[0].managerName;
@@ -2189,6 +2191,7 @@ router.get('/report/check/receive2', wrap(async (req, res, next) => {
     res.render('check_receive2', {
       data: data,
       hospitalName: hospitalName,
+      bookPrefix: book_prefix,
       province: province,
       managerName: managerName
     })
