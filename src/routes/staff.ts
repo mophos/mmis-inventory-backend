@@ -2200,8 +2200,14 @@ router.post('/his-transaction/upload', upload.single('file'), co(async (req, res
     for (let x = 1; x < maxRecord; x++) {
       if (excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] && excelData[x][5]) {
 
-        let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3])
-        let qty = Math.ceil(excelData[x][4] / conversion[0].conversion);
+        let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3]);
+        let qty;
+        if (conversion.length) {
+          qty = Math.ceil(excelData[x][4] / conversion[0].conversion);
+        } else {
+          qty = 0;
+        }
+
         let obj: any = {
           date_serv: moment(excelData[x][0], 'YYYYMMDD').format('YYYY-MM-DD'),
           seq: excelData[x][1],
@@ -2372,7 +2378,7 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
                 let balance = await hisTransactionModel.getHisForStockCard(db, h.warehouse_id, h.product_id);
                 //get balance 
                 balance = balance[0];
-                
+
                 let out_unit_cost;
                 let balance_qty;
                 let balance_generic_qty;
@@ -2596,14 +2602,12 @@ router.post('/products/all', co(async (req, res, next) => {
 }));
 
 // upload issue transaction
-router.post('/upload/issue', upload.single('file'), co(async (req, res, next) => {
+router.post('/upload/issue-his', upload.single('file'), co(async (req, res, next) => {
   let db = req.db;
   let filePath = req.file.path;
   let hospcode = req.decoded.his_hospcode;
   let warehouseId = req.decoded.warehouseId;
 
-  // get warehouse mapping
-  let rsWarehouseMapping: any = await warehouseModel.getStaffMappingsGenerics(db, hospcode, warehouseId);
   const workSheetsFromFile = xlsx.parse(`${filePath}`);
 
   let excelData = workSheetsFromFile[0].data;
@@ -2611,17 +2615,22 @@ router.post('/upload/issue', upload.single('file'), co(async (req, res, next) =>
 
   let header = excelData[0];
 
-  // check headers 
-  if (header[0].toUpperCase() === 'ICODE' && header[2].toUpperCase() === 'QTY') {
+  for (const v in header) {
+    header[v] = header[v].toUpperCase();
+  }
+
+  let icode = _.indexOf(header, 'HIS_CODE');
+  let qty = _.indexOf(header, 'QTY');
+
+  if (icode > -1 && icode > -1) {
     let _data = [];
-    let genericIds = [];
     let id = uuid();
     // x = 0 = header      
     for (let x = 1; x < maxRecord; x++) {
       let obj: any = {
         uuid: id,
-        icode: excelData[x][0],
-        qty: excelData[x][2],
+        icode: excelData[x][icode],
+        qty: excelData[x][qty],
         people_user_id: req.decoded.people_user_id,
       }
 
@@ -2634,6 +2643,57 @@ router.post('/upload/issue', upload.single('file'), co(async (req, res, next) =>
     rimraf.sync(filePath);
     // get data
     let rs: any = await hisTransactionModel.getIssueTransactionMappingData(db, id, hospcode, warehouseId);
+    // remove temp file 
+    res.send({ ok: true, rows: rs });
+
+  } else {
+    res.send({ ok: false, error: 'Header ไม่ถูกต้อง' })
+  }
+
+}));
+
+router.post('/upload/issue-mmis', upload.single('file'), co(async (req, res, next) => {
+  let db = req.db;
+  let filePath = req.file.path;
+  let hospcode = req.decoded.his_hospcode;
+  let warehouseId = req.decoded.warehouseId;
+
+  const workSheetsFromFile = xlsx.parse(`${filePath}`);
+
+  let excelData = workSheetsFromFile[0].data;
+  let maxRecord = excelData.length;
+
+  let header = excelData[0];
+
+  for (const v in header) {
+    header[v] = header[v].toUpperCase();
+  }
+
+  let genericCode = _.indexOf(header, 'GENERIC_CODE');
+  let qty = _.indexOf(header, 'QTY');
+
+  // check headers 
+  if (genericCode > -1 && qty > -1) {
+    let _data = [];
+    let id = uuid();
+    // x = 0 = header      
+    for (let x = 1; x < maxRecord; x++) {
+      let obj: any = {
+        uuid: id,
+        icode: excelData[x][genericCode],
+        qty: excelData[x][qty],
+        people_user_id: req.decoded.people_user_id,
+      }
+
+      _data.push(obj);
+    }
+
+    await hisTransactionModel.removeIssueTransaction(db, req.decoded.people_user_id);
+    await hisTransactionModel.saveIssueTransaction(db, _data);
+
+    rimraf.sync(filePath);
+    // get data
+    let rs: any = await hisTransactionModel.getIssueTransactionMappingDataMMIS(db, id, warehouseId);
     // remove temp file 
     res.send({ ok: true, rows: rs });
 
