@@ -2200,8 +2200,13 @@ router.post('/his-transaction/upload', upload.single('file'), co(async (req, res
     for (let x = 1; x < maxRecord; x++) {
       if (excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] && excelData[x][5]) {
 
-        let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3])
-        let qty = Math.ceil(excelData[x][4] / conversion[0].conversion);
+        let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3]);
+        let qty;
+        if (conversion.length) {
+          qty = Math.ceil(excelData[x][4] / conversion[0].conversion);
+        } else {
+          qty = 0;
+        }
         let obj: any = {
           date_serv: moment(excelData[x][0], 'YYYYMMDD').format('YYYY-MM-DD'),
           seq: excelData[x][1],
@@ -2372,7 +2377,7 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
                 let balance = await hisTransactionModel.getHisForStockCard(db, h.warehouse_id, h.product_id);
                 //get balance 
                 balance = balance[0];
-                
+
                 let out_unit_cost;
                 let balance_qty;
                 let balance_generic_qty;
