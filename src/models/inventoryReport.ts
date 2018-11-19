@@ -183,7 +183,8 @@ export class InventoryReportModel {
             ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
             concat(up.fname, ' ', up.lname) as full_name,
             rci.wm_product_id,
-            rci.unit_cost
+            rci.unit_cost,
+            rc.approve_date
             FROM
                 wm_requisition_orders ro
             JOIN wm_requisition_order_items roi ON ro.requisition_order_id = roi.requisition_order_id
@@ -3000,7 +3001,7 @@ OR sc.ref_src like ?
             .distinct('bg_year')
             .select(knex.raw('bg_year + 543 as bg_year'));
     }
-    monthlyReport(knex: Knex, month:any, year: any, genericType: any, wareHouseId: any){
+    monthlyReport(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any) {
         let sql = `
         SELECT
 ifnull(sum( q2.in_cost ),0) as in_cost,
@@ -3045,7 +3046,7 @@ GROUP BY
 	mg.generic_type_id,
     mg.account_id
     `
-    return knex.raw(sql)
+        return knex.raw(sql)
     }
     issueYear(knex: Knex, year: any, wareHouseId: any, genericType: any) {
         return knex.raw(`

@@ -363,16 +363,69 @@ export class RequisitionOrderModel {
     return srcWarehouseId ? db.raw(sqlSrc) : db.raw(sqlDst);
   }
 
+  getListKeep(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, limit: number = 15, offset: number = 0, query = '') {
+    let q = `%${query}%`;
+    let sql = `select ro.*, w1.warehouse_name as requisition_warehouse_name, rc.approve_date,
+    w2.warehouse_name as withdraw_warehouse_name, rt.requisition_type, rc.confirm_id 
+    from wm_requisition_orders as ro
+    left join wm_warehouses as w1 on w1.warehouse_id = ro.wm_requisition
+    left join wm_warehouses as w2 on w2.warehouse_id = ro.wm_withdraw
+    left join wm_requisition_type as rt on rt.requisition_type_id = ro.requisition_type_id
+    inner join wm_requisition_confirms as rc on rc.requisition_order_id = ro.requisition_order_id
+    where rc.is_approve = 'Y' 
+    and rc.is_keep = 'Y' `;
+
+    if (srcWarehouseId) {
+      sql += ` and ro.wm_requisition = '${srcWarehouseId}' `;
+    }
+    if (dstWarehouseId) {
+      sql += ` and ro.wm_withdraw = '${dstWarehouseId}' `;
+    }
+    if (query) {
+      sql += ` and (ro.requisition_code like '${q}' or
+      w1.warehouse_name like '${q}') `
+    }
+    sql += ` order by ro.requisition_code desc
+    limit ${limit} offset ${offset}`;
+
+    return db.raw(sql);
+  }
+
+  totalListKeep(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, query) {
+    let q = `%${query}%`;
+    let sql = `select count(*) as total
+    from wm_requisition_orders as ro
+    left join wm_warehouses as w1 on w1.warehouse_id = ro.wm_requisition
+    left join wm_warehouses as w2 on w1.warehouse_id = ro.wm_withdraw
+    left join wm_requisition_type as rt on rt.requisition_type_id = ro.requisition_type_id
+    inner join wm_requisition_confirms as rc on rc.requisition_order_id = ro.requisition_order_id
+    where rc.is_approve = 'Y' 
+    and rc.is_keep ='Y' `;
+
+    if (srcWarehouseId) {
+      sql += ` and ro.wm_requisition = '${srcWarehouseId}' `;
+    }
+    if (dstWarehouseId) {
+      sql += ` and ro.wm_withdraw = '${dstWarehouseId}' `;
+    }
+    if (query) {
+      sql += ` and (ro.requisition_code like '${q}' or
+      w1.warehouse_name like '${q}') `
+    }
+    return db.raw(sql);
+  }
+
   getListApproved(db: Knex, srcWarehouseId: any = null, dstWarehouseId: any = null, limit: number = 15, offset: number = 0, query = '') {
     let q = `%${query}%`;
     let sql = `select ro.*, w1.warehouse_name as requisition_warehouse_name, rc.approve_date,
     w2.warehouse_name as withdraw_warehouse_name, rt.requisition_type, rc.confirm_id 
     from wm_requisition_orders as ro
     left join wm_warehouses as w1 on w1.warehouse_id = ro.wm_requisition
-    left join wm_warehouses as w2 on w1.warehouse_id = ro.wm_withdraw
+    left join wm_warehouses as w2 on w2.warehouse_id = ro.wm_withdraw
     left join wm_requisition_type as rt on rt.requisition_type_id = ro.requisition_type_id
     inner join wm_requisition_confirms as rc on rc.requisition_order_id = ro.requisition_order_id
-    where rc.is_approve = 'Y' `;
+    where rc.is_approve = 'Y' 
+    and rc.is_keep = 'N' `;
 
     if (srcWarehouseId) {
       sql += ` and ro.wm_requisition = '${srcWarehouseId}' `;
@@ -398,7 +451,8 @@ export class RequisitionOrderModel {
     left join wm_warehouses as w2 on w1.warehouse_id = ro.wm_withdraw
     left join wm_requisition_type as rt on rt.requisition_type_id = ro.requisition_type_id
     inner join wm_requisition_confirms as rc on rc.requisition_order_id = ro.requisition_order_id
-    where rc.is_approve = 'Y' `;
+    where rc.is_approve = 'Y' 
+    and rc.is_keep ='N' `;
 
     if (srcWarehouseId) {
       sql += ` and ro.wm_requisition = '${srcWarehouseId}' `;
@@ -925,7 +979,7 @@ export class RequisitionOrderModel {
     return knex('wm_requisition_confirms')
       .count('* as total')
       .where('confirm_id', requisitionId)
-      .andWhere('is_approve','Y');
+      .andWhere('is_approve', 'Y');
   }
   checkDuplicatedApproveUnpaid(knex: Knex, requisitionId: any) {
     return knex('wm_requisition_confirm_unpaids')
@@ -1141,4 +1195,9 @@ export class RequisitionOrderModel {
       .whereRaw(`requisition_date >= '${year}-10-01' AND requisition_date <= '${year + 1}-09-30'`);
   }
 
+  keep(knex: Knex, requisitionId) {
+    return knex('wm_requisition_confirms')
+      .update({ 'is_keep': 'Y' })
+      .whereIn('requisition_order_id', requisitionId);
+  }
 }
