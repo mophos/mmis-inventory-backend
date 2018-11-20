@@ -183,7 +183,8 @@ export class InventoryReportModel {
             ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
             concat(up.fname, ' ', up.lname) as full_name,
             rci.wm_product_id,
-            rci.unit_cost
+            rci.unit_cost,
+            rc.approve_date
             FROM
                 wm_requisition_orders ro
             JOIN wm_requisition_order_items roi ON ro.requisition_order_id = roi.requisition_order_id
@@ -3000,7 +3001,7 @@ OR sc.ref_src like ?
             .distinct('bg_year')
             .select(knex.raw('bg_year + 543 as bg_year'));
     }
-    monthlyReport(knex: Knex, month:any, year: any, genericType: any, wareHouseId: any){
+    monthlyReport(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any) {
         let sql = `
         SELECT
         ifnull( sum( q4.in_cost ), 0 ) - ifnull( sum( q3.out_ost ), 0 ) AS balance,
@@ -3157,7 +3158,7 @@ GROUP BY
 	mg.generic_type_id,
     mg.account_id
     `
-    return knex.raw(sql)
+        return knex.raw(sql)
     }
     issueYear(knex: Knex, year: any, wareHouseId: any, genericType: any) {
         return knex.raw(`
@@ -3592,8 +3593,8 @@ GROUP BY
             vscw.conversion_qty,
             vscw.large_unit,
             vscw.small_unit,
-            vscw.balance_unit_cost AS unit_cost,
-            (sum( vscw.in_qty ) - sum( vscw.out_qty ) )* avg(vscw.balance_unit_cost) AS total_cost
+            sum(vscw.balance_unit_cost * vscw.in_qty) / sum(vscw.in_qty) AS unit_cost,
+            (sum( vscw.in_qty ) - sum( vscw.out_qty ) )* (sum(vscw.balance_unit_cost * vscw.in_qty) / sum(vscw.in_qty)) AS total_cost
         FROM
             view_stock_card_warehouse AS vscw
             JOIN mm_products AS mp ON mp.product_id = vscw.product_id
@@ -3630,8 +3631,8 @@ GROUP BY
             vscw.conversion_qty,
             vscw.large_unit,
             vscw.small_unit,
-            vscw.balance_unit_cost AS unit_cost,
-            (sum( vscw.in_qty ) - sum( vscw.out_qty ) )* avg(vscw.balance_unit_cost) AS total_cost
+            sum(vscw.balance_unit_cost * vscw.in_qty) / sum(vscw.in_qty) AS unit_cost,
+            (sum( vscw.in_qty ) - sum( vscw.out_qty ) )* (sum(vscw.balance_unit_cost * vscw.in_qty) / sum(vscw.in_qty)) AS total_cost
         FROM
             view_stock_card_warehouse AS vscw
             JOIN mm_products AS mp ON mp.product_id = vscw.product_id

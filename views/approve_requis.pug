@@ -7,8 +7,8 @@ html
   body
     button.btn.btn-sm.btn-success(onclick='window.print()') Print
     - var l=0
-    for i in approve_requis
-      for c in i
+    - for(var i of approve_requis)
+      - for(var c of i)
         span.page
         table.table(style="font-size: 13pt;")
           thead
@@ -20,7 +20,7 @@ html
               td.center.bold(colspan='9')(style="font-size: 15pt;") ใบอนุมัติเบิก
             tr 
               td.left(colspan='4')(style="font-size: 15pt;") เลขที่ใบเบิก #{c[0].requisition_code}
-              td.right(colspan='5')(style="font-size: 15pt;") วันที่อนุมัติ #{c[0].requisition_date}
+              td.right(colspan='5')(style="font-size: 15pt;") วันที่อนุมัติ #{c[0].approve_date}
             tr 
               td.left(colspan='9')(style="font-size: 15pt;") หน่วยงานที่เบิก #{c[0].warehouse_name}
               //- td.right(colspan='5')(style="font-size: 15pt;") วันที่เบิก #{c[0].requisition_date}

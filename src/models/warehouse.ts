@@ -20,7 +20,7 @@ export class WarehouseModel {
 
     return knex.raw(sql, []);
   }
-  listSearch(knex: Knex,query:any = '') {
+  listSearch(knex: Knex, query: any = '') {
     let sql = `
       select w.*, t.type_name, 
         (
@@ -39,7 +39,7 @@ export class WarehouseModel {
     return knex.raw(sql, []);
   }
 
-  
+
 
   getMainWarehouseList(knex: Knex) {
     return knex('wm_warehouses as w')
@@ -177,7 +177,7 @@ export class WarehouseModel {
     return query;
   }
 
-  searchProductsWarehouse(knex: Knex, warehouseId: string, productGroups: any[], genericType: any, search:any) {
+  searchProductsWarehouse(knex: Knex, warehouseId: string, productGroups: any[], genericType: any, search: any) {
     let query = knex('wm_products as wp')
       .select('wp.*', 'mug.cost as packcost', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', 'mg.working_code', 'mg.generic_id', 'mg.generic_name',
         'l.location_name', 'l.location_desc', 'u.unit_name as base_unit_name', 'mug.qty as conversion', 'uu.unit_name as large_unit', 'mp.is_lot_control')
@@ -189,14 +189,15 @@ export class WarehouseModel {
       .leftJoin('mm_units as uu', 'uu.unit_id', 'mug.from_unit_id')
       .where('wp.warehouse_id', warehouseId)
       .whereIn('mg.generic_type_id', productGroups)
-      .where((w)=>{
-        w.where('mp.product_name','like','%'+search+'%')
-        .orWhere('mp.working_code','like','%'+search+'%')
+      .where((w) => {
+        w.where('mp.product_name', 'like', '%' + search + '%')
+          .orWhere('mp.working_code', 'like', '%' + search + '%')
       })
     if (genericType) {
       query.andWhere('mg.generic_type_id', genericType);
     }
     query.groupBy('wp.product_id')
+      .groupBy('wp.lot_no')
       .orderByRaw('wp.qty DESC');
     return query;
   }
@@ -606,7 +607,7 @@ export class WarehouseModel {
 
     return knex.raw(sql);
   }
-  getallRequisitionTemplateIssue(knex: Knex,warehouse_id:any) {
+  getallRequisitionTemplateIssue(knex: Knex, warehouse_id: any) {
     // let sql = `
     // select wrt.template_id, wrt.warehouse_id,
     // ws.warehouse_name as warehouse_name, 
@@ -616,7 +617,7 @@ export class WarehouseModel {
     // where wrt.warehouse_id = ${warehouse_id}
     // order by wrt.template_subject
     //   `;
-      let sql = `
+    let sql = `
       select wrt.template_id, wrt.warehouse_id,
       ws.warehouse_name as warehouse_name, 
       wrt.template_subject, wrt.created_date
@@ -627,7 +628,7 @@ export class WarehouseModel {
         `;
     return knex.raw(sql);
   }
-  getallRequisitionTemplateIssueStaff(knex: Knex,warehouse_id:any) {
+  getallRequisitionTemplateIssueStaff(knex: Knex, warehouse_id: any) {
     let sql = `
     select wrt.template_id, wrt.warehouse_id,
     ws.warehouse_name as warehouse_name, 
@@ -637,15 +638,15 @@ export class WarehouseModel {
     where wrt.warehouse_id = ${warehouse_id}
     order by wrt.template_subject
       `;
-      // let sql = `
-      // select wrt.template_id, wrt.warehouse_id,
-      // ws.warehouse_name as warehouse_name, 
-      // wrt.template_subject, wrt.created_date
-      // from wm_issue_template as wrt
-      // inner join wm_warehouses as ws on wrt.warehouse_id = ws.warehouse_id
-      
-      // order by wrt.template_subject
-      //   `;
+    // let sql = `
+    // select wrt.template_id, wrt.warehouse_id,
+    // ws.warehouse_name as warehouse_name, 
+    // wrt.template_subject, wrt.created_date
+    // from wm_issue_template as wrt
+    // inner join wm_warehouses as ws on wrt.warehouse_id = ws.warehouse_id
+
+    // order by wrt.template_subject
+    //   `;
     return knex.raw(sql);
   }
 
@@ -664,7 +665,7 @@ export class WarehouseModel {
 
     return knex.raw(sql);
   }
-  getallRequisitionTemplateSearchIssueStaff(knex: Knex, query: string,warehouse_id:any) {
+  getallRequisitionTemplateSearchIssueStaff(knex: Knex, query: string, warehouse_id: any) {
     let _q = `%${query}%`;
     let sql = `
     select wrt.template_id, wrt.warehouse_id,

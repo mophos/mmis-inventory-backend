@@ -420,15 +420,15 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
       approve_requis.push(_approve_requis[0])
       approve_requis[i] = _.chunk(approve_requis[i], page_re)
       let page = 0;
-      _.forEach(approve_requis[i], values => {
-        if (dateApprove === 'Y' && values.confirm_date) {
-          values.approve_date = values.confirm_date;
-        } else {
-          values.approve_date = values.requisition_date;
-        }
+      for (const values of approve_requis[i]) {
         sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
         page++;
-        _.forEach(values, value => {
+        for (const value of values) {
+          if (dateApprove === 'Y' && value.approve_date) {
+            value.approve_date = value.approve_date;
+          } else {
+            value.approve_date = value.requisition_date;
+          }
           value.sPage = page;
           value.nPage = approve_requis[i].length;
           value.full_name = signature[0].signature === 'N' ? '' : value.full_name
@@ -444,10 +444,11 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
           if (req.decoded.SYS_PRINT_DATE_EDIT === 'Y') {
             value.today += (value.updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) + moment(value.updated_at).format(', HH:mm') + ' น.' : '';
           }
-        })
-      })
+          // })
+        }
+        // })
+      }
     }
-    // res.send({approve_requis:approve_requis,page_re:page_re,sum:sum})
     res.render('approve_requis', {
       hospitalName: hospitalName,
       approve_requis: approve_requis,
@@ -2247,6 +2248,8 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
 router.get('/report/check/receive2', wrap(async (req, res, next) => {
   let db = req.db;
   let hosdetail = await inventoryReportModel.hospital(db);
+  let prefix = await inventoryReportModel.boox_prefix(db);
+  let book_prefix = prefix[0].value;
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
   let managerName = hosdetail[0].managerName;
@@ -2278,6 +2281,7 @@ router.get('/report/check/receive2', wrap(async (req, res, next) => {
     res.render('check_receive2', {
       data: data,
       hospitalName: hospitalName,
+      bookPrefix: book_prefix,
       province: province,
       managerName: managerName
     })

@@ -713,7 +713,7 @@ WHERE
       .select(
         'rd.receive_detail_id', 'rd.receive_other_id', 'rd.product_id',
         'rd.lot_no', 'rd.expired_date', knex.raw('sum(rd.receive_qty) as receive_qty'),
-        'rd.manufacturer_labeler_id', 'rd.cost', 'rd.unit_generic_id',
+        'rd.manufacturer_labeler_id', knex.raw('(sum(rd.cost * rd.receive_qty) / sum(rd.receive_qty)) as cost'), 'rd.unit_generic_id',
         'rd.warehouse_id', 'rd.location_id',
         'ug.qty as conversion_qty', 'mp.generic_id', 'rt.receive_code', 'rt.donator_id', subBalance)
       .whereIn('rd.receive_other_id', receiveIds)
@@ -1079,22 +1079,22 @@ WHERE
 
   }
 
-  getLastLocation(knex: Knex,warehouseId,productId){
+  getLastLocation(knex: Knex, warehouseId, productId) {
     return knex('wm_receive_detail as rd')
       .select('l.location_id')
-      .join('wm_locations as l','rd.location_id',' l.location_id ')
-      .where('rd.product_id',productId)
-      .andWhere('rd.warehouse_id',warehouseId)
-      .orderBy('rd.receive_detail_id','desc')
+      .join('wm_locations as l', 'rd.location_id', ' l.location_id ')
+      .where('rd.product_id', productId)
+      .andWhere('rd.warehouse_id', warehouseId)
+      .orderBy('rd.receive_detail_id', 'desc')
       .limit(1)
   }
-  getLastLocationOther(knex: Knex,warehouseId,productId){
+  getLastLocationOther(knex: Knex, warehouseId, productId) {
     return knex('wm_receive_other_detail as rd')
       .select('l.location_id')
-      .join('wm_locations as l','rd.location_id',' l.location_id ')
-      .where('rd.product_id',productId)
-      .andWhere('rd.warehouse_id',warehouseId)
-      .orderBy('rd.receive_detail_id','desc')
+      .join('wm_locations as l', 'rd.location_id', ' l.location_id ')
+      .where('rd.product_id', productId)
+      .andWhere('rd.warehouse_id', warehouseId)
+      .orderBy('rd.receive_detail_id', 'desc')
       .limit(1)
   }
 
@@ -1946,5 +1946,11 @@ WHERE
       sql += ` and ra.receive_id is null`
     }
     return knex.raw(sql);
+  }
+
+  getunitGeneric(knex: Knex, unitGenericId) {
+    return knex('mm_unit_generics as mug')
+      .select('mug.cost')
+      .where('mug.unit_generic_id', unitGenericId)
   }
 }
