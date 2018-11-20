@@ -11,8 +11,8 @@ const donatorModel = new DonatorModel();
 router.get('/', (req, res, next) => {
 
   let db = req.db;
-
-  donatorModel.list(db)
+  let query = req.query.query || ''
+  donatorModel.list(db,query)
     .then((results: any) => {
       res.send({ ok: true, rows: results });
     })

@@ -2,9 +2,10 @@ import Knex = require('knex');
 import * as moment from 'moment';
 
 export class DonatorModel {
-  list(knex: Knex) {
+  list(knex: Knex,query) {
     return knex('wm_donators')
     .where('mark_deleted', 'N')
+    .where('donator_name','like','%'+query+'%')
   }
 
   save(knex: Knex, datas: any) {
