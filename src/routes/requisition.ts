@@ -1113,7 +1113,6 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
           if (isClose) {
             res.send({ ok: false, error: 'บัญชีถูกปิดแล้ว' });
           } else {
-            await orderModel.saveApproveConfirmOrder(db, confirmId, approveData);
             // save product to wm_products
             let preReq = await orderModel.getPreRequisitionDetail(db, confirmId);
             let requisitionProducts = await orderModel.getRequisitionConfirmItems(db, confirmId);
@@ -1145,6 +1144,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
               }
             });
             if (underZero) {
+              await orderModel.saveApproveConfirmOrder(db, confirmId, approveData);
               let rsWmProducts = await orderModel.getWmProducs(db, wmProductIds);
               // product items
               let products: any = [];

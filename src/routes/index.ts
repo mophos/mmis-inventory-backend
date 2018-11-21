@@ -165,6 +165,64 @@ router.get('/report/getBudgetYear', wrap(async (req, res, next) => {
     res.send({ ok: false, error: error.message })
   }
 }))
+router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
+  const db = req.db;
+  const warehouseId: any = req.decoded.warehouseId
+  const month = req.query.month
+  const year = req.query.year
+  let genericType = req.query.genericTypes
+  let _tableName = "สรุปงานคลังเวชภัณฑ์"
+  genericType = Array.isArray(genericType) ? genericType : [genericType];
+
+  try {
+    let monthName = moment((+year)+'-'+(+month)+'-1').format('MMMM');
+    const rsM: any = await inventoryReportModel.monthlyReportM(db, month, year, genericType, warehouseId);
+    const rs: any = await inventoryReportModel.monthlyReport(db, month, year, genericType, warehouseId);
+    let ans: any = []
+    for (const items of rsM[0]) {
+      rs[0].push(items)
+    }
+    ans = _.sortBy(rs[0], ['generic_type_id','account_id']);
+    let sum:any = {
+      balance: 0,
+      in_cost: 0,
+      out_cost: 0,
+      balanceAfter: 0
+    }
+    let r:any = []
+    for (const items of ans) {
+      sum.balance += items.balance
+      sum.in_cost += items.in_cost
+      sum.out_cost += items.out_cost
+      sum.balanceAfter += items.balanceAfter
+      r.push({
+        'รายการ' : items.account_name || items.generic_type_name,
+        'ยอดคงคลังยกมา': inventoryReportModel.comma(items.balance),
+        'รับเข้าคลัง (ใน 1 เดือน)': inventoryReportModel.comma(items.in_cost),
+        'จ่ายออกจากคลัง (ใน 1 เดือน)': inventoryReportModel.comma(items.out_cost),
+        'เหลือคงคลัง (เมื่อสิ้นเดือน)': inventoryReportModel.comma(items.balanceAfter)
+      })
+    }
+    r.push({
+      'รายการ' : 'รวมทุกประเภท',
+      'ยอดคงคลังยกมา': inventoryReportModel.comma(sum.balance),
+      'รับเข้าคลัง (ใน 1 เดือน)': inventoryReportModel.comma(sum.in_cost),
+      'จ่ายออกจากคลัง (ใน 1 เดือน)': inventoryReportModel.comma(sum.out_cost),
+      'เหลือคงคลัง (เมื่อสิ้นเดือน)': inventoryReportModel.comma(sum.balanceAfter)
+    })
+    let tmpFile = `${_tableName}เดือน${monthName}-${moment().format('x')}.xls`;
+    const xls = json2xls(r);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, tmpFile);
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, tmpFile);
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  }
+}))
 router.get('/report/monthlyReport', wrap(async (req, res, next) => {
   const db = req.db;
   const warehouseId: any = req.decoded.warehouseId
@@ -176,13 +234,44 @@ router.get('/report/monthlyReport', wrap(async (req, res, next) => {
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
-    console.log(genericType);
-
+    let monthName = moment((+year)+'-'+(+month)+'-1').format('MMMM');
+    let monthbeforName = moment((+year)+'-'+(+month-1)+'-1').format('MMMM');
+    const rsM: any = await inventoryReportModel.monthlyReportM(db, month, year, genericType, warehouseId);
     const rs: any = await inventoryReportModel.monthlyReport(db, month, year, genericType, warehouseId);
-    res.send({ rs: rs[0] })
-    // res.render('monthly-report', {
-    //   rs:rs[0]
-    // });
+    let ans: any = []
+    for (const items of rsM[0]) {
+      rs[0].push(items)
+    }
+    ans = _.sortBy(rs[0], ['generic_type_id','account_id']);
+    let sum:any = {
+      balance: 0,
+      in_cost: 0,
+      out_cost: 0,
+      balanceAfter: 0
+    }
+    // res.send({ans:ans , monthName:monthName , monthbeforName:monthbeforName})
+    for (const items of ans) {
+      sum.balance += items.balance
+      sum.in_cost += items.in_cost
+      sum.out_cost += items.out_cost
+      sum.balanceAfter += items.balanceAfter
+      items.balance = inventoryReportModel.comma(items.balance)
+      items.in_cost = inventoryReportModel.comma(items.in_cost)
+      items.out_cost = inventoryReportModel.comma(items.out_cost)
+      items.balanceAfter = inventoryReportModel.comma(items.balanceAfter)
+    }
+    sum.balance = inventoryReportModel.comma(sum.balance)
+    sum.in_cost = inventoryReportModel.comma(sum.in_cost)
+    sum.out_cost = inventoryReportModel.comma(sum.out_cost)
+    sum.balanceAfter = inventoryReportModel.comma(sum.balanceAfter)
+    res.render('monthly-report', {
+      ans: ans,
+      monthName: monthName,
+      monthbeforName: monthbeforName,
+      year: +year+543,
+      sum: sum,
+      hospitalName: hospitalName
+    });
   } catch (error) {
     res.send({ ok: false, error: error.message })
   }
