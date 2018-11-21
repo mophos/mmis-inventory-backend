@@ -2874,15 +2874,15 @@ router.get('/report/receive/export', async (req, res, next) => {
   let json = [];
   if (rs[0].length) {
     let i = 0;
-    for (let tmp of rs[0]) {
-      tmp.order_date = moment(tmp.order_date).isValid() ? moment(tmp.order_date).format('DD MMM ') + (moment(tmp.order_date).get('year') + 543) : '';
-    }
+    rs[0].forEach(e => {
+      e.receive_date = moment(e.receive_date).isValid() ? moment(e.receive_date).format('DD/MM/') + (moment(e.receive_date).get('year') + 543) : '-';
+    });
     rs[0].forEach(v => {
       i++;
       let obj: any = {
         'ลำดับ': i,
         'เลขที่ใบสั่งซื้อ': v.purchase_order_number,
-        'วันที่รับของ': v.order_date,
+        'วันที่รับของ': v.receive_date,
         'รหัสเวชภัณฑ์': v.generic_code,
         'ชื่อเวชภัณฑ์': v.generic_name,
         'ชื่อทางการค้า': v.product_name,
