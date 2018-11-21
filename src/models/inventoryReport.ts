@@ -521,7 +521,8 @@ mgt.generic_type_id `
         sum(vscw.out_qty) AS out_qty,
         vscw.conversion_qty,
         vscw.large_unit,
-        vscw.small_unit
+        vscw.small_unit,
+        vscw.expired_date
     FROM
         ${dateSetting} AS vscw
     WHERE
@@ -542,7 +543,8 @@ mgt.generic_type_id `
         sum(vscw.out_qty) AS out_qty,
         vscw.conversion_qty,
         vscw.large_unit,
-        vscw.small_unit
+        vscw.small_unit,
+        vscw.expired_date
     FROM
         ${dateSetting} AS vscw
     WHERE
@@ -1053,21 +1055,35 @@ mgt.generic_type_id `
             .orderBy('generic_type_id')
     }
 
-    list_cost(knex: Knex, genericTypeId, startDate, endDate, warehouseId) {
+    list_cost(knex: Knex, genericTypeId, startDate, warehouseId) {
         let sql = `
         SELECT
-            q.generic_type_name,
-            q.account_name,
-            sum( q.cost ) AS cost,
-            q.generic_type_code
+            a.generic_type_name,
+            a.account_name,
+            sum( a.total_cost ) AS total_cost,
+            a.generic_type_code
         FROM
             (
         SELECT
-            mg.working_code,
+            q.generic_code,
+            q.generic_name,
+            sum( q.qty ) AS qty,
+            avg( q.unit_cost ) AS unit_cost,
+            sum( total_cost ) AS total_cost,
+            q.account_name,
+            q.generic_type_id,
+            q.account_id,
+            q.generic_type_name,
+            q.generic_type_code 
+        FROM
+            (
+        SELECT
+            vscw.generic_id,
+            vscw.generic_name,
+            mg.working_code AS generic_code,
             sum( vscw.in_qty ) - sum( vscw.out_qty ) AS qty,
-            vscw.conversion_qty,
-            avg( vscw.balance_unit_cost ) AS unit_cost,
-            ( sum( vscw.in_qty ) - sum( vscw.out_qty ) ) * avg( vscw.balance_unit_cost ) AS cost,
+            sum( vscw.balance_unit_cost * vscw.in_qty ) / sum( vscw.in_qty ) AS unit_cost,
+            ( sum( vscw.in_qty ) - sum( vscw.out_qty ) ) * ( sum( vscw.balance_unit_cost * vscw.in_qty ) / sum( vscw.in_qty ) ) AS total_cost,
             mga.account_name,
             mg.generic_type_id,
             mga.account_id,
@@ -1075,64 +1091,34 @@ mgt.generic_type_id `
             mgt.generic_type_code
         FROM
             view_stock_card_warehouse AS vscw
+            JOIN mm_products AS mp ON mp.product_id = vscw.product_id
             JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
             LEFT JOIN mm_generic_accounts AS mga ON mg.account_id = mga.account_id
-            LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+            LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id 
         WHERE
-            vscw.warehouse_id LIKE '${warehouseId}' 
-            AND vscw.stock_date <= '${startDate} 23:59:59' 
-            AND mg.generic_type_id in (${genericTypeId}) 
-        GROUP BY
-            vscw.generic_id 
+            vscw.stock_date <= '${startDate} 23:59:59' 
+            AND mg.generic_type_id IN ( ${genericTypeId} )`
+        if (warehouseId != 0) {
+            sql += `AND vscw.warehouse_id = '${warehouseId}' `
+        }
+        sql += `GROUP BY
+            vscw.product_id,
+            vscw.lot_no 
+        HAVING
+            qty > 0 
+        ORDER BY
+            mg.generic_name 
             ) AS q 
         GROUP BY
-            q.account_id,
-            q.generic_type_id
-        ORDER BY
-            q.generic_type_id
-        `
-
-        return (knex.raw(sql))
-    }
-
-    listCostExcel(knex: Knex, genericTypeId, startDate, warehouseId) {
-        let sql = `
-        SELECT
-            q.generic_type_name,
-            q.account_name,
-            sum( q.cost ) AS cost,
-            q.generic_type_code
-        FROM
-            (
-        SELECT
-            mg.working_code,
-            sum( vscw.in_qty ) - sum( vscw.out_qty ) AS qty,
-            vscw.conversion_qty,
-            avg( vscw.balance_unit_cost ) AS unit_cost,
-            ( sum( vscw.in_qty ) - sum( vscw.out_qty ) ) * avg( vscw.balance_unit_cost ) AS cost,
-            mga.account_name,
-            mg.generic_type_id,
-            mga.account_id,
-            mgt.generic_type_name,
-            mgt.generic_type_code
-        FROM
-            view_stock_card_warehouse AS vscw
-            JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
-            JOIN mm_generic_accounts AS mga ON mg.account_id = mga.account_id
-            LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
-        WHERE
-            vscw.warehouse_id LIKE '${warehouseId}'
-            AND vscw.stock_date <= '${startDate} 23:59:59'
-            AND mg.generic_type_id in (${genericTypeId})
-            GROUP BY
-            vscw.generic_id 
-            ) AS q 
+            q.generic_id 
+            ) AS a 
         GROUP BY
-            q.account_id,
-            q.generic_type_id
+            a.account_id,
+            a.generic_type_id 
         ORDER BY
-            q.generic_type_id
+            a.generic_type_id
         `
+
         return (knex.raw(sql))
     }
 
@@ -3000,7 +2986,7 @@ OR sc.ref_src like ?
             .distinct('bg_year')
             .select(knex.raw('bg_year + 543 as bg_year'));
     }
-    monthlyReport(knex: Knex, month:any, year: any, genericType: any, wareHouseId: any){
+    monthlyReport(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any) {
         let sql = `
         SELECT
 ifnull(sum( q2.in_cost ),0) as in_cost,
@@ -3045,7 +3031,7 @@ GROUP BY
 	mg.generic_type_id,
     mg.account_id
     `
-    return knex.raw(sql)
+        return knex.raw(sql)
     }
     issueYear(knex: Knex, year: any, wareHouseId: any, genericType: any) {
         return knex.raw(`
@@ -3466,7 +3452,9 @@ GROUP BY
             q.large_unit,
             q.small_unit,
             avg( q.unit_cost ) AS unit_cost,
-            sum(total_cost) AS total_cost
+            sum(total_cost) AS total_cost,
+            q.min_qty,
+	        q.max_qty
         FROM
             (
         SELECT
@@ -3481,11 +3469,14 @@ GROUP BY
             vscw.large_unit,
             vscw.small_unit,
             sum(vscw.balance_unit_cost * vscw.in_qty) / sum(vscw.in_qty) AS unit_cost,
-            (sum( vscw.in_qty ) - sum( vscw.out_qty ) )* (sum(vscw.balance_unit_cost * vscw.in_qty) / sum(vscw.in_qty)) AS total_cost
+            (sum( vscw.in_qty ) - sum( vscw.out_qty ) )* (sum(vscw.balance_unit_cost * vscw.in_qty) / sum(vscw.in_qty)) AS total_cost,
+            mgp.min_qty,
+	        mgp.max_qty
         FROM
             view_stock_card_warehouse AS vscw
             JOIN mm_products AS mp ON mp.product_id = vscw.product_id
-            JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id 
+            JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
+            LEFT JOIN mm_generic_planning AS mgp ON mgp.warehouse_id = '${warehouseId}' AND mgp.generic_id = mg.generic_id
         WHERE
             vscw.stock_date <= '${statusDate} 23:59:59' 
             AND mg.generic_type_id IN ( ${ genericTypeId} ) `
