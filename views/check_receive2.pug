@@ -83,15 +83,22 @@ html
       br
       | ซึ่งข้าพเจ้าได้ทำการตรวจรับพัสดุตามใบส่งของเป็นการถูกต้องแล้ว ตามวันที่ตรวจรับของ ดังกล่าวข้างบน จึงได้ลงนามไว้เป็นหลักฐานและได้ส่งมอบพัสดุดังกล่าวให้กับเจ้าหน้าที่พัสดุแล้ว
       br
-      table(style="width:60%;margin-left:50%")
-        tr
-          td.right(style="width:10%") ลงชื่อ
-          td.center(style="width:30%") ...........................................................
-          td.left #{v.supplierPosition}
-        tr
-          td.right
-          td.center (#{v.supplierName})
-          td.left
+      table(style="width: 50%; margin-left:50%;")
+          - var i = 0
+                - for(var c of v.committee)
+                  - i++ 
+                    tr
+                      td
+                      td(style="height:20px;")
+                      td 
+                    tr
+                      td.right(width="5%") (ลงชื่อ)
+                      td.center(width="60%") ........................................................... 
+                      td.left &nbsp;#{c.position_name}
+                    tr
+                      td
+                      td.center (#{c.title_name}#{c.fname} #{c.lname})
+                      td.center 
       | เจ้าหน้าที่พัสดุได้รับมอบพัสดุตามรายการข้างต้นถูกต้องและได้ลงบัญชีพัสดุเรียบร้อยแล้ว
       br
       br
