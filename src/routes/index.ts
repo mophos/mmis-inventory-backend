@@ -2269,6 +2269,13 @@ router.get('/report/check/receive2', wrap(async (req, res, next) => {
       let chief = await inventoryReportModel.getStaff(db, 'CHIEF');
       rs[0].chiefName = chief[0].title + chief[0].fname + ' ' + chief[0].lname;
       rs[0].chiefPosition = chief[0].position;
+
+      let committee = await inventoryReportModel.invenCommittee(db, id);
+      committee = committee[0];
+      if (committee.length == 1) {
+        committee[0].position_name = 'ผู้ตรวจรับพัสดุ'
+      }
+      rs[0].committee = committee;
       rs[0].receive_date = moment(rs[0].receive_date).format('D MMMM ') + (moment(rs[0].receive_date).get('year') + 543);
       rs[0].delivery_date = moment(rs[0].delivery_date).format('D MMMM ') + (moment(rs[0].delivery_date).get('year') + 543);
       rs[0].podate = moment(rs[0].podate).format('D MMMM ') + (moment(rs[0].podate).get('year') + 543);
