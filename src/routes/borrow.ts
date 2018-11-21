@@ -591,6 +591,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       let rsLots: any = await borrowModel.getLotbalance(db, v.src_warehouse_id, v.product_id, v.lot_no);
       let rsProducts: any = await borrowModel.getProductbalance(db, v.src_warehouse_id, v.product_id, v.lot_no)
 
+      obj.people_id = v.people_id;
       obj.old_wm_product_id = v.wm_product_id;
       obj.remain_src = rsLots[0].lot_balance;
       obj.remain_cost = rsLots[0].cost;
@@ -672,6 +673,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
         const obj: any = {
           src_warehouse_id: v.src_warehouse_id,
           dst_warehouse_id: v.dst_warehouse_id,
+          people_id: v.people_id,
           products: product
         }
         returnData.push(obj)

@@ -52,8 +52,14 @@ router.get('/search-autocomplete', async (req, res, next) => {
 
   let db = req.db;
   let q = req.query.q;
+  let limit = req.query.limit === 'Y' ? false : true;
   try {
-    let rs: any = await genericModel.searchAutocomplete(db, q);
+    let rs: any;
+    if (limit) {
+      rs = await genericModel.searchAutocompleteLimit(db, q);
+    } else {
+      rs = await genericModel.searchAutocompleteAll(db, q);
+    }
     if (rs[0].length) {
       res.send(rs[0]);
     } else {
@@ -71,15 +77,25 @@ router.get('/warehouse/search/autocomplete', async (req, res, next) => {
   let db = req.db;
   let q = req.query.q;
   let warehouseId = req.query.warehouseId;
+  let limit = req.query.limit === 'Y' ? false : true;
   if (warehouseId == undefined || warehouseId == null || warehouseId == '') {
     warehouseId = req.decoded.warehouseId;
   }
   try {
-    let rs: any = await genericModel.warehouseSearchAutocomplete(db, warehouseId, q);
-    if (rs[0].length) {
-      res.send(rs[0]);
-    } else {
+    if (q === '' || !q) {
       res.send([]);
+    } else {
+      let rs: any;
+      if (limit) {
+        rs = await genericModel.warehouseSearchAutocompleteLimit(db, warehouseId, q);
+      } else {
+        rs = await genericModel.warehouseSearchAutocompleteAll(db, warehouseId, q);
+      }
+      if (rs[0].length) {
+        res.send(rs[0]);
+      } else {
+        res.send([]);
+      }
     }
   } catch (error) {
     console.log(error);

@@ -165,6 +165,64 @@ router.get('/report/getBudgetYear', wrap(async (req, res, next) => {
     res.send({ ok: false, error: error.message })
   }
 }))
+router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
+  const db = req.db;
+  const warehouseId: any = req.decoded.warehouseId
+  const month = req.query.month
+  const year = req.query.year
+  let genericType = req.query.genericTypes
+  let _tableName = "สรุปงานคลังเวชภัณฑ์"
+  genericType = Array.isArray(genericType) ? genericType : [genericType];
+
+  try {
+    let monthName = moment((+year)+'-'+(+month)+'-1').format('MMMM');
+    const rsM: any = await inventoryReportModel.monthlyReportM(db, month, year, genericType, warehouseId);
+    const rs: any = await inventoryReportModel.monthlyReport(db, month, year, genericType, warehouseId);
+    let ans: any = []
+    for (const items of rsM[0]) {
+      rs[0].push(items)
+    }
+    ans = _.sortBy(rs[0], ['generic_type_id','account_id']);
+    let sum:any = {
+      balance: 0,
+      in_cost: 0,
+      out_cost: 0,
+      balanceAfter: 0
+    }
+    let r:any = []
+    for (const items of ans) {
+      sum.balance += items.balance
+      sum.in_cost += items.in_cost
+      sum.out_cost += items.out_cost
+      sum.balanceAfter += items.balanceAfter
+      r.push({
+        'รายการ' : items.account_name || items.generic_type_name,
+        'ยอดคงคลังยกมา': inventoryReportModel.comma(items.balance),
+        'รับเข้าคลัง (ใน 1 เดือน)': inventoryReportModel.comma(items.in_cost),
+        'จ่ายออกจากคลัง (ใน 1 เดือน)': inventoryReportModel.comma(items.out_cost),
+        'เหลือคงคลัง (เมื่อสิ้นเดือน)': inventoryReportModel.comma(items.balanceAfter)
+      })
+    }
+    r.push({
+      'รายการ' : 'รวมทุกประเภท',
+      'ยอดคงคลังยกมา': inventoryReportModel.comma(sum.balance),
+      'รับเข้าคลัง (ใน 1 เดือน)': inventoryReportModel.comma(sum.in_cost),
+      'จ่ายออกจากคลัง (ใน 1 เดือน)': inventoryReportModel.comma(sum.out_cost),
+      'เหลือคงคลัง (เมื่อสิ้นเดือน)': inventoryReportModel.comma(sum.balanceAfter)
+    })
+    let tmpFile = `${_tableName}เดือน${monthName}-${moment().format('x')}.xls`;
+    const xls = json2xls(r);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, tmpFile);
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, tmpFile);
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  }
+}))
 router.get('/report/monthlyReport', wrap(async (req, res, next) => {
   const db = req.db;
   const warehouseId: any = req.decoded.warehouseId
@@ -176,13 +234,44 @@ router.get('/report/monthlyReport', wrap(async (req, res, next) => {
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
-    console.log(genericType);
-
+    let monthName = moment((+year)+'-'+(+month)+'-1').format('MMMM');
+    let monthbeforName = moment((+year)+'-'+(+month-1)+'-1').format('MMMM');
+    const rsM: any = await inventoryReportModel.monthlyReportM(db, month, year, genericType, warehouseId);
     const rs: any = await inventoryReportModel.monthlyReport(db, month, year, genericType, warehouseId);
-    res.send({ rs: rs[0] })
-    // res.render('monthly-report', {
-    //   rs:rs[0]
-    // });
+    let ans: any = []
+    for (const items of rsM[0]) {
+      rs[0].push(items)
+    }
+    ans = _.sortBy(rs[0], ['generic_type_id','account_id']);
+    let sum:any = {
+      balance: 0,
+      in_cost: 0,
+      out_cost: 0,
+      balanceAfter: 0
+    }
+    // res.send({ans:ans , monthName:monthName , monthbeforName:monthbeforName})
+    for (const items of ans) {
+      sum.balance += items.balance
+      sum.in_cost += items.in_cost
+      sum.out_cost += items.out_cost
+      sum.balanceAfter += items.balanceAfter
+      items.balance = inventoryReportModel.comma(items.balance)
+      items.in_cost = inventoryReportModel.comma(items.in_cost)
+      items.out_cost = inventoryReportModel.comma(items.out_cost)
+      items.balanceAfter = inventoryReportModel.comma(items.balanceAfter)
+    }
+    sum.balance = inventoryReportModel.comma(sum.balance)
+    sum.in_cost = inventoryReportModel.comma(sum.in_cost)
+    sum.out_cost = inventoryReportModel.comma(sum.out_cost)
+    sum.balanceAfter = inventoryReportModel.comma(sum.balanceAfter)
+    res.render('monthly-report', {
+      ans: ans,
+      monthName: monthName,
+      monthbeforName: monthbeforName,
+      year: +year+543,
+      sum: sum,
+      hospitalName: hospitalName
+    });
   } catch (error) {
     res.send({ ok: false, error: error.message })
   }
@@ -331,15 +420,15 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
       approve_requis.push(_approve_requis[0])
       approve_requis[i] = _.chunk(approve_requis[i], page_re)
       let page = 0;
-      _.forEach(approve_requis[i], values => {
-        if (dateApprove === 'Y' && values.confirm_date) {
-          values.approve_date = values.confirm_date;
-        } else {
-          values.approve_date = values.requisition_date;
-        }
+      for (const values of approve_requis[i]) {
         sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
         page++;
-        _.forEach(values, value => {
+        for (const value of values) {
+          if (dateApprove === 'Y' && value.approve_date) {
+            value.approve_date = value.approve_date;
+          } else {
+            value.approve_date = value.requisition_date;
+          }
           value.sPage = page;
           value.nPage = approve_requis[i].length;
           value.full_name = signature[0].signature === 'N' ? '' : value.full_name
@@ -355,10 +444,11 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
           if (req.decoded.SYS_PRINT_DATE_EDIT === 'Y') {
             value.today += (value.updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) + moment(value.updated_at).format(', HH:mm') + ' น.' : '';
           }
-        })
-      })
+          // })
+        }
+        // })
+      }
     }
-    // res.send({approve_requis:approve_requis,page_re:page_re,sum:sum})
     res.render('approve_requis', {
       hospitalName: hospitalName,
       approve_requis: approve_requis,
@@ -2134,6 +2224,8 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
 router.get('/report/check/receive2', wrap(async (req, res, next) => {
   let db = req.db;
   let hosdetail = await inventoryReportModel.hospital(db);
+  let prefix = await inventoryReportModel.boox_prefix(db);
+  let book_prefix = prefix[0].value;
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
   let managerName = hosdetail[0].managerName;
@@ -2153,6 +2245,13 @@ router.get('/report/check/receive2', wrap(async (req, res, next) => {
       let chief = await inventoryReportModel.getStaff(db, 'CHIEF');
       rs[0].chiefName = chief[0].title + chief[0].fname + ' ' + chief[0].lname;
       rs[0].chiefPosition = chief[0].position;
+
+      let committee = await inventoryReportModel.invenCommittee(db, id);
+      committee = committee[0];
+      if (committee.length == 1) {
+        committee[0].position_name = 'ผู้ตรวจรับพัสดุ'
+      }
+      rs[0].committee = committee;
       rs[0].receive_date = moment(rs[0].receive_date).format('D MMMM ') + (moment(rs[0].receive_date).get('year') + 543);
       rs[0].delivery_date = moment(rs[0].delivery_date).format('D MMMM ') + (moment(rs[0].delivery_date).get('year') + 543);
       rs[0].podate = moment(rs[0].podate).format('D MMMM ') + (moment(rs[0].podate).get('year') + 543);
@@ -2165,6 +2264,7 @@ router.get('/report/check/receive2', wrap(async (req, res, next) => {
     res.render('check_receive2', {
       data: data,
       hospitalName: hospitalName,
+      bookPrefix: book_prefix,
       province: province,
       managerName: managerName
     })

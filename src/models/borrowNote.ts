@@ -169,6 +169,7 @@ export class BorrowNoteModel {
       .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
       .whereIn('d.generic_id', genericIds)
       .where('n.wm_borrow', warehouseId)
+      .andWhere('n.is_cancel', 'N')
       .whereIn('ug.unit_generic_id', ugid)
       .whereNull('requisition_order_id');
   }
