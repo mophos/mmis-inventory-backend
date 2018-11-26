@@ -2269,7 +2269,7 @@ OR sc.ref_src like ?
     }
     staffReceivePo(knex: Knex, poId) {
         return knex('pc_purchasing_order as po')
-            .select('upt.type_name', 't.title_name', 'u.fname', 'u.lname', 'p.position_name as pname')
+            .select('*', 'upt.type_name', 't.title_name', 'u.fname', 'u.lname', 'p.position_name as pname')
             .leftJoin('um_people as u', 'u.people_id', 'po.supply_id')
             .leftJoin('um_positions as p', 'p.position_id', 'u.position_id')
             .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
@@ -3010,7 +3010,7 @@ FROM
 	WHERE
 		( sc.out_qty > 0 AND sc.in_qty = 0 ) 
 		AND sc.warehouse_id = ${wareHouseId}
-		AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${month}-31 23:59:59'
+		AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${+month+1}-01 00:00:00'
 	GROUP BY
 		sc.generic_id 
 	)AS q1
@@ -3023,7 +3023,7 @@ FROM
 	WHERE
 		( sc.in_qty > 0 AND sc.out_qty = 0 ) 
 		AND sc.warehouse_id = ${wareHouseId}
-		AND sc.stock_date  BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${month}-31 23:59:59'
+		AND sc.stock_date  BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${+month+1}-01 00:00:00'
 	 
 	GROUP BY
 		sc.generic_id
@@ -3089,7 +3089,7 @@ FROM
 	WHERE
 		( sc.out_qty > 0 AND sc.in_qty = 0 ) 
 		AND sc.warehouse_id = ${wareHouseId}
-		AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${month}-31 23:59:59'
+		AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${+month+1}-01 00:00:00'
 	GROUP BY
 		sc.generic_id 
 	)AS q1
@@ -3102,7 +3102,7 @@ FROM
 	WHERE
 		( sc.in_qty > 0 AND sc.out_qty = 0 ) 
 		AND sc.warehouse_id = ${wareHouseId}
-		AND sc.stock_date  BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${month}-31 23:59:59'
+		AND sc.stock_date  BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${+month+1}-01 00:00:00'
 	 
 	GROUP BY
 		sc.generic_id
