@@ -2990,77 +2990,59 @@ OR sc.ref_src like ?
     monthlyReport(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any) {
         let sql = `
         SELECT
-        ifnull( sum( q4.in_cost ), 0 ) - ifnull( sum( q3.out_ost ), 0 ) AS balance,
-        ifnull( sum( q2.in_cost ), 0 ) AS in_cost,
-        ifnull( sum( q1.out_ost ), 0 ) AS out_cost,
-        (ifnull( sum( q4.in_cost ), 0 ) - ifnull( sum( q3.out_ost ), 0 )  + ifnull( sum( q2.in_cost ), 0 )) - ifnull( sum( q1.out_ost ), 0 ) AS balanceAfter,
-        gt.generic_type_id,
-        gt.generic_type_code,
-        gt.generic_type_name,
-        '' as 'account_id',  
-        '' as 'account_code',
-        '' as 'account_name'
+	sum( ifnull( blb.bl, 0 ) ) AS balance,
+	sum( ifnull( io.in_cost, 0 ) ) AS in_cost,
+	sum( ifnull( io.out_cost, 0 ) ) AS out_cost,
+	( sum( ifnull( blb.bl, 0 ) ) + sum( ifnull( io.in_cost, 0 ) ) ) - sum( ifnull( io.out_cost, 0 ) ) AS balanceAfter,
+	gt.generic_type_id,
+	gt.generic_type_code,
+	gt.generic_type_name,
+'' AS 'account_id',
+'' AS 'account_code',
+'' AS 'account_name'
 FROM
 	(
 	SELECT
-		ifnull(sum( sc.cost ),0) AS out_ost,
-		sc.generic_id 
+		mp.generic_id 
+	FROM
+		wm_products AS wp
+		LEFT JOIN mm_products AS mp ON mp.product_id = wp.product_id 
+	WHERE
+		wp.warehouse_id = ${wareHouseId} 
+	GROUP BY
+		mp.generic_id 
+	) AS q1
+	LEFT JOIN (
+	SELECT
+		sc.generic_id,
+		sum( IF ( sc.in_qty > 0, sc.cost, 0 ) ) AS in_cost,
+		sum( IF ( sc.out_qty > 0, sc.cost, 0 ) ) AS out_cost 
 	FROM
 		view_stock_card_warehouse AS sc 
 	WHERE
-		( sc.out_qty > 0 AND sc.in_qty = 0 ) 
-		AND sc.warehouse_id = ${wareHouseId}
+		sc.warehouse_id = ${wareHouseId} 
 		AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${+month+1}-01 00:00:00'
 	GROUP BY
 		sc.generic_id 
-	)AS q1
-	left JOIN (
+	) AS io ON io.generic_id = q1.generic_id
+	LEFT JOIN (
 	SELECT
-		ifnull(sum( sc.cost ),0) AS in_cost,
-		sc.generic_id 
+		sc.generic_id,
+		sum( IF ( sc.in_qty > 0, sc.cost, 0 ) ) - sum( IF ( sc.out_qty > 0, sc.cost, 0 ) ) AS bl 
 	FROM
 		view_stock_card_warehouse AS sc 
 	WHERE
-		( sc.in_qty > 0 AND sc.out_qty = 0 ) 
-		AND sc.warehouse_id = ${wareHouseId}
-		AND sc.stock_date  BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${+month+1}-01 00:00:00'
-	 
+		sc.warehouse_id = ${wareHouseId} 
+		AND sc.stock_date < '${year}-${month}-01 00:00:00'
 	GROUP BY
-		sc.generic_id
-    )  AS q2 ON q2.generic_id = q1.generic_id
-    left JOIN 
-    (
-        SELECT
-            ifnull(sum( sc.cost ),0) AS out_ost,
-            sc.generic_id 
-        FROM
-            view_stock_card_warehouse AS sc 
-        WHERE
-            ( sc.out_qty > 0 AND sc.in_qty = 0 ) 
-            AND sc.warehouse_id = ${wareHouseId}
-            AND sc.stock_date < '${year}-${month}-01 00:00:00'
-        GROUP BY
-            sc.generic_id 
-        )AS q3 ON q3.generic_id = q1.generic_id
-        left JOIN (
-        SELECT
-            ifnull(sum( sc.cost ),0) AS in_cost,
-            sc.generic_id 
-        FROM
-            view_stock_card_warehouse AS sc 
-        WHERE
-            ( sc.in_qty > 0 AND sc.out_qty = 0 ) 
-            AND sc.warehouse_id = ${wareHouseId}
-            AND sc.stock_date  < '${year}-${month}-01 00:00:00'
-         
-        GROUP BY
-            sc.generic_id
-        )  AS q4 ON q4.generic_id = q1.generic_id
-	JOIN mm_generics AS mg ON mg.generic_id = q1.generic_id
+		sc.generic_id 
+	) AS blb ON blb.generic_id = q1.generic_id
+	LEFT JOIN mm_generics AS mg ON mg.generic_id = q1.generic_id
 	JOIN mm_generic_types AS gt ON gt.generic_type_id = mg.generic_type_id
-    where 
-    (mg.generic_type_id in (${genericType})
-    and NOT gt.generic_type_code = 'MEDICINE')
+WHERE
+		mg.generic_type_id in (${genericType})
+    and NOT gt.generic_type_code = 'MEDICINE'
+    and NOT gt.generic_type_code is null
 GROUP BY
 	mg.generic_type_id
     `
@@ -3069,80 +3051,62 @@ GROUP BY
     monthlyReportM(knex: Knex, month:any, year: any, genericType: any, wareHouseId: any){
         let sql = `
         SELECT
-        ifnull( sum( q4.in_cost ), 0 ) - ifnull( sum( q3.out_ost ), 0 ) AS balance,
-        ifnull( sum( q2.in_cost ), 0 ) AS in_cost,
-        ifnull( sum( q1.out_ost ), 0 ) AS out_cost,
-        (ifnull( sum( q4.in_cost ), 0 ) - ifnull( sum( q3.out_ost ), 0 )  + ifnull( sum( q2.in_cost ), 0 )) - ifnull( sum( q1.out_ost ), 0 ) AS balanceAfter,
-        gt.generic_type_id,
-        gt.generic_type_code,
-        gt.generic_type_name,
-        ga.account_id,  
-        ga.account_code,
-        ga.account_name
+	sum( ifnull( blb.bl, 0 ) ) AS balance,
+	sum( ifnull( io.in_cost, 0 ) ) AS in_cost,
+	sum( ifnull( io.out_cost, 0 ) ) AS out_cost,
+	( sum( ifnull( blb.bl, 0 ) ) + sum( ifnull( io.in_cost, 0 ) ) ) - sum( ifnull( io.out_cost, 0 ) ) AS balanceAfter,
+	gt.generic_type_id,
+	gt.generic_type_code,
+	gt.generic_type_name,
+	ga.account_id,
+	ga.account_code,
+	ga.account_name 
 FROM
 	(
 	SELECT
-		ifnull(sum( sc.cost ),0) AS out_ost,
-		sc.generic_id 
+		mp.generic_id 
+	FROM
+		wm_products AS wp
+		LEFT JOIN mm_products AS mp ON mp.product_id = wp.product_id 
+	WHERE
+		wp.warehouse_id = ${wareHouseId}  
+	GROUP BY
+		mp.generic_id 
+	) AS q1
+	LEFT JOIN (
+	SELECT
+		sc.generic_id,
+		sum( IF ( sc.in_qty > 0, sc.cost, 0 ) ) AS in_cost,
+		sum( IF ( sc.out_qty > 0, sc.cost, 0 ) ) AS out_cost 
 	FROM
 		view_stock_card_warehouse AS sc 
 	WHERE
-		( sc.out_qty > 0 AND sc.in_qty = 0 ) 
-		AND sc.warehouse_id = ${wareHouseId}
+		sc.warehouse_id = ${wareHouseId}  
 		AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${+month+1}-01 00:00:00'
 	GROUP BY
 		sc.generic_id 
-	)AS q1
-	left JOIN (
+	) AS io ON io.generic_id = q1.generic_id
+	LEFT JOIN (
 	SELECT
-		ifnull(sum( sc.cost ),0) AS in_cost,
-		sc.generic_id 
+		sc.generic_id,
+		sum( IF ( sc.in_qty > 0, sc.cost, 0 ) ) - sum( IF ( sc.out_qty > 0, sc.cost, 0 ) ) AS bl 
 	FROM
 		view_stock_card_warehouse AS sc 
 	WHERE
-		( sc.in_qty > 0 AND sc.out_qty = 0 ) 
-		AND sc.warehouse_id = ${wareHouseId}
-		AND sc.stock_date  BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${+month+1}-01 00:00:00'
-	 
+		sc.warehouse_id = ${wareHouseId}  
+		AND sc.stock_date < '${year}-${month}-01 00:00:00'
 	GROUP BY
-		sc.generic_id
-    )  AS q2 ON q2.generic_id = q1.generic_id
-    left JOIN 
-    (
-        SELECT
-            ifnull(sum( sc.cost ),0) AS out_ost,
-            sc.generic_id 
-        FROM
-            view_stock_card_warehouse AS sc 
-        WHERE
-            ( sc.out_qty > 0 AND sc.in_qty = 0 ) 
-            AND sc.warehouse_id = ${wareHouseId}
-            AND sc.stock_date < '${year}-${month}-01 00:00:00'
-        GROUP BY
-            sc.generic_id 
-        )AS q3 ON q3.generic_id = q1.generic_id
-        left JOIN (
-        SELECT
-            ifnull(sum( sc.cost ),0) AS in_cost,
-            sc.generic_id 
-        FROM
-            view_stock_card_warehouse AS sc 
-        WHERE
-            ( sc.in_qty > 0 AND sc.out_qty = 0 ) 
-            AND sc.warehouse_id = ${wareHouseId}
-            AND sc.stock_date  < '${year}-${month}-01 00:00:00'
-         
-        GROUP BY
-            sc.generic_id
-        )  AS q4 ON q4.generic_id = q1.generic_id
-	JOIN mm_generics AS mg ON mg.generic_id = q1.generic_id
+		sc.generic_id 
+	) AS blb ON blb.generic_id = q1.generic_id
+	LEFT JOIN mm_generics AS mg ON mg.generic_id = q1.generic_id
 	JOIN mm_generic_types AS gt ON gt.generic_type_id = mg.generic_type_id
-    JOIN mm_generic_accounts AS ga ON ga.account_id = mg.account_id 
-    where 
-    gt.generic_type_code = 'MEDICINE'
+	JOIN mm_generic_accounts AS ga ON ga.account_id = mg.account_id 
+WHERE
+	gt.generic_type_code = 'MEDICINE' 
+	AND ga.account_code is not null
 GROUP BY
 	mg.generic_type_id,
-    mg.account_id
+	mg.account_id
     `
         return knex.raw(sql)
     }

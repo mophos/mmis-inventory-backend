@@ -887,7 +887,23 @@ router.put('/orders/confirm-without-unpaid/:confirmId', async (req, res, next) =
     db.destroy();
   }
 });
-
+ 
+router.get('/orders/check-unpaid',async (req,res,next)=>{
+  let db = req.db;
+  let requisitionId = req.query.requisitionId;
+  try {
+    let result = await orderModel.checkUnpaid(db,requisitionId);
+    if(result.length){
+      res.send({ok:true})
+    } else {
+      res.send({ok:false})
+    }
+  } catch (error) {
+    res.send({ok:false, error: error.message})
+  } finally {
+    db.destroy();
+  }
+})
 router.post('/orders/confirm-with-unpaid', async (req, res, next) => {
   let db = req.db;
   try {
@@ -1008,7 +1024,6 @@ router.put('/orders/confirm-with-unpaid/:confirmId', async (req, res, next) => {
       await orderModel.removeOrderUnpaid(db, requisitionId);
       // save new data
       let rsOrderUnpaid = await orderModel.saveOrderUnpaid(db, unpaidOrder);
-
       // remove unpaid items
       await orderModel.removeOrderUnpaidItems(db, orderUnpaidId);
       // new order unpaid items
@@ -1017,7 +1032,7 @@ router.put('/orders/confirm-with-unpaid/:confirmId', async (req, res, next) => {
         let unpaidQty = v.requisition_qty - v.total_confirm_qty;
         if (unpaidQty > 0) {
           let obj: any = {};
-          obj.requisition_order_unpaid_id = orderUnpaidId;
+          obj.requisition_order_unpaid_id = rsOrderUnpaid;
           obj.generic_id = v.generic_id;
           obj.unpaid_qty = v.requisition_qty - v.total_confirm_qty;
           unpaidItems.push(obj);
