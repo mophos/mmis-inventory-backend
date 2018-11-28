@@ -824,4 +824,59 @@ router.get('/stockcard/history', async (req, res, next) => {
   }
 
 });
+
+router.get('/calculate/stockcard', async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.decoded.warehouseId;
+  try {
+    let generics = await toolModel.adjustStock1(db, warehouseId);
+    for (const g of generics[0]) {
+      let product: any = [];
+      let products = await toolModel.adjustStock2(db, g.generic_id, warehouseId); // รายการทั้งหทก
+      // let genericQty = 0;
+      // for (const p of products[0]) {
+      let productId = await toolModel.adjustStock3(db, g.generic_id, warehouseId); //product id
+      for (const pd of productId[0]) {
+        const obj: any = {
+          generic_id: g.generic_id,
+          product_id: pd.product_id,
+          product_qty: 0,
+          generic_qty: 0
+        }
+        product.push(obj);
+      }
+      for (const pd of products[0]) {
+        const idxG = _.findIndex(product, { generic_id: g.generic_id });
+        if (idxG > -1) {
+
+          product[idxG].generic_qty += +pd.in_qty;
+          product[idxG].generic_qty -= +pd.out_qty;
+
+          const idx = _.findIndex(product, { product_id: pd.product_id });
+          if (idx > -1) {
+            product[idx].product_qty += +pd.in_qty;
+            product[idx].product_qty -= +pd.out_qty;
+
+          }
+          const obj: any = {
+            stock_card_id: pd.stock_card_id,
+            product_id: pd.product_id,
+            balance_qty: product[idx].product_qty,
+            balance_generic_qty: product[idxG].generic_qty
+          }
+          if (pd.balance_qty != obj.balance_qty || pd.balance_generic_qty != obj.balance_generic_qty) {
+            await toolModel.adjustStockUpdate(db, obj);
+          }
+        }
+      }
+    }
+    console.log('success');
+
+    res.send({ ok: true });
+  } catch (error) {
+    db.destroy();
+    res.send({ ok: false, error: error })
+  }
+
+});
 export default router;
