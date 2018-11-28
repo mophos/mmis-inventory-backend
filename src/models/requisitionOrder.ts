@@ -795,7 +795,11 @@ export class RequisitionOrderModel {
       .update(confirm)
       .where('confirm_id', confirmId);
   }
-
+  checkUnpaid(db:Knex, receiveId:any){
+    return db('wm_requisition_order_unpaids')
+            .where('requisition_order_id',receiveId)
+    
+  }
   saveConfirm(db: Knex, confirm: any) {
     return db('wm_requisition_confirms')
       .insert(confirm, 'confirm_id');
