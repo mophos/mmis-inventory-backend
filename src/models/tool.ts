@@ -388,4 +388,45 @@ export class ToolModel {
     order by sl.stock_card_log_id desc`;
     return db.raw(sql);
   }
+
+
+  adjustStock1(knex: Knex, warehouseId) {
+    let sql = `SELECT
+    generic_id
+    FROM
+    view_stock_card_warehouse 
+    where warehouse_id = '${warehouseId}'
+    GROUP BY
+    generic_id`;
+    return knex.raw(sql);
+  }
+
+  adjustStock2(knex: Knex, genericId, warehouseId) {
+    let sql = `SELECT
+    *
+    FROM
+    view_stock_card_warehouse 
+    where warehouse_id = '${warehouseId}' 
+    and generic_id = '${genericId}'
+    ORDER BY stock_card_id
+`;
+    return knex.raw(sql);
+  }
+
+  adjustStock3(knex: Knex, genericId, warehouseId) {
+    let sql = `SELECT
+    product_id
+    FROM
+    view_stock_card_warehouse 
+    where warehouse_id = '${warehouseId}' 
+    and generic_id = '${genericId}'
+    group by product_id
+`;
+    return knex.raw(sql);
+  }
+
+  adjustStockUpdate(knex: Knex, data) {
+    return knex('wm_stock_card')
+      .update(data).where('stock_card_id', data.stock_card_id);
+  }
 }
