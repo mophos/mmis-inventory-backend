@@ -2114,6 +2114,7 @@ OR sc.ref_src like ?
         ppo.purchase_order_book_number,
         ppo.purchase_order_number,
         ppo.chief_id,
+        ppo.buyer_id,
         subq.amount_qty,
         mgt.generic_type_name
         FROM wm_receives wr
@@ -3021,7 +3022,7 @@ FROM
 		view_stock_card_warehouse AS sc 
 	WHERE
 		sc.warehouse_id = ${wareHouseId} 
-		AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${+month+1}-01 00:00:00'
+		AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${+month + 1}-01 00:00:00'
 	GROUP BY
 		sc.generic_id 
 	) AS io ON io.generic_id = q1.generic_id
@@ -3046,9 +3047,9 @@ WHERE
 GROUP BY
 	mg.generic_type_id
     `
-    return knex.raw(sql)
+        return knex.raw(sql)
     }
-    monthlyReportM(knex: Knex, month:any, year: any, genericType: any, wareHouseId: any){
+    monthlyReportM(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any) {
         let sql = `
         SELECT
 	sum( ifnull( blb.bl, 0 ) ) AS balance,
@@ -3082,7 +3083,7 @@ FROM
 		view_stock_card_warehouse AS sc 
 	WHERE
 		sc.warehouse_id = ${wareHouseId}  
-		AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${+month+1}-01 00:00:00'
+		AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${+month + 1}-01 00:00:00'
 	GROUP BY
 		sc.generic_id 
 	) AS io ON io.generic_id = q1.generic_id
@@ -3421,6 +3422,8 @@ GROUP BY
             .select('*', 'p.position_name as pname')
             .leftJoin('um_positions as p', 'p.position_id', 'u.position_id')
             .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
+            .leftJoin('um_purchasing_officer as upo', 'upo.people_id', 'u.people_id')
+            .leftJoin('um_purchasing_officer_type as upot', 'upot.type_id', 'upo.type_id')
             .where('u.people_id', people_id);
     }
 
