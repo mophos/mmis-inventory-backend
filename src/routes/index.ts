@@ -175,28 +175,28 @@ router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
   genericType = Array.isArray(genericType) ? genericType : [genericType];
 
   try {
-    let monthName = moment((+year)+'-'+(+month)+'-1').format('MMMM');
+    let monthName = moment((+year) + '-' + (+month) + '-1').format('MMMM');
     const rsM: any = await inventoryReportModel.monthlyReportM(db, month, year, genericType, warehouseId);
     const rs: any = await inventoryReportModel.monthlyReport(db, month, year, genericType, warehouseId);
     let ans: any = []
     for (const items of rsM[0]) {
       rs[0].push(items)
     }
-    ans = _.sortBy(rs[0], ['generic_type_id','account_id']);
-    let sum:any = {
+    ans = _.sortBy(rs[0], ['generic_type_id', 'account_id']);
+    let sum: any = {
       balance: 0,
       in_cost: 0,
       out_cost: 0,
       balanceAfter: 0
     }
-    let r:any = []
+    let r: any = []
     for (const items of ans) {
       sum.balance += items.balance
       sum.in_cost += items.in_cost
       sum.out_cost += items.out_cost
       sum.balanceAfter += items.balanceAfter
       r.push({
-        'รายการ' : items.account_name || items.generic_type_name,
+        'รายการ': items.account_name || items.generic_type_name,
         'ยอดคงคลังยกมา': inventoryReportModel.comma(items.balance),
         'รับเข้าคลัง (ใน 1 เดือน)': inventoryReportModel.comma(items.in_cost),
         'จ่ายออกจากคลัง (ใน 1 เดือน)': inventoryReportModel.comma(items.out_cost),
@@ -204,7 +204,7 @@ router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
       })
     }
     r.push({
-      'รายการ' : 'รวมทุกประเภท',
+      'รายการ': 'รวมทุกประเภท',
       'ยอดคงคลังยกมา': inventoryReportModel.comma(sum.balance),
       'รับเข้าคลัง (ใน 1 เดือน)': inventoryReportModel.comma(sum.in_cost),
       'จ่ายออกจากคลัง (ใน 1 เดือน)': inventoryReportModel.comma(sum.out_cost),
@@ -234,16 +234,16 @@ router.get('/report/monthlyReport', wrap(async (req, res, next) => {
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
-    let monthName = moment((+year)+'-'+(+month)+'-1').format('MMMM');
-    let monthbeforName = moment((+year)+'-'+(+month-1)+'-1').format('MMMM');
+    let monthName = moment((+year) + '-' + (+month) + '-1').format('MMMM');
+    let monthbeforName = moment((+year) + '-' + (+month - 1) + '-1').format('MMMM');
     const rsM: any = await inventoryReportModel.monthlyReportM(db, month, year, genericType, warehouseId);
     const rs: any = await inventoryReportModel.monthlyReport(db, month, year, genericType, warehouseId);
     let ans: any = []
     for (const items of rsM[0]) {
       rs[0].push(items)
     }
-    ans = _.sortBy(rs[0], ['generic_type_id','account_id']);
-    let sum:any = {
+    ans = _.sortBy(rs[0], ['generic_type_id', 'account_id']);
+    let sum: any = {
       balance: 0,
       in_cost: 0,
       out_cost: 0,
@@ -268,7 +268,7 @@ router.get('/report/monthlyReport', wrap(async (req, res, next) => {
       ans: ans,
       monthName: monthName,
       monthbeforName: monthbeforName,
-      year: +year+543,
+      year: +year + 543,
       sum: sum,
       hospitalName: hospitalName
     });
@@ -2171,43 +2171,39 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let province = hosdetail[0].province;
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
 
-  let chiefPo = null;
   let staffReceive: any = [];
-  let qty = 0;
   let bahtText: any = []
   let committee: any = []
   let invenChief: any = []
   check_receive = check_receive[0];
+  let cName = []
   for (const v of check_receive) {
-    chiefPo = v.chief_id;
     v.receive_date = moment(v.receive_date).format('D MMMM ') + (moment(v.receive_date).get('year') + 543);
     v.delivery_date = moment(v.delivery_date).format('D MMMM ') + (moment(v.delivery_date).get('year') + 543);
     v.podate = moment(v.podate).format('D MMMM ') + (moment(v.podate).get('year') + 543);
     v.approve_date = moment(v.approve_date).format('D MMMM ') + (moment(v.approve_date).get('year') + 543);
     let _bahtText = inventoryReportModel.bahtText(v.total_price);
-    bahtText.push(_bahtText)
+    v.bahtText = _bahtText;
     v.total_price = inventoryReportModel.comma(v.total_price);
     let _committee = await inventoryReportModel.invenCommittee(db, v.receive_id);
-    committee.push(_committee[0]);
+    v.committee = _committee[0];
     let _invenChief = await inventoryReportModel.inven2Chief(db, v.receive_id)
     invenChief.push(_invenChief[0]);
-    let _staffReceive = await inventoryReportModel.staffReceivePo(db, v.purchase_order_id);
-    _staffReceive[0] ? '' : _staffReceive = await inventoryReportModel.staffReceive(db);
-    staffReceive.push(_staffReceive[0])
+    
+    let chief = await inventoryReportModel.peopleFullName(db, v.chief_id);
+    v.chief = chief[0];
+    let buyer = await inventoryReportModel.peopleFullName(db, v.buyer_id);
+    v.staffReceive = buyer[0];
   }
-  if (committee[0] === undefined) { res.render('no_commitee'); }
+  // if (committee[0] === undefined) { res.render('no_commitee'); }
 
-  let cName = []
-  let chief = await inventoryReportModel.getStaff(db, 'CHIEF');
-  let idxChiefPo = _.findIndex(chief, { people_id: chiefPo });
-  idxChiefPo > -1 ? cName.push(chief[idxChiefPo]) : cName = [];
   let serialYear = moment().get('year') + 543;
   let monthRo = moment().get('month') + 1;
   if (monthRo >= 10) {
     serialYear += 1;
   }
+  
   res.render('check_receive', {
-    chief: cName[0],
     staffReceive: staffReceive,
     master: master,
     hospitalName: hospitalName,
