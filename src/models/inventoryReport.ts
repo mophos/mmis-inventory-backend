@@ -2114,6 +2114,7 @@ OR sc.ref_src like ?
         ppo.purchase_order_book_number,
         ppo.purchase_order_number,
         ppo.chief_id,
+        ppo.buyer_id,
         subq.amount_qty,
         mgt.generic_type_name
         FROM wm_receives wr
@@ -3422,6 +3423,8 @@ GROUP BY
             .select('*', 'p.position_name as pname')
             .leftJoin('um_positions as p', 'p.position_id', 'u.position_id')
             .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
+            .leftJoin('um_purchasing_officer as upo', 'upo.people_id', 'u.people_id')
+            .leftJoin('um_purchasing_officer_type as upot', 'upot.type_id', 'upo.type_id')
             .where('u.people_id', people_id);
     }
 
