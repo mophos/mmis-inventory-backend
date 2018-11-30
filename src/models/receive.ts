@@ -746,7 +746,7 @@ WHERE
     ON DUPLICATE KEY UPDATE qty = qty + ${ v.qty}, unit_generic_id = '${v.unit_generic_id}',cost = (
       select(sum(w.qty * w.cost) + ${ totalCost}) / (sum(w.qty) + ${v.qty})
     from wm_products as w
-    where w.product_id = '${v.product_id}' and w.lot_no = '${v.lot_no}'
+    where w.product_id = '${v.product_id}' and w.lot_no = '${v.lot_no}' and w.warehouse_id = '${v.warehouse_id}'
     group by w.product_id)
     `;
       sqls.push(sql);

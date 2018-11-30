@@ -13,15 +13,14 @@ html
     title report
   body
     button.btn.btn-sm.btn-success.btnprint(onclick='window.print()') Print
-    - var c = 0
-      for v in receiveID
+    - for(var v of check_receive)
         .center.bold บันทึกการตรวจรับพัสดุ
         br
         table.table
           tr
-            td.left เลขที่รับ #{check_receive[c].receive_code}
+            td.left เลขที่รับ #{v.receive_code}
             td.center(style="padding-right:35px;") เขียนที่ #{hospitalName}
-        div(style='margin-left:35%;') วันที่ #{check_receive[c].receive_date}
+        div(style='margin-left:35%;') วันที่ #{v.receive_date}
         table.table
           tr  
             th(style="width:25%; border:0px")
@@ -29,62 +28,52 @@ html
             th(style="width:25%; border:0px")
             th(style="width:25%; border:0px")
           tr
-            if(check_receive[c].purchase_order_book_number !== null)
-              td.center(colspan='2') ตามบันทึกที่ #{check_receive[c].purchase_order_book_number}
+            if(v.purchase_order_book_number !== null)
+              td.center(colspan='2') ตามบันทึกที่ #{v.purchase_order_book_number}
             else
-              td.center(colspan='2') ตามบันทึกที่ #{check_receive[c].purchase_order_number}
-            td.center(colspan='2') ลงวันที่ #{check_receive[c].podate}
+              td.center(colspan='2') ตามบันทึกที่ #{v.purchase_order_number}
+            td.center(colspan='2') ลงวันที่ #{v.podate}
           tr
             td.left(colspan='2') ได้แต่งตั้งคณะกรรมการตรวจรับพัสดุนั้น
             td.right(colspan='2') 
               span บัดนี้คณะกรรมการตรวจรับพัสดุได้ร่วมกันตรวจพัสดุซึ่ง
           tr
-            td.left(colspan='2') #{check_receive[c].labeler_name_po}
+            td.left(colspan='2') #{v.labeler_name_po}
             td.right(colspan='2') 
               span(style="padding-right:1.5em;") ผู้ขายได้นำส่งมอบเมื่อ
           tr  
             td.left(colspan='1')
-              span วันที่ &nbsp;&nbsp;#{check_receive[c].receive_date}
+              span วันที่ &nbsp;&nbsp;#{v.receive_date}
             td.center(colspan='2')
-              span(style="padding-right:3em") ตามใบส่งของเลขที่ #{check_receive[c].delivery_code}
+              span(style="padding-right:3em") ตามใบส่งของเลขที่ #{v.delivery_code}
             td.left(colspan='1')
-              span(style="padding-left:1.5em;") จำนวน #{check_receive[c].amount_qty} รายการ
+              span(style="padding-left:1.5em;") จำนวน #{v.amount_qty} รายการ
           tr
             td.left(colspan='1') รวมเป็นเงินสุทธิ
-            td.left(colspan='3' ) #{check_receive[c].total_price} บาท (#{bahtText[c]})
+            td.left(colspan='3' ) #{v.total_price} บาท (#{v.bahtText})
           tr
             td.left(colspan='4') เห็นว่ามีปริมาณและคุณภาพถูกต้องครบถ้วน และได้ส่งมอบให้เจ้าหน้าที่พัสดุรับไว้เรียบร้อยแล้ว
           tr
             td.left(colspan='4') 
               span(style="padding-left:8em") จึงพร้อมกันลงลายมือชื่อไว้เป็นหลักฐาน
-        //- .fontspace
-        //- | ตามบันทึกที่ #{check_receive[c].purchase_order_number} ลงวันที่ #{check_receive[c].podate} ได้แต่งตั้งคณะกรรมการตรวจรับพัสดุนั้น บัดนี้คณะกรรมการตรวจรับพัสดุได้ร่วมกันตรวจพัสดุซึ่ง 
-        //- | &nbsp;&nbsp;&nbsp;#{check_receive[c].labeler_name}&nbsp;&nbsp;&nbsp; ผู้ขายได้นำส่งมอบเมื่อ วันที่ &nbsp;&nbsp;#{check_receive[c].receive_date} &nbsp;&nbsp;ตามใบส่งของเลขที่ #{check_receive[c].delivery_code} จำนวน #{check_receive[c].amount_qty} รายการ 
-        //- |	รวมเป็นเงินสุทธิ #{check_receive[c].total_price} บาท (#{bahtText[c]}) 
-        //- br
-        //- | คณะกรรมการตรวจรับพัสดุเห็นว่ามีปริมาณและคุณภาพถูกต้องครบถ้วน และได้ส่งมอบให้เจ้าหน้าที่พัสดุรับไว้เรียบร้อยแล้ว 
-        //- br
-        //- | จึงพร้อมกันลงลายมือชื่อไว้เป็นหลักฐาน
         br
         table(style="width: 90%; margin-left: 5%;")
-          - var i = 0
-                for v in committee[c]
-                  - i++ 
-                    tr
-                      td
-                      td(style="height:20px;")
-                      td 
-                      td
-                    tr
-                      td.right(width="5%") (ลงชื่อ)
-                      td.center(width="50%") ........................................................... 
-                      td.left ตำแหน่ง #{v.pname}
-                      td.left &nbsp;#{v.position_name}
-                    tr
-                      td
-                      td.center (#{v.title_name}#{v.fname} #{v.lname})
-                      td.center 
-                      td
+          - for(var i of v.committee)
+            tr
+              td
+              td(style="height:20px;")
+              td 
+              td
+            tr
+              td.right(width="5%") (ลงชื่อ)
+              td.center(width="50%") ........................................................... 
+              td.left ตำแหน่ง #{i.pname}
+              td.left &nbsp;#{i.position_name}
+            tr
+              td
+              td.center (#{i.title_name}#{i.fname} #{i.lname})
+              td.center 
+              td
         | ได้รับมอบพัสดุรายการข้างต้นจากคณะกรรมการตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
         br
         br
@@ -92,11 +81,11 @@ html
           tr
             td.right(width="5%") (ลงชื่อ)
             td.center(width="20%") ...........................................................
-            td.left ตำแหน่ง #{staffReceive[c].position_name}
-            td.left &nbsp; #{staffReceive[c].type_name}
+            td.left ตำแหน่ง #{v.staffReceive.position_name}
+            td.left &nbsp; #{v.staffReceive.type_name}
           tr
             td
-            td.center ( #{staffReceive[c].title_name}#{staffReceive[c].fname}  #{staffReceive[c].lname} )
+            td.center ( #{v.staffReceive.title_name}#{v.staffReceive.fname}  #{v.staffReceive.lname} )
             td
             td
         br
@@ -112,7 +101,7 @@ html
             td.right(width="5%")
             td.center(width="50%") ...........................................................
             td.left 
-          if(!chief)
+          if(!v.chief)
             tr
               td
               td.center 
@@ -128,15 +117,15 @@ html
           else
             tr
               td
-              td.center (#{chief.title}#{chief.fname}  #{chief.lname})
+              td.center (#{v.chief.title_name}#{v.chief.fname}  #{v.chief.lname})
               td
             tr
               td
-              td.center #{chief.position_name}
+              td.center #{v.chief.position_name}
               td
             tr
               td
-              td.center #{chief.position}
+              td.center หัวหน้าเจ้าหน้าที่
               td
           tr
             td
