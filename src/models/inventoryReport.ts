@@ -3404,6 +3404,7 @@ GROUP BY
             .join('wm_warehouses as ww', 'ww.warehouse_id', 'wp.warehouse_id')
             .whereRaw(`DATEDIFF(wp.expired_date, CURDATE()) < xp.num_days and mg.generic_type_id in (${genericTypeId}) and ww.warehouse_id in (${warehouseId})`)
             .groupBy('wp.product_id', 'wp.lot_no', 'wp.expired_date', 'wp.warehouse_id')
+            .orderByRaw('DATEDIFF(wp.expired_date, CURDATE()) ASC')
     }
 
     getLine(knex: Knex, reportType) {
