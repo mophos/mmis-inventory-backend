@@ -283,7 +283,7 @@ export class ProductModel {
     }
     sql += `group by p.lot_no, p.expired_date, p.warehouse_id
     HAVING sum(p.qty) != 0
-    order by w.warehouse_name`
+    order by w.warehouse_name, p.expired_date`
     return knex.raw(sql, [productId]);
   }
 
