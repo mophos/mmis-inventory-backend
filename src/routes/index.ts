@@ -2171,12 +2171,11 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let province = hosdetail[0].province;
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
 
-  let staffReceive: any = [];
   let bahtText: any = []
   let committee: any = []
   let invenChief: any = []
   check_receive = check_receive[0];
-  let cName = []
+
   for (const v of check_receive) {
     v.receive_date = moment(v.receive_date).format('D MMMM ') + (moment(v.receive_date).get('year') + 543);
     v.delivery_date = moment(v.delivery_date).format('D MMMM ') + (moment(v.delivery_date).get('year') + 543);
@@ -2189,11 +2188,19 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     v.committee = _committee[0];
     let _invenChief = await inventoryReportModel.inven2Chief(db, v.receive_id)
     invenChief.push(_invenChief[0]);
-    
+
     let chief = await inventoryReportModel.peopleFullName(db, v.chief_id);
     v.chief = chief[0];
     let buyer = await inventoryReportModel.peopleFullName(db, v.supply_id);
-    v.staffReceive = buyer[0];
+    let _staffReceive: any;
+
+    if (buyer[0] === undefined) {
+      _staffReceive = await inventoryReportModel.staffReceive(db);
+      v.staffReceive = _staffReceive[0];
+    } else {
+      v.staffReceive = buyer[0];
+    }
+
   }
   // if (committee[0] === undefined) { res.render('no_commitee'); }
 
@@ -2202,9 +2209,10 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   if (monthRo >= 10) {
     serialYear += 1;
   }
-  
+
+  console.log(check_receive)
+
   res.render('check_receive', {
-    staffReceive: staffReceive,
     master: master,
     hospitalName: hospitalName,
     serialYear: serialYear,
