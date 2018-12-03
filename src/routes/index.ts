@@ -2192,7 +2192,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     
     let chief = await inventoryReportModel.peopleFullName(db, v.chief_id);
     v.chief = chief[0];
-    let buyer = await inventoryReportModel.peopleFullName(db, v.buyer_id);
+    let buyer = await inventoryReportModel.peopleFullName(db, v.supply_id);
     v.staffReceive = buyer[0];
   }
   // if (committee[0] === undefined) { res.render('no_commitee'); }
