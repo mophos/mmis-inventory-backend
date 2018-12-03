@@ -641,7 +641,7 @@ export class ProductModel {
     inner join mm_generics mg on wtd.generic_id = mg.generic_id
     left join mm_unit_generics mug on mug.unit_generic_id = wtd.unit_generic_id
     left join mm_units u on u.unit_id = mug.from_unit_id
-    left join mm_units u2 on u2.unit_id = mug.to_unit_idz
+    left join mm_units u2 on u2.unit_id = mug.to_unit_id
 		where wtd.template_id = ?
              `;
     return knex.raw(sql, [templateId]);
