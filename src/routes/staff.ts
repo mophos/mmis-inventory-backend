@@ -3419,7 +3419,8 @@ router.get('/warehouses/export/excel', async (req, res, next) => {
           'ชื่อสินค้า': v.generic_name,
           'หน่วย': unit,
           'min': v.min_qty,
-          'max': v.max_qty
+          'max': v.max_qty,
+          'คงเหลือ':v.gen_qty
         })
       });
       // console.log(result);
