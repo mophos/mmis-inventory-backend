@@ -2115,6 +2115,7 @@ OR sc.ref_src like ?
         ppo.purchase_order_number,
         ppo.chief_id,
         ppo.buyer_id,
+        ppo.supply_id,
         subq.amount_qty,
         mgt.generic_type_name
         FROM wm_receives wr
