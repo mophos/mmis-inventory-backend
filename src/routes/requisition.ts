@@ -1144,8 +1144,6 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             for (const v of requisitionProducts) {
               if (v.confirm_qty > 0) {
                 let checkNegative  = await orderModel.getLotBalance(db, v.wm_product_id, withdrawWarehouseId)
-                console.log(checkNegative,v.confirm_qty);
-                console.log('==============');
                 if(checkNegative[0].qty >= v.confirm_qty){
                   wmProductIds.push(v.wm_product_id);
                   dstProducts.push({
