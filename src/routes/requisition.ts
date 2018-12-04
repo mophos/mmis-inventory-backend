@@ -1141,23 +1141,31 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             let withdrawWarehouseId = preReq[0].wm_withdraw;
             let underZero = true
             // res.send(requisitionProducts)
-            requisitionProducts.forEach(v => {
+            for (const v of requisitionProducts) {
               if (v.confirm_qty > 0) {
-                wmProductIds.push(v.wm_product_id);
-                dstProducts.push({
-                  qty: v.confirm_qty,
-                  wm_product_id: v.wm_product_id,
-                  warehouse_id: withdrawWarehouseId
-                });
-
-                items.push({
-                  qty: v.confirm_qty,
-                  wm_product_id: v.wm_product_id
-                });
+                let checkNegative  = await orderModel.getLotBalance(db, v.wm_product_id, withdrawWarehouseId)
+                console.log(checkNegative,v.confirm_qty);
+                console.log('==============');
+                if(checkNegative[0].qty >= v.confirm_qty){
+                  wmProductIds.push(v.wm_product_id);
+                  dstProducts.push({
+                    qty: v.confirm_qty,
+                    wm_product_id: v.wm_product_id,
+                    warehouse_id: withdrawWarehouseId
+                  });
+  
+                  items.push({
+                    qty: v.confirm_qty,
+                    wm_product_id: v.wm_product_id
+                  });
+                } else {
+                  underZero = false
+                  break;
+                }
               } else if (v.confirm_qty < 0) {
                 underZero = false
               }
-            });
+            }
             if (underZero) {
               await orderModel.saveApproveConfirmOrder(db, confirmId, approveData);
               let rsWmProducts = await orderModel.getWmProducs(db, wmProductIds);

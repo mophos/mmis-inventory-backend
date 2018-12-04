@@ -936,7 +936,11 @@ export class RequisitionOrderModel {
       .innerJoin('wm_requisition_confirms as rc', 'rc.requisition_order_id', 'ro.requisition_order_id')
       .where('rc.confirm_id', confirmId);
   }
-
+  getLotBalance(db:Knex, wpId, warehouseId){
+    return db('wm_products')
+    .where('wm_product_id',wpId)
+    .andWhere('warehouse_id',warehouseId)
+  }
   getRequisitionConfirmItems(db: Knex, confirmId: any) {
     return db('wm_requisition_confirm_items as rci')
       .select('rci.*')
