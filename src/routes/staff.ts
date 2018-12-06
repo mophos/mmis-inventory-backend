@@ -685,10 +685,10 @@ const transferApprove = (async (db: Knex, transferIds: any[], peopleUserId: any)
       data.push(objOut);
     }
   });
+  await stockCardModel.saveFastStockTransaction(db, data);
   await transferModel.saveDstProducts(db, dstProducts);
   await transferModel.decreaseQty(db, dstProducts);
   await transferModel.changeApproveStatusIds(db, transferIds, peopleUserId);
-  await stockCardModel.saveFastStockTransaction(db, data);
 });
 
 router.get('/transfer/all/:warehouseId', co(async (req, res, next) => {
