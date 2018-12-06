@@ -1,9 +1,10 @@
 import Knex = require('knex');
 
 export class ReceiveotherTypeModel {
-  list(knex: Knex,btnDelete) {
+  list(knex: Knex, query, btnDelete) {
     let q = knex('wm_receive_types')
     if(btnDelete == 'false') q.where('is_deleted','N');
+    if(query) q.where('receive_type_name','like',`%${query}%`);
     return q
   }
 
