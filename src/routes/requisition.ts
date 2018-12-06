@@ -1539,7 +1539,19 @@ router.post('/unpaid/cancel-unpaid', async (req, res, next) => {
     db.destroy();
   }
 });
+router.get('/templates/:dstWarehouseId', async (req, res, next) => {
+  let db = req.db;
+  let dstWarehouseId = req.params.dstWarehouseId;
 
+  try {
+    let rs: any = await orderModel.getTemplateWarehouse(db, dstWarehouseId);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
 router.get('/templates/:srcWarehouseId/:dstWarehouseId', async (req, res, next) => {
   let db = req.db;
   let srcWarehouseId = req.params.srcWarehouseId;
