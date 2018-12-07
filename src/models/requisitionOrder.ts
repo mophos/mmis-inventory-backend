@@ -879,6 +879,12 @@ export class RequisitionOrderModel {
   }
 
   //
+  getTemplateWarehouse(db: Knex, dstWarehouseId: any) {
+    return db('wm_requisition_template as rt')
+      .select('rt.template_id', 'rt.template_subject','wm.warehouse_name')
+      .join('wm_warehouses as wm','wm.warehouse_id','rt.src_warehouse_id')
+      .where('dst_warehouse_id', dstWarehouseId)
+  }
   getTemplate(db: Knex, srcWarehouseId: any, dstWarehouseId: any) {
     return db('wm_requisition_template')
       .select('template_id', 'template_subject')

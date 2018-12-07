@@ -529,7 +529,8 @@ router.get('/generic-template-list/:id', co(async (req, res, next) => {
 }));
 router.get('/_getissuestemplate/:warehouseId', co(async (req, res, next) => {
   let db = req.db;
-  let warehouseId = req.decoded.warehouseId;
+  let warehouseId = req.params.warehouseId;
+console.log(warehouseId + '--------');
 
   try {
     let rows = await issueModel._getissuesTemplate(db, warehouseId);
