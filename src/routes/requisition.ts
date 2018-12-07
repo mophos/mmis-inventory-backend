@@ -879,7 +879,16 @@ router.put('/orders/confirm-without-unpaid/:confirmId', async (req, res, next) =
     // remove old data
     await orderModel.removeConfirmItems(db, confirmId);
     await orderModel.saveConfirmItems(db, _items);
-
+    
+    let requisitionId = await orderModel.getConfirm(db, confirmId);
+    let rsUnpaidDetail = await orderModel.getOrderUnpaidDetail(db, requisitionId[0].requisition_order_id);
+    if (rsUnpaidDetail.length) {
+      let orderUnpaidId = rsUnpaidDetail[0].requisition_order_unpaid_id;
+      // remove old data
+      await orderModel.removeOrderUnpaid(db, requisitionId[0].requisition_order_id);
+      // remove unpaid items
+      await orderModel.removeOrderUnpaidItems(db, orderUnpaidId);
+    }
     res.send({ ok: true });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -1022,10 +1031,11 @@ router.put('/orders/confirm-with-unpaid/:confirmId', async (req, res, next) => {
 
       // remove old data
       await orderModel.removeOrderUnpaid(db, requisitionId);
-      // save new data
-      let rsOrderUnpaid = await orderModel.saveOrderUnpaid(db, unpaidOrder);
       // remove unpaid items
       await orderModel.removeOrderUnpaidItems(db, orderUnpaidId);
+    }
+      // save new data
+      let rsOrderUnpaid = await orderModel.saveOrderUnpaid(db, unpaidOrder);
       // new order unpaid items
       let unpaidItems = [];
       generics.forEach(v => {
@@ -1042,9 +1052,10 @@ router.put('/orders/confirm-with-unpaid/:confirmId', async (req, res, next) => {
       await orderModel.saveOrderUnpaidItems(db, unpaidItems);
 
       res.send({ ok: true });
-    } else {
-      res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการแก้ไข' });
-    }
+    // } 
+    // else {
+    //   res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการแก้ไข' });
+    // }
 
 
   } catch (error) {
