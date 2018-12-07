@@ -789,7 +789,10 @@ export class RequisitionOrderModel {
       .where('confirm_id', confirmId)
       .del();
   }
-
+  getConfirm(db: Knex, confirmId: any) {
+    return db('wm_requisition_confirms')
+      .where('confirm_id', confirmId)
+  }
   updateConfirm(db: Knex, confirmId: any, confirm: any) {
     return db('wm_requisition_confirms')
       .update(confirm)
