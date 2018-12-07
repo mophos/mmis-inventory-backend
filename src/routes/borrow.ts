@@ -521,6 +521,7 @@ router.post('/returned/approved', co(async (req, res, next) => {
       data.push(obj);
     });
 
+    await stockCard.saveFastStockTransaction(db, data);
     let rs = await borrowModel.getBorrowDetail(db, returnedIds);
     for (const v of rs) {
       if (v.borrow_id) {
@@ -532,7 +533,6 @@ router.post('/returned/approved', co(async (req, res, next) => {
 
     await borrowModel.changeApproveStatusReturned(db, returnedIds, peopleUserId);
     await borrowModel.saveProducts(db, products);
-    await stockCard.saveFastStockTransaction(db, data);
 
     res.send({ ok: true });
 
@@ -760,11 +760,11 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
     }
   };
 
+  await stockCard.saveFastStockTransaction(db, data);
   await borrowModel.saveDstProducts(db, dstProducts);
   await borrowModel.decreaseQty(db, dstProducts);
   await borrowModel.updateConfirm(db, dstProducts);
   await borrowModel.changeApproveStatusIds(db, borrowIds, peopleUserId);
-  await stockCard.saveFastStockTransaction(db, data);
 
   return returnData;
 });
