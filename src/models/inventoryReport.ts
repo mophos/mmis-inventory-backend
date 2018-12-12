@@ -3421,7 +3421,7 @@ GROUP BY
     }
     peopleFullName(knex: Knex, people_id: any) {
         return knex('um_people as u')
-            .select('*', 'p.position_name as pname')
+            .select('*', 'p.position_name as pname', 'upot.type_name as position')
             .leftJoin('um_positions as p', 'p.position_id', 'u.position_id')
             .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
             .leftJoin('um_purchasing_officer as upo', 'upo.people_id', 'u.people_id')
