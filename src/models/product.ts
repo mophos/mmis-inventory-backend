@@ -194,6 +194,7 @@ export class ProductModel {
   saveProducts(knex: Knex, data: any[]) {
     let sqls = [];
     data.forEach(v => {
+      let totalCost = v.cost * v.qty;
       let sql = `
           INSERT INTO wm_products
           (wm_product_id, warehouse_id, product_id, qty,
@@ -207,7 +208,10 @@ export class ProductModel {
       }
       sql += `'${v.unit_generic_id}')
       ON DUPLICATE KEY UPDATE
-      qty=qty+${+v.qty}`;
+      qty=qty+${+v.qty},cost = (
+        select(sum(qty * cost) + ${ totalCost}) / (sum(qty) + ${v.qty})from wm_products as w
+        where w.product_id = '${v.product_id}' and w.lot_no = '${v.lot_no}' and w.warehouse_id = '${v.warehouse_id}'
+        group by w.product_id)`;
       sqls.push(sql);
 
       // console.log(sql);
@@ -283,7 +287,7 @@ export class ProductModel {
     }
     sql += `group by p.lot_no, p.expired_date, p.warehouse_id
     HAVING sum(p.qty) != 0
-    order by w.warehouse_name`
+    order by w.warehouse_name, p.expired_date`
     return knex.raw(sql, [productId]);
   }
 
@@ -642,10 +646,30 @@ export class ProductModel {
     left join mm_unit_generics mug on mug.unit_generic_id = wtd.unit_generic_id
     left join mm_units u on u.unit_id = mug.from_unit_id
     left join mm_units u2 on u2.unit_id = mug.to_unit_id
-		where wtd.template_id = ?
+    where wtd.template_id = ? 
+    ORDER BY wtd.id
              `;
     return knex.raw(sql, [templateId]);
   }
+
+  getAllProductInTemplateWarehouse(knex: Knex, templateId: any, warehouseId: any) {
+    let sql = `
+		select mg.working_code,mg.generic_id,mg.generic_name,wtd.unit_generic_id,u.unit_name as large_unit,mug.qty,u2.unit_name as small_unit,mgp.min_qty,
+    mgp.max_qty,sum(wp.qty) as gen_qty
+		from wm_requisition_template_detail wtd
+    inner join mm_generics mg on wtd.generic_id = mg.generic_id
+    left join mm_unit_generics mug on mug.unit_generic_id = wtd.unit_generic_id
+    left join mm_units u on u.unit_id = mug.from_unit_id
+    left join mm_units u2 on u2.unit_id = mug.to_unit_id
+    LEFT JOIN mm_generic_planning mgp ON wtd.generic_id = mgp.generic_id AND mgp.warehouse_id = ${warehouseId} 
+    JOIN mm_products mp ON mp.generic_id = wtd.generic_id
+	  JOIN wm_products wp ON wp.product_id = mp.product_id AND wp.warehouse_id = ${warehouseId} 
+    where wtd.template_id = ${templateId} 
+    group by wtd.generic_id 
+    ORDER BY wtd.id`
+    return knex.raw(sql);
+  }
+  
   getAllProductInTemplateIssue(knex: Knex, templateId: any) {
     let sql = `
 		select mg.working_code,mg.generic_id,mg.generic_name,wtd.unit_generic_id,u.unit_name as large_unit,mug.qty,u2.unit_name as small_unit

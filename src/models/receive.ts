@@ -5,6 +5,7 @@ export class ReceiveModel {
 
   getTypes(knex: Knex) {
     return knex('wm_receive_types')
+      .where('is_deleted','N')
   }
 
   getStatus(knex: Knex) {

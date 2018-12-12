@@ -879,7 +879,16 @@ router.put('/orders/confirm-without-unpaid/:confirmId', async (req, res, next) =
     // remove old data
     await orderModel.removeConfirmItems(db, confirmId);
     await orderModel.saveConfirmItems(db, _items);
-
+    
+    let requisitionId = await orderModel.getConfirm(db, confirmId);
+    let rsUnpaidDetail = await orderModel.getOrderUnpaidDetail(db, requisitionId[0].requisition_order_id);
+    if (rsUnpaidDetail.length) {
+      let orderUnpaidId = rsUnpaidDetail[0].requisition_order_unpaid_id;
+      // remove old data
+      await orderModel.removeOrderUnpaid(db, requisitionId[0].requisition_order_id);
+      // remove unpaid items
+      await orderModel.removeOrderUnpaidItems(db, orderUnpaidId);
+    }
     res.send({ ok: true });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -1022,10 +1031,11 @@ router.put('/orders/confirm-with-unpaid/:confirmId', async (req, res, next) => {
 
       // remove old data
       await orderModel.removeOrderUnpaid(db, requisitionId);
-      // save new data
-      let rsOrderUnpaid = await orderModel.saveOrderUnpaid(db, unpaidOrder);
       // remove unpaid items
       await orderModel.removeOrderUnpaidItems(db, orderUnpaidId);
+    }
+      // save new data
+      let rsOrderUnpaid = await orderModel.saveOrderUnpaid(db, unpaidOrder);
       // new order unpaid items
       let unpaidItems = [];
       generics.forEach(v => {
@@ -1042,9 +1052,10 @@ router.put('/orders/confirm-with-unpaid/:confirmId', async (req, res, next) => {
       await orderModel.saveOrderUnpaidItems(db, unpaidItems);
 
       res.send({ ok: true });
-    } else {
-      res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการแก้ไข' });
-    }
+    // } 
+    // else {
+    //   res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการแก้ไข' });
+    // }
 
 
   } catch (error) {
@@ -1141,23 +1152,29 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             let withdrawWarehouseId = preReq[0].wm_withdraw;
             let underZero = true
             // res.send(requisitionProducts)
-            requisitionProducts.forEach(v => {
+            for (const v of requisitionProducts) {
               if (v.confirm_qty > 0) {
-                wmProductIds.push(v.wm_product_id);
-                dstProducts.push({
-                  qty: v.confirm_qty,
-                  wm_product_id: v.wm_product_id,
-                  warehouse_id: withdrawWarehouseId
-                });
-
-                items.push({
-                  qty: v.confirm_qty,
-                  wm_product_id: v.wm_product_id
-                });
+                let checkNegative  = await orderModel.getLotBalance(db, v.wm_product_id, withdrawWarehouseId)
+                if(checkNegative[0].qty >= v.confirm_qty){
+                  wmProductIds.push(v.wm_product_id);
+                  dstProducts.push({
+                    qty: v.confirm_qty,
+                    wm_product_id: v.wm_product_id,
+                    warehouse_id: withdrawWarehouseId
+                  });
+  
+                  items.push({
+                    qty: v.confirm_qty,
+                    wm_product_id: v.wm_product_id
+                  });
+                } else {
+                  underZero = false
+                  break;
+                }
               } else if (v.confirm_qty < 0) {
                 underZero = false
               }
-            });
+            }
             if (underZero) {
               await orderModel.saveApproveConfirmOrder(db, confirmId, approveData);
               let rsWmProducts = await orderModel.getWmProducs(db, wmProductIds);
@@ -1533,7 +1550,19 @@ router.post('/unpaid/cancel-unpaid', async (req, res, next) => {
     db.destroy();
   }
 });
+router.get('/templates/:dstWarehouseId', async (req, res, next) => {
+  let db = req.db;
+  let dstWarehouseId = req.params.dstWarehouseId;
 
+  try {
+    let rs: any = await orderModel.getTemplateWarehouse(db, dstWarehouseId);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
 router.get('/templates/:srcWarehouseId/:dstWarehouseId', async (req, res, next) => {
   let db = req.db;
   let srcWarehouseId = req.params.srcWarehouseId;

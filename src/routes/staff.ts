@@ -685,10 +685,10 @@ const transferApprove = (async (db: Knex, transferIds: any[], peopleUserId: any)
       data.push(objOut);
     }
   });
+  await stockCardModel.saveFastStockTransaction(db, data);
   await transferModel.saveDstProducts(db, dstProducts);
   await transferModel.decreaseQty(db, dstProducts);
   await transferModel.changeApproveStatusIds(db, transferIds, peopleUserId);
-  await stockCardModel.saveFastStockTransaction(db, data);
 });
 
 router.get('/transfer/all/:warehouseId', co(async (req, res, next) => {
@@ -2207,7 +2207,7 @@ router.post('/his-transaction/upload', upload.single('file'), co(async (req, res
         } else {
           qty = 0;
         }
-        
+
         let obj: any = {
           date_serv: moment(excelData[x][0], 'YYYYMMDD').format('YYYY-MM-DD'),
           seq: excelData[x][1],
@@ -3394,6 +3394,7 @@ router.get('/period/status', (async (req, res, next) => {
 
 router.get('/warehouses/export/excel', async (req, res, next) => {
   let templateId = req.query.templateId;
+  let warehouseId = req.query.warehouseId;
   let db = req.db;
 
   const pathTmp = path.join(process.env.MMIS_DATA, 'temp');
@@ -3403,7 +3404,7 @@ router.get('/warehouses/export/excel', async (req, res, next) => {
     try {
       let _tableName = `template`;
 
-      let result = await productModel.getAllProductInTemplate(db, templateId);
+      let result = await productModel.getAllProductInTemplateWarehouse(db, templateId, warehouseId);
       let r = [];
       let i = 0;
       result[0].forEach(v => {
@@ -3416,7 +3417,10 @@ router.get('/warehouses/export/excel', async (req, res, next) => {
           'ลำดับ': i,
           'รหัส': v.working_code,
           'ชื่อสินค้า': v.generic_name,
-          'หน่วย': unit
+          'หน่วย': unit,
+          'min': v.min_qty,
+          'max': v.max_qty,
+          'คงเหลือ':v.gen_qty
         })
       });
       // console.log(result);

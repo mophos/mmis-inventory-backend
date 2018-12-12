@@ -2115,6 +2115,7 @@ OR sc.ref_src like ?
         ppo.purchase_order_number,
         ppo.chief_id,
         ppo.buyer_id,
+        ppo.supply_id,
         subq.amount_qty,
         mgt.generic_type_name
         FROM wm_receives wr
@@ -3550,7 +3551,7 @@ GROUP BY
             vscw.large_unit,
             vscw.small_unit,
             sum(vscw.balance_unit_cost * vscw.in_qty) / sum(vscw.in_qty) AS unit_cost,
-            (sum( vscw.in_qty ) - sum( vscw.out_qty ) )* (sum(vscw.balance_unit_cost * vscw.in_qty) / sum(vscw.in_qty)) AS total_cost,
+            ( sum( vscw.in_qty * vscw.in_unit_cost ) - sum( vscw.out_qty * vscw.out_unit_cost ) ) AS total_cost,
             mgp.min_qty,
 	        mgp.max_qty
         FROM
@@ -3591,7 +3592,7 @@ GROUP BY
             vscw.large_unit,
             vscw.small_unit,
             sum(vscw.balance_unit_cost * vscw.in_qty) / sum(vscw.in_qty) AS unit_cost,
-            (sum( vscw.in_qty ) - sum( vscw.out_qty ) )* (sum(vscw.balance_unit_cost * vscw.in_qty) / sum(vscw.in_qty)) AS total_cost
+            ( sum( vscw.in_qty * vscw.in_unit_cost ) - sum( vscw.out_qty * vscw.out_unit_cost ) ) AS total_cost
         FROM
             view_stock_card_warehouse AS vscw
             JOIN mm_products AS mp ON mp.product_id = vscw.product_id

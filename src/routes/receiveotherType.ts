@@ -9,8 +9,9 @@ const receiveotherTypeModel = new ReceiveotherTypeModel();
 
 router.get('/', (req, res, next) => {
   let db = req.db;
-
-  receiveotherTypeModel.list(db)
+  let btnDelete = req.query.btnDelete
+  let query = req.query.query
+  receiveotherTypeModel.list(db, query, btnDelete)
     .then((results: any) => {
       res.send({ ok: true, rows: results });
     })
@@ -79,6 +80,22 @@ router.delete('/:receiveotherTypeId', (req, res, next) => {
   let db = req.db;
 
   receiveotherTypeModel.remove(db, receiveotherTypeId)
+    .then((results: any) => {
+      res.send({ ok: true })
+    })
+    .catch(error => {
+      console.log(error);
+      res.send({ ok: false, error: error })
+    })
+    .finally(() => {
+      db.destroy();
+    });
+});
+router.delete('/return-deleted/:receiveotherTypeId', (req, res, next) => {
+  let receiveotherTypeId = req.params.receiveotherTypeId;
+  let db = req.db;
+
+  receiveotherTypeModel.returnDeleted(db, receiveotherTypeId)
     .then((results: any) => {
       res.send({ ok: true })
     })
