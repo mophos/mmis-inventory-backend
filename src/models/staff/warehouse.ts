@@ -36,9 +36,9 @@ export class WarehouseModel {
   }
 
   updateWarehouseType(knex: Knex, warehouseId: string, typeId: any) {
-    return knex('wm_warehouse_types')  
+    return knex('wm_warehouse_types')
       .where('warehouse_id', warehouseId)
-      .update({type_id: typeId});
+      .update({ type_id: typeId });
   }
 
   detail(knex: Knex, warehouseId: string) {
@@ -74,9 +74,7 @@ export class WarehouseModel {
     inner join mm_packages as pk on pk.package_id=pp.package_id
     inner join wm_locations as l on l.location_id=p.location_id
     where p.warehouse_id=?
-    group by p.product_id, p.lot_id
-
-    `;
+    group by p.product_id, p.lot_id`;
 
     return knex.raw(sql, [warehouseId]);
   }
@@ -96,8 +94,7 @@ export class WarehouseModel {
     where p.warehouse_id=?
     and pp.package_id=p.package_id
     and (p.product_id like ? or mp.product_name like ?)
-    group by p.lot_id, p.product_id
-    `;
+    group by p.lot_id, p.product_id`;
 
     return knex.raw(sql, [warehouseId, _query, _query]);
   }

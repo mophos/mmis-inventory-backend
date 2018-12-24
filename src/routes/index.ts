@@ -1216,66 +1216,27 @@ router.get('/report/issueStraff', wrap(async (req, res, next) => {
   let issue_id: any = req.query.issue_id
   let db = req.db;
   let isArray = true
-  let length: any
-  let issue_body = await issueModel.getList(db);
-  let issueBody: any = []
   let issue_date: any = []
   let issueListDetail: any = []
   if (!Array.isArray(issue_id)) {
     isArray = false;
     issue_id = [issue_id]
   }
-  let hosdetail = await inventoryReportModel.hospital(db);
-  let hospitalName = hosdetail[0].hospname;
-  for (let ii in issue_id) {
-    let i: any = issue_body.filter(person => person.issue_id == +issue_id[ii]);
-    issueBody.push(i[0])
-    issue_date.push(moment(i[0].issue_date).format('D MMMM ') + (moment(i[0].issue_date).get('year') + 543));
-
-    let ListDetail: any = await inventoryReportModel.getProductList(db, issue_id[ii]);
-
-    issueListDetail.push(ListDetail[0])
-  }
-  issueListDetail.forEach(v => {
-    v.forEach(element => {
-      element.expired_date = moment(element.expired_date).format('DD/MM/') + (moment(element.expired_date).get('year') + 543);
-    });
-  });
-
-  res.render('product_issue_straff', {
-    hospitalName: hospitalName, issueBody: issueBody, issueListDetail: issueListDetail, issue_date: issue_date, count: issueListDetail.length
-  });
-  // //console.log(issueBody[0].issue_id);
-  // res.send({ ok: true, issueBody: issueBody, issueListDetail: issueListDetail, issue_date:issue_date })
-}));
-
-router.get('/report/issue', wrap(async (req, res, next) => {
-  let issue_id: any = req.query.issue_id
-  let db = req.db;
-  let isArray = true
-  let issue_body = await issueModel.getList(db);
-  let issueBody: any = []
-  let issue_date: any = []
-  let issueListDetail: any = []
-  if (!Array.isArray(issue_id)) {
-    isArray = false;
-    issue_id = [issue_id]
-  }
+  let issue_body = await issueModel.getListReport(db, issue_id);
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  for (let ii in issue_id) {
-    let i: any = issue_body.filter(person => person.issue_id == +issue_id[ii]);
-    issueBody.push(i[0])
-    issue_date.push(moment(i[0].issue_date).format('D MMMM ') + (moment(i[0].issue_date).get('year') + 543));
+  for (let i of issue_body) {
+    i.issue_date = (moment(i.issue_date).format('D MMMM ') + (moment(i.issue_date).get('year') + 543));
 
-    let ListDetail: any = await inventoryReportModel.getProductList(db, issue_id[ii]);
+    let ListDetail: any = await inventoryReportModel.getProductList(db, i.issue_id);
 
     for (let i of ListDetail[0]) {
       i.qty = inventoryReportModel.comma(i.qty);
+      i.cost = inventoryReportModel.comma(i.qty * i.cost);
     }
 
-    issueListDetail.push(ListDetail[0])
+    issueListDetail.push(ListDetail[0]);
   }
 
   issueListDetail.forEach(v => {
@@ -1285,8 +1246,53 @@ router.get('/report/issue', wrap(async (req, res, next) => {
   });
 
   res.render('product_issue', {
-    hospitalName: hospitalName, issueBody: issueBody, issueListDetail: issueListDetail, issue_date: issue_date, printDate: printDate(req.decoded.SYS_PRINT_DATE), count: issueListDetail.length
+    hospitalName: hospitalName, issueBody: issue_body, issueListDetail: issueListDetail, issue_date: issue_date, printDate: printDate(req.decoded.SYS_PRINT_DATE), count: issueListDetail.length
   });
+  // //console.log(issueBody[0].issue_id);
+  // res.send({ ok: true, issueBody: issueBody, issueListDetail: issueListDetail, issue_date:issue_date })
+}));
+
+router.get('/report/issue', wrap(async (req, res, next) => {
+  try {
+    let issue_id: any = req.query.issue_id;
+    let db = req.db;
+    let isArray = true;
+    let issueBody: any = [];
+    let issue_date: any = [];
+    let issueListDetail: any = [];
+    if (!Array.isArray(issue_id)) {
+      isArray = false;
+      issue_id = [issue_id]
+    }
+    let issue_body = await issueModel.getListReport(db, issue_id);
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+
+    for (let i of issue_body) {
+      i.issue_date = (moment(i.issue_date).format('D MMMM ') + (moment(i.issue_date).get('year') + 543));
+
+      let ListDetail: any = await inventoryReportModel.getProductList(db, i.issue_id);
+
+      for (let i of ListDetail[0]) {
+        i.qty = inventoryReportModel.comma(i.qty);
+        i.cost = inventoryReportModel.comma(i.qty * i.cost);
+      }
+
+      issueListDetail.push(ListDetail[0]);
+    }
+
+    issueListDetail.forEach(v => {
+      v.forEach(element => {
+        element.expired_date = moment(element.expired_date, 'YYYY-MM-DD').isValid() ? moment(element.expired_date).format('DD/MM/') + (moment(element.expired_date).get('year')) : '-';
+      });
+    });
+
+    res.render('product_issue', {
+      hospitalName: hospitalName, issueBody: issue_body, issueListDetail: issueListDetail, issue_date: issue_date, printDate: printDate(req.decoded.SYS_PRINT_DATE), count: issueListDetail.length
+    });
+  } catch (error) {
+    res.send({ ok: true, message: error.message })
+  }
 }));
 
 router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', wrap(async (req, res, next) => {
@@ -2208,8 +2214,6 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     serialYear += 1;
   }
 
-  console.log(check_receive)
-
   res.render('check_receive', {
     master: master,
     hospitalName: hospitalName,
@@ -2357,7 +2361,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
   if (monthRo >= 10) {
     serialYear += 1;
   }
-  
+
   // res.send(check_receive)
   res.render('check_receives', {
     totalPrice: totalPrice,
