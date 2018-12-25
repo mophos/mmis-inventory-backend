@@ -288,4 +288,23 @@ export class HisTransactionModel {
             .where(`generic_id`, generic_id)
             .andWhere(`is_deleted`, 'N')
     }
+
+    getNotMappings(knex: Knex, warehouseId: any) {
+        let sql = `SELECT
+        wh.transaction_id,
+        wh.drug_code
+    FROM
+        wm_his_transaction AS wh
+        LEFT JOIN wm_his_mappings AS hm ON hm.his = wh.drug_code 
+    WHERE
+        wh.is_cut_stock = 'N' 
+        AND hm.mmis IS NULL `
+        if (warehouseId) {
+            sql += `AND wh.mmis_warehouse = '${warehouseId} `
+        }
+        sql += `
+    GROUP BY
+        wh.drug_code`
+        return knex.raw(sql)
+    }
 } 
