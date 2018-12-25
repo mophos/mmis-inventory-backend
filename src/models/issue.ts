@@ -7,10 +7,10 @@ export class IssueModel {
     return knex('wm_issue_summary')
       .insert(data, 'issue_id');
   }
-  getCountCode(knex:Knex , year:any){
+  getCountCode(knex: Knex, year: any) {
     return knex('wm_issue_summary')
-    .count('* as count').as('count')
-    .whereBetween('issue_date', [(+year - 1) + '-10-01',+year + '-09-30'])
+      .count('* as count').as('count')
+      .whereBetween('issue_date', [(+year - 1) + '-10-01', +year + '-09-30'])
   }
   updateSummary(knex: Knex, issueId: any, data: any) {
     return knex('wm_issue_summary')
@@ -157,6 +157,24 @@ export class IssueModel {
 
   }
 
+  getListReport(knex: Knex, issueIds: any) {
+
+    let subQuery = knex('wm_issue_generics as sd')
+      .select(knex.raw('count(*) as total'))
+      .whereRaw('sd.issue_id=ss.issue_id')
+      .as('total');
+
+    let query = knex('wm_issue_summary as ss')
+      .select('ss.*', 'ts.transaction_name', subQuery)
+      .leftJoin('wm_transaction_issues as ts', 'ts.transaction_id', 'ss.transaction_issue_id')
+      .orderBy('ss.issue_id', 'desc');
+
+    query.whereIn('issue_id', issueIds)
+
+    return query;
+
+  }
+
   getListIssues(knex: Knex, limit: number = 15, offset: number = 0, status: any = '', warehouseId: any) {
 
     let subQuery = knex('wm_issue_generics as sd')
@@ -249,7 +267,7 @@ export class IssueModel {
   }
   _getissuesTemplate(knex: Knex, id: string) {
     return knex('wm_issue_template as wis')
-    .where('wis.warehouse_id', id)
+      .where('wis.warehouse_id', id)
   }
   getIssues(knex: Knex, id: string) {
     let sql = `SELECT
@@ -273,7 +291,7 @@ export class IssueModel {
     return knex('wm_issue_summary')
       .select('issue_id')
       .whereIn('issue_id', requisitionId)
-      .andWhere('approved','N');
+      .andWhere('approved', 'N');
   }
 
   getIssueApprove(knex: Knex, id: any, warehouseId: any) {
