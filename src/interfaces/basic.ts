@@ -13,5 +13,29 @@ export enum TransactionType {
   ADDITION_OUT = 'ADD_OUT',
   RETURNED = 'RTN',
   BORROW_IN = 'BORROW_IN',
-  BORROW_OUT = 'BORROW_OUT'
+  BORROW_OUT = 'BORROW_OUT',
+  REPACK_IN = 'REPACK_IN',
+  REPACK_OUT = 'REPACK_OUT'
+}
+
+export interface IStockcardItem {
+  stock_date ? :any,
+  product_id? :any,
+  generic_id? :any,
+  unit_generic_id? :any,
+  transaction_type? :any,
+  document_ref_id? :any,
+  document_ref? :any,
+  in_qty? :number,
+  in_unit_cost? :number,
+  out_qty? :number,
+  out_unit_cost? :number,
+  balance_generic_qty? :number,
+  balance_qty? :number,
+  balance_unit_cost? :number,
+  ref_src? :any,
+  ref_dst? :any,
+  comment? :any
+  lot_no? :any,
+  expired_date? :any,
 }

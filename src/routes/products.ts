@@ -9,6 +9,8 @@ import * as path from 'path';
 import * as rimraf from 'rimraf';
 import * as multer from 'multer';
 import * as _ from 'lodash';
+import * as uuid from 'uuid/v4';
+import { TransactionType, IStockcardItem } from '../interfaces/basic';
 
 import xlsx from 'node-xlsx';
 
@@ -272,7 +274,7 @@ router.post('/', async (req, res, next) => {
       db.destroy();
     }
   } else {
-    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' }) ;
+    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' });
   }
 });
 
@@ -331,7 +333,7 @@ router.put('/:productId', async (req, res, next) => {
     }
 
   } else {
-    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' }) ;
+    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' });
   }
 });
 
@@ -759,6 +761,105 @@ router.post('/mapping/tmt/upload', upload.single('file'), async (req, res, next)
     res.send({ ok: false, error: 'Header ไม่ถูกต้อง' })
   }
 
+});
+
+
+
+router.post('/save-repackage', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const product = req.body.product;
+    const peopleUserId = req.decoded.people_user_id
+    // wm_product
+    let newProducts: any = [];
+    let stockCard = []; // รายการ StockCard
+    let wmProduct = await productModel.getLotBalance(db, product.wm_product_id, product.warehouse_id);
+    wmProduct = wmProduct[0]
+    if (wmProduct.qty >= product.qty) {
+      newProducts = [{
+        wm_product_id: await uuid(),
+        warehouse_id: wmProduct.warehouse_id,
+        product_id: wmProduct.product_id,
+        qty: product.qty,
+        price: wmProduct.cost,
+        cost: wmProduct.cost,
+        lot_no: product.lot_no,
+        expired_date: wmProduct.expired_date,
+        location_id: wmProduct.location_id ,
+        unit_generic_id: product.unit_generic_id,
+        people_user_id: peopleUserId,
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss')
+      }]
+
+      // stock card
+      let srcBalances = await productModel.getBalance(db, wmProduct.product_id, wmProduct.warehouse_id);
+      srcBalances = Object.assign({}, srcBalances[0][0])
+
+      let objStockcardOut: IStockcardItem = {}
+
+      objStockcardOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+      objStockcardOut.product_id = wmProduct.product_id;
+      objStockcardOut.generic_id = product.generic_id;
+      objStockcardOut.unit_generic_id = wmProduct.unit_generic_id;
+      objStockcardOut.transaction_type = TransactionType.REPACK_OUT;
+      objStockcardOut.document_ref_id = null;
+      objStockcardOut.document_ref = null;
+      objStockcardOut.lot_no = wmProduct.lot_no;
+      objStockcardOut.expired_date = wmProduct.expired_date;
+      objStockcardOut.in_qty = 0;
+      objStockcardOut.in_unit_cost = 0;
+      objStockcardOut.out_qty = product.qty;
+      objStockcardOut.out_unit_cost = product.cost;
+      objStockcardOut.balance_qty = +srcBalances.balance - +product.qty;
+      objStockcardOut.balance_generic_qty = +srcBalances.balance_generic - +product.qty;
+      objStockcardOut.balance_unit_cost = wmProduct.cost;
+      objStockcardOut.ref_src = wmProduct.warehouse_id;
+      objStockcardOut.ref_dst = wmProduct.warehouse_id;
+      objStockcardOut.comment = 'ปรับ package';
+      stockCard.push(objStockcardOut)
+
+      let dstProducts = [{
+        qty: product.qty,
+        wm_product_id: product.wm_product_id,
+        warehouse_id: product.warehouse_id
+      }]
+      let objStockcardIn: IStockcardItem = {}
+      objStockcardIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+      objStockcardIn.product_id = wmProduct.product_id;
+      objStockcardIn.generic_id = product.generic_id;
+      objStockcardIn.unit_generic_id = product.unit_generic_id;
+      objStockcardIn.transaction_type = TransactionType.REPACK_IN;
+      objStockcardIn.document_ref_id = null;
+      objStockcardIn.document_ref = null;
+      objStockcardIn.lot_no = product.lot_no;
+      objStockcardIn.expired_date = wmProduct.expired_date;
+      objStockcardIn.in_qty = product.qty;
+      objStockcardIn.in_unit_cost = product.cost;
+      objStockcardIn.out_qty = 0;
+      objStockcardIn.out_unit_cost = 0;
+      objStockcardIn.balance_qty = +srcBalances.balance;
+      objStockcardIn.balance_generic_qty = +srcBalances.balance_generic;
+      objStockcardIn.balance_unit_cost = wmProduct.cost;
+      objStockcardIn.ref_src = wmProduct.warehouse_id;
+      objStockcardIn.ref_dst = wmProduct.warehouse_id;
+      objStockcardIn.comment = 'ปรับ package';
+      stockCard.push(objStockcardIn)
+      console.log('------1');
+      
+console.log(stockCard,newProducts,dstProducts);
+
+      // save stock card
+      await productModel.saveStockCard(db, stockCard);
+      // // save true data
+      await productModel.saveProducts(db, newProducts);
+      await productModel.decreaseQty(db, dstProducts);
+      res.send({ ok: true })
+    } else {
+      res.send({ ok: false, error: 'จำนวนคงเหลือต่ำกว่า' })
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  }
 });
 
 export default router;

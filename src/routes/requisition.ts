@@ -1154,7 +1154,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             // res.send(requisitionProducts)
             for (const v of requisitionProducts) {
               if (v.confirm_qty > 0) {
-                let checkNegative  = await orderModel.getLotBalance(db, v.wm_product_id, withdrawWarehouseId)
+                let checkNegative  = await productModel.getLotBalance(db, v.wm_product_id, withdrawWarehouseId)
                 if(checkNegative[0].qty >= v.confirm_qty){
                   wmProductIds.push(v.wm_product_id);
                   dstProducts.push({
@@ -1212,7 +1212,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
               for (let s of sc[0]) {
                 let srcObjBalance: any = {};
                 let dstObjBalance: any = {};
-                let srcBalance = await orderModel.getBalance(db, s.product_id, s.src_warehouse);
+                let srcBalance = await productModel.getBalance(db, s.product_id, s.src_warehouse);
                 srcBalance[0].forEach(v => {
                   srcObjBalance.product_id = v.product_id;
                   srcObjBalance.warehouse_id = v.warehouse_id;
@@ -1220,7 +1220,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
                   srcObjBalance.balance_generic_qty = v.balance_generic;
                 });
                 balances.push(srcObjBalance);
-                let dstBalance = await orderModel.getBalance(db, s.product_id, s.dst_warehouse)
+                let dstBalance = await productModel.getBalance(db, s.product_id, s.dst_warehouse)
                 dstBalance[0].forEach(v => {
                   dstObjBalance.product_id = v.product_id;
                   dstObjBalance.warehouse_id = v.warehouse_id;
@@ -1306,7 +1306,7 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
               await orderModel.saveStockCard(db, stockCard);
               // // save true data
               await productModel.saveProducts(db, products);
-              await orderModel.decreaseQty(db, dstProducts);
+              await productModel.decreaseQty(db, dstProducts);
 
               res.send({ ok: true });
             } else {
