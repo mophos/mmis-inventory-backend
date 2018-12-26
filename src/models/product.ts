@@ -198,7 +198,7 @@ export class ProductModel {
       let sql = `
           INSERT INTO wm_products
           (wm_product_id, warehouse_id, product_id, qty,
-          cost, price, lot_no, location_id,expired_date, unit_generic_id)
+          cost, price, lot_no, location_id,expired_date, unit_generic_id,people_user_id, created_at)
           VALUES('${v.wm_product_id}', '${v.warehouse_id}', '${v.product_id}',
           ${v.qty}, ${v.cost}, ${v.price}, '${v.lot_no}','${v.location_id}',`;
       if (v.expired_date == null) {
@@ -206,7 +206,7 @@ export class ProductModel {
       } else {
         sql += `'${v.expired_date}',`
       }
-      sql += `'${v.unit_generic_id}')
+      sql += `'${v.unit_generic_id}',${v.people_user_id}, '${v.created_at}')
       ON DUPLICATE KEY UPDATE
       qty=qty+${+v.qty},cost = (
         select(sum(qty * cost) + ${ totalCost}) / (sum(qty) + ${v.qty})from wm_products as w
