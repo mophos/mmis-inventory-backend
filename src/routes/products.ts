@@ -844,9 +844,6 @@ router.post('/save-repackage', async (req, res, next) => {
       objStockcardIn.ref_dst = wmProduct.warehouse_id;
       objStockcardIn.comment = 'ปรับ package';
       stockCard.push(objStockcardIn)
-      console.log('------1');
-      
-console.log(stockCard,newProducts,dstProducts);
 
       // save stock card
       await productModel.saveStockCard(db, stockCard);
