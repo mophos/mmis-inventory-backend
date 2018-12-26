@@ -3193,9 +3193,8 @@ router.get('/report/inventoryStatus/generic/excel', wrap(async (req, res, next) 
   rs = rs[0];
 
   rs.forEach(v => {
-
     let obj: any = {
-      'รหัสเวชภัณฑ์': v.working_code,
+      'รหัสเวชภัณฑ์': v.generic_code,
       'รายการเวชภัณฑ์': v.generic_name,
       'จำนวน': v.qty,
       'หน่วยย่อย': v.small_unit,
@@ -4368,7 +4367,6 @@ router.get('/report/inventoryStatus/product/excel', wrap(async (req, res, next) 
   rs = rs[0];
 
   rs.forEach(v => {
-
     let obj: any = {
       'รหัสเวชภัณฑ์': v.product_code,
       'รายการเวชภัณฑ์': v.product_name,
