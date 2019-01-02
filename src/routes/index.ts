@@ -2236,21 +2236,19 @@ router.get('/report/check/receive2', wrap(async (req, res, next) => {
   let province = hosdetail[0].province;
   let managerName = hosdetail[0].managerName;
   let receiveID = req.query.receiveID
+  // let invenChief = [];
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
   try {
     const data = [];
     for (const id of receiveID) {
       let rs = await inventoryReportModel.checkReceive(db, id);
       rs = rs[0];
-      let supplier = await inventoryReportModel.getStaff(db, 'STAFF_RECEIVE');
-      rs[0].supplierName = supplier[0].title + supplier[0].fname + ' ' + supplier[0].lname;
-      rs[0].supplierPosition = supplier[0].position;
-      let buyyer = await inventoryReportModel.getStaff(db, 'BUYYER');
-      rs[0].buyyerName = buyyer[0].title + buyyer[0].fname + ' ' + buyyer[0].lname;
-      rs[0].buyyerPosition = buyyer[0].position;
-      let chief = await inventoryReportModel.getStaff(db, 'CHIEF');
-      rs[0].chiefName = chief[0].title + chief[0].fname + ' ' + chief[0].lname;
-      rs[0].chiefPosition = chief[0].position;
+
+      let chief = await inventoryReportModel.peopleFullName(db, rs[0].chief_id);
+      rs[0].chief = chief[0];
+
+      let supply = await inventoryReportModel.peopleFullName(db, rs[0].supply_id);
+      rs[0].supply = supply[0];
 
       let committee = await inventoryReportModel.invenCommittee(db, id);
       committee = committee[0];

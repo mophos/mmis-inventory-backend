@@ -14,7 +14,8 @@ html
   body
     button.btn.btn-sm.btn-success.btnprint(onclick='window.print()') Print
     - for(var v of data)
-      .head.center.bold บันทึกข้อความ
+      img(src=APIURL+'krut.png' height='60px')
+      .headkut.h1 บันทึกข้อความ
       br
       table.table
         tr
@@ -102,15 +103,25 @@ html
       | เจ้าหน้าที่พัสดุได้รับมอบพัสดุตามรายการข้างต้นถูกต้องและได้ลงบัญชีพัสดุเรียบร้อยแล้ว
       br
       br
-      table(style="width:60%;margin-left:50%")
-        tr
-          td.right(style="width:10%") ลงชื่อ
-          td.center(style="width:30%") ...........................................................
-          td.left #{v.supplierPosition}
-        tr
-          td.right
-          td.center (#{v.supplierName})
-          td.left
+      table(style="width:50%;margin-left:50%")
+        if(!v.supply)
+          tr
+            td.right(style="width:5%") ลงชื่อ
+            td.center(style="width:60%") ...........................................................
+            td.left #{v.supply.position}
+          tr
+            td.right
+            td.center (#{v.supply.title}#{v.supply.fname}  #{v.supply.lname})
+            td.left
+        else
+          tr
+            td.right(style="width:6%") ลงชื่อ
+            td.center(style="width:60%") ...........................................................
+            td.left #{v.supply.position}
+          tr
+            td.right
+            td.center (#{v.supply.title}#{v.supply.fname}  #{v.supply.lname})
+            td.left
       table.table
         tr
           td(style="width:30%").center เรียน ผู้ว่าราชการจังหวัด#{province}
@@ -128,14 +139,36 @@ html
                 td.right(style="width:10%") ลงชื่อ
                 td.center(style="width:30%") ...........................................................
                 td.left #{v.chiefPosition}
-              tr
-                td.right
-                td.center (#{v.chiefName})
-                td.left
+              if(!v.chief)
+                tr
+                  td
+                  td.center 
+                  td
+                tr
+                  td
+                  td.center 
+                  td
+                tr
+                  td
+                  td.center 
+                  td
+              else
+                tr
+                  td
+                  td.center (#{v.chief.title}#{v.chief.fname}  #{v.chief.lname})
+                  td
+                tr
+                  td
+                  td.center #{v.chief.position_name}
+                  td
+                tr
+                  td
+                  td.center #{v.chief.position}
+                  td
           td(style="width:50%")
             table.table
               tr
-                td.center(colspan=3)  
+                td.center(colspan=3) 
               tr
                 td.center(colspan=3) (#{managerName})
               tr

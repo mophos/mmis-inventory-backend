@@ -198,7 +198,7 @@ export class ProductModel {
       let sql = `
           INSERT INTO wm_products
           (wm_product_id, warehouse_id, product_id, qty,
-          cost, price, lot_no, location_id,expired_date, unit_generic_id)
+          cost, price, lot_no, location_id,expired_date, unit_generic_id,people_user_id, created_at)
           VALUES('${v.wm_product_id}', '${v.warehouse_id}', '${v.product_id}',
           ${v.qty}, ${v.cost}, ${v.price}, '${v.lot_no}','${v.location_id}',`;
       if (v.expired_date == null) {
@@ -206,7 +206,7 @@ export class ProductModel {
       } else {
         sql += `'${v.expired_date}',`
       }
-      sql += `'${v.unit_generic_id}')
+      sql += `'${v.unit_generic_id}',${v.people_user_id}, '${v.created_at}')
       ON DUPLICATE KEY UPDATE
       qty=qty+${+v.qty},cost = (
         select(sum(qty * cost) + ${ totalCost}) / (sum(qty) + ${v.qty})from wm_products as w
@@ -272,7 +272,7 @@ export class ProductModel {
     let sql = `
     select mp.product_name,mp.working_code,p.wm_product_id, p.product_id, sum(p.qty) as qty, floor(sum(p.qty)/ug.qty) as pack_qty, sum(p.cost*p.qty) as total_cost, p.cost, p.warehouse_id,
     w.warehouse_name, p.lot_no, p.expired_date, mpp.max_qty, mpp.min_qty, u1.unit_name as from_unit_name, ug.qty as conversion_qty,
-    u2.unit_name as to_unit_name,v.reserve_qty
+    u2.unit_name as to_unit_name,v.reserve_qty,mp.generic_id,p.unit_generic_id
     from wm_products as p
     left join wm_warehouses as w on w.warehouse_id=p.warehouse_id
     inner join mm_products as mp on mp.product_id=p.product_id
@@ -873,6 +873,64 @@ group by mpp.product_id
       .update({
         cost: cost
       });
+  }
+
+  getLotBalance(db:Knex, wpId, warehouseId){
+    return db('wm_products')
+    .where('wm_product_id',wpId)
+    .andWhere('warehouse_id',warehouseId)
+  }
+  
+  decreaseQty(knex: Knex, data: any[]) {
+    let sql = [];
+    data.forEach(v => {
+      let _sql = `
+      UPDATE wm_products
+      SET qty=qty-${v.qty}
+      WHERE wm_product_id='${v.wm_product_id}'`;
+      sql.push(_sql);
+    });
+
+    let query = sql.join(';');
+    return knex.raw(query);
+  }
+
+  getBalance(knex: Knex, productId, warehouseId) {
+    let sql = `SELECT
+      wp.product_id,
+      sum(wp.qty) AS balance,
+      wp.warehouse_id,
+      wp.unit_generic_id,
+      (SELECT
+        sum(wp.qty)
+      FROM
+        wm_products wp
+      WHERE
+        wp.product_id in (
+          SELECT
+            mp.product_id
+          FROM
+            mm_products mp
+          WHERE
+            mp.generic_id in (
+              SELECT
+                generic_id
+              FROM
+                mm_products mp
+              WHERE
+                mp.product_id = '${productId}'
+            )
+        ) and wp.warehouse_id = '${warehouseId}'
+      GROUP BY wp.warehouse_id) as balance_generic
+    FROM
+      wm_products wp
+    WHERE
+      wp.product_id= '${productId}'
+    AND wp.warehouse_id = '${warehouseId}'
+    GROUP BY
+      wp.product_id,
+      wp.warehouse_id`;
+    return knex.raw(sql);
   }
 
   searchProductInWarehouse(db: Knex, query: any, warehouseId: any) {
