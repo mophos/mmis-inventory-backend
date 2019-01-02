@@ -225,7 +225,7 @@ export class WarehouseModel {
       query.andWhere('mg.generic_type_id', genericType);
     }
     query.groupBy('wp.product_id')
-      .orderBy('mp.product_name');
+      .orderByRaw('IF(mp.product_name RLIKE ' + `'^[a-z]'` + ', 1, 2), mp.product_name');
     return query;
   }
 
@@ -261,7 +261,7 @@ export class WarehouseModel {
       query.andWhere('mg.generic_type_id', genericType);
     }
     query.groupByRaw('wp.product_id')
-      .orderBy('mp.product_name');
+      .orderByRaw('IF(mp.product_name RLIKE ' + `'^[a-z]'` + ', 1, 2), mp.product_name');
     return query;
   }
 

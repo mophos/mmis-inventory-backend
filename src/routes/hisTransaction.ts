@@ -420,4 +420,20 @@ router.post('/import', co(async (req, res, next) => {
 
 }));
 
+router.get('/get-not-mappings', async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = '';
+
+  try {
+    let rs: any = await hisTransactionModel.getNotMappings(db, warehouseId);
+    console.log(rs[0]);
+    
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  };
+});
+
 export default router;
