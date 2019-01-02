@@ -19,8 +19,8 @@ html
         table.table
           tr
             td.left เลขที่รับ #{v.receive_code}
-            td.center(style="padding-right:35px;") เขียนที่ #{hospitalName}
-        div(style='margin-left:35%;') วันที่ #{v.receive_date}
+            td.center(style="margin-left:42%;") เขียนที่ #{hospitalName}
+        div(style='margin-left:42%;') วันที่ #{v.receive_date}
         table.table
           tr  
             th(style="width:25%; border:0px")
@@ -54,8 +54,7 @@ html
           tr
             td.left(colspan='4') เห็นว่ามีปริมาณและคุณภาพถูกต้องครบถ้วน และได้ส่งมอบให้เจ้าหน้าที่พัสดุรับไว้เรียบร้อยแล้ว
           tr
-            td.left(colspan='4') 
-              span(style="padding-left:8em") จึงพร้อมกันลงลายมือชื่อไว้เป็นหลักฐาน
+            td.left(colspan='4') จึงพร้อมกันลงลายมือชื่อไว้เป็นหลักฐาน
         br
         table(style="width: 90%; margin-left: 5%;")
           - for(var i of v.committee)
@@ -77,7 +76,7 @@ html
         | ได้รับมอบพัสดุรายการข้างต้นจากคณะกรรมการตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
         br
         br
-        table(style="width: 80%;")
+        table(style="width: 90%;")
           tr
             td.right(width="5%") (ลงชื่อ)
             td.center(width="20%") ...........................................................

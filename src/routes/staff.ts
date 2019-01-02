@@ -3420,7 +3420,7 @@ router.get('/warehouses/export/excel', async (req, res, next) => {
           'หน่วย': unit,
           'min': v.min_qty,
           'max': v.max_qty,
-          'คงเหลือ':v.gen_qty
+          'คงเหลือ': v.gen_qty
         })
       });
       // console.log(result);
@@ -3784,5 +3784,21 @@ router.get('/generics/types', co(async (req, res, next) => {
     res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
   }
 }));
+
+router.get('/his-transaction/get-not-mappings/:warehouseId', async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.params.warehouseId;
+
+  try {
+    let rs: any = await hisTransactionModel.getNotMappings(db, warehouseId);
+    console.log(rs[0]);
+    
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  };
+});
 
 export default router;

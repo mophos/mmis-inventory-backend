@@ -1216,66 +1216,27 @@ router.get('/report/issueStraff', wrap(async (req, res, next) => {
   let issue_id: any = req.query.issue_id
   let db = req.db;
   let isArray = true
-  let length: any
-  let issue_body = await issueModel.getList(db);
-  let issueBody: any = []
   let issue_date: any = []
   let issueListDetail: any = []
   if (!Array.isArray(issue_id)) {
     isArray = false;
     issue_id = [issue_id]
   }
-  let hosdetail = await inventoryReportModel.hospital(db);
-  let hospitalName = hosdetail[0].hospname;
-  for (let ii in issue_id) {
-    let i: any = issue_body.filter(person => person.issue_id == +issue_id[ii]);
-    issueBody.push(i[0])
-    issue_date.push(moment(i[0].issue_date).format('D MMMM ') + (moment(i[0].issue_date).get('year') + 543));
-
-    let ListDetail: any = await inventoryReportModel.getProductList(db, issue_id[ii]);
-
-    issueListDetail.push(ListDetail[0])
-  }
-  issueListDetail.forEach(v => {
-    v.forEach(element => {
-      element.expired_date = moment(element.expired_date).format('DD/MM/') + (moment(element.expired_date).get('year') + 543);
-    });
-  });
-
-  res.render('product_issue_straff', {
-    hospitalName: hospitalName, issueBody: issueBody, issueListDetail: issueListDetail, issue_date: issue_date, count: issueListDetail.length
-  });
-  // //console.log(issueBody[0].issue_id);
-  // res.send({ ok: true, issueBody: issueBody, issueListDetail: issueListDetail, issue_date:issue_date })
-}));
-
-router.get('/report/issue', wrap(async (req, res, next) => {
-  let issue_id: any = req.query.issue_id
-  let db = req.db;
-  let isArray = true
-  let issue_body = await issueModel.getList(db);
-  let issueBody: any = []
-  let issue_date: any = []
-  let issueListDetail: any = []
-  if (!Array.isArray(issue_id)) {
-    isArray = false;
-    issue_id = [issue_id]
-  }
+  let issue_body = await issueModel.getListReport(db, issue_id);
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  for (let ii in issue_id) {
-    let i: any = issue_body.filter(person => person.issue_id == +issue_id[ii]);
-    issueBody.push(i[0])
-    issue_date.push(moment(i[0].issue_date).format('D MMMM ') + (moment(i[0].issue_date).get('year') + 543));
+  for (let i of issue_body) {
+    i.issue_date = (moment(i.issue_date).format('D MMMM ') + (moment(i.issue_date).get('year') + 543));
 
-    let ListDetail: any = await inventoryReportModel.getProductList(db, issue_id[ii]);
+    let ListDetail: any = await inventoryReportModel.getProductList(db, i.issue_id);
 
     for (let i of ListDetail[0]) {
       i.qty = inventoryReportModel.comma(i.qty);
+      i.cost = inventoryReportModel.comma(i.qty * i.cost);
     }
 
-    issueListDetail.push(ListDetail[0])
+    issueListDetail.push(ListDetail[0]);
   }
 
   issueListDetail.forEach(v => {
@@ -1285,8 +1246,53 @@ router.get('/report/issue', wrap(async (req, res, next) => {
   });
 
   res.render('product_issue', {
-    hospitalName: hospitalName, issueBody: issueBody, issueListDetail: issueListDetail, issue_date: issue_date, printDate: printDate(req.decoded.SYS_PRINT_DATE), count: issueListDetail.length
+    hospitalName: hospitalName, issueBody: issue_body, issueListDetail: issueListDetail, issue_date: issue_date, printDate: printDate(req.decoded.SYS_PRINT_DATE), count: issueListDetail.length
   });
+  // //console.log(issueBody[0].issue_id);
+  // res.send({ ok: true, issueBody: issueBody, issueListDetail: issueListDetail, issue_date:issue_date })
+}));
+
+router.get('/report/issue', wrap(async (req, res, next) => {
+  try {
+    let issue_id: any = req.query.issue_id;
+    let db = req.db;
+    let isArray = true;
+    let issueBody: any = [];
+    let issue_date: any = [];
+    let issueListDetail: any = [];
+    if (!Array.isArray(issue_id)) {
+      isArray = false;
+      issue_id = [issue_id]
+    }
+    let issue_body = await issueModel.getListReport(db, issue_id);
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+
+    for (let i of issue_body) {
+      i.issue_date = (moment(i.issue_date).format('D MMMM ') + (moment(i.issue_date).get('year') + 543));
+
+      let ListDetail: any = await inventoryReportModel.getProductList(db, i.issue_id);
+
+      for (let i of ListDetail[0]) {
+        i.qty = inventoryReportModel.comma(i.qty);
+        i.cost = inventoryReportModel.comma(i.qty * i.cost);
+      }
+
+      issueListDetail.push(ListDetail[0]);
+    }
+
+    issueListDetail.forEach(v => {
+      v.forEach(element => {
+        element.expired_date = moment(element.expired_date, 'YYYY-MM-DD').isValid() ? moment(element.expired_date).format('DD/MM/') + (moment(element.expired_date).get('year')) : '-';
+      });
+    });
+
+    res.render('product_issue', {
+      hospitalName: hospitalName, issueBody: issue_body, issueListDetail: issueListDetail, issue_date: issue_date, printDate: printDate(req.decoded.SYS_PRINT_DATE), count: issueListDetail.length
+    });
+  } catch (error) {
+    res.send({ ok: true, message: error.message })
+  }
 }));
 
 router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', wrap(async (req, res, next) => {
@@ -2208,8 +2214,6 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     serialYear += 1;
   }
 
-  console.log(check_receive)
-
   res.render('check_receive', {
     master: master,
     hospitalName: hospitalName,
@@ -2232,21 +2236,19 @@ router.get('/report/check/receive2', wrap(async (req, res, next) => {
   let province = hosdetail[0].province;
   let managerName = hosdetail[0].managerName;
   let receiveID = req.query.receiveID
+  // let invenChief = [];
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
   try {
     const data = [];
     for (const id of receiveID) {
       let rs = await inventoryReportModel.checkReceive(db, id);
       rs = rs[0];
-      let supplier = await inventoryReportModel.getStaff(db, 'STAFF_RECEIVE');
-      rs[0].supplierName = supplier[0].title + supplier[0].fname + ' ' + supplier[0].lname;
-      rs[0].supplierPosition = supplier[0].position;
-      let buyyer = await inventoryReportModel.getStaff(db, 'BUYYER');
-      rs[0].buyyerName = buyyer[0].title + buyyer[0].fname + ' ' + buyyer[0].lname;
-      rs[0].buyyerPosition = buyyer[0].position;
-      let chief = await inventoryReportModel.getStaff(db, 'CHIEF');
-      rs[0].chiefName = chief[0].title + chief[0].fname + ' ' + chief[0].lname;
-      rs[0].chiefPosition = chief[0].position;
+
+      let chief = await inventoryReportModel.peopleFullName(db, rs[0].chief_id);
+      rs[0].chief = chief[0];
+
+      let supply = await inventoryReportModel.peopleFullName(db, rs[0].supply_id);
+      rs[0].supply = supply[0];
 
       let committee = await inventoryReportModel.invenCommittee(db, id);
       committee = committee[0];
@@ -2357,7 +2359,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
   if (monthRo >= 10) {
     serialYear += 1;
   }
-  
+
   // res.send(check_receive)
   res.render('check_receives', {
     totalPrice: totalPrice,
@@ -3189,9 +3191,8 @@ router.get('/report/inventoryStatus/generic/excel', wrap(async (req, res, next) 
   rs = rs[0];
 
   rs.forEach(v => {
-
     let obj: any = {
-      'รหัสเวชภัณฑ์': v.working_code,
+      'รหัสเวชภัณฑ์': v.generic_code,
       'รายการเวชภัณฑ์': v.generic_name,
       'จำนวน': v.qty,
       'หน่วยย่อย': v.small_unit,
@@ -4364,7 +4365,6 @@ router.get('/report/inventoryStatus/product/excel', wrap(async (req, res, next) 
   rs = rs[0];
 
   rs.forEach(v => {
-
     let obj: any = {
       'รหัสเวชภัณฑ์': v.product_code,
       'รายการเวชภัณฑ์': v.product_name,

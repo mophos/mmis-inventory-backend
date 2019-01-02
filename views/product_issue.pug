@@ -30,6 +30,7 @@ html
             th.left Lot No.
             th.center วันหมดอายุ 
             th.right จำนวนจ่าย
+            th.right มูลค่าตัดจ่าย
         tbody
         - for(var b in issueListDetail[i] )
             tr
@@ -38,9 +39,13 @@ html
               td.left(style="") #{issueListDetail[i][b].lot_no}
               td.center #{issueListDetail[i][b].expired_date}   
               td.right #{issueListDetail[i][b].qty} #{issueListDetail[i][b].to_unit_name}
+              td.right #{issueListDetail[i][b].cost}
         tfooter
           tr
-            td.tbfooter.right(colspan="5")
+            td.tbfooter.right(colspan="6")
+          //- tr
+          //-   td.right(colspan="5") รวมมูลค่า
+          //-   td.right #{issueListDetail[i][b].total_cost} บาท
       table(style='width:60%;margin-left:25%;')
         tr
           td(colspan='5' height='60px;')

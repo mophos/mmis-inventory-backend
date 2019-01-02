@@ -2447,7 +2447,7 @@ OR sc.ref_src like ?
         select sd.*, w.warehouse_name, g.generic_name, mp.product_name, uf.unit_name as from_unit_name,
         ut.unit_name as to_unit_name, ug.qty as unit_conversion_qty
         from (
-            SELECT wis.issue_id, wip.product_id, wp.lot_no, wp.expired_date, wip.qty, mug.qty as conversion_qty,
+            SELECT wis.issue_id, wip.product_id, wp.lot_no, wp.expired_date, wip.qty,wp.cost, mug.qty as conversion_qty,
                     mug.unit_generic_id, wis.warehouse_id, wis.updated_at, wig.generic_id
             FROM wm_issue_summary wis 
             LEFT JOIN wm_issue_generics wig ON wig.issue_id = wis.issue_id
@@ -3398,7 +3398,7 @@ GROUP BY
 
     productExpired(knex: Knex, genericTypeId, warehouseId) {
         return knex('wm_generic_expired_alert as xp')
-            .select('xp.generic_id', 'mg.working_code', 'mg.generic_name', 'mp.working_code as product_code', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', knex.raw('DATEDIFF(wp.expired_date, CURDATE()) AS diff'), 'xp.num_days', 'wp.warehouse_id', 'ww.warehouse_name')
+            .select(knex.raw('sum(wp.qty*wp.cost) as cost,sum(wp.qty) as qty'), 'xp.generic_id', 'mg.working_code', 'mg.generic_name', 'mp.working_code as product_code', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', knex.raw('DATEDIFF(wp.expired_date, CURDATE()) AS diff'), 'xp.num_days', 'wp.warehouse_id', 'ww.warehouse_name')
             .join('mm_generics as mg', 'xp.generic_id', 'mg.generic_id')
             .join('mm_products as mp', 'mp.generic_id', 'mg.generic_id')
             .join('wm_products as wp', 'wp.product_id', 'mp.product_id')
@@ -3406,6 +3406,7 @@ GROUP BY
             .whereRaw(`DATEDIFF(wp.expired_date, CURDATE()) < xp.num_days and mg.generic_type_id in (${genericTypeId}) and ww.warehouse_id in (${warehouseId})`)
             .groupBy('wp.product_id', 'wp.lot_no', 'wp.expired_date', 'wp.warehouse_id')
             .orderByRaw('DATEDIFF(wp.expired_date, CURDATE()) ASC')
+            .havingRaw('sum(wp.qty) > 0')
     }
 
     getLine(knex: Knex, reportType) {
@@ -3421,7 +3422,7 @@ GROUP BY
     }
     peopleFullName(knex: Knex, people_id: any) {
         return knex('um_people as u')
-            .select('*', 'p.position_name as pname')
+            .select('*', 'p.position_name as pname', 'upot.type_name as position')
             .leftJoin('um_positions as p', 'p.position_id', 'u.position_id')
             .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
             .leftJoin('um_purchasing_officer as upo', 'upo.people_id', 'u.people_id')
