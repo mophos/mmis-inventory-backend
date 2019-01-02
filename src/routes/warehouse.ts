@@ -954,6 +954,21 @@ router.get('/get-shippingnetwork-list/:warehouseId/:type', wrap(async (req, res,
   }
 }));
 
+router.post('/get-shippingnetwork-list', wrap(async (req, res, next) => {
+  let db = req.db;
+  try {
+    let warehouseId = req.body.warehouseId;
+    let type = req.body.type;
+    let reqult = await warehouseModel.getShipingNetworkMulti(db, warehouseId, type);
+    res.send({ ok: true, rows: reqult[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+
 router.post('/receive-planning', wrap(async (req, res, next) => {
   let db = req.db;
   try {
