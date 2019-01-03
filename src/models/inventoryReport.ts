@@ -2838,7 +2838,7 @@ OR sc.ref_src like ?
         where t.requisition_date BETWEEN '${startDate}' and '${endDate}'
         GROUP BY t.wm_requisition
        `
-       console.log(sql)
+        console.log(sql)
         return knex.raw(sql);
     }
 
@@ -2959,7 +2959,7 @@ OR sc.ref_src like ?
             .groupBy('mg.generic_id')
     }
 
-    productReceive(knex: Knex, startdate: any, enddate: any) {
+    productReceive(knex: Knex, startdate: any, enddate: any, genericTypeId: any) {
         let sql = `SELECT
         wr.delivery_code,
         wr.receive_code,
@@ -3004,6 +3004,7 @@ OR sc.ref_src like ?
         wrd.is_free = 'N'
       AND wr.receive_date BETWEEN '${startdate}'
       AND '${enddate}'
+      AND mg.generic_type_id IN ( ${genericTypeId} )
       ORDER BY
         wr.receive_date`
         return knex.raw(sql)
