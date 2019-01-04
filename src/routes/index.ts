@@ -2399,12 +2399,13 @@ router.get('/report/product-receive', wrap(async (req, res, next) => {
   let db = req.db;
   let startdate = req.query.startDate
   let enddate = req.query.endDate
+  let genericType = req.query.genericType;
 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
 
-  let productReceive = await inventoryReportModel.productReceive(db, startdate, enddate);
+  let productReceive = await inventoryReportModel.productReceive(db, startdate, enddate, genericType);
   // console.log(productReceive);
   if (productReceive[0].length == 0) { res.render('error404') }
 
@@ -2872,10 +2873,12 @@ router.get('/report/receive/export', async (req, res, next) => {
   const db = req.db;
   let startdate = req.query.startDate
   let enddate = req.query.endDate
+  let genericType = req.query.genericType;
+
   console.log(startdate, enddate);
 
   // get tmt data
-  let rs: any = await inventoryReportModel.productReceive(db, startdate, enddate);
+  let rs: any = await inventoryReportModel.productReceive(db, startdate, enddate, genericType);
   let json = [];
   if (rs[0].length) {
     let i = 0;
