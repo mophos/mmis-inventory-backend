@@ -860,6 +860,7 @@ export class WarehouseModel {
           product_name LIKE '%${keywords}%' OR 
           working_code = '${keywords}' OR 
           keywords LIKE '%${keywords}%' ) ) 
+      OR h.his = '${keywords}'
     )`
     if (genericType !== 'all') {
       sql += `AND g.generic_type_id = '${genericType}'`
