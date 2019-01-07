@@ -1468,6 +1468,7 @@ router.get('/report/list/cost/type', wrap(async (req, res, next) => {
       if (rs[0].generic_type_code == 'MEDICINE') {
         list_cost.push(rs)
       }
+      // list_cost.push(rs)
     }
   }
   list_cost = list_cost[0]
