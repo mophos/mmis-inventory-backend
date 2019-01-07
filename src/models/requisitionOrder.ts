@@ -798,10 +798,10 @@ export class RequisitionOrderModel {
       .update(confirm)
       .where('confirm_id', confirmId);
   }
-  checkUnpaid(db:Knex, receiveId:any){
+  checkUnpaid(db: Knex, receiveId: any) {
     return db('wm_requisition_order_unpaids')
-            .where('requisition_order_id',receiveId)
-    
+      .where('requisition_order_id', receiveId)
+
   }
   saveConfirm(db: Knex, confirm: any) {
     return db('wm_requisition_confirms')
@@ -884,8 +884,8 @@ export class RequisitionOrderModel {
   //
   getTemplateWarehouse(db: Knex, dstWarehouseId: any) {
     return db('wm_requisition_template as rt')
-      .select('rt.template_id', 'rt.template_subject','wm.warehouse_name')
-      .join('wm_warehouses as wm','wm.warehouse_id','rt.src_warehouse_id')
+      .select('rt.template_id', 'rt.template_subject', 'wm.warehouse_name')
+      .join('wm_warehouses as wm', 'wm.warehouse_id', 'rt.src_warehouse_id')
       .where('dst_warehouse_id', dstWarehouseId)
   }
   getTemplate(db: Knex, srcWarehouseId: any, dstWarehouseId: any) {
@@ -945,10 +945,10 @@ export class RequisitionOrderModel {
       .innerJoin('wm_requisition_confirms as rc', 'rc.requisition_order_id', 'ro.requisition_order_id')
       .where('rc.confirm_id', confirmId);
   }
-  getLotBalance(db:Knex, wpId, warehouseId){
+  getLotBalance(db: Knex, wpId, warehouseId) {
     return db('wm_products')
-    .where('wm_product_id',wpId)
-    .andWhere('warehouse_id',warehouseId)
+      .where('wm_product_id', wpId)
+      .andWhere('warehouse_id', warehouseId)
   }
   getRequisitionConfirmItems(db: Knex, confirmId: any) {
     return db('wm_requisition_confirm_items as rci')
@@ -1216,5 +1216,12 @@ export class RequisitionOrderModel {
     return knex('wm_requisition_confirms')
       .update({ 'is_keep': 'Y' })
       .whereIn('requisition_order_id', requisitionId);
+  }
+
+  getUrlApprove(db: Knex) {
+    return db('um_report_detail')
+      .select('report_url')
+      .where('report_type', 'AR')
+      .andWhere('is_active', 'Y')
   }
 }
