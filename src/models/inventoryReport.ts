@@ -177,6 +177,7 @@ export class InventoryReportModel {
             rc.confirm_date,
             mg.generic_id,
             mg.working_code AS generic_code,
+            mg.working_code as generic_code,
             mg.generic_name,
             ro.updated_at,
             mgd.dosage_name,

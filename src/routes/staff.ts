@@ -1881,6 +1881,18 @@ router.post('/requisition/orders/approve/:requisitionId', async (req, res, next)
 
 });
 
+router.get('/requisition/report/approve', async (req, res, next) => {
+  let db = req.db;
+  try {
+    const rs = await orderModel.getUrlApprove(db);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
 /***********************  Confrim ***********************/
 
 router.delete('/requisition/orders/confirm/:confirmId', async (req, res, next) => {
