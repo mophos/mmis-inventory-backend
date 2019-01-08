@@ -2321,7 +2321,8 @@ OR sc.ref_src like ?
         ppoi.qty AS reqty,
         wrd.cost * wrd.receive_qty AS total_cost,
         bt.bgtype_name,
-        wrd.lot_no
+        wrd.lot_no,
+        mgh.name as name_hosp
     FROM
         wm_receives AS r
         LEFT JOIN wm_receive_detail AS wrd ON r.receive_id = wrd.receive_id
@@ -2338,6 +2339,7 @@ OR sc.ref_src like ?
         LEFT JOIN pc_purchasing_order_item ppoi ON ppo.purchase_order_id = ppoi.purchase_order_id 
         AND wrd.product_id = ppoi.product_id
         LEFT JOIN bm_bgtype bt ON ppo.budgettype_id = bt.bgtype_id 
+        LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
     WHERE
         r.receive_id IN ( ${receiveID} )`
         return knex.raw(sql);
@@ -2723,7 +2725,7 @@ OR sc.ref_src like ?
         r.created_at,
         r.updated_at,
         r.requisition_order_id,`
-        if (dateApprove == 'Y') {
+        if (dateApprove == 'N') {
             sql += `r.requisition_date as confirm_date,`
         } else {
             sql += `rc.confirm_date,`
@@ -3054,7 +3056,7 @@ FROM
 		view_stock_card_warehouse AS sc 
 	WHERE
 		sc.warehouse_id = ${wareHouseId} 
-		AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${+month + 1}-01 00:00:00'
+        AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${(+month)%12 == 0? +year+1 : year}-${(+month %12)+ 1}-01 00:00:00'
 	GROUP BY
 		sc.generic_id 
 	) AS io ON io.generic_id = q1.generic_id
@@ -3115,7 +3117,7 @@ FROM
 		view_stock_card_warehouse AS sc 
 	WHERE
 		sc.warehouse_id = ${wareHouseId}  
-		AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${+month + 1}-01 00:00:00'
+        AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${(+month)%12 == 0? +year+1 : year}-${(+month %12)+ 1}-01 00:00:00'
 	GROUP BY
 		sc.generic_id 
 	) AS io ON io.generic_id = q1.generic_id
