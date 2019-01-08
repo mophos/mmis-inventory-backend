@@ -30,10 +30,11 @@ html
               td.left(colspan='9')(style="font-size: 15pt; padding-bottom: 10px;") อนุมัติให้เบิกเวชภัณฑ์ตามรายการนี้
             tr 
               th.left(style="width: 1%;") #
-              th.left(style="width: 32%;") ชื่อเวชภัณฑ์
+              th.left(style="width: 7%;") รหัสยาสามัญ
+              th.left(style="width: 30%;") ชื่อเวชภัณฑ์
               th.right(style="width: 14%;") จำนวนขอเบิก
               th.right(style="width: 14%;") จำนวนอนุมัติ
-              th.right(style="width: 10%;") มูลค่า/หน่วย&nbsp;
+              th.right(style="width: 8%;") มูลค่า/หน่วย&nbsp;
               th.left(style="width: 8%;") lot
               th.right(style="width: 8%;") วันหมดอายุ
               th.right(style="width: 10%;") รวมมูลค่า
@@ -45,12 +46,14 @@ html
             tr
               if ( (y-1) === 0)
                 td #{s+1}.
+                td(style="font-size: 12pt;") &nbsp;#{a.generic_code}
                 td(style="font-size: 12pt;") &nbsp;#{a.generic_name}
                 td.right(style="font-size: 12pt;") &nbsp;#{a.requisition_qty } #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
                 - s++
               else
                 if ( c[y-2].generic_name !== a.generic_name )  
                   td #{s+1}.
+                  td(style="font-size: 12pt;") &nbsp;#{a.generic_code}
                   td(style="font-size: 12pt;") &nbsp;#{a.generic_name}
                   td.right(style="font-size: 12pt;") &nbsp;#{a.requisition_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
                   - s++
