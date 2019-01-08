@@ -2724,7 +2724,7 @@ OR sc.ref_src like ?
         r.created_at,
         r.updated_at,
         r.requisition_order_id,`
-        if (dateApprove == 'Y') {
+        if (dateApprove == 'N') {
             sql += `r.requisition_date as confirm_date,`
         } else {
             sql += `rc.confirm_date,`
@@ -3055,7 +3055,7 @@ FROM
 		view_stock_card_warehouse AS sc 
 	WHERE
 		sc.warehouse_id = ${wareHouseId} 
-		AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${+month + 1}-01 00:00:00'
+        AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${(+month)%12 == 0? +year+1 : year}-${(+month %12)+ 1}-01 00:00:00'
 	GROUP BY
 		sc.generic_id 
 	) AS io ON io.generic_id = q1.generic_id
@@ -3116,7 +3116,7 @@ FROM
 		view_stock_card_warehouse AS sc 
 	WHERE
 		sc.warehouse_id = ${wareHouseId}  
-		AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${year}-${+month + 1}-01 00:00:00'
+        AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${(+month)%12 == 0? +year+1 : year}-${(+month %12)+ 1}-01 00:00:00'
 	GROUP BY
 		sc.generic_id 
 	) AS io ON io.generic_id = q1.generic_id
