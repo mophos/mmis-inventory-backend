@@ -4183,6 +4183,100 @@ router.get('/report/getGenericInStockcrad', wrap(async (req, res, next) => {
 }));
 // --------------------------------------------------------------------------------------- //
 
+router.get('/report/list-waiting', wrap(async (req, res, next) => {
+  let db = req.db;
+  try {
+    let test;
+    let requisId = req.query.requisId;
+    requisId = Array.isArray(requisId) ? requisId : [requisId]
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    const rline = await inventoryReportModel.getLine(db, 'LR')
+    const line = rline[0].line;
+    let _list_requis = [];
+    for (let id of requisId) {
+      let sPage = 1;
+      let ePage = 1;
+      let array = [];
+      let num = 0;
+      let count = 0;
+      let header = await inventoryReportModel.getHeadRequisWait(db, id);
+      header = header[0];
+      if (header[0] === undefined) { res.render('error404'); }
+      const objHead: any = {
+        sPage: sPage,
+        ePage: ePage,
+        requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+        requisition_code: header[0].requisition_code,
+        warehouse_name: header[0].warehouse_name,
+        withdraw_warehouse_name: header[0].withdraw_warehouse_name,
+        title: []
+      }
+      array[num] = _.clone(objHead);
+
+      let title = await inventoryReportModel.list_requiAllWait(db, header[0].requisition_order_id);
+      let numTitle = 0;
+      for (let tv of title[0]) {
+        count += 5;
+        if (count + 0 >= line) {
+          numTitle = 0;
+          count = 0;
+          sPage++;
+          ePage++;
+          count += 7;
+          for (const v of array) {
+            v.ePage = ePage;
+          }
+          num++;
+          const objHead: any = {
+            sPage: sPage,
+            ePage: ePage,
+            requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+            requisition_code: header[0].requisition_code,
+            warehouse_name: header[0].warehouse_name,
+            withdraw_warehouse_name: header[0].withdraw_warehouse_name,
+            title: []
+          }
+          array[num] = _.clone(objHead);
+        }
+        const objTitle = {
+          generic_code: tv.working_code,
+          generic_name: tv.generic_name,
+          product_name: tv.product_name,
+          generic_id: tv.generic_id,
+          product_id: tv.product_id,
+          requisition_qty: commaQty(+tv.requisition_qty / +tv.requisition_conversion_qty),
+          requisition_conversion_qty: tv.requisition_conversion_qty,
+          requisition_large_unit: tv.requisition_large_unit,
+          requisition_small_unit: tv.requisition_small_unit,
+          large_unit: tv.large_unit,
+          unit_qty: tv.unit_qty,
+          small_unit: tv.small_unit,
+          confirm_qty: commaQty(tv.confirm_qty / tv.unit_qty),
+          remain: tv.remain,
+          dosage_name: tv.dosage_name,
+          items: []
+        }
+        array[num].title[numTitle] = _.clone(objTitle);
+      
+        numTitle++;
+      }
+      _list_requis.push(array);
+    }
+    res.render('list_requi_wait', {
+      hospitalName: hospitalName,
+      printDate: printDate(req.decoded.SYS_PRINT_DATE),
+      list_requis: _list_requis,
+    });
+  } catch (error) {
+    // console.log(error);
+    res.send({ ok: false, error: error.message })
+  } finally {
+    db.destroy();
+  }
+
+}))
+
 router.get('/report/approve/borrow', wrap(async (req, res, next) => {
   let db = req.db;
   let approve_borrow: any = []
