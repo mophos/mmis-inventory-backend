@@ -14,8 +14,8 @@ export enum TransactionType {
   RETURNED = 'RTN',
   BORROW_IN = 'BORROW_IN',
   BORROW_OUT = 'BORROW_OUT',
-  REPACK_IN = 'REPACK_IN',
-  REPACK_OUT = 'REPACK_OUT'
+  REPACK_IN = 'REP_IN',
+  REPACK_OUT = 'REP_OUT'
 }
 
 export interface IStockcardItem {

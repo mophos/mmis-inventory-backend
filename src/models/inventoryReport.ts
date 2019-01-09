@@ -836,7 +836,54 @@ mgt.generic_type_id `
      `;
         return knex.raw(sql);
     }
-
+    list_requiAllWait(knex:Knex,requisId){
+        let sql = `SELECT
+        r.requisition_date,
+        r.requisition_code,
+        r.requisition_order_id,
+        wh.warehouse_name,
+        wh.warehouse_id,
+        whs.warehouse_id AS withdraw_warehouse_id,
+        whs.warehouse_name AS withdraw_warehouse_name,
+        mg.working_code,
+        mg.generic_name,
+        mg.generic_id,
+        ( SELECT roi.requisition_qty FROM wm_requisition_order_items roi WHERE roi.requisition_order_id = r.requisition_order_id AND mg.generic_id = roi.generic_id ) AS requisition_qty,
+        ( SELECT mug.qty FROM wm_requisition_order_items roi 
+            LEFT JOIN mm_unit_generics AS mug ON roi.unit_generic_id = mug.unit_generic_id
+            WHERE roi.requisition_order_id = r.requisition_order_id AND mg.generic_id = roi.generic_id ) AS requisition_conversion_qty,
+        ( SELECT mu.unit_name FROM wm_requisition_order_items roi 
+            LEFT JOIN mm_unit_generics AS mug ON roi.unit_generic_id = mug.unit_generic_id
+            LEFT JOIN mm_units AS mu ON mug.from_unit_id = mu.unit_id
+            WHERE roi.requisition_order_id = r.requisition_order_id AND mg.generic_id = roi.generic_id ) AS requisition_large_unit,
+        ( SELECT mu.unit_name FROM wm_requisition_order_items roi 
+            LEFT JOIN mm_unit_generics AS mug ON roi.unit_generic_id = mug.unit_generic_id
+            LEFT JOIN mm_units AS mu ON mug.to_unit_id = mu.unit_id
+            WHERE roi.requisition_order_id = r.requisition_order_id AND mg.generic_id = roi.generic_id ) AS requisition_small_unit,
+        mul.unit_name AS large_unit,
+        mup.qty AS unit_qty,
+        mus.unit_name AS small_unit,
+        sum( rci.requisition_qty ) AS confirm_qty,
+        r.updated_at,
+        mgd.dosage_name
+    FROM
+        wm_requisition_orders r
+        LEFT JOIN wm_requisition_order_items rci ON rci.requisition_order_id = r.requisition_order_id
+        LEFT JOIN mm_generics AS mg ON mg.generic_id = rci.generic_id
+        left join mm_generic_dosages mgd on mgd.dosage_id  = mg.dosage_id 
+        LEFT JOIN mm_unit_generics AS mup ON rci.unit_generic_id = mup.unit_generic_id
+        LEFT JOIN mm_units AS mul ON mup.from_unit_id = mul.unit_id
+        LEFT JOIN mm_units AS mus ON mup.to_unit_id = mus.unit_id
+        LEFT JOIN wm_warehouses wh ON wh.warehouse_id = r.wm_requisition
+        LEFT JOIN wm_warehouses whs ON whs.warehouse_id = r.wm_withdraw 
+    WHERE
+        r.requisition_order_id = '${requisId}' 
+        GROUP BY
+        rci.generic_id
+        ORDER BY
+        r.requisition_order_id`
+        return (knex.raw(sql))
+    }
     list_requiAll(knex: Knex, requisId) {
         let sql = `
         SELECT
@@ -2744,6 +2791,29 @@ OR sc.ref_src like ?
         r.requisition_order_id`
         return knex.raw(sql);
     }
+    getHeadRequisWait(knex: Knex, requisId) {
+        let sql = `SELECT
+        r.requisition_date,
+        r.requisition_code,
+        r.created_at,
+        r.updated_at,
+        r.requisition_order_id,`
+
+        sql += `wh.warehouse_name,
+        wh.warehouse_id,
+        whs.warehouse_name AS withdraw_warehouse_name
+    FROM
+        wm_requisition_orders r
+    LEFT JOIN wm_requisition_confirms rc ON rc.requisition_order_id = r.requisition_order_id
+    LEFT JOIN wm_warehouses wh ON wh.warehouse_id = r.wm_requisition
+    LEFT JOIN wm_warehouses whs ON whs.warehouse_id = r.wm_withdraw
+    WHERE
+        r.requisition_order_id = '${requisId}'
+    ORDER BY
+        r.requisition_order_id`
+        return knex.raw(sql);
+    }
+
 
     getHeadBorrow(knex: Knex, borrowId: any) {
         return knex('wm_borrow as b')
