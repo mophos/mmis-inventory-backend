@@ -177,6 +177,7 @@ export class InventoryReportModel {
             rc.confirm_date,
             mg.generic_id,
             mg.working_code AS generic_code,
+            mg.working_code as generic_code,
             mg.generic_name,
             ro.updated_at,
             mgd.dosage_name,
@@ -2320,7 +2321,8 @@ OR sc.ref_src like ?
         ppoi.qty AS reqty,
         wrd.cost * wrd.receive_qty AS total_cost,
         bt.bgtype_name,
-        wrd.lot_no
+        wrd.lot_no,
+        mgh.name as name_hosp
     FROM
         wm_receives AS r
         LEFT JOIN wm_receive_detail AS wrd ON r.receive_id = wrd.receive_id
@@ -2337,6 +2339,7 @@ OR sc.ref_src like ?
         LEFT JOIN pc_purchasing_order_item ppoi ON ppo.purchase_order_id = ppoi.purchase_order_id 
         AND wrd.product_id = ppoi.product_id
         LEFT JOIN bm_bgtype bt ON ppo.budgettype_id = bt.bgtype_id 
+        LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
     WHERE
         r.receive_id IN ( ${receiveID} )`
         return knex.raw(sql);
