@@ -24,6 +24,7 @@ html
         tr
           th(style="font-size: 12pt;") ลำดับ
           th(style="font-size: 12pt;") เลขที่ใบสั่งซื้อ
+          th(style="font-size: 12pt;") เลขที่ใบส่งของ
           th(style="font-size: 12pt;") วันที่รับของ
           th(style="font-size: 12pt;") รหัสเวชภัณฑ์
           th(style="font-size: 12pt;") ชื่อเวชภัณฑ์
@@ -38,6 +39,7 @@ html
               tr
                 td(style="width: 10px;text-align: center; font-size: 13pt;") #{y}
                 td(style="text-align: center; font-size: 13pt;") #{b.purchase_order_number}
+                td(style="text-align: center; font-size: 13pt;") #{b.delivery_code}
                 td(style="text-align: left; font-size: 13pt;") #{b.receive_date}
                 td(style="text-align: center; font-size: 13pt;") #{b.generic_code}
                 td(style="text-align: left; font-size: 13pt;") #{b.generic_name}
