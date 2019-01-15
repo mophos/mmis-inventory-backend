@@ -2447,7 +2447,8 @@ OR sc.ref_src like ?
         LEFT JOIN bm_bgtype bt ON ppo.budgettype_id = bt.bgtype_id 
         LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
     WHERE
-        r.receive_id IN ( ${receiveID} )`
+        r.receive_id IN ( ${receiveID} )
+    GROUP BY wrd.receive_detail_id`
         return knex.raw(sql);
     }
 
