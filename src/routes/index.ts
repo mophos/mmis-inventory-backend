@@ -461,6 +461,68 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
   }
 
 }));
+router.get('/report/approve/requis3', wrap(async (req, res, next) => {
+  let db = req.db;
+  let approve_requis: any = []
+  let sum: any = []
+  const line = await inventoryReportModel.getLine(db, 'AR');
+  const signature = await inventoryReportModel.getSignature(db, 'AR')
+  let page_re: any = line[0].line;
+  const dateApprove = req.decoded.WM_REPORT_DATE_APPROVE; // Y = วันที่อนุมัติ
+  let warehouse_id: any = req.decoded.warehouseId
+  // console.log(req.decoded);
+
+  try {
+    let requisId = req.query.requisId;
+    requisId = Array.isArray(requisId) ? requisId : [requisId]
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    for (let i in requisId) {
+      const _approve_requis = await inventoryReportModel.approve_requis3(db, requisId[i]);
+      approve_requis.push(_approve_requis[0])
+      approve_requis[i] = _.chunk(approve_requis[i], page_re)
+      let page = 0;
+      for (const values of approve_requis[i]) {
+        sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
+        page++;
+        for (const value of values) {
+          if (dateApprove === 'Y' && value.approve_date) {
+            value.approve_date = value.approve_date;
+          } else {
+            value.approve_date = value.requisition_date;
+          }
+          value.sPage = page;
+          value.nPage = approve_requis[i].length;
+          value.full_name = signature[0].signature === 'N' ? '' : value.full_name
+          value.total_cost = inventoryReportModel.comma(value.unit_cost * value.confirm_qty);
+          value.approve_date = moment(value.approve_date).format('D MMMM ') + (moment(value.approve_date).get('year') + 543);
+          value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
+          value.unit_cost = inventoryReportModel.comma(value.unit_cost);
+          value.stock_qty = inventoryReportModel.commaQty(value.stock_qty * value.conversion_qty);
+          value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
+          value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
+          value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
+          value.today = printDate(req.decoded.SYS_PRINT_DATE);
+          if (req.decoded.SYS_PRINT_DATE_EDIT === 'Y') {
+            value.today += (value.updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) + moment(value.updated_at).format(', HH:mm') + ' น.' : '';
+          }
+          // })
+        }
+        // })
+      }
+    }
+    res.render('approve_requis3', {
+      hospitalName: hospitalName,
+      approve_requis: approve_requis,
+      sum: sum
+    });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
 
 router.get('/report/approve/requis2', wrap(async (req, res, next) => {
   let db = req.db;
@@ -4182,6 +4244,100 @@ router.get('/report/getGenericInStockcrad', wrap(async (req, res, next) => {
   res.send({ ok: true, rows: rs[0].length })
 }));
 // --------------------------------------------------------------------------------------- //
+
+router.get('/report/list-waiting', wrap(async (req, res, next) => {
+  let db = req.db;
+  try {
+    let test;
+    let requisId = req.query.requisId;
+    requisId = Array.isArray(requisId) ? requisId : [requisId]
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    const rline = await inventoryReportModel.getLine(db, 'LR')
+    const line = rline[0].line;
+    let _list_requis = [];
+    for (let id of requisId) {
+      let sPage = 1;
+      let ePage = 1;
+      let array = [];
+      let num = 0;
+      let count = 0;
+      let header = await inventoryReportModel.getHeadRequisWait(db, id);
+      header = header[0];
+      if (header[0] === undefined) { res.render('error404'); }
+      const objHead: any = {
+        sPage: sPage,
+        ePage: ePage,
+        requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+        requisition_code: header[0].requisition_code,
+        warehouse_name: header[0].warehouse_name,
+        withdraw_warehouse_name: header[0].withdraw_warehouse_name,
+        title: []
+      }
+      array[num] = _.clone(objHead);
+
+      let title = await inventoryReportModel.list_requiAllWait(db, header[0].requisition_order_id);
+      let numTitle = 0;
+      for (let tv of title[0]) {
+        count += 5;
+        if (count + 0 >= line) {
+          numTitle = 0;
+          count = 0;
+          sPage++;
+          ePage++;
+          count += 7;
+          for (const v of array) {
+            v.ePage = ePage;
+          }
+          num++;
+          const objHead: any = {
+            sPage: sPage,
+            ePage: ePage,
+            requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+            requisition_code: header[0].requisition_code,
+            warehouse_name: header[0].warehouse_name,
+            withdraw_warehouse_name: header[0].withdraw_warehouse_name,
+            title: []
+          }
+          array[num] = _.clone(objHead);
+        }
+        const objTitle = {
+          generic_code: tv.working_code,
+          generic_name: tv.generic_name,
+          product_name: tv.product_name,
+          generic_id: tv.generic_id,
+          product_id: tv.product_id,
+          requisition_qty: commaQty(+tv.requisition_qty / +tv.requisition_conversion_qty),
+          requisition_conversion_qty: tv.requisition_conversion_qty,
+          requisition_large_unit: tv.requisition_large_unit,
+          requisition_small_unit: tv.requisition_small_unit,
+          large_unit: tv.large_unit,
+          unit_qty: tv.unit_qty,
+          small_unit: tv.small_unit,
+          confirm_qty: commaQty(tv.confirm_qty / tv.unit_qty),
+          remain: tv.remain,
+          dosage_name: tv.dosage_name,
+          items: []
+        }
+        array[num].title[numTitle] = _.clone(objTitle);
+      
+        numTitle++;
+      }
+      _list_requis.push(array);
+    }
+    res.render('list_requi_wait', {
+      hospitalName: hospitalName,
+      printDate: printDate(req.decoded.SYS_PRINT_DATE),
+      list_requis: _list_requis,
+    });
+  } catch (error) {
+    // console.log(error);
+    res.send({ ok: false, error: error.message })
+  } finally {
+    db.destroy();
+  }
+
+}))
 
 router.get('/report/approve/borrow', wrap(async (req, res, next) => {
   let db = req.db;
