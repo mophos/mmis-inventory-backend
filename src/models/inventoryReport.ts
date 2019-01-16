@@ -210,6 +210,65 @@ export class InventoryReportModel {
             mg.generic_name`
         return knex.raw(sql, requisId)
     }
+    approve_requis3(knex: Knex, requisId) {
+        let sql = `SELECT
+        wl.location_name,
+            sum(vpr.stock_qty) stock_qty,
+            ro.requisition_code,
+            ro.requisition_date,
+            ro.updated_at,
+            ro.created_at,
+            ro.requisition_order_id,
+            mp.product_id,
+            mp.product_name,
+            mp.working_code AS trade_code,
+            roi.requisition_qty,
+            wp.cost as cost,
+            wp.lot_no,
+            wp.expired_date,
+            sum(rci.confirm_qty) AS confirm_qty,
+            mul.unit_name AS large_unit,
+            mus.unit_name AS small_unit,
+            mug.qty as conversion_qty,
+            wh.warehouse_name,
+            rc.confirm_date,
+            mg.generic_id,
+            mg.working_code AS generic_code,
+            mg.working_code as generic_code,
+            mg.generic_name,
+            ro.updated_at,
+            mgd.dosage_name,
+            ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
+            concat(up.fname, ' ', up.lname) as full_name,
+            rci.wm_product_id,
+            rci.unit_cost,
+            rc.approve_date
+            FROM
+                wm_requisition_orders ro
+            JOIN wm_requisition_order_items roi ON ro.requisition_order_id = roi.requisition_order_id
+            JOIN wm_requisition_confirms rc ON rc.requisition_order_id = ro.requisition_order_id
+            JOIN wm_requisition_confirm_items rci ON rci.confirm_id = rc.confirm_id
+            AND roi.generic_id = rci.generic_id
+            JOIN mm_generics AS mg ON mg.generic_id = roi.generic_id
+            LEFT JOIN mm_generic_dosages AS mgd ON mgd.dosage_id = mg.dosage_id
+            JOIN wm_warehouses wh ON wh.warehouse_id = ro.wm_requisition
+            LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
+            JOIN mm_products mp ON wp.product_id = mp.product_id
+            left join view_product_reserve as vpr on vpr.wm_product_id = rci.wm_product_id
+            left join wm_locations as wl on wl.location_id = wp.location_id
+            JOIN mm_unit_generics AS mug ON wp.unit_generic_id = mug.unit_generic_id
+            JOIN mm_units AS mul ON mug.from_unit_id = mul.unit_id
+            JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
+            join um_people as up on up.people_id = ro.people_id
+            WHERE
+                ro.requisition_order_id = ?
+            AND rci.confirm_qty > 0
+            GROUP BY
+                rci.wm_product_id
+            ORDER BY
+            mg.generic_name`
+        return knex.raw(sql, requisId)
+    }
 
     approve_borrow2(knex: Knex, borrowId: any) {
         let sql = `SELECT
@@ -2388,7 +2447,8 @@ OR sc.ref_src like ?
         LEFT JOIN bm_bgtype bt ON ppo.budgettype_id = bt.bgtype_id 
         LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
     WHERE
-        r.receive_id IN ( ${receiveID} )`
+        r.receive_id IN ( ${receiveID} )
+    GROUP BY wrd.receive_detail_id`
         return knex.raw(sql);
     }
 
