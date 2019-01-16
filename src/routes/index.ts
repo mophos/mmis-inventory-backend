@@ -1452,7 +1452,8 @@ router.get('/report/list/cost/type', wrap(async (req, res, next) => {
 
   for (const i in genericTypeId) {
     let total_cost: any = 0
-    let rs = await inventoryReportModel.list_cost(db, genericTypeId[i], startDate, warehouseId);
+    // let rs = await inventoryReportModel.list_cost(db, genericTypeId[i], startDate, warehouseId);
+    let rs = await inventoryReportModel.list_costTemporary(db, genericTypeId[i], warehouseId);
     rs = rs[0];
     if (rs.length) {
       rs.forEach(e => {
@@ -2766,7 +2767,8 @@ router.get('/report/inventoryStatus/generic', wrap(async (req, res, next) => {
   let warehouseName = req.query.warehouseName
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.inventoryStatusGeneric(db, warehouseId, genericType, statusDate);
+  // let rs = await inventoryReportModel.inventoryStatusGeneric(db, warehouseId, genericType, statusDate);
+  let rs = await inventoryReportModel.inventoryStatusGenericTemporary(db, warehouseId, genericType);
   let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
   let list = rs[0]
   let sumlist = [];
@@ -2993,7 +2995,8 @@ router.get('/report/list/cost/excel', wrap(async (req, res, next) => {
   let warehouseName = req.query.warehouseName;
   let genericTypeId = Array.isArray(req.query.genericType) ? req.query.genericType : [req.query.genericType];
 
-  let rs: any = await inventoryReportModel.list_cost(db, genericTypeId, startDate, warehouseId)
+  // let rs: any = await inventoryReportModel.list_cost(db, genericTypeId, startDate, warehouseId)
+  let rs: any = await inventoryReportModel.list_costTemporary(db, genericTypeId, warehouseId)
   rs = rs[0];
   let json = [];
   let sum = 0;
@@ -3251,7 +3254,8 @@ router.get('/report/inventoryStatus/generic/excel', wrap(async (req, res, next) 
   let genericType = req.query.genericType
   let warehouseName = req.query.warehouseName
   let hosdetail = await inventoryReportModel.hospital(db);
-  let rs = await inventoryReportModel.inventoryStatusGeneric(db, warehouseId, genericType, statusDate);
+  // let rs = await inventoryReportModel.inventoryStatusGeneric(db, warehouseId, genericType, statusDate);
+  let rs = await inventoryReportModel.inventoryStatusGenericTemporary(db, warehouseId, genericType);
   let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
   let json = [];
   let sum = 0;
@@ -4463,7 +4467,8 @@ router.get('/report/inventoryStatus/product', wrap(async (req, res, next) => {
   let warehouseName = req.query.warehouseName
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.inventoryStatusProduct(db, warehouseId, genericType, statusDate);
+  // let rs = await inventoryReportModel.inventoryStatusProduct(db, warehouseId, genericType, statusDate);
+  let rs = await inventoryReportModel.inventoryStatusProductTemporary(db, warehouseId, genericType);
   let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
   let list = rs[0]
   let sumlist = [];
@@ -4519,7 +4524,8 @@ router.get('/report/inventoryStatus/product/excel', wrap(async (req, res, next) 
   let warehouseName = req.query.warehouseName
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.inventoryStatusProduct(db, warehouseId, genericType, statusDate);
+  // let rs = await inventoryReportModel.inventoryStatusProduct(db, warehouseId, genericType, statusDate);
+  let rs = await inventoryReportModel.inventoryStatusProductTemporary(db, warehouseId, genericType);
   let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
   let json = [];
   let sum = 0;
