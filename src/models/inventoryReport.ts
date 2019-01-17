@@ -3857,7 +3857,7 @@ GROUP BY
         JOIN mm_products AS mp ON mp.product_id = wp.product_id
         JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
         JOIN mm_unit_generics as mug ON mug.unit_generic_id = wp.unit_generic_id
-        LEFT JOIN mm_generic_planning AS mgp ON mgp.warehouse_id = '1' 
+        LEFT JOIN mm_generic_planning AS mgp ON mgp.warehouse_id = '${warehouseId}' 
         AND mgp.generic_id = mg.generic_id
         JOIN mm_units as mu1 ON mug.from_unit_id = mu1.unit_id
         JOIN mm_units as mu2 ON mug.to_unit_id = mu2.unit_id
