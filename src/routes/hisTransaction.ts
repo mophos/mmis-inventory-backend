@@ -69,34 +69,40 @@ router.post('/upload', upload.single('file'), co(async (req, res, next) => {
     for (let x = 1; x < maxRecord; x++) {
       let hisWarehouse = excelData[x][5];
       let mmisWarehouse = null;
-      let idx = _.findIndex(rsWarehouseMapping, { his_warehouse: hisWarehouse });
+      if (hisWarehouse != '' && hisWarehouse != null) {
+        let idx = _.findIndex(rsWarehouseMapping, { his_warehouse: hisWarehouse.toString() });
 
-      if (idx > -1 && excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] && excelData[x][5]) {
+        console.log(excelData[x][0], excelData[x][1], excelData[x][2], excelData[x][3], excelData[x][4], excelData[x][5], 'xxxxxxxx', idx);
+        if (idx > -1 && excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] && excelData[x][5]) {
 
-        let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3]);
-        let qty;
-        if (conversion.length) {
-          qty = Math.ceil(excelData[x][4] / conversion[0].conversion);
-        } else {
-          qty = 0;
+
+          let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3]);
+          let qty;
+          if (conversion.length) {
+            qty = Math.ceil(excelData[x][4] / conversion[0].conversion);
+          } else {
+            qty = 0;
+          }
+          mmisWarehouse = rsWarehouseMapping[idx].mmis_warehouse;
+          let obj: any = {
+            date_serv: moment(excelData[x][0], 'YYYY/MM/DD').format('YYYY-MM-DD'),
+            seq: excelData[x][1],
+            hn: excelData[x][2],
+            drug_code: excelData[x][3],
+            qty: qty,
+            his_warehouse: excelData[x][5],
+            mmis_warehouse: mmisWarehouse,
+            hospcode: hospcode,
+            people_user_id: req.decoded.people_user_id,
+            created_at: moment().format('YYYY-MM-DD HH:mm:ss')
+          }
+
+          _data.push(obj);
         }
-        mmisWarehouse = rsWarehouseMapping[idx].mmis_warehouse;
-        let obj: any = {
-          date_serv: moment(excelData[x][0], 'YYYYMMDD').format('YYYY-MM-DD'),
-          seq: excelData[x][1],
-          hn: excelData[x][2],
-          drug_code: excelData[x][3],
-          qty: qty,
-          his_warehouse: excelData[x][5],
-          mmis_warehouse: mmisWarehouse,
-          hospcode: hospcode,
-          people_user_id: req.decoded.people_user_id,
-          created_at: moment().format('YYYY-MM-DD HH:mm:ss')
-        }
-
-        _data.push(obj);
       }
     }
+    console.log(_data, 'zzzzzzzzz');
+
 
     if (_data.length) {
       try {
@@ -427,7 +433,7 @@ router.get('/get-not-mappings', async (req, res, next) => {
   try {
     let rs: any = await hisTransactionModel.getNotMappings(db, warehouseId);
     console.log(rs[0]);
-    
+
     res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
