@@ -212,16 +212,16 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
 
 }));
 
-router.get('/info-detail-edit/:transferId', co(async (req, res, next) => {
+router.get('/info-detail-edit/:borrowId', co(async (req, res, next) => {
   let db = req.db;
-  let transferId = req.params.transferId;
+  let borrowId = req.params.borrowId;
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
-    const rsGenerics = await borrowModel.getGenericInfo(db, transferId, srcWarehouseId);
+    const rsGenerics = await borrowModel.getGenericInfo(db, borrowId, srcWarehouseId);
     let _generics = rsGenerics[0];
     for (const g of _generics) {
-      const rsProducts = await borrowModel.getProductsInfoEdit(db, transferId, g.transfer_generic_id);
+      const rsProducts = await borrowModel.getProductsInfoEdit(db, borrowId, g.borrow_generic_id);
       let _products = rsProducts[0];
       g.products = _products;
     }
