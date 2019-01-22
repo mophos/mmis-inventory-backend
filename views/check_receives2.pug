@@ -1,0 +1,324 @@
+include css.pug
+style(type='text/css').
+  body{
+  font-family:'THSarabunNewIT';
+  font-size: 14.5pt;
+  }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success.btnprint(onclick='window.print()') Print
+    -var s = 0;
+    - for(var v of check_receive)
+      .center.bold บันทึกข้อความ
+      br
+      table.table
+        tr
+          td.left 
+            .bold.conleft ส่วนราชการ &nbsp;
+            | #{hospitalName}
+          td.center(style="padding-right:35px;") 
+        tr
+          td.left 
+            .bold.conleft ที่ &nbsp;
+            | #{bookPrefix}
+          td.left วันที่ #{v[0].receive_date}
+      .left.bold.conleft
+        | เรื่อง&nbsp;
+      .noneBold รายงานการตรวจรับพัสดุ
+      hr
+      .left.bold.conleft
+        | เรียน&nbsp;
+      .noneBold ผู้ว่าราชการจังหวัด#{province}
+      if(v[0].purchase_order_book_number !== null)
+        .fontspace 
+        | ตามบันทึกข้อความที่ #{v[0].purchase_order_book_number}&nbsp;
+      else
+        .fontspace 
+        | ตามบันทึกข้อความที่ #{v[0].purchase_order_number}&nbsp;
+      | ลงวันที่ #{v[0].podate} อนุมัติให้ดำเนินการจัดซื้อรวม #{length} รายการ
+      | เป็นเงิน #{bahtText[s]} บาท (#{_bahtText[s]})
+      br
+      | ตามใบสั่งซื้อเลขที่ 
+      if(v[0].purchase_order_book_number !== null)
+        | #{v[0].purchase_order_book_number}&nbsp;
+      else
+        | #{v[0].purchase_order_number}&nbsp;
+      | และแต่งตั้งให้ข้าพเจ้าเป็นผู้ตรวจรับพัสดุ นั้น
+      br
+      .fontspace
+      | บัดนี้ #{v[0].labeler_name_po} ได้นำสิ่งของตามรายการและจำนวนดังกล่าว 
+      br
+      | มาส่งมอบ ณ #{hospitalName} ตามใบส่งของเลขที่ วันที่ใบส่งของ วันที่รับของ ดังรายการต่อไปนี้
+      table.table
+        - if(length[s] <= 5)
+          - var i = 0
+          tr
+            th
+            th.left เลขที่ใบส่งของ
+            th วันที่ใบส่งของ
+            th วันที่รับของ
+            th วันที่ตรวจรับของ
+            th วันที่ลงบัญชีรับของ
+            th จำนวนเงิน(บาท)
+          for v in check_receive[s]
+            tr
+              td.left #{i+1} &nbsp;
+              td.left #{v.delivery_code} &nbsp;
+              td.right #{v.delivery_date} &nbsp;
+              td.right #{v.receive_date} &nbsp;
+              td.right #{v.approve_date} &nbsp;
+              td.right #{v.approve_date} &nbsp;
+              td.right #{v.total_price} &nbsp;
+              - i++
+          tr
+            td(colspan='5')
+            th.right รวมทั้งสิ้น
+            th.right #{bahtText[s]} &nbsp;
+            br
+        - else
+          | ดังปรากฏรายละเอียดตรวจรับตามใบแนบเลขที่ 
+          if(v[0].purchase_order_book_number) 
+            | #{v[0].purchase_order_book_number}
+          else
+            | #{v[0].purchase_order_number}  
+      | ซึ่งข้าพเจ้าได้ทำการตรวจรับพัสดุตามใบส่งของเป็นการถูกต้องแล้ว ตามวันที่ตรวจรับของ ดังกล่าวข้างบน จึงได้ลงนามไว้เป็นหลักฐานและได้ส่งมอบพัสดุดังกล่าวให้กับเจ้าหน้าที่พัสดุแล้ว      
+      br
+      div(style="width: 50%; margin-left:15%;") จึงเรียนมาเพื่อโปรดทราบ
+      table(style="width: 50%; margin-left:50%;")
+        - var i = 0
+        if(committee[s].length == 3)
+          - for(var c of committee[s])
+            - i++ 
+              tr
+                td
+                td(style="height:20px;")
+                td 
+              tr
+                td.right(width="5%") ลงชื่อ
+                td.center(width="60%") ........................................................... 
+                td.left &nbsp;#{c.position_name}
+              tr
+                td
+                td.center (#{c.title_name}#{c.fname} #{c.lname})
+                td.center 
+        else
+          tr
+            td
+            td(style="height:20px;")
+            td 
+          tr
+            td.right(width="5%") ลงชื่อ
+            td.center(width="60%") ........................................................... 
+            td.left &nbsp;#{committee[s].position_name}
+          tr
+            td
+            td.center (#{committee[s].title_name}#{committee[s].fname} #{committee[s].lname})
+            td.center 
+      | เจ้าหน้าที่พัสดุได้รับมอบพัสดุตามรายการข้างต้นถูกต้องและได้ลงบัญชีพัสดุเรียบร้อยแล้ว
+      br
+      table(style="width:50%;margin-left:50%")
+        if(!v[0].staffReceive)
+          tr
+            td.right(style="width:5%") ลงชื่อ
+            td.center(style="width:60%") ...........................................................
+            td.left #{v[0].staffReceive.position}
+          tr
+            td.right
+            td.center (#{v[0].staffReceive.title}#{v[0].staffReceive.fname}  #{v[0].staffReceive.lname})
+            td.left
+        else
+          tr
+            td.right(style="width:6%") ลงชื่อ
+            td.center(style="width:60%") ...........................................................
+            td.left #{v[0].staffReceive.position}
+          tr
+            td.right
+            td.center (#{v[0].staffReceive.title}#{v[0].staffReceive.fname}  #{v[0].staffReceive.lname})
+            td.left
+      table.table
+        tr
+          td(style="width:30%").center เรียน ผู้ว่าราชการจังหวัด#{province}
+          td(style="width:70%")
+        tr
+          td(style="width:30%").center เพื่อโปรดทราบ
+          td(style="width:70%").center คำสั่ง ทราบ
+      br
+      table.table
+        tr
+          td(style="width:50%")
+            table.table
+              tr
+                td.right(style="width:10%") ลงชื่อ
+                td.center(style="width:30%") ...........................................................
+                td.left #{v[0].chief.position}
+              if(!v[0].chief)
+                tr
+                  td
+                  td.center 
+                  td
+                tr
+                  td
+                  td.center 
+                  td
+                tr
+                  td
+                  td.center 
+                  td
+              else
+                tr
+                  td
+                  td.center (#{v[0].chief.title}#{v[0].chief.fname}  #{v[0].chief.lname})
+                  td
+                tr
+                  td
+                  td.center #{v[0].chief.position_name}
+                  td
+                //- tr
+                //-   td
+                //-   td.center #{v[0].chief.position}
+                //-   td
+          td(style="width:50%")
+            table.table
+              //- tr
+              //-   td.center(colspan=3) คำสั่ง  ทราบ
+              tr
+                td.center(colspan=3) 
+              tr
+                td.center(colspan=3) (#{master})
+              tr
+                td.center(colspan=3) ผู้อำนวยการ#{hospitalName}
+              tr
+                td.center(colspan=3) ปฏิบัติราชการแทน ผู้ว่าราชการจังหวัด#{province}
+              tr
+                td.center(colspan=3) ......../......../........
+      //- table(style="width: 90%; margin-left: 5%;")
+      //-   - var c = 0
+      //-     for v in committee[s]
+      //-       - c++ 
+      //-         tr
+      //-           td
+      //-           td(style="height:20px;")
+      //-           td 
+      //-           td
+      //-         tr
+      //-           td.right(width="5%") (ลงชื่อ)
+      //-           td.center(width="50%") ........................................................... 
+      //-           td.left ตำแหน่ง #{v.pname}
+      //-           td.left &nbsp;#{v.position_name}
+      //-         tr
+      //-           td
+      //-           td.center (#{v.title_name}#{v.fname} #{v.lname})
+      //-           td.center 
+      //-           td
+      //- | จึงเรียนมาเพื่อโปรดทราบ
+      //- br
+      //- table(style="width: 80%;")
+      //-   tr
+      //-     td.right(width="5%") (ลงชื่อ)
+      //-     td.center(width="20%") ...........................................................
+      //-     td.left ตำแหน่ง #{v[0].staffReceive.position_name}
+      //-     td.left &nbsp; #{v[0].staffReceive.type_name}
+      //-   tr
+      //-     td
+      //-     td.center ( #{v[0].staffReceive.title_name}#{v[0].staffReceive.fname}  #{v[0].staffReceive.lname} )
+      //-     td
+      //-     td
+      //- | เรียน  ผู้ว่าราชการจังหวัด#{province}
+      //- br
+      //- .fontspace
+      //- | คณะกรรมการได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่ายเงินบำรุงโรงพยาบาลประจำปีงบประมาน #{serialYear} แก่ผู้ขายต่อไป
+      //- br
+      //- br
+      //- br
+      //- table(style='width:90%;margin-left:5%;')
+      //-   tr
+      //-     td.right(width="5%") (ลงชื่อ)
+      //-     td.center(width="50%") ...........................................................
+      //-     td.left 
+      //-   if(!v[0].chief)
+      //-     tr
+      //-       td
+      //-       td.center 
+      //-       td
+      //-     tr
+      //-       td
+      //-       td.center 
+      //-       td
+      //-     tr
+      //-       td
+      //-       td.center 
+      //-       td
+      //-   else
+      //-     tr
+      //-       td
+      //-       td.center (#{v[0].chief.title}#{v[0].chief.fname}  #{v[0].chief.lname})
+      //-       td
+      //-     tr
+      //-       td
+      //-       td.center #{v[0].chief.position_name}
+      //-       td
+      //-     tr
+      //-       td
+      //-       td.center #{v[0].chief.position}
+      //-       td
+      //-   tr
+      //-     td
+      //-     td(style="height:20px;")
+      //-     td
+      //-   tr
+      //-     td
+      //-     td(style="height:60px;").center ทราบ
+      //-     td
+      //-   tr
+      //-     td.right(width="5%") (ลงชื่อ)
+      //-     td.center(width="50%") ...........................................................
+      //-     td.left 
+      //-   tr
+      //-     td.center 
+      //-     td.center  
+      //-       | (#{master})
+      //-       br
+      //-       | ผู้อำนวยการ#{hospitalName}
+      //-       br
+      //-       | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{province}
+      //-     td
+      .pagebreak
+      - if(length > 5)
+        .center.bold รายละเอียดตรวจรับ(ใบแนบ)
+        br
+        table.table
+          tr
+            td.left เลขที่ #{check_receive[0].purchase_order_number}-๑
+        br
+        br
+        table.table
+          - var i = 0
+          tr
+            th
+            th.left เลขที่ใบส่งของ
+            th วันที่ใบส่งของ
+            th วันที่รับของ
+            th วันที่ตรวจรับของ
+            th วันที่ลงบัญชีรับของ
+            th จำนวนเงิน(บาท)
+          for v in check_receive[s]
+            tr
+              td.left #{i+1} &nbsp;
+              td.left #{v.delivery_code} &nbsp;
+              td.right #{v.delivery_date} &nbsp;
+              td.right #{v.receive_date} &nbsp;
+              td.right #{v.approve_date} &nbsp;
+              td.right #{v.approve_date} &nbsp;
+              td.right #{v.total_price} &nbsp;
+              - i++
+          tr
+            td(colspan='5')
+            th.right รวมทั้งสิ้น
+            th.right #{bahtText[s]} &nbsp;
+            br 
+      - s++
+      .pagebreak
