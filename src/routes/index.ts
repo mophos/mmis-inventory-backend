@@ -4427,7 +4427,7 @@ router.get('/report/list-waiting', wrap(async (req, res, next) => {
           items: []
         }
         array[num].title[numTitle] = _.clone(objTitle);
-      
+
         numTitle++;
       }
       _list_requis.push(array);
