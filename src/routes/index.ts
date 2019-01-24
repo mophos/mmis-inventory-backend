@@ -498,7 +498,8 @@ router.get('/report/approve/requis3', wrap(async (req, res, next) => {
           value.approve_date = moment(value.approve_date).format('D MMMM ') + (moment(value.approve_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
           value.unit_cost = inventoryReportModel.comma(value.unit_cost);
-          value.stock_qty = inventoryReportModel.commaQty(value.stock_qty * value.conversion_qty);
+          value.stock_qty = inventoryReportModel.commaQty(Math.floor(value.stock_qty / value.conversion_qty));
+          value.generic_stock_qty = inventoryReportModel.commaQty(value.generic_stock_qty);
           value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
           value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
           value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
