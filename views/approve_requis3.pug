@@ -23,21 +23,19 @@ html
               td.right(colspan='5')(style="font-size: 15pt;") วันที่อนุมัติ #{c[0].approve_date}
             tr 
               td.left(colspan='9')(style="font-size: 15pt;") หน่วยงานที่เบิก #{c[0].warehouse_name}
-              //- td.right(colspan='5')(style="font-size: 15pt;") วันที่เบิก #{c[0].requisition_date}
             tr 
               td.left(colspan='9')(style="font-size: 15pt;") #{c[0].today}
             tr 
               td.left(colspan='9')(style="font-size: 15pt; padding-bottom: 10px;") อนุมัติให้เบิกเวชภัณฑ์ตามรายการนี้
             tr 
               th.left(style="width: 1%;") #
-              th.left(style="width: 32%;") ชื่อเวชภัณฑ์
+              th.left(style="width: 29%;") ชื่อเวชภัณฑ์
               th.left(style="width: 5%;") รูปแบบ
               th.right(style="width: 14%;") จำนวนอนุมัติ&nbsp;
               th.left(style="width: 8%;") &nbsp;lot
               th.right(style="width: 7%;") วันหมดอายุ
               th.right(style="width: 14%;") จำนวนคงเหลือ
-              //- th.right(style="width: 10%;") มูลค่า/หน่วย&nbsp;
-              th.right(style="width: 9%;") สถานที่เก็บ
+              th.right(style="width: 12%;") คงคลัง
           tbody
           - var y=0
           - var s=0
@@ -54,10 +52,8 @@ html
                   td #{s+1}.
                   td(style="font-size: 12pt;") &nbsp;#{a.generic_name}
                   td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
-                  //- td.right(style="font-size: 12pt;") &nbsp;#{a.stock_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
                   - s++
                 else 
-                  td 
                   td 
                   td 
                   td.right 
@@ -65,9 +61,13 @@ html
               td(style="font-size: 12pt; word-break:break-all;") &nbsp;#{a.lot_no}
               td.right(style="font-size: 12pt;") &nbsp;#{a.expired_date}
               td.right(style="font-size: 12pt;") &nbsp;#{a.stock_qty } #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
-              //- td.right(style="font-size: 12pt; padding-right:8px;") &nbsp;#{a.unit_cost}
-              td.right(style="font-size: 12pt;") &nbsp;#{a.location_name}
-            .pagebreak
+              if ( (y-1) === 0)
+                td.right(style="font-size: 12pt;") &nbsp;#{a.generic_stock_qty }  #{a.small_unit}
+              else
+                if ( c[y-2].generic_name !== a.generic_name )  
+                  td.right(style="font-size: 12pt;") &nbsp;#{a.generic_stock_qty }  #{a.small_unit}
+                else 
+                  td 
             .pagebreak
           tfoot
             tr.dash-top
@@ -135,7 +135,5 @@ html
                 td.center(style="border-bottom:1px dashed black;width:25%;")
                 td.left ) 
         - l++
-        //- div(content)
-        //-   div(pageFooter)
       .pagebreak
       

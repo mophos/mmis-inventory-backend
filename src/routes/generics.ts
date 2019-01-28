@@ -438,7 +438,7 @@ router.post('/allocate-borrow', async (req, res, next) => {
       let idx: number = 0;
       if (rsProducts.length) {
         for (const p of rsProducts) {
-          d.genericQty = d.genericQty * p.conversion_qty;
+          d.genericQty = d.genericQty;
 
           if (d.genericId === p.generic_id) {
             const remainQty = p.qty;
