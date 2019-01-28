@@ -879,4 +879,123 @@ router.get('/calculate/stockcard', async (req, res, next) => {
   }
 
 });
+
+router.post('/removestockcard', async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.body.warehouseId;
+  console.log(warehouseId);
+  try {
+    await toolModel.callForecast(db, warehouseId); // ลบ stockcard
+    await toolModel.insertProductInStockcard(db, warehouseId) // insertProductInStockcard
+    let generics = await toolModel.adjustStock1(db, warehouseId);
+    for (const g of generics[0]) {
+      let product: any = [];
+      let products = await toolModel.adjustStock2(db, g.generic_id, warehouseId); // รายการทั้งหทก
+      // let genericQty = 0;
+      // for (const p of products[0]) {
+      let productId = await toolModel.adjustStock3(db, g.generic_id, warehouseId); //product id
+      for (const pd of productId[0]) {
+        const obj: any = {
+          generic_id: g.generic_id,
+          product_id: pd.product_id,
+          product_qty: 0,
+          generic_qty: 0
+        }
+        product.push(obj);
+      }
+      for (const pd of products[0]) {
+        const idxG = _.findIndex(product, { generic_id: g.generic_id });
+        if (idxG > -1) {
+
+          product[idxG].generic_qty += +pd.in_qty;
+          product[idxG].generic_qty -= +pd.out_qty;
+
+          const idx = _.findIndex(product, { product_id: pd.product_id });
+          if (idx > -1) {
+            product[idx].product_qty += +pd.in_qty;
+            product[idx].product_qty -= +pd.out_qty;
+
+          }
+          const obj: any = {
+            stock_card_id: pd.stock_card_id,
+            product_id: pd.product_id,
+            balance_qty: product[idx].product_qty,
+            balance_generic_qty: product[idxG].generic_qty
+          }
+          if (pd.balance_qty != obj.balance_qty || pd.balance_generic_qty != obj.balance_generic_qty) {
+            await toolModel.adjustStockUpdate(db, obj);
+          }
+        }
+      }
+    }
+    console.log('success');
+
+    res.send({ ok: true });
+  } catch (error) {
+    // db.destroy();
+    res.send({ ok: false, error: error })
+  }
+
+});
+
+router.get('/calculate/balanceunitcost', async (req, res, next) => {
+
+  let db = req.db;
+  try {
+    let copyOblect = [];
+    let products = [];
+    const productId = await toolModel.getProductId(db);
+    for (const _productId of productId[0]) {
+      // products = [];
+      const result = await toolModel.unitCost(db, _productId.product_id, _productId.warehouse_id, _productId.lot_no);
+      let resList = result[0];
+      for (const r of resList) {
+        const idx = _.findIndex(products, { 'product_id': r.product_id, 'lot_no': r.lot_no, 'warehouse_id': r.warehouse_id });
+        if (idx == -1) {
+          const obj = {
+            stock_card_id: r.stock_card_id,
+            product_id: r.product_id,
+            warehouse_id: r.warehouse_id,
+            lot_no: r.lot_no,
+            in_qty: r.in_qty,
+            out_qty: r.out_qty,
+            in_unit_cost: r.in_unit_cost,
+            out_unit_cost: r.out_unit_cost,
+            balance_qty: r.balance_qty,
+            balance_unit_cost: r.in_qty * r.in_unit_cost / r.in_qty
+          }
+
+          products.push(obj);
+          // copyOblect.push(obj);
+        } else {
+          const idxL = _.findLastIndex(products, { 'product_id': r.product_id, 'lot_no': r.lot_no, 'warehouse_id': r.warehouse_id });
+          let buc = ((+products[idxL].balance_qty * +products[idxL].balance_unit_cost) + (+r.in_qty * +r.in_unit_cost) - (+r.out_qty * +r.out_unit_cost)) / (+products[idxL].balance_qty + +r.in_qty - +r.out_qty);
+          if (r.out_qty > 0) {
+            buc = products[idxL].balance_unit_cost;
+          }
+          const obj = {
+            stock_card_id: r.stock_card_id,
+            product_id: r.product_id,
+            warehouse_id: r.warehouse_id,
+            lot_no: r.lot_no,
+            in_qty: r.in_qty,
+            out_qty: r.out_qty,
+            in_unit_cost: r.in_unit_cost,
+            out_unit_cost: r.out_unit_cost,
+            balance_qty: r.balance_qty,
+            balance_unit_cost: buc
+          }
+          products.push(obj);
+
+        }
+      }
+    }
+    res.send({ ok: true, copyOblect: products });
+  } catch (error) {
+    console.log(error);
+
+    res.send({ error: error.message })
+  }
+
+});
 export default router;
