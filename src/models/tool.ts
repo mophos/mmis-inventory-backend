@@ -429,4 +429,56 @@ export class ToolModel {
     return knex('wm_stock_card')
       .update(data).where('stock_card_id', data.stock_card_id);
   }
+
+  unitCost(knex: Knex, productId, warehouseId, lotNo) {
+    return knex.raw(
+      `SELECT
+      vscw.stock_card_id, vscw.product_id,vscw.lot_no,vscw.warehouse_id,vscw.in_qty,
+      vscw.out_qty, vscw.cost, vscw.balance_qty,
+      vscw.in_unit_cost as in_unit_cost,
+      vscw.balance_unit_cost as balance_unit_cost,
+      vscw.out_unit_cost as out_unit_cost,
+        vscw.balance_amount, (select MAX(vs.stock_card_id) from view_stock_card_warehouse vs where vs.warehouse_id = vscw.warehouse_id AND vs.product_id = vscw.product_id AND vs.lot_no = vscw.lot_no
+      AND vs.stock_card_id < vscw.stock_card_id) as bf_stock_id
+    FROM
+      view_stock_card_warehouse AS vscw
+      where vscw.product_id = ${productId} and vscw.warehouse_id = ${warehouseId} and vscw.lot_no = '${lotNo}'
+      ORDER BY vscw.stock_card_id `
+    );
+  }
+  getProductId(knex: Knex) {
+    return knex.raw(
+      `select generic_id,product_id,warehouse_id,lot_no from view_stock_card_warehouse where warehouse_id='1'
+      AND product_id = '4088' AND lot_no = 'N175004' group by product_id,warehouse_id,lot_no limit 1`
+    )
+  }
+
+  callForecast(knex: Knex, warehouseId: any) {
+    return knex.raw(`call deleted_stockcard(${warehouseId})`);
+  }
+
+  insertProductInStockcard(knex: Knex, warehouseId: any) {
+    return knex.raw(`
+    INSERT INTO wm_stock_card ( product_id, generic_id, unit_generic_id, transaction_type, in_qty, in_unit_cost, balance_generic_qty, balance_qty, balance_unit_cost, ref_src, COMMENT, lot_no )
+    SELECT
+      wp.product_id,
+      mp.generic_id,
+      wp.unit_generic_id,
+      'SUMMIT',
+      wp.qty,
+      wp.cost,
+      wp.qty,
+      wp.qty,
+      wp.cost,
+      wp.warehouse_id,
+      'ยอดยกมา',
+      wp.lot_no 
+      FROM
+        wm_products wp
+        JOIN mm_products mp ON mp.product_id = wp.product_id 
+      WHERE
+        wp.warehouse_id = ${warehouseId}
+        AND wp.qty > 0`
+    )
+  }
 }
