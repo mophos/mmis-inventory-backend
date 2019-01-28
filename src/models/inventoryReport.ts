@@ -451,6 +451,8 @@ mgt.generic_type_id `
                 '' AS warehouse_name,
                 sum( vscw.in_qty ) - sum( vscw.out_qty ) AS in_qty,
                 0 AS out_qty,
+                vscw.in_unit_cost,
+	            vscw.out_unit_cost,
                 sum( vscw.in_qty ) - sum( vscw.out_qty ) AS balance_generic_qty,
                 (
                 SELECT
@@ -499,6 +501,8 @@ mgt.generic_type_id `
                 vscw.warehouse_name,
                 vscw.in_qty,
                 vscw.out_qty,
+                vscw.in_unit_cost,
+	            vscw.out_unit_cost,
                 vscw.balance_generic_qty,
                 vscw.balance_unit_cost,
                 vscw.cost,
