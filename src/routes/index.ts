@@ -2625,6 +2625,47 @@ router.get('/report/balance', wrap(async (req, res, next) => {
   res.render('balance', { hospitalName: hospitalName, balance: balance, warehouseName: warehouseName });
 }));
 
+router.get('/report/product-receive2', wrap(async (req, res, next) => {
+  let db = req.db;
+  let startdate = req.query.startDate
+  let enddate = req.query.endDate
+  let genericType = req.query.genericType;
+
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let province = hosdetail[0].province;
+
+  let productReceive = await inventoryReportModel.productReceive(db, startdate, enddate, genericType);
+  // console.log(productReceive);
+  if (productReceive[0].length == 0) { res.render('error404') }
+
+  productReceive = productReceive[0];
+  startdate = moment(startdate).format('D MMMM ') + (moment(startdate).get('year') + 543);
+  enddate = moment(enddate).format('D MMMM ') + (moment(enddate).get('year') + 543);
+  let allcost: any = 0;
+  productReceive.forEach(value => {
+    allcost += value.total_cost;
+    value.total_cost = inventoryReportModel.comma(value.total_cost);
+    value.cost = inventoryReportModel.comma(value.cost);
+    value.receive_date = moment(value.receive_date).format('D/MM/YYYY');
+    value.expired_date = moment(value.expired_date).format('D/MM/') + (moment(value.expired_date).get('year') + 543);
+    if (value.discount_percent == null) value.discount_percent = '0.00%';
+    else { value.discount_percent = (value.discount_percent.toFixed(2)) + '%' }
+    if (value.discount_cash == null) value.discount_cash = '0.00';
+    else { value.discount_cash = (value.discount_cash.toFixed(2)) + 'บาท' }
+  });
+
+  allcost = inventoryReportModel.comma(allcost);
+
+  res.render('productReceive3', {
+    allcost: allcost,
+    hospitalName: hospitalName,
+    printDate: printDate(req.decoded.SYS_PRINT_DATE),
+    productReceive: productReceive,
+    startdate: startdate,
+    enddate: enddate
+  });
+}));
 router.get('/report/product-receive', wrap(async (req, res, next) => {
   let db = req.db;
   let startdate = req.query.startDate
@@ -2666,7 +2707,6 @@ router.get('/report/product-receive', wrap(async (req, res, next) => {
     enddate: enddate
   });
 }));
-
 router.get('/report/product/receive', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID = req.query.receiveID
