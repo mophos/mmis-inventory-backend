@@ -2635,7 +2635,7 @@ router.get('/report/product-receive2', wrap(async (req, res, next) => {
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
 
-  let productReceive = await inventoryReportModel.productReceive(db, startdate, enddate, genericType);
+  let productReceive = await inventoryReportModel.productReceive3(db, startdate, enddate, genericType);
   // console.log(productReceive);
   if (productReceive[0].length == 0) { res.render('error404') }
 

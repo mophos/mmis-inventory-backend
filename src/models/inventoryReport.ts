@@ -2453,7 +2453,6 @@ OR sc.ref_src like ?
     GROUP BY wrd.receive_detail_id`
         return knex.raw(sql);
     }
-
     productReceiveOther(knex: Knex, receiveID) {
         let sql = `SELECT
         ro.receive_other_id,
@@ -3144,7 +3143,62 @@ OR sc.ref_src like ?
         wr.receive_date`
         return knex.raw(sql)
     }
-
+    productReceive3(knex: Knex, startdate: any, enddate: any, genericTypeId: any) {
+        let sql = `SELECT
+        r.receive_id,
+        p.product_name,
+        r.receive_code,
+        r.receive_date,
+        ppo.purchase_order_number,
+        r.delivery_code,
+        l.labeler_name,
+        l.labeler_name_po,
+        wrd.discount,
+        wrd.receive_qty,
+        mug.qty,
+        mu.unit_name,
+        muu.unit_name as large_unit,
+        lbp.NAME,
+        wrd.cost,
+        mg.generic_id,
+        mg.working_code as generic_code,
+        mg.generic_name,
+        wrd.expired_date,
+        lbt.bid_name,
+        ppoi.discount_cash,
+        ppoi.discount_percent,
+        ppoi.qty AS reqty,
+        wrd.cost * wrd.receive_qty AS total_cost,
+        bt.bgtype_name,
+        wrd.lot_no,
+        mgh.name as name_hosp
+    FROM
+        wm_receives AS r
+        LEFT JOIN wm_receive_detail AS wrd ON r.receive_id = wrd.receive_id
+        LEFT JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wrd.unit_generic_id
+        LEFT JOIN mm_products AS p ON wrd.product_id = p.product_id
+        LEFT JOIN mm_labelers AS l ON r.vendor_labeler_id = l.labeler_id
+        LEFT JOIN mm_generics AS mg ON p.generic_id = mg.generic_id
+        LEFT JOIN wm_warehouses AS wh ON wrd.warehouse_id = wh.warehouse_id
+        LEFT JOIN mm_units mu ON mug.to_unit_id = mu.unit_id
+        LEFT JOIN mm_units muu ON mug.from_unit_id = muu.unit_id
+        LEFT JOIN pc_purchasing_order ppo ON r.purchase_order_id = ppo.purchase_order_id
+        LEFT JOIN l_bid_process lbp ON ppo.purchase_method_id = lbp.id
+        LEFT JOIN l_bid_type lbt ON ppo.purchase_type_id = lbt.bid_id
+        LEFT JOIN pc_purchasing_order_item ppoi ON ppo.purchase_order_id = ppoi.purchase_order_id 
+        AND wrd.product_id = ppoi.product_id
+        LEFT JOIN bm_bgtype bt ON ppo.budgettype_id = bt.bgtype_id 
+        LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
+    WHERE
+    wrd.is_free = 'N'
+  AND r.receive_date BETWEEN '${startdate}'
+  AND '${enddate}'
+  AND mg.generic_type_id IN ( ${genericTypeId} )
+    GROUP BY wrd.receive_detail_id
+    ORDER BY
+    r.receive_date`
+        return knex.raw(sql);
+    }
     getWarehouse(knex: Knex, warehouseId: any) {
         return knex('wm_warehouses').where('warehouse_id', warehouseId)
     }
