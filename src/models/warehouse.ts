@@ -505,7 +505,47 @@ export class WarehouseModel {
 
     return sql;
   }
+  searchGenericGroupWarehouse(knex: Knex, warehouseId: string, productGroups: any[], query: string, genericType: any, groupId: any) {
+    let _query = '%' + query + '%';
+    let sql = knex('mm_generics as g')
+      .select('wp.warehouse_id', 'g.generic_id', 'g.generic_name', 'g.working_code', 'g.primary_unit_id'
+        , knex.raw('ifnull(gp.min_qty, 0) as min_qty')
+        , knex.raw('ifnull(gp.max_qty, 0) as max_qty')
+        , knex.raw('ifnull(gp.min_qty, 0) as min_qty')
+        , knex.raw('ifnull(gp.safety_min_day, 0) as safety_min_day')
+        , knex.raw('ifnull(gp.safety_max_day, 0) as safety_max_day')
+        , knex.raw('ifnull(gp.lead_time_day, 0) as lead_time_day')
+        , knex.raw('ifnull(gp.rop_qty, 0) as rop_qty')
+        , knex.raw('ifnull(gp.ordering_cost, 0) as ordering_cost')
+        , knex.raw('ifnull(gp.carrying_cost, 0) as carrying_cost')
+        , knex.raw('ifnull(gp.eoq_qty, 0) as eoq_qty')
+        , 'u.unit_name', 'gp.use_per_day', 'gp.use_total', knex.raw('sum(wp.qty) as qty'))
+      .innerJoin('mm_products as mp', 'mp.generic_id', 'g.generic_id')
+      .innerJoin('wm_products as wp', 'wp.product_id', 'mp.product_id')
+      .join('mm_units as u', 'u.unit_id', 'g.primary_unit_id')
+      .joinRaw('left join mm_generic_planning as gp on gp.generic_id=g.generic_id and gp.warehouse_id = wp.warehouse_id')
+      .where('wp.warehouse_id', warehouseId)
+      .where('wp.is_actived', 'Y')
+      .where('mp.mark_deleted', 'N')
+      .where('g.mark_deleted', 'N')
+      .where('g.minmax_group_id',groupId)
+      .where(w => {
+        w.where('mp.product_name', 'like', _query)
+          .orWhere('g.generic_name', 'like', _query)
+          .orWhere('g.working_code', query)
+          .orWhere('mp.working_code', query)
+          .orWhere('mp.keywords', 'like', _query)
+      })
+    if (genericType) {
+      sql.where('g.generic_type_id', genericType);
+    } else {
+      sql.whereIn('g.generic_type_id', productGroups)
+    }
+    sql.groupBy('g.generic_id')
+      .orderBy('g.generic_name');
 
+    return sql;
+  }
   saveGenericPlanningMinMax(db: Knex, items: any[]) {
     return db('mm_generic_planning')
       .insert(items);
