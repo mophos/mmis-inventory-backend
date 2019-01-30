@@ -130,7 +130,8 @@ export class InventoryReportModel {
             mgd.dosage_name,
             ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
             rci.wm_product_id,
-            concat(up.fname, ' ', up.lname) as full_name
+            concat(up.fname, ' ', up.lname) as full_name,
+            concat(upc.fname, ' ', upc.lname) as full_namec,
             FROM
                 wm_requisition_orders ro
             JOIN wm_requisition_order_items roi ON ro.requisition_order_id = roi.requisition_order_id
@@ -146,6 +147,7 @@ export class InventoryReportModel {
             JOIN mm_units AS mul ON mug.from_unit_id = mul.unit_id
             JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
             join um_people as up on up.people_id = ro.people_id
+            left join um_people as upc on upc.people_id = rc.people_id
             WHERE
                 ro.requisition_order_id = ?
             AND rci.confirm_qty > 0
@@ -183,6 +185,7 @@ export class InventoryReportModel {
             mgd.dosage_name,
             ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
             concat(up.fname, ' ', up.lname) as full_name,
+            concat(upc.fname, ' ', upc.lname) as full_namec,
             rci.wm_product_id,
             rci.unit_cost,
             rc.approve_date
@@ -201,6 +204,7 @@ export class InventoryReportModel {
             JOIN mm_units AS mul ON mug.from_unit_id = mul.unit_id
             JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
             join um_people as up on up.people_id = ro.people_id
+            left join um_people as upc on upc.people_id = rc.people_id
             WHERE
                 ro.requisition_order_id = ?
             AND rci.confirm_qty > 0
@@ -241,6 +245,7 @@ export class InventoryReportModel {
             mgd.dosage_name,
             ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
             concat(up.fname, ' ', up.lname) as full_name,
+            concat(upc.fname, ' ', upc.lname) as full_namec,
             rci.wm_product_id,
             rci.unit_cost,
             rc.approve_date
@@ -261,6 +266,7 @@ export class InventoryReportModel {
             JOIN mm_units AS mul ON mug.from_unit_id = mul.unit_id
             JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
             join um_people as up on up.people_id = ro.people_id
+            left join um_people as upc on upc.people_id = rc.people_id
             join ( SELECT vpr.warehouse_id,vpr.generic_id,sum(vpr.stock_qty) stock_qty from view_product_reserve vpr group by vpr.generic_id,vpr.warehouse_id ) as vpr2 on vpr2.generic_id = rci.generic_id and vpr2.warehouse_id = ro.wm_withdraw
             WHERE
                 ro.requisition_order_id = ?
