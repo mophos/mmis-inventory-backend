@@ -48,7 +48,7 @@ export class MinMaxModel {
   getHeaderGroup(knex: Knex, group_id: any) {
     let sql = `
     select 
-    DATE_SUB(CURDATE(),INTERVAL IFNULL(used_day,0) DAY) from_stock_date, CURDATE() to_stock_date , calculate_day process_date
+    DATE_SUB(CURDATE(),INTERVAL IFNULL(used_day,0) DAY) from_stock_date, CURDATE() to_stock_date , calculate_date process_date
     from mm_minmax_groups where group_id =${group_id};
     `;
     return knex.raw(sql);
@@ -106,7 +106,7 @@ export class MinMaxModel {
   }
   updateDate(knex: Knex, groupId: any, date: any){
     return knex('mm_minmax_groups')
-    .update('calculate_day', date)
+    .update('calculate_date', date)
     .where('group_id', groupId)
 
   }
