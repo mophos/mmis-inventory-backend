@@ -1,0 +1,57 @@
+include css.pug
+style(media='print').
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    span.page
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='7') #{hospitalName}
+        tr
+          td.center.bold(colspan='7' ) รายงานการจ่าย
+        tr
+          td.center(colspan='7') วันที่รับเข้า ตั้งแต่วันที่ #{startDate} ถึงวันที่ #{endDate}
+        tr
+          td.left(colspan='7' ) ณ คลังสินค้า #{warehouseName}
+        tr
+          td.left(colspan='7' ) #{printDate}
+        tr
+          th(style="width:5%") #
+          //- th.left(style="width:11%") วันที่รับเข้า
+          th.left รหัสเวชภัณฑ์
+          th.left(style="width:30%") ชื่อเวชภัณฑ์
+          th.left(style="width:10%;padding-left: 2px") จำนวนที่จ่าย
+          th.right(style="width:10%") ราคาต่อหน่วย
+          th.right(style="width:10%") มูลค่า
+          th.left(style="width:20%;padding-left: 5px") ประเภทการตัดจ่าย
+          //- if(wareHouseName!='ทุกคลังสินค้า')
+          //-   th.left สถานที่เก็บ
+          //- if(wareHouseName=='ทุกคลังสินค้า')
+          //-     th.left คลังสินค้า
+          //-     th.left สถานที่เก็บ
+      tbody
+        - var y = 0
+        - for(var b of data)
+          - y++
+          tr
+            td.center #{y}
+            //- td.left #{b.receive_date}
+            td #{b.generic_code}
+            td #{b.generic_name}
+            td.left(style="padding-left: 2px") #{b.qty} #{b.to_unit_name}
+            td.right #{b.cost}
+            td.right #{b.costAmount}
+            td.left(style="padding-left: 5px")  #{b.transaction_name}
+            //- if(wareHouseName!='ทุกคลังสินค้า')
+            //-   td.top.left #{b.location_name}
+            //- if(wareHouseName=='ทุกคลังสินค้า')
+            //-   td.top.left #{b.warehouse_name}
+            //-   td.top.left #{b.location_name}
+        tfooter
+          tr
+            td.tbfooter.right(colspan="7") จำนวน #{y} รายการ | มูลค่ารวม #{sum} บาท
