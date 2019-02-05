@@ -399,6 +399,73 @@ router.get('/report/receiveOrthorCost/:startDate/:endDate/:warehouseId/:warehous
   }
 }));
 
+router.get('/report/pay-req/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
+  const db = req.db;
+  let startDate = req.params.startDate;
+  let endDate = req.params.endDate;
+  let warehouseId = req.params.warehouseId;
+  let warehouseName = req.params.warehouseName;
+  let reqTypeId = Array.isArray(req.query.reqTypeId) ? req.query.reqTypeId : [req.query.reqTypeId];
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let data = await inventoryReportModel.payReq(db, startDate, endDate, warehouseId, reqTypeId);
+    let hospitalName = hosdetail[0].hospname;
+    let sum = inventoryReportModel.comma(_.sumBy(data[0], (o: any) => { return o.receive_qty * o.cost; }));
+    for (let tmp of data[0]) {
+      tmp.receive_qty = inventoryReportModel.commaQty(tmp.receive_qty);
+      tmp.cost = inventoryReportModel.comma(tmp.cost);
+      tmp.costAmount = inventoryReportModel.comma(tmp.costAmount);
+    }
+    startDate = moment(startDate).format('DD MMMM ') + (moment(startDate).get('year') + 543)
+    endDate = moment(endDate).format('DD MMMM ') + (moment(endDate).get('year') + 543)
+    res.render('pay_req', {
+      hospitalName: hospitalName,
+      printDate: printDate(req.decoded.SYS_PRINT_DATE),
+      warehouseName: warehouseName,
+      data: data[0],
+      startDate: startDate,
+      endDate: endDate,
+      sum: sum
+    });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+}));
+
+router.get('/report/pay-issue/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
+  const db = req.db;
+  let startDate = req.params.startDate;
+  let endDate = req.params.endDate;
+  let warehouseId = req.params.warehouseId;
+  let warehouseName = req.params.warehouseName;
+  let transectionId = Array.isArray(req.query.transectionId) ? req.query.transectionId : [req.query.transectionId];
+
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let data = await inventoryReportModel.payIssue(db, startDate, endDate, warehouseId, transectionId);
+    let hospitalName = hosdetail[0].hospname;
+    let sum = inventoryReportModel.comma(_.sumBy(data[0], (o: any) => { return o.qty * o.cost; }));
+    for (let tmp of data[0]) {
+      tmp.qty = inventoryReportModel.commaQty(tmp.qty);
+      tmp.cost = inventoryReportModel.comma(tmp.cost);
+      tmp.costAmount = inventoryReportModel.comma(tmp.costAmount);
+    }
+    startDate = moment(startDate).format('DD MMMM ') + (moment(startDate).get('year') + 543)
+    endDate = moment(endDate).format('DD MMMM ') + (moment(endDate).get('year') + 543)
+    res.render('pay_issue', {
+      hospitalName: hospitalName,
+      printDate: printDate(req.decoded.SYS_PRINT_DATE),
+      warehouseName: warehouseName,
+      data: data[0],
+      startDate: startDate,
+      endDate: endDate,
+      sum: sum
+    });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+}));
+
 router.get('/report/approve/requis', wrap(async (req, res, next) => {
   let db = req.db;
   let approve_requis: any = []

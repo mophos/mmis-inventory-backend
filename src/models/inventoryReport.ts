@@ -130,7 +130,8 @@ export class InventoryReportModel {
             mgd.dosage_name,
             ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
             rci.wm_product_id,
-            concat(up.fname, ' ', up.lname) as full_name
+            concat(up.fname, ' ', up.lname) as full_name,
+            concat(upc.fname, ' ', upc.lname) as full_namec,
             FROM
                 wm_requisition_orders ro
             JOIN wm_requisition_order_items roi ON ro.requisition_order_id = roi.requisition_order_id
@@ -146,6 +147,7 @@ export class InventoryReportModel {
             JOIN mm_units AS mul ON mug.from_unit_id = mul.unit_id
             JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
             join um_people as up on up.people_id = ro.people_id
+            left join um_people as upc on upc.people_id = rc.people_id
             WHERE
                 ro.requisition_order_id = ?
             AND rci.confirm_qty > 0
@@ -183,6 +185,7 @@ export class InventoryReportModel {
             mgd.dosage_name,
             ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
             concat(up.fname, ' ', up.lname) as full_name,
+            concat(upc.fname, ' ', upc.lname) as full_namec,
             rci.wm_product_id,
             rci.unit_cost,
             rc.approve_date
@@ -201,6 +204,7 @@ export class InventoryReportModel {
             JOIN mm_units AS mul ON mug.from_unit_id = mul.unit_id
             JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
             join um_people as up on up.people_id = ro.people_id
+            left join um_people as upc on upc.people_id = rc.people_id
             WHERE
                 ro.requisition_order_id = ?
             AND rci.confirm_qty > 0
@@ -241,6 +245,7 @@ export class InventoryReportModel {
             mgd.dosage_name,
             ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
             concat(up.fname, ' ', up.lname) as full_name,
+            concat(upc.fname, ' ', upc.lname) as full_namec,
             rci.wm_product_id,
             rci.unit_cost,
             rc.approve_date
@@ -261,6 +266,7 @@ export class InventoryReportModel {
             JOIN mm_units AS mul ON mug.from_unit_id = mul.unit_id
             JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
             join um_people as up on up.people_id = ro.people_id
+            left join um_people as upc on upc.people_id = rc.people_id
             join ( SELECT vpr.warehouse_id,vpr.generic_id,sum(vpr.stock_qty) stock_qty from view_product_reserve vpr group by vpr.generic_id,vpr.warehouse_id ) as vpr2 on vpr2.generic_id = rci.generic_id and vpr2.warehouse_id = ro.wm_withdraw
             WHERE
                 ro.requisition_order_id = ?
@@ -1620,6 +1626,76 @@ FROM
             .leftJoin('mm_units as mul', 'mul.unit_id', 'mug.from_unit_id')
             .leftJoin('mm_units as mus', 'mus.unit_id', 'mug.to_unit_id')
             .where('adjust_generic_id', adGId);
+    }
+
+    payIssue(knex: Knex, startDate: any, endDate: any, warehouseId: any, transectionId){
+        let sql = `SELECT
+        mg.working_code as generic_code,
+        mg.generic_name,
+        sum(IFNULL(wip.qty,0)) qty,
+        mug.qty as conversion,
+        mut.unit_name as to_unit_name,
+        muf.unit_name as from_unit_name,
+        wti.transaction_name,
+        wp.cost,
+        ROUND(sum(IFNULL(wp.cost * wip.qty,0)),2) costAmount
+    FROM
+        mm_generics as mg
+        join wm_issue_generics as wig on wig.generic_id = mg.generic_id
+        join wm_issue_products as wip on wip.issue_generic_id = wig.issue_generic_id
+        join wm_issue_summary as wis on wis.issue_id = wig.issue_id
+        join wm_transaction_issues as wti on wti.transaction_id = wis.transaction_issue_id
+        join wm_products as wp on wp.wm_product_id = wip.wm_product_id
+        join mm_unit_generics as mug on mug.unit_generic_id = wp.unit_generic_id
+        join mm_units as mut on mut.unit_id = mug.to_unit_id
+        join mm_units as muf on muf.unit_id = mug.from_unit_id
+        
+    where 
+    wis.transaction_issue_id in (${transectionId})
+    and wip.qty > 0 
+    and wis.issue_date BETWEEN '${startDate}'
+    AND '${endDate}'`
+    if (warehouseId !== '0') {
+        sql += ` and wp.warehouse_id = ${warehouseId}`
+    }
+    sql += ` group by mg.generic_id,wis.transaction_issue_id,mug.from_unit_id
+    order by mg.generic_name,wis.transaction_issue_id`
+    return knex.raw(sql);
+    }
+
+    payReq(knex: Knex, startDate: any, endDate: any, warehouseId: any, reqTypeId){
+        let sql = `SELECT
+            mg.working_code as generic_code,
+            mg.generic_name,
+            sum(IFNULL(wrci.confirm_qty,0)) receive_qty,
+            mug.qty as conversion,
+            mut.unit_name as to_unit_name,
+            muf.unit_name as from_unit_name,
+            wrt.requisition_type,
+            wrci.unit_cost cost,
+            ROUND(sum(IFNULL(wrci.unit_cost * wrci.confirm_qty,0)),2) costAmount
+        FROM
+            mm_generics as mg
+            join wm_requisition_confirm_items as wrci on wrci.generic_id = mg.generic_id
+            join wm_requisition_confirms as wrc on wrc.confirm_id = wrci.confirm_id
+            join wm_requisition_orders as wro on wro.requisition_order_id =wrc.requisition_order_id
+            join wm_requisition_type as wrt on wrt.requisition_type_id = wro.requisition_type_id
+            join wm_products as wp on wp.wm_product_id = wrci.wm_product_id
+            join mm_unit_generics as mug on mug.unit_generic_id = wp.unit_generic_id
+            join mm_units as mut on mut.unit_id = mug.to_unit_id
+            join mm_units as muf on muf.unit_id = mug.from_unit_id
+        where 
+        wro.requisition_type_id in (${reqTypeId})
+        and wrci.confirm_qty > 0 
+        and wro.requisition_date BETWEEN '${startDate}'
+        AND '${endDate}'`
+        if (warehouseId !== '0') {
+            sql += ` and wro.wm_withdraw = ${warehouseId}`
+        }
+        sql += ` group by mg.generic_id,wro.requisition_type_id,mug.from_unit_id
+        order by mg.generic_name,wrt.requisition_type_id`
+        return knex.raw(sql);
+
     }
     receiveOrthorCost(knex: Knex, startDate: any, endDate: any, warehouseId: any, receiveTpyeId: any) {
 
