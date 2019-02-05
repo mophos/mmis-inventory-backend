@@ -361,6 +361,7 @@ router.put('/stockcard/requisitions', async (req, res, next) => {
         const qtyOld = i.confirm_qty_old * i.conversion_qty_old;
         const stockCardIdOut = await toolModel.getStockCardIdOut(db, requisitionId, i.product_id, i.lot_no, 'REQ_OUT', qtyOld);
         const stockCardIdIn = await toolModel.getStockCardIdIn(db, requisitionId, i.product_id, i.lot_no, 'REQ_IN', qtyOld);
+        console.log(stockCardIdOut, 'stockCardIdOut', stockCardIdIn, 'stockCardIdIn');
         if (stockCardIdOut.length && stockCardIdIn.length) {
 
           // ############ ปรับคงคลัง ###############
@@ -941,15 +942,17 @@ router.post('/removestockcard', async (req, res, next) => {
 router.get('/calculate/balanceunitcost', async (req, res, next) => {
 
   let db = req.db;
+  let warehouseId = req.query.warehouseId;
   try {
     let copyOblect = [];
     let products = [];
-    const productId = await toolModel.getProductId(db);
+    const productId = await toolModel.getProductId(db, warehouseId);
+    const result = await toolModel.unitCost(db, warehouseId);
+    let resList = result[0];
     for (const _productId of productId[0]) {
-      // products = [];
-      const result = await toolModel.unitCost(db, _productId.product_id, _productId.warehouse_id, _productId.lot_no);
-      let resList = result[0];
-      for (const r of resList) {
+      let list: any = _.filter(resList, { 'product_id': _productId.product_id, 'lot_no': _productId.lot_no });
+
+      for (const r of list) {
         const idx = _.findIndex(products, { 'product_id': r.product_id, 'lot_no': r.lot_no, 'warehouse_id': r.warehouse_id });
         if (idx == -1) {
           const obj = {
@@ -969,8 +972,16 @@ router.get('/calculate/balanceunitcost', async (req, res, next) => {
           // copyOblect.push(obj);
         } else {
           const idxL = _.findLastIndex(products, { 'product_id': r.product_id, 'lot_no': r.lot_no, 'warehouse_id': r.warehouse_id });
-          let buc = ((+products[idxL].balance_qty * +products[idxL].balance_unit_cost) + (+r.in_qty * +r.in_unit_cost) - (+r.out_qty * +r.out_unit_cost)) / (+products[idxL].balance_qty + +r.in_qty - +r.out_qty);
-          if (r.out_qty > 0) {
+          let _balance = (+products[idxL].balance_qty * +products[idxL].balance_unit_cost) + (+r.in_qty * +r.in_unit_cost)
+          let _qty = (+products[idxL].balance_qty + +r.in_qty)
+          let buc
+          if (r.in_qty > 0) {
+            if (_balance == 0 && _qty == 0) {
+              buc = products[idxL].balance_unit_cost;
+            } else {
+              buc = _balance / _qty
+            }
+          } else if (r.out_qty > 0) {
             buc = products[idxL].balance_unit_cost;
           }
           const obj = {
@@ -990,7 +1001,14 @@ router.get('/calculate/balanceunitcost', async (req, res, next) => {
         }
       }
     }
-    res.send({ ok: true, copyOblect: products });
+    let y = 1
+    for (const i of products) {
+      await toolModel.updateBalanceUnitCost(db, i);
+      console.log(y);
+      y++;
+    }
+    console.log('success');
+    res.send({ ok: true, rows: products });
   } catch (error) {
     console.log(error);
 
