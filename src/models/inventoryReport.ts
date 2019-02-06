@@ -392,7 +392,7 @@ mgt.generic_type_id `
         mg.generic_name,
         mgda.drug_account_id,
         mgda.drug_account_name,
-        round(sum(wid.total_cost), 2) AS cost
+        round(sum(ifnull(wid.total_cost,0)), 2) AS cost
         FROM
             wm_internalissue_detail wid
         join mm_products mp on wid.product_id=mp.product_id
