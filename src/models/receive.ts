@@ -791,7 +791,7 @@ WHERE
 
   // receive with purchase
 
-  getPurchaseList(knex: Knex, limit: number, offset: number, sort: any = {}) {
+  getPurchaseList(knex: Knex, limit: number, offset: number, sort: any = {},genericTypeId = []) {
     let sql = `
     select pc.purchase_order_book_number, pc.purchase_order_id,
       IF(pc.purchase_order_book_number is null, pc.purchase_order_number, pc.purchase_order_book_number) as purchase_order_number,
@@ -833,7 +833,9 @@ WHERE
     left join cm_contracts as cm on cm.contract_id = pc.contract_id
     where pc.purchase_order_status = 'APPROVED'
     and pc.purchase_order_status != 'COMPLETED'
-    and pc.is_cancel != 'Y'`;
+    and pc.is_cancel != 'Y'
+    and pc.purchase_order_id in (select poi.purchase_order_id from pc_purchasing_order_item poi join mm_generics mg on mg.generic_id = poi.generic_id where mg.generic_type_id in (${genericTypeId}) group by poi.purchase_order_id)
+    `;
 
     if (sort.by) {
       let reverse = sort.reverse ? 'DESC' : 'ASC';
@@ -863,7 +865,7 @@ WHERE
 
   }
 
-  searchPurchaseList(knex: Knex, query: string, limit: number, offset: number, sort: any = {}) {
+  searchPurchaseList(knex: Knex, query: string, limit: number, offset: number, sort: any = {}, genericTypeId = []) {
     let _query = `'%` + query + `%'`
     let sql = `
     select pc.purchase_order_book_number, pc.purchase_order_id,
@@ -906,7 +908,9 @@ WHERE
     left join cm_contracts as cm on cm.contract_id = pc.contract_id
     where pc.purchase_order_status = 'APPROVED'
     and pc.purchase_order_status != 'COMPLETED'
-    and pc.is_cancel != 'Y'`;
+    and pc.is_cancel != 'Y'
+    and pc.purchase_order_id in (select poi.purchase_order_id from pc_purchasing_order_item poi join mm_generics mg on mg.generic_id = poi.generic_id where mg.generic_type_id in (${genericTypeId}) group by poi.purchase_order_id)
+    `;
 
     if (query) {
       sql += ` and pc.purchase_order_number LIKE ${_query} 
@@ -1033,7 +1037,7 @@ WHERE
     return knex.raw(sql);
 
   }
-  getPurchaseListTotal(knex: Knex) {
+  getPurchaseListTotal(knex: Knex, genericTypeId = []) {
 
     let sql = `
     select count(*) as total
@@ -1043,6 +1047,8 @@ WHERE
     where pc.purchase_order_status = 'APPROVED'
     and pc.purchase_order_status != 'COMPLETED'
     and pc.is_cancel != 'Y'
+    and pc.purchase_order_id in (select poi.purchase_order_id from pc_purchasing_order_item poi join mm_generics mg on mg.generic_id = poi.generic_id where mg.generic_type_id in (${genericTypeId}) group by poi.purchase_order_id)
+
       `;
 
     return knex.raw(sql, []);
