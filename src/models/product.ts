@@ -272,7 +272,7 @@ export class ProductModel {
     let sql = `
     select mp.product_name,mp.working_code,p.wm_product_id, p.product_id, sum(p.qty) as qty, floor(sum(p.qty)/ug.qty) as pack_qty, sum(p.cost*p.qty) as total_cost, p.cost, p.warehouse_id,
     w.warehouse_name, p.lot_no, p.expired_date, mpp.max_qty, mpp.min_qty, u1.unit_name as from_unit_name, ug.qty as conversion_qty,
-    u2.unit_name as to_unit_name,v.reserve_qty,mp.generic_id,p.unit_generic_id
+    u2.unit_name as to_unit_name,v.reserve_qty,mp.generic_id,p.unit_generic_id,p.lot_time
     from wm_products as p
     left join wm_warehouses as w on w.warehouse_id=p.warehouse_id
     inner join mm_products as mp on mp.product_id=p.product_id
@@ -669,7 +669,7 @@ export class ProductModel {
     ORDER BY wtd.id`
     return knex.raw(sql);
   }
-  
+
   getAllProductInTemplateIssue(knex: Knex, templateId: any) {
     let sql = `
 		select mg.working_code,mg.generic_id,mg.generic_name,wtd.unit_generic_id,u.unit_name as large_unit,mug.qty,u2.unit_name as small_unit
@@ -875,12 +875,12 @@ group by mpp.product_id
       });
   }
 
-  getLotBalance(db:Knex, wpId, warehouseId){
+  getLotBalance(db: Knex, wpId, warehouseId) {
     return db('wm_products')
-    .where('wm_product_id',wpId)
-    .andWhere('warehouse_id',warehouseId)
+      .where('wm_product_id', wpId)
+      .andWhere('warehouse_id', warehouseId)
   }
-  
+
   decreaseQty(knex: Knex, data: any[]) {
     let sql = [];
     data.forEach(v => {

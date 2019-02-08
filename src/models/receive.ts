@@ -5,7 +5,7 @@ export class ReceiveModel {
 
   getTypes(knex: Knex) {
     return knex('wm_receive_types')
-      .where('is_deleted','N')
+      .where('is_deleted', 'N')
   }
 
   getStatus(knex: Knex) {
@@ -494,15 +494,33 @@ export class ReceiveModel {
       .insert(data, 'receive_other_id');
   }
 
+  updateReceiveSummary(knex: Knex, receiveId: any, data: any) {
+    return knex('wm_receives')
+      .update(data)
+      .where('receive_id', receiveId)
+  }
+
   updateReceiveSummaryOther(knex: Knex, receiveOtherId: any, data: any) {
     return knex('wm_receive_other')
       .update(data)
       .where('receive_other_id', receiveOtherId)
   }
 
-  updateReceiveSummary(knex: Knex, receiveId: any, data: any) {
+  updateReceiveDetailSummary(knex: Knex, receiveDetailId: any, data: any) {
+    return knex('wm_receive_detail')
+      .where('receive_detail_id', receiveDetailId)
+      .update(data);
+  }
+
+  updateReceiveOtherDetailSummary(knex: Knex, receiveDetailId: any, data: any) {
+    return knex('wm_receive_detail')
+      .where('receive_detail_id', receiveDetailId)
+      .update(data);
+  }
+
+  updateReceiveDetail(knex: Knex, receiveDetailId: any, data: any) {
     return knex('wm_receives')
-      .where('receive_id', receiveId)
+      .where('receive_detail_id', receiveDetailId)
       .update(data);
   }
 
@@ -651,7 +669,7 @@ WHERE
   }
   getPickCheck(knex: Knex, receive_id: any) {
     return knex('wm_pick_detail as pd')
-      .select('ug.qty as conversion_qty', 'p.pick_code', 'p.wm_pick', 'pd.*', knex.raw('pd.pick_qty as pick_qty'))
+      .select('ug.qty as conversion_qty', 'p.pick_code', 'p.wm_pick', 'pd.*')
       .whereIn('pd.receive_id', receive_id)
       .join('wm_pick as p', 'p.pick_id', 'pd.pick_id')
       .join('mm_unit_generics as ug', 'ug.unit_generic_id', 'pd.unit_generic_id')
@@ -670,13 +688,20 @@ WHERE
       .as('balance')
       .whereRaw('wp.product_id=rd.product_id and wp.lot_no=rd.lot_no and wp.expired_date=rd.expired_date');
 
+    let subLotTime = knex('wm_products')
+      .count('*').as('lot_time')
+      .whereRaw('warehouse_id=rd.warehouse_id and product_id=rd.product_id and lot_no=rd.lot_no')
+      .groupBy('product_id')
+      .groupBy('warehouse_id')
+      .groupBy('lot_no')
+
     return knex('wm_receive_detail as rd')
       .select(
         'rd.receive_detail_id', 'rd.receive_id', 'rd.product_id',
         'rd.lot_no', 'rd.expired_date', knex.raw('sum(rd.receive_qty) as receive_qty'),
         'rd.manufacturer_labeler_id', 'r.vendor_labeler_id', 'rd.cost', 'rd.unit_generic_id',
         'rd.warehouse_id', 'rd.location_id', 'rd.is_free', 'rd.discount',
-        'ug.qty as conversion_qty', 'mp.generic_id', 'r.receive_code', subBalance)
+        'ug.qty as conversion_qty', 'mp.generic_id', 'r.receive_code', subBalance, subLotTime)
       // knex.raw('sum(rd.receive_qty) as receive_qty'),
       // knex.raw('sum(reqd.requisition_qty) as requisition_qty'), )
       .whereIn('rd.receive_id', receiveIds)
@@ -710,13 +735,20 @@ WHERE
       .as('balance')
       .whereRaw('wp.product_id=rd.product_id and wp.lot_no=rd.lot_no and wp.expired_date=rd.expired_date');
 
+    let subLotTime = knex('wm_products')
+      .count('*').as('lot_time')
+      .whereRaw('warehouse_id=rd.warehouse_id and product_id=rd.product_id and lot_no=rd.lot_no')
+      .groupBy('product_id')
+      .groupBy('warehouse_id')
+      .groupBy('lot_no')
+
     return knex('wm_receive_other_detail as rd')
       .select(
         'rd.receive_detail_id', 'rd.receive_other_id', 'rd.product_id',
         'rd.lot_no', 'rd.expired_date', knex.raw('sum(rd.receive_qty) as receive_qty'),
         'rd.manufacturer_labeler_id', knex.raw('(sum(rd.cost * rd.receive_qty) / sum(rd.receive_qty)) as cost'), 'rd.unit_generic_id',
         'rd.warehouse_id', 'rd.location_id',
-        'ug.qty as conversion_qty', 'mp.generic_id', 'rt.receive_code', 'rt.donator_id', subBalance)
+        'ug.qty as conversion_qty', 'mp.generic_id', 'rt.receive_code', 'rt.donator_id', subBalance, subLotTime)
       .whereIn('rd.receive_other_id', receiveIds)
       .innerJoin('wm_receive_other as rt', 'rt.receive_other_id', 'rd.receive_other_id')
       .innerJoin('mm_products as mp', 'mp.product_id', 'rd.product_id')
@@ -734,27 +766,28 @@ WHERE
       .insert(data);
   }
 
-  saveProducts(knex: Knex, data: any[]) {
+
+  saveProducts(knex: Knex, v: any) {
     let sqls = [];
-    data.forEach(v => {
-      let totalCost = v.cost * v.qty;
-      let sql = `
+    // data.forEach(v => {
+    let totalCost = v.cost * v.qty;
+    let sql = `
         INSERT INTO wm_products(wm_product_id, warehouse_id, product_id, qty,
-      cost, price, lot_no, expired_date, location_id, unit_generic_id, people_user_id, created_at)
+      cost, price, lot_no, expired_date, location_id, unit_generic_id, people_user_id, created_at,lot_time)
     VALUES('${v.wm_product_id}', '${v.warehouse_id}', '${v.product_id}', ${v.qty}, ${v.cost},
       ${ v.price}, '${v.lot_no}', '${v.expired_date}', ${v.location_id},
-      ${ v.unit_generic_id}, ${v.people_user_id}, '${v.created_at}')
-    ON DUPLICATE KEY UPDATE qty = qty + ${ v.qty}, unit_generic_id = '${v.unit_generic_id}',cost = (
-      select(sum(w.qty * w.cost) + ${ totalCost}) / (sum(w.qty) + ${v.qty})
-    from wm_products as w
-    where w.product_id = '${v.product_id}' and w.lot_no = '${v.lot_no}' and w.warehouse_id = '${v.warehouse_id}'
-    group by w.product_id)
+      ${ v.unit_generic_id}, ${v.people_user_id}, '${v.created_at}',${v.lot_time})
+      ON DUPLICATE KEY UPDATE qty = qty + ${ v.qty}, unit_generic_id = '${v.unit_generic_id}',cost = (
+        select(sum(w.qty * w.cost) + ${ totalCost}) / (sum(w.qty) + ${v.qty})
+      from wm_products as w
+      where w.product_id = '${v.product_id}' and w.lot_no = '${v.lot_no}' and w.warehouse_id = '${v.warehouse_id}'
+      group by w.product_id)
     `;
-      sqls.push(sql);
-    });
+    // sqls.push(sql);
+    // });
 
-    let queries = sqls.join(';');
-    return knex.raw(queries);
+    // let queries = sqls.join(';');
+    return knex.raw(sql);
   }
 
   adjustCost(knex: Knex, data: any[]) {
@@ -1457,24 +1490,6 @@ WHERE
   }
 
   getProductRemainByReceiveIds(knex: Knex, receiveIds: any, warehouseId: any) {
-    // let sql=`SELECT wp.product_id,sum(wp.qty) as balance,wp.warehouse_id,
-    // (
-    //   SELECT
-    //     sum(wm.qty)
-    //   FROM
-    //     wm_products wm
-    //   JOIN mm_products mp ON wm.product_id = mp.product_id
-    //   WHERE
-    //     wm.product_id = wp.product_id
-    //   AND wm.warehouse_id = wp.warehouse_id
-    //   GROUP BY
-    //     mp.generic_id
-    // ) AS balance_generic
-    // from wm_receive_detail rd
-    // join wm_products wp on rd.product_id=wp.product_id
-    // where rd.receive_id in (${receiveIds})
-    // and rd.warehouse_id='${warehouseId}'
-    // GROUP BY wp.product_id,wp.warehouse_id`;
     let sql = `SELECT
       rd.product_id,
       rd.warehouse_id,
@@ -1959,5 +1974,14 @@ WHERE
     return knex('mm_unit_generics as mug')
       .select('mug.cost')
       .where('mug.unit_generic_id', unitGenericId)
+  }
+
+  getCostProduct(knex: Knex, data) {
+    return knex('wm_products')
+      .select('cost')
+      .where('warehouse_id', data.warehouse_id)
+      .where('product_id', data.product_id)
+      .where('lot_no', data.lot_no)
+      .where('lot_time', data.lot_time)
   }
 }
