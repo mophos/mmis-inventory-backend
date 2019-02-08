@@ -873,7 +873,7 @@ router.post('/approve', co(async (req, res, next) => {
           }
         }
         let id = uuid();
-        const idxWM = _.findIndex(products, { 'product_id': v.product_id, 'warehouse_id': v.warehouse_id, 'lot_no': v.lot_no, 'lot_time': lot_time });
+        const idxWM = _.findIndex(products, { 'product_id': v.product_id, 'warehouse_id': v.warehouse_id, 'lot_no': v.lot_no, 'lot_time': lotTime });
         if (v.is_free == 'Y') {
           id = products[idxWM].wm_product_id;
         }
@@ -1215,7 +1215,7 @@ router.post('/other/approve', co(async (req, res, next) => {
           }
         }
         let id = uuid();
-        const idxWM = _.findIndex(products, { 'product_id': v.product_id, 'warehouse_id': v.warehouse_id, 'lot_no': v.lot_no, 'lot_time': lot_time });
+        const idxWM = _.findIndex(products, { 'product_id': v.product_id, 'warehouse_id': v.warehouse_id, 'lot_no': v.lot_no, 'lot_time': lotTime });
         if (v.is_free == 'Y') {
           id = products[idxWM].wm_product_id;
         }
