@@ -1396,11 +1396,16 @@ router.post('/purchases/list', co(async (req, res, nex) => {
   let limit = req.body.limit;
   let offset = req.body.offset;
   let sort = req.body.sort;
-
+  let productGroups = req.decoded.generic_type_id;
+  let _pgs = [];
   let db = req.db;
   try {
-    const rows = await receiveModel.getPurchaseList(db, limit, offset, sort);
-    const rstotal = await receiveModel.getPurchaseListTotal(db);
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+    const rows = await receiveModel.getPurchaseList(db, limit, offset, sort, _pgs);
+    const rstotal = await receiveModel.getPurchaseListTotal(db, _pgs);
     let total = +rstotal[0][0].total
     res.send({ ok: true, rows: rows[0], total: total });
   } catch (error) {
@@ -1416,10 +1421,15 @@ router.post('/s-purchases/list', co(async (req, res, nex) => {
   let limit = req.body.limit;
   let offset = req.body.offset;
   let sort = req.body.sort;
-
+  let productGroups = req.decoded.generic_type_id;
+  let _pgs = [];
   let db = req.db;
   try {
-    const rows = await receiveModel.searchPurchaseList(db, query, limit, offset, sort);
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+    const rows = await receiveModel.searchPurchaseList(db, query, limit, offset, sort, _pgs);
     res.send({ ok: true, rows: rows[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
