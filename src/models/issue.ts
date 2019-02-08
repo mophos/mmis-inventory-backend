@@ -138,7 +138,7 @@ export class IssueModel {
   }
 
   getList(knex: Knex, limit: number = 15, offset: number = 0, status: any = '') {
-
+ 
     let subQuery = knex('wm_issue_generics as sd')
       .select(knex.raw('count(*) as total'))
       .whereRaw('sd.issue_id=ss.issue_id')
