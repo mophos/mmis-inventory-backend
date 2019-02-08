@@ -54,22 +54,6 @@ export class ReceiveModel {
       .orderBy('r.receive_id', 'DESC');
   }
 
-  getReceiveSuccess(knex: Knex) {
-    let queryCount = knex('documents as d')
-      .whereRaw('d.document_code = concat("' + process.env.RECEIVE_PREFIX + '-", r.receive_id)')
-      .count('*')
-      .as('totalFiles')
-
-    return knex('wm_receives as r')
-      .select('r.*', 'a.approve_status', 'l.labeler_name', queryCount)
-      .leftJoin('mm_labelers as l', 'l.labeler_id', 'r.labeler_id')
-      .leftJoin('wm_receive_approve as a', 'a.receive_id', 'r.receive_id')
-      .innerJoin('wm_receive_check as rc', 'rc.receive_id', 'r.receive_id')
-      .where('a.approve_status', 'Y')
-      .groupBy('r.receive_id')
-      .orderBy('r.receive_id', 'DESC');
-  }
-
   saveApprove(knex: Knex, receiveId: any, approveStatus: any, approveDate: any) {
     return knex('wm_receive_approve')
       .insert({

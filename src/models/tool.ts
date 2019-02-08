@@ -430,7 +430,7 @@ export class ToolModel {
       .update(data).where('stock_card_id', data.stock_card_id);
   }
 
-  unitCost(knex: Knex, productId, warehouseId, lotNo) {
+  unitCost(knex: Knex, warehouseId) {
     return knex.raw(
       `SELECT
       vscw.stock_card_id, vscw.product_id,vscw.lot_no,vscw.warehouse_id,vscw.in_qty,
@@ -438,19 +438,29 @@ export class ToolModel {
       vscw.in_unit_cost as in_unit_cost,
       vscw.balance_unit_cost as balance_unit_cost,
       vscw.out_unit_cost as out_unit_cost,
-        vscw.balance_amount, (select MAX(vs.stock_card_id) from view_stock_card_warehouse vs where vs.warehouse_id = vscw.warehouse_id AND vs.product_id = vscw.product_id AND vs.lot_no = vscw.lot_no
-      AND vs.stock_card_id < vscw.stock_card_id) as bf_stock_id
+        vscw.balance_amount
     FROM
       view_stock_card_warehouse AS vscw
-      where vscw.product_id = ${productId} and vscw.warehouse_id = ${warehouseId} and vscw.lot_no = '${lotNo}'
-      ORDER BY vscw.stock_card_id `
+      where vscw.warehouse_id = ${warehouseId}
+      AND (vscw.in_qty > 0 or vscw.out_qty > 0)
+      ORDER BY
+    vscw.product_id,
+    vscw.lot_no ,
+	  vscw.stock_card_id`
     );
   }
-  getProductId(knex: Knex) {
+
+  getProductId(knex: Knex, warehouseId: any) {
     return knex.raw(
-      `select generic_id,product_id,warehouse_id,lot_no from view_stock_card_warehouse where warehouse_id='1'
-      AND product_id = '4088' AND lot_no = 'N175004' group by product_id,warehouse_id,lot_no limit 1`
+      `select generic_id,product_id,warehouse_id,lot_no from view_stock_card_warehouse where warehouse_id = '${warehouseId}'
+      group by product_id,warehouse_id,lot_no`
     )
+  }
+
+  updateBalanceUnitCost(knex: Knex, data: any) {
+    return knex('wm_stock_card')
+      .update('balance_unit_cost', data.balance_unit_cost)
+      .where('stock_card_id', data.stock_card_id)
   }
 
   callForecast(knex: Knex, warehouseId: any) {
