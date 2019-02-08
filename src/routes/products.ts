@@ -849,10 +849,10 @@ router.post('/save-repackage', async (req, res, next) => {
       stockCard.push(objStockcardIn)
 
       // save stock card
-      await productModel.saveStockCard(db, stockCard);
-      // // save true data
-      await productModel.saveProducts(db, newProducts);
-      await productModel.decreaseQty(db, dstProducts);
+      // await productModel.saveStockCard(db, stockCard);
+      // // // save true data
+      // await productModel.saveProducts(db, newProducts);
+      // await productModel.decreaseQty(db, dstProducts);
       res.send({ ok: true })
     } else {
       res.send({ ok: false, error: 'จำนวนคงเหลือต่ำกว่า' })
