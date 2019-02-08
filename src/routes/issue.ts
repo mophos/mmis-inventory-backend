@@ -260,6 +260,7 @@ router.post('/approve', co(async (req, res, next) => {
       let balances = [];
       let balancesG = [];
       for (const e of rs[0]) {
+        e.wp = await issueModel.getWmProductLot(db, e.wm_product_id);
         let srcBalance = await issueModel.getBalance(db, e.product_id, warehouseId);
         srcBalance = srcBalance[0];
         let objBalance: any = {
@@ -300,7 +301,8 @@ router.post('/approve', co(async (req, res, next) => {
           objStockcard.ref_src = warehouseId;
           objStockcard.ref_dst = e.ref_src;
           objStockcard.comment = e.transaction_name;
-
+          objStockcard.balance_lot_qty = e.wp[0].qty - e.out_qty;
+          objStockcard.wm_product_id_out = e.wm_product_id;
           let srcBalance = 0;
           let srcBalanceGeneric = 0;
           let srcIdx = _.findIndex(balances, { product_id: e.product_id });

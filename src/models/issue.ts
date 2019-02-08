@@ -549,7 +549,10 @@ WHERE
       .where('wm.warehouse_id', warehouseId)
       .where('wm.product_id', productId)
   }
-
+  getWmProductLot(knex: Knex,wm_product_id : any) {
+    return knex('wm_products as wm')
+      .where('wm.wm_product_id', wm_product_id)
+  }
   getBalance(knex: Knex, productId, warehouseId) {
     let sql = `SELECT
         wp.product_id,
