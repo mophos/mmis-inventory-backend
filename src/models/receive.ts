@@ -824,7 +824,7 @@ WHERE
 
   // receive with purchase
 
-  getPurchaseList(knex: Knex, limit: number, offset: number, sort: any = {},genericTypeId = []) {
+  getPurchaseList(knex: Knex, limit: number, offset: number, sort: any = {}, genericTypeId = []) {
     let sql = `
     select pc.purchase_order_book_number, pc.purchase_order_id,
       IF(pc.purchase_order_book_number is null, pc.purchase_order_number, pc.purchase_order_book_number) as purchase_order_number,
@@ -1388,6 +1388,23 @@ WHERE
       wp.warehouse_id`;
     return knex.raw(sql);
   }
+
+  getBalanceLot(knex: Knex, warehouseId, productId, lotNo, lotTime) {
+    let sql = `SELECT
+      wp.product_id,
+      sum(wp.qty) AS balanceLot,
+      wp.warehouse_id,
+      wp.lot_no
+    FROM
+      wm_products wp
+    WHERE
+      wp.product_id= '${productId}'
+    AND wp.warehouse_id = '${warehouseId}'
+    AND wp.lot_no = '${lotNo}'
+    AND wp.lot_time = '${lotTime}'`;
+    return knex.raw(sql);
+  }
+
   decreaseQtyPick(knex: Knex, data: any[]) {
     let sql = [];
     data.forEach(v => {
