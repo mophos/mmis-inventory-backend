@@ -168,7 +168,7 @@ export class InventoryReportModel {
             mp.product_name,
             mp.working_code AS trade_code,
             roi.requisition_qty,
-            wp.cost as unit_cost,
+            wp.cost as cost,
             wp.lot_no,
             wp.expired_date,
             sum(rci.confirm_qty) AS confirm_qty,
@@ -187,6 +187,7 @@ export class InventoryReportModel {
             concat(up.fname, ' ', up.lname) as full_name,
             concat(upc.fname, ' ', upc.lname) as full_namec,
             rci.wm_product_id,
+            rci.unit_cost,
             rc.approve_date
             FROM
                 wm_requisition_orders ro
@@ -227,7 +228,7 @@ export class InventoryReportModel {
             mp.product_name,
             mp.working_code AS trade_code,
             roi.requisition_qty,
-            wp.cost as unit_cost,
+            wp.cost as cost,
             wp.lot_no,
             wp.expired_date,
             sum(rci.confirm_qty) AS confirm_qty,
