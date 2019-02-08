@@ -940,7 +940,6 @@ router.post('/approve', co(async (req, res, next) => {
         }
 
         const bl = await receiveModel.getBalanceLot(db, v.warehouse_id, v.product_id, v.lot_no, obj.lot_time);
-        console.log(bl[0], bl[0].length);
         balanceLot = bl[0].length == 0 ? qty : bl[0][0].balanceLot;
 
         objS.balance_lot_qty = balanceLot;
@@ -1274,6 +1273,7 @@ router.post('/other/approve', co(async (req, res, next) => {
 
         let balance = 0;
         let balance_generic = 0;
+        let balanceLot = 0;
         let idxB = _.findIndex(balances, {
           product_id: v.product_id,
           warehouse_id: v.warehouse_id
@@ -1286,6 +1286,10 @@ router.post('/other/approve', co(async (req, res, next) => {
           balances[idxB].balance_generic += qty;
         }
 
+        const bl = await receiveModel.getBalanceLot(db, v.warehouse_id, v.product_id, v.lot_no, obj.lot_time);
+        balanceLot = bl[0].length == 0 ? qty : bl[0][0].balanceLot;
+
+        objS.balance_lot_qty = balanceLot;
         objS.balance_qty = balance;
         objS.balance_generic_qty = balance_generic;
         objS.balance_unit_cost = _cost;
