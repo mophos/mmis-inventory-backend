@@ -386,7 +386,6 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
   let results = await transferModel.getProductListIds(db, transferIds);
   let dstProducts = [];
   let srcProducts = [];
-  let srcWarehouseId = null;
   let balances = [];
   for (let v of results) {
     if (+v.product_qty != 0) {
@@ -457,6 +456,7 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
       objIn.document_ref = v.transfer_code;
       objIn.in_qty = v.qty;
       objIn.in_unit_cost = v.cost;
+      objIn.wm_product_id_in = v.wm_product_id; 
       let dstBalance = 0;
       let dstBalanceGeneric = 0;
       let dstIdx = _.findIndex(balances, {
@@ -470,6 +470,7 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
         balances[dstIdx].balance_generic += v.qty;
       }
       objIn.balance_qty = dstBalance;
+      objIn.balance_lot_qty = dstBalance;
       objIn.balance_generic_qty = dstBalanceGeneric;
       objIn.balance_unit_cost = v.cost;
       objIn.ref_src = v.src_warehouse_id;
@@ -493,6 +494,7 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
       objOut.document_ref_id = v.transfer_id;
       objOut.out_qty = v.qty;
       objOut.out_unit_cost = v.cost;
+      objOut.wm_product_id_out = v.wm_product_id;
       let srcBalance = 0;
       let srcBalanceGeneric = 0;
       let srcIdx = _.findIndex(balances, {
@@ -506,6 +508,7 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
         balances[srcIdx].balance_generic -= v.qty;
       }
       objOut.balance_qty = srcBalance;
+      objOut.balance_lot_qty = srcBalance;
       objOut.balance_unit_cost = v.cost;
       objOut.ref_src = v.src_warehouse_id;
       objOut.ref_dst = v.dst_warehouse_id;
@@ -517,10 +520,10 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
     }
   });
 
-  await stockCard.saveFastStockTransaction(db, data);
-  await transferModel.saveDstProducts(db, dstProducts);
-  await transferModel.decreaseQty(db, dstProducts);
-  await transferModel.changeApproveStatusIds(db, transferIds, peopleUserId);
+  // await stockCard.saveFastStockTransaction(db, data);
+  // await transferModel.saveDstProducts(db, dstProducts);
+  // await transferModel.decreaseQty(db, dstProducts);
+  // await transferModel.changeApproveStatusIds(db, transferIds, peopleUserId);
 });
 
 router.post('/confirm', co(async (req, res, next) => {
