@@ -40,8 +40,8 @@ router.get('/list/search', async (req, res, next) => {
   const offset = +req.query.offset;
   const query = req.query.query
   try {
-    const rs = await adjustStockModel.searchlist(db, warehouseId, limit, offset,query);
-    const rsTotal = await adjustStockModel.totalsearchList(db, warehouseId,query);
+    const rs = await adjustStockModel.searchlist(db, warehouseId, limit, offset, query);
+    const rsTotal = await adjustStockModel.totalsearchList(db, warehouseId, query);
     for (const r of rs) {
       const rsGeneric = await adjustStockModel.getGeneric(db, r.adjust_id);
       if (rsGeneric) {
@@ -127,8 +127,9 @@ router.post('/', async (req, res, next) => {
           }
           await adjustStockModel.saveProduct(db, product);
           await adjustStockModel.updateQty(db, p.wm_product_id, p.qty);
-          const balanceGeneric = await adjustStockModel.getBalanceGeneric(db, d.generic_id, warehouseId);
-          const balanceProduct = await adjustStockModel.getBalanceProduct(db, p.product_id, warehouseId);
+          const balanceGeneric = await adjustStockModel.getBalanceGeneric(db, warehouseId, d.generic_id);
+          const balanceProduct = await adjustStockModel.getBalanceProduct(db, warehouseId, p.product_id);
+          const balanceLot = await adjustStockModel.getBalanceLot(db, warehouseId, p.product_id, p.lot_no, p.lot_time);
           // let data = {};
           if (p.qty > 0 || p.old_qty != p.qty) {
             if (p.old_qty > p.qty) {
@@ -147,12 +148,15 @@ router.post('/', async (req, res, next) => {
                 out_unit_cost: p.cost,
                 balance_generic_qty: balanceGeneric[0].qty,
                 balance_qty: balanceProduct[0].qty,
+                balance_lot_qty: balanceLot[0].qty,
                 balance_unit_cost: p.cost,
                 ref_src: warehouseId,
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
+                lot_time: p.lot_time,
                 unit_generic_id: p.unit_generic_id,
-                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null
+                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null,
+                wm_product_id_out: p.wm_product_id
               }
               await adjustStockModel.saveStockCard(db, data);
             } else if (p.old_qty < p.qty) {
@@ -175,8 +179,10 @@ router.post('/', async (req, res, next) => {
                 ref_src: warehouseId,
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
+                lot_time: p.lot_time,
                 unit_generic_id: p.unit_generic_id,
-                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null
+                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null,
+                wm_product_id_in: p.wm_product_id
               }
               console.log('data', data);
 

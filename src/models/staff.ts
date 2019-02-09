@@ -23,7 +23,7 @@ export class StaffModel {
   adminGetAllProductsDetailList(knex: Knex, productId: any, warehouseId) {
     let sql = `
     select mp.product_name,mp.working_code,p.wm_product_id, p.product_id, sum(p.qty) as qty, floor(sum(p.qty)/ug.qty) as pack_qty, sum(p.cost*p.qty) as total_cost, p.cost, p.warehouse_id,
-    w.warehouse_name, p.lot_no, p.expired_date, mpp.max_qty, mpp.min_qty, u1.unit_name as from_unit_name, ug.qty as conversion_qty,
+    w.warehouse_name, p.lot_no,p.lot_time, p.expired_date, mpp.max_qty, mpp.min_qty, u1.unit_name as from_unit_name, ug.qty as conversion_qty,
     u2.unit_name as to_unit_name,v.reserve_qty
     from wm_products as p
     left join wm_warehouses as w on w.warehouse_id=p.warehouse_id
@@ -34,7 +34,7 @@ export class StaffModel {
     left join mm_units as u2 on u2.unit_id=ug.to_unit_id
     left join view_product_reserve v on v.wm_product_id = p.wm_product_id
     where p.product_id='${productId}' and p.warehouse_id = '${warehouseId}'and p.is_actived = 'Y' and p.qty > 0
-    group by p.unit_generic_id,p.lot_no, p.expired_date, p.warehouse_id
+    group by p.unit_generic_id,p.lot_no, p.lot_time,p.expired_date, p.warehouse_id
     order by w.warehouse_name
     `;
     return knex.raw(sql);
@@ -43,7 +43,7 @@ export class StaffModel {
   adminGetAllProductsDetailListGeneric(knex: Knex, genericId: any, warehouseId) {
     let sql = `
     select mp.product_name,mp.working_code,p.wm_product_id, p.product_id, sum(p.qty) as qty, floor(sum(p.qty)/ug.qty) as pack_qty, sum(p.cost*p.qty) as total_cost, p.cost, p.warehouse_id,
-    p.lot_no, p.expired_date, mpp.max_qty, mpp.min_qty, u1.unit_name as from_unit_name, ug.qty as conversion_qty,
+    p.lot_no,p.lot_time, p.expired_date, mpp.max_qty, mpp.min_qty, u1.unit_name as from_unit_name, ug.qty as conversion_qty,
     u2.unit_name as to_unit_name,ifnull(v.reserve_qty,0) as reserve_qty
     from wm_products as p
     inner join mm_products as mp on mp.product_id=p.product_id
@@ -53,7 +53,7 @@ export class StaffModel {
     left join mm_units as u2 on u2.unit_id=ug.to_unit_id
     left join view_product_reserve v on v.wm_product_id = p.wm_product_id
     where mp.generic_id='${genericId}' and p.warehouse_id = '${warehouseId}' and p.is_actived = 'Y' and p.qty > 0
-    group by p.unit_generic_id,p.lot_no, p.expired_date, p.warehouse_id
+    group by p.unit_generic_id,p.lot_no,p.lot_time, p.expired_date, p.warehouse_id
     `;
     return knex.raw(sql);
   }
@@ -348,6 +348,7 @@ export class StaffModel {
       mp.product_name,
       mg.generic_name,
       wp.lot_no,
+      wp.lot_time,
       wp.expired_date,
       fu.unit_name AS from_unit_name,
       ug.qty AS conversion_qty,

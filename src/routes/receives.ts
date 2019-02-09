@@ -950,6 +950,7 @@ router.post('/approve', co(async (req, res, next) => {
         objS.ref_dst = v.warehouse_id;
         objS.comment = 'รับเข้าคลังจากใบสั่งซื้อ';
         objS.lot_no = v.lot_no;
+        objS.lot_time = lotTime;
         objS.expired_date = expiredDate;
         objS.wm_product_id_in = id;
         data.push(objS);
@@ -1193,32 +1194,20 @@ router.post('/other/approve', co(async (req, res, next) => {
       balances = balances[0];
       for (const v of _rproducts) {
         const idx = _.findIndex(lot_time, { 'product_id': v.product_id, 'lot_no': v.lot_no });
-        if (v.is_free == 'N') {
-          if (idx > -1) {
-            lot_time[idx].lot_time += 1;
-            lotTime = lot_time[idx].lot_time;
-          } else {
-            let lotObj = {
-              product_id: v.product_id,
-              lot_no: v.lot_no,
-              lot_time: +v.lot_time + 1
-            };
-            lotTime = +v.lot_time + 1
-            lot_time.push(lotObj);
-          }
+
+        if (idx > -1) {
+          lot_time[idx].lot_time += 1;
+          lotTime = lot_time[idx].lot_time;
         } else {
-          if (idx > -1) {
-            lotTime = lot_time[idx].lot_time;
-          } else {
-            let lotObj = {
-              product_id: v.product_id,
-              lot_no: v.lot_no,
-              lot_time: +v.lot_time
-            };
-            lotTime = +v.lot_time;
-            lot_time.push(lotObj);
-          }
+          let lotObj = {
+            product_id: v.product_id,
+            lot_no: v.lot_no,
+            lot_time: +v.lot_time + 1
+          };
+          lotTime = +v.lot_time + 1
+          lot_time.push(lotObj);
         }
+
         let id = uuid();
         const idxWM = _.findIndex(products, { 'product_id': v.product_id, 'warehouse_id': v.warehouse_id, 'lot_no': v.lot_no, 'lot_time': lotTime });
         if (v.is_free == 'Y') {
@@ -1297,15 +1286,16 @@ router.post('/other/approve', co(async (req, res, next) => {
         objS.ref_dst = v.warehouse_id;
         objS.comment = 'รับเข้าคลังแบบอื่นๆ';
         objS.lot_no = v.lot_no;
+        objS.lot_time = lotTime;
         objS.expired_date = expiredDate;
         objS.wm_product_id_in = id;
-        data.push(objS);
+        // data.push(objS);
 
         //////////////////////////////////////////
 
         // await receiveModel.saveProducts(db, products);
-        await stockcard.saveFastStockTransaction(db, data);
       }
+      await stockcard.saveFastStockTransaction(db, data);
 
       res.send({ ok: true });
     }

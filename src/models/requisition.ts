@@ -23,8 +23,8 @@ export class RequisitionModel {
 
   getCheckId(knex: Knex, requisitionId: string) {
     return knex('wm_requisition_check as rc')
-    .select('rc.check_id')
-    .where('requisition_id', requisitionId)
+      .select('rc.check_id')
+      .where('requisition_id', requisitionId)
   }
 
   removeDetail(knex: Knex, requisitionId: string) {
@@ -33,20 +33,20 @@ export class RequisitionModel {
       .del();
   }
 
-  removeCheckDetail(knex: Knex, checkId: string){
+  removeCheckDetail(knex: Knex, checkId: string) {
     return knex('wm_requisition_check_detail')
-    .where('check_id',checkId)
-    .del();
+      .where('check_id', checkId)
+      .del();
   }
 
   saveDetail(knex: Knex, details: any) {
     return knex('wm_requisition_detail')
-    .insert(details);
+      .insert(details);
   }
 
   saveCheckDetail(knex: Knex, checkDetail: any) {
     return knex('wm_requisition_check_detail')
-    .insert(checkDetail);
+      .insert(checkDetail);
   }
 
 
@@ -66,7 +66,7 @@ export class RequisitionModel {
   doCancel(knex: Knex, requisitionId: string) {
     return knex('wm_requisition')
       .where('requisition_id', requisitionId)
-      .update('requisition_status','C');
+      .update('requisition_status', 'C');
   }
 
   detail(knex: Knex, typeId: string) {
@@ -115,7 +115,7 @@ group by wwp.warehouse_id,wwp.product_id
   getRequisitionInfo(knex: Knex, requisitionId: any) {
     return knex('wm_requisition as re')
       .select('re.requisition_id', 're.requisition_type_id', 're.requisition_date', 're.wm_requisition'
-      , 'wh1.warehouse_name as wm_requisition_name', 'wh2.warehouse_name as wm_withdraw_name', 're.wm_withdraw', 'rt.requisition_type')
+        , 'wh1.warehouse_name as wm_requisition_name', 'wh2.warehouse_name as wm_withdraw_name', 're.wm_withdraw', 'rt.requisition_type')
       .leftJoin('wm_warehouses as wh1', 're.wm_requisition', 'wh1.warehouse_id')
       .leftJoin('wm_warehouses as wh2', 'wh2.warehouse_id', 're.wm_withdraw')
       .leftJoin('wm_requisition_type as rt', 're.requisition_type_id', 'rt.requisition_type_id')
@@ -207,14 +207,14 @@ group by wwp.warehouse_id,wwp.product_id
   getAllBorrowProducts(knex: Knex) {
     return knex('mm_products as p')
       .select('p.product_id', 'p.product_name', 'gp.generic_id',
-      'v.generic_name', 'v.generic_type', ' l.labeler_name')
+        'v.generic_name', 'v.generic_type', ' l.labeler_name')
       .innerJoin('mm_generic_product as gp', 'gp.product_id', 'p.product_id')
       .innerJoin('wm_all_products_view as v', 'v.generic_id', 'gp.generic_id')
       .innerJoin('mm_product_labeler as pl', 'pl.product_id', 'p.product_id')
       .innerJoin('mm_labelers as l', 'l.labeler_id', 'pl.labeler_id ')
       .where('pl.type_id', "M");
   }
- 
+
   //ใบหยิบสินค้า
   getReceiveProductCheckList(knex: Knex) {
     let sql = `
@@ -265,7 +265,7 @@ group by wwp.warehouse_id,wwp.product_id
     `;
     return knex.raw(sql, [productId, srcWarehouseId]);
   }
-  
+
   getGenericsFromRequisition(db: Knex, requisitionId: any) {
     let sql = `
     select distinct generic_id from wm_requisition_order_items
@@ -273,7 +273,7 @@ group by wwp.warehouse_id,wwp.product_id
     `;
     return db.raw(sql, [requisitionId]);
   }
-  
+
   getProductInWarehousesByGenerics(db: Knex, generics: any[], warehouseId: any) {
     return db('wm_products as wp')
       .select('wp.*', 'mp.generic_id', 'ug.unit_generic_id', 'ug.qty as conversion_qty',
@@ -292,4 +292,11 @@ group by wwp.warehouse_id,wwp.product_id
       .where('requisition_order_id', requisitionId);
   }
 
+  checkProductToSave(knex: Knex, warehouseId, productId, lotNo, lotTime) {
+    return knex('wm_products')
+      .where('warehouse_id', warehouseId)
+      .where('product_id', productId)
+      .where('lot_no', lotNo)
+      .where('lot_time', lotTime)
+  }
 }
