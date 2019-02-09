@@ -25,13 +25,13 @@ export class AdjustStockModel {
   }
 
   searchlist(knex: Knex, warehouseId, limit, offset, query) {
-    let sub:any = knex('wm_adjusts as a')
-    .select('a.adjust_id')
-    .leftJoin('wm_adjust_generics as ag','ag.adjust_id','a.adjust_id')
-    .leftJoin('mm_generics as g','g.generic_id','ag.generic_id')
-    .where('g.generic_name','LIKE',`%${query}%`)
-    .orWhere('g.working_code',query)
-    .groupBy('a.adjust_id')
+    let sub: any = knex('wm_adjusts as a')
+      .select('a.adjust_id')
+      .leftJoin('wm_adjust_generics as ag', 'ag.adjust_id', 'a.adjust_id')
+      .leftJoin('mm_generics as g', 'g.generic_id', 'ag.generic_id')
+      .where('g.generic_name', 'LIKE', `%${query}%`)
+      .orWhere('g.working_code', query)
+      .groupBy('a.adjust_id')
 
 
     return knex('wm_adjusts as a')
@@ -39,10 +39,10 @@ export class AdjustStockModel {
       .join('um_people_users as pu', 'a.people_user_id', 'pu.people_user_id')
       .join('um_people as p', 'p.people_id', 'pu.people_id')
       .where('a.warehouse_id', warehouseId)
-      .where((w)=>{
-        w.where('a.adjust_code','LIKE', `%${query}%`)
-        w.orWhere('a.reason','LIKE', `%${query}%`)
-        w.orWhereIn('a.adjust_id',sub)
+      .where((w) => {
+        w.where('a.adjust_code', 'LIKE', `%${query}%`)
+        w.orWhere('a.reason', 'LIKE', `%${query}%`)
+        w.orWhereIn('a.adjust_id', sub)
       })
       .orderBy('a.adjust_code', 'DESC')
       .limit(limit)
@@ -50,23 +50,23 @@ export class AdjustStockModel {
   }
 
   totalsearchList(knex: Knex, warehouseId, query) {
-    let sub:any = knex('wm_adjusts as a')
-    .select('a.adjust_id')
-    .leftJoin('wm_adjust_generics as ag','ag.adjust_id','a.adjust_id')
-    .leftJoin('mm_generics as g','g.generic_id','ag.generic_id')
-    .where('g.generic_name','LIKE',`%${query}%`)
-    .orWhere('g.working_code',query)
-    .groupBy('a.adjust_id')
+    let sub: any = knex('wm_adjusts as a')
+      .select('a.adjust_id')
+      .leftJoin('wm_adjust_generics as ag', 'ag.adjust_id', 'a.adjust_id')
+      .leftJoin('mm_generics as g', 'g.generic_id', 'ag.generic_id')
+      .where('g.generic_name', 'LIKE', `%${query}%`)
+      .orWhere('g.working_code', query)
+      .groupBy('a.adjust_id')
 
     return knex('wm_adjusts as a')
       .count('* as total')
       .join('um_people_users as pu', 'a.people_user_id', 'pu.people_user_id')
       .join('um_people as p', 'p.people_id', 'pu.people_id')
       .where('a.warehouse_id', warehouseId)
-      .where((w)=>{
-        w.where('a.adjust_code','LIKE', `%${query}%`)
-        w.orWhere('a.reason','LIKE', `%${query}%`)
-        w.orWhereIn('a.adjust_id',sub)
+      .where((w) => {
+        w.where('a.adjust_code', 'LIKE', `%${query}%`)
+        w.orWhere('a.reason', 'LIKE', `%${query}%`)
+        w.orWhereIn('a.adjust_id', sub)
       })
       .orderBy('a.adjust_code', 'DESC')
   }
@@ -113,7 +113,7 @@ export class AdjustStockModel {
       .insert(data)
   }
 
-  getBalanceGeneric(knex: Knex, genericId, warehouseId) {
+  getBalanceGeneric(knex: Knex, warehouseId, genericId) {
     return knex('wm_products as wp')
       .sum('wp.qty as qty')
       .select('mp.generic_id')
@@ -123,13 +123,26 @@ export class AdjustStockModel {
       .groupBy('mp.generic_id')
   }
 
-  getBalanceProduct(knex: Knex, productId, warehouseId) {
+  getBalanceProduct(knex: Knex, warehouseId, productId) {
     return knex('wm_products as wp')
       .sum('wp.qty as qty')
       .select('wp.product_id')
       .where('wp.product_id', productId)
       .where('wp.warehouse_id', warehouseId)
       .groupBy('wp.product_id')
+  }
+
+  getBalanceLot(knex: Knex, warehouseId, productId, lotNo, lotTime) {
+    return knex('wm_products as wp')
+      .sum('wp.qty as qty')
+      .select('wp.product_id')
+      .where('wp.product_id', productId)
+      .where('wp.lot_no', lotNo)
+      .where('wp.lot_time', lotTime)
+      .where('wp.warehouse_id', warehouseId)
+      .groupBy('wp.product_id')
+      .groupBy('wp.lot_no')
+      .groupBy('wp.lot_time')
   }
 
 }

@@ -78,7 +78,7 @@ export class AlertExpiredModel {
 
   productExpired(knex: Knex, genericTypeId, warehouseId) {
     return knex('wm_generic_expired_alert as xp')
-      .select('xp.generic_id', 'mg.working_code', 'mg.generic_name', 'mp.working_code as product_code', 'mp.product_name', 'wp.lot_no', 'wp.expired_date',
+      .select('xp.generic_id', 'mg.working_code', 'mg.generic_name', 'mp.working_code as product_code', 'mp.product_name', 'wp.lot_no', 'wp.lot_time', 'wp.expired_date',
         knex.raw('DATEDIFF(wp.expired_date, CURDATE()) AS diff'), 'xp.num_days', 'wp.warehouse_id', 'ww.warehouse_name',
         knex.raw(`sum(wp.qty) as sum`))
       .join('mm_generics as mg', 'xp.generic_id', 'mg.generic_id')

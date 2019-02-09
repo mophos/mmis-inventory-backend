@@ -191,7 +191,9 @@ router.post('/save', co(async (req, res, next) => {
           year += 1;
         }
         // year = ปีงบ
-        let transferCode = await serialModel.getSerial(db, 'TR', year, warehouseId);
+        let transferCode = await serialModel.getSerial(db, 'TR', year, _summary.srcWarehouseId);
+        console.log(transferCode);
+
         let transfer = {
           transfer_code: transferCode,
           transfer_date: _summary.transferDate,
@@ -331,8 +333,8 @@ router.post('/approve-all', co(async (req, res, next) => {
         isValid = false;
       }
     }
-    let checkDup:any = await transferModel.checkDuplicatedApprove(db,transferIds)
-    transferIds = _.map(checkDup,'transfer_id')
+    let checkDup: any = await transferModel.checkDuplicatedApprove(db, transferIds)
+    transferIds = _.map(checkDup, 'transfer_id')
     if (isValid && transferIds.length) {
       await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
       await approve(db, transferIds, warehouseId, peopleUserId);
@@ -407,6 +409,7 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
       obj.price = v.price;
       obj.cost = v.cost;
       obj.lot_no = v.lot_no;
+      obj.lot_time = v.lot_time;
       obj.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
       obj.location_id = v.location_id;
       obj.people_user_id = v.people_user_id;
@@ -416,29 +419,33 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
       // get balance 
       let obj_remaint_dst: any = {}
       let obj_remain_src: any = {}
-      let remain_dst = await transferModel.getProductRemainByTransferIds(db, v.product_id, v.dst_warehouse_id);
-      for (let v of remain_dst[0]) {
-        obj_remaint_dst.product_id = v.product_id;
-        obj_remaint_dst.warehouse_id = v.warehouse_id;
-        obj_remaint_dst.balance = v.balance;
-        obj_remaint_dst.unit_generic_id = v.unit_generic_id;
-        obj_remaint_dst.balance_generic = v.balance_generic;
-      }
-      let remain_src = await transferModel.getProductRemainByTransferIds(db, v.product_id, v.src_warehouse_id);
-      for (let v of remain_src[0]) {
-        obj_remain_src.product_id = v.product_id;
-        obj_remain_src.warehouse_id = v.warehouse_id;
-        obj_remain_src.balance = v.balance;
-        obj_remain_src.unit_generic_id = v.unit_generic_id;
-        obj_remain_src.balance_generic = v.balance_generic;
-      }
+      let remain_dst = await transferModel.getProductRemainByTransferIds(db, v.dst_warehouse_id, v.product_id, v.lot_no, v.lot_time);
+      remain_dst = remain_dst[0]
+      console.log('length', remain_dst.length);
+
+      obj_remaint_dst.product_id = v.product_id;
+      obj_remaint_dst.warehouse_id = v.dst_warehouse_id;
+      obj_remaint_dst.lot_no = v.lot_no;
+      obj_remaint_dst.lot_time = v.lot_time;
+      obj_remaint_dst.balance_lot = remain_dst.length > 0 ? remain_dst[0].balance_lot : 0;
+      obj_remaint_dst.balance = remain_dst.length > 0 ? remain_dst[0].balance : 0;
+      obj_remaint_dst.balance_generic = remain_dst.length > 0 ? remain_dst[0].balance_generic : 0;
+
+      let remain_src = await transferModel.getProductRemainByTransferIds(db, v.src_warehouse_id, v.product_id, v.lot_no, v.lot_time);
+      remain_src = remain_src[0];
+      console.log('length', remain_src.length);
+      obj_remain_src.product_id = v.product_id;
+      obj_remain_src.warehouse_id = v.src_warehouse_id;
+      obj_remain_src.lot_no = v.lot_no;
+      obj_remain_src.lot_time = v.lot_time;
+      obj_remain_src.balance_lot = remain_src.length > 0 ? remain_src[0].balance_lot : 0;
+      obj_remain_src.balance = remain_src.length > 0 ? remain_src[0].balance : 0;
+      obj_remain_src.balance_generic = remain_src.length > 0 ? remain_src[0].balance_generic : 0;
+
       balances.push(obj_remaint_dst);
       balances.push(obj_remain_src);
-
     }
   }
-  let srcBalances = [];
-  let dstBalances = [];
 
   srcProducts = _.clone(dstProducts);
 
@@ -458,25 +465,40 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
       objIn.in_qty = v.qty;
       objIn.in_unit_cost = v.cost;
       let dstBalance = 0;
+      let dstBalanceLot = 0;
       let dstBalanceGeneric = 0;
+
+      console.log('---------------------------------------');
+      console.log(balances);
+      console.log(v.product_id, v.dst_warehouse_id, v.lot_no, v.lot_time);
+      console.log('---------------------------------------');
+
       let dstIdx = _.findIndex(balances, {
         product_id: v.product_id,
         warehouse_id: v.dst_warehouse_id,
+        lot_no: v.lot_no,
+        lot_time: v.lot_time
       });
       if (dstIdx > -1) {
+        dstBalanceLot = balances[dstIdx].balance_lot + v.qty;
+        balances[dstIdx].balance_lot += v.qty;
         dstBalance = balances[dstIdx].balance + v.qty;
         balances[dstIdx].balance += v.qty;
         dstBalanceGeneric = balances[dstIdx].balance_generic + v.qty;
         balances[dstIdx].balance_generic += v.qty;
       }
+      objIn.balance_lot_qty = dstBalanceLot;
       objIn.balance_qty = dstBalance;
       objIn.balance_generic_qty = dstBalanceGeneric;
       objIn.balance_unit_cost = v.cost;
       objIn.ref_src = v.src_warehouse_id;
       objIn.ref_dst = v.dst_warehouse_id;
       objIn.lot_no = v.lot_no;
+      objIn.lot_time = v.lot_time;
       objIn.expired_date = v.expired_date;
       objIn.comment = 'รับโอน';
+      objIn.wm_product_id_in = v.wm_product_id;
+
       data.push(objIn);
     }
   });
@@ -494,17 +516,24 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
       objOut.out_qty = v.qty;
       objOut.out_unit_cost = v.cost;
       let srcBalance = 0;
+      let srcBalanceLot = 0;
+
       let srcBalanceGeneric = 0;
       let srcIdx = _.findIndex(balances, {
         product_id: v.product_id,
         warehouse_id: v.src_warehouse_id,
+        lot_no: v.lot_no,
+        lot_time: v.lot_time
       });
       if (srcIdx > -1) {
+        srcBalanceLot = balances[srcIdx].balance_lot - v.qty;
+        balances[srcIdx].balance_lot -= v.qty;
         srcBalance = balances[srcIdx].balance - v.qty;
         balances[srcIdx].balance -= v.qty;
         srcBalanceGeneric = balances[srcIdx].balance_generic - v.qty;
         balances[srcIdx].balance_generic -= v.qty;
       }
+      objOut.balance_lot_qty = srcBalanceLot;
       objOut.balance_qty = srcBalance;
       objOut.balance_unit_cost = v.cost;
       objOut.ref_src = v.src_warehouse_id;
@@ -512,7 +541,9 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
       objOut.balance_generic_qty = srcBalanceGeneric;
       objOut.comment = 'โอน';
       objOut.lot_no = v.lot_no;
+      objOut.lot_time = v.lot_time;
       objOut.expired_date = v.expired_date;
+      objOut.wm_product_id_out = v.wm_product_id;
       data.push(objOut);
     }
   });

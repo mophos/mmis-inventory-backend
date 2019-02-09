@@ -407,6 +407,7 @@ router.post('/allocate', async (req, res, next) => {
           to_unit_name: p.to_unit_name,
           expired_date: p.expired_date,
           lot_no: p.lot_no,
+          lot_time: p.lot_time,
           product_id: p.product_id,
           product_qty: qty,
           cost: p.cost
@@ -515,6 +516,7 @@ router.post('/allocate/baseunit', async (req, res, next) => {
           to_unit_name: p.to_unit_name,
           expired_date: p.expired_date,
           lot_no: p.lot_no,
+          lot_time: p.lot_time,
           product_id: p.product_id,
           product_qty: qty,
         }
