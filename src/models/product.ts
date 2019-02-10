@@ -1064,4 +1064,11 @@ group by mpp.product_id
     where wp.wm_product_id = '${wmProductId}'`;
     return knex.raw(sql);
   }
+  checkProductToSave(knex: Knex, warehouseId, productId, lotNo, lotTime) {
+    return knex('wm_products')
+      .where('warehouse_id', warehouseId)
+      .where('product_id', productId)
+      .where('lot_no', lotNo)
+      .where('lot_time', lotTime)
+  }
 }
