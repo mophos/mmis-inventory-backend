@@ -1049,17 +1049,19 @@ group by mpp.product_id
     return knex.raw(sql);
   }
   updatePlusStock(knex: Knex, data: any, wmProductId) {
-    let sql = `update wm_products set qty=qty+${+data.qty},cost = (
-      select(sum(qty * cost) + (${ data.cost}*${data.qty})) / (sum(qty) + ${data.qty})from wm_products as w
-      where w.wm_product_id= '${wmProductId}')
-      where wm_product_id = '${wmProductId}'`;
+    let sql = `update wm_products as wp 
+    join (select wm_product_id,(sum(w.qty * w.cost) + (${ data.cost}*${data.qty})) / (sum(w.qty) + ${data.qty}) as cost from wm_products as w
+    where w.wm_product_id= '${wmProductId}') as w on wp.wm_product_id = wp.wm_product_id
+    set wp.qty=wp.qty+${+data.qty},wp.cost = w.cost,wp.price=w.cost
+    where wp.wm_product_id = '${wmProductId}'`;
     return knex.raw(sql);
   }
   updateMinusStock(knex: Knex, data: any, wmProductId) {
-    let sql = `update wm_products set qty=qty-${+data.qty},cost = (
-      select(sum(qty * cost) + (${ data.cost}*${data.qty})) / (sum(qty) + ${data.qty})from wm_products as w
-      where w.wm_product_id= '${wmProductId}')
-      where wm_product_id = '${wmProductId}'`;
+    let sql = `update wm_products as wp 
+    join (select wm_product_id,(sum(w.qty * w.cost) + (${ data.cost}*${data.qty})) / (sum(w.qty) + ${data.qty}) as cost from wm_products as w
+    where w.wm_product_id= '${wmProductId}') as w on wp.wm_product_id = wp.wm_product_id
+    set wp.qty=wp.qty-${+data.qty},wp.cost = w.cost,wp.price=w.cost
+    where wp.wm_product_id = '${wmProductId}'`;
     return knex.raw(sql);
   }
 }
