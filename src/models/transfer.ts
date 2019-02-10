@@ -204,7 +204,7 @@ ORDER BY
     let sql = `
     select tp.*
     , FLOOR(tp.product_qty/ug.qty) as product_pack_qty
-    , mp.product_name, mg.generic_name, wp.lot_no, wp.expired_date
+    , mp.product_name, mg.generic_name, wp.lot_no, wp.expired_date, wp.lot_time
     , fu.unit_name as from_unit_name, ug.qty as conversion_qty, tu.unit_name as to_unit_name
     from wm_transfer_product as tp
     join wm_products as wp on wp.wm_product_id = tp.wm_product_id
@@ -277,33 +277,33 @@ ORDER BY
       .innerJoin('wm_transfer as t', 't.transfer_id', 'd.transfer_id')
       .joinRaw('inner join wm_products as p on p.product_id=d.product_id and p.lot_no=d.lot_no and p.expired_date=d.expired_date')
       .where('d.transfer_id', transferId)
-      .groupByRaw('d.product_id, d.lot_no, d.expired_date');
+      .groupByRaw('d.product_id, d.lot_no,d.lot_time, d.expired_date');
   }
 
   getProductListIds(knex: Knex, transferIds: any[]) {
-    let subBalanceSrc = knex('wm_products as wp')
-      .sum('wp.qty')
-      .as('balance_src')
-      .whereRaw('wp.wm_product_id=p.wm_product_id')
-    // .whereRaw('wp.product_id=d.product_id and wp.warehouse_id=t.src_warehouse_id and wp.lot_no=d.lot_no and wp.expired_date=d.expired_date');
+    // let subBalanceSrc = knex('wm_products as wp')
+    //   .sum('wp.qty')
+    //   .as('balance_src')
+    //   .whereRaw('wp.wm_product_id=p.wm_product_id')
+    // // .whereRaw('wp.product_id=d.product_id and wp.warehouse_id=t.src_warehouse_id and wp.lot_no=d.lot_no and wp.expired_date=d.expired_date');
 
-    let subBalanceDst = knex('wm_products as wp')
-      .sum('wp.qty')
-      .as('balance_dst')
-      .whereRaw('wp.warehouse_id=t.dst_warehouse_id and wp.product_id=p.product_id and wp.lot_no<=>p.lot_no and wp.expired_date<=>p.expired_date')
+    // let subBalanceDst = knex('wm_products as wp')
+    //   .sum('wp.qty')
+    //   .as('balance_dst')
+    //   .whereRaw('wp.warehouse_id=t.dst_warehouse_id and wp.product_id=p.product_id and wp.lot_no<=>p.lot_no and wp.expired_date<=>p.expired_date')
     // .whereRaw('wp.product_id=d.product_id and wp.warehouse_id=t.dst_warehouse_id and wp.lot_no=d.lot_no and wp.expired_date=d.expired_date');
 
     return knex('wm_transfer_product as d')
-      .select('d.*', 'ug.qty as conversion_qty', 'p.lot_no',
+      .select('d.*', 'ug.qty as conversion_qty', 'p.lot_no', 'p.lot_time',
         'p.expired_date', 'p.cost', 'p.price', 'p.product_id',
-        'mp.generic_id', 't.*', 'tg.*', subBalanceSrc, subBalanceDst, 'p.unit_generic_id')
+        'mp.generic_id', 't.*', 'tg.*', 'p.unit_generic_id')
       .innerJoin('wm_transfer as t', 't.transfer_id', 'd.transfer_id')
       .joinRaw('join wm_transfer_generic as tg on tg.transfer_id = d.transfer_id and tg.transfer_generic_id = d.transfer_generic_id')
       .joinRaw(`inner join wm_products as p on p.wm_product_id=d.wm_product_id`)
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
       .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'p.unit_generic_id')
       .whereIn('d.transfer_id', transferIds)
-      .andWhere('t.approved','N')
+      .andWhere('t.approved', 'N')
       .groupByRaw('d.wm_product_id');
   }
 
@@ -336,7 +336,7 @@ ORDER BY
     return knex('wm_transfer')
       .select('transfer_id')
       .whereIn('transfer_id', transferIds)
-      .andWhere('approved','N');
+      .andWhere('approved', 'N');
   }
   changeConfirmStatusIds(knex: Knex, transferIds: any[], peopleUserId: any) {
     return knex('wm_transfer')
@@ -367,12 +367,12 @@ ORDER BY
 
   getProductWarehouseLots(knex: Knex, productId: any, warehouseId: any) {
     return knex('wm_products as wpl')
-      .select('wpl.lot_no', 'wpl.wm_product_id', 'wpl.expired_date', 'wpl.cost', 'wpl.qty',
+      .select('wpl.lot_no', 'wpl.lot_time', 'wpl.wm_product_id', 'wpl.expired_date', 'wpl.cost', 'wpl.qty',
         knex.raw('timestampdiff(day, current_date(), wpl.expired_date) as count_expired'))
       //  .leftJoin('wm_products as wp','wpl.lot_id','wp.lot_id')
       .where('wpl.product_id', productId)
       .where('wpl.warehouse_id', warehouseId)
-      .groupByRaw('wpl.lot_no, wpl.expired_date')
+      .groupByRaw('wpl.lot_no,wpl.lot_time, wpl.expired_date')
       .orderBy('wpl.expired_date', 'asc');
   }
 
@@ -388,6 +388,7 @@ ORDER BY
     FLOOR(wp.qty / ug.qty) as pack_remain_qty,
     wp.qty AS small_remain_qty,
     wp.lot_no,
+    wp.lot_time,
     wp.expired_date,
     mp.product_name,
     fu.unit_name AS from_unit_name,
@@ -414,6 +415,7 @@ ORDER BY
     FLOOR((wp.qty+tp.product_qty) / ug.qty) as pack_remain_qty,
     wp.qty+tp.product_qty AS small_remain_qty,
     wp.lot_no,
+    wp.lot_time,
     wp.expired_date,
     mp.product_name,
     fu.unit_name AS from_unit_name,
@@ -456,12 +458,17 @@ ORDER BY
     return knex.raw(sql, [transferId]);
   }
 
-  getProductRemainByTransferIds(knex: Knex, productId: any, warehouseId: any) {
+  getProductRemainByTransferIds(knex: Knex, warehouseId: any, productId: any, lotNo: any, lotTime: any) {
     let sql = `SELECT
       wp.product_id,
-      sum(wp.qty) AS balance,
       wp.warehouse_id,
       wp.unit_generic_id,
+      wp.lot_no,
+      wp.lot_time,
+      wp.qty as balance_lot,
+      (
+        select sum(w1.qty) from wm_products w1 where w1.warehouse_id =wp.warehouse_id and w1.product_id=wp.product_id group by w1.product_id
+      ) as balance,
       (SELECT
         sum(wp.qty)
       FROM
@@ -488,9 +495,13 @@ ORDER BY
     WHERE
       wp.product_id= '${productId}'
     AND wp.warehouse_id = '${warehouseId}'
+    AND wp.lot_no = '${lotNo}'
+    AND wp.lot_time = '${lotTime}'
     GROUP BY
       wp.product_id,
-      wp.warehouse_id`;
+      wp.warehouse_id,
+      wp.lot_no,
+      wp.lot_time`;
     return knex.raw(sql);
   }
 

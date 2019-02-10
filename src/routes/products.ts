@@ -784,18 +784,19 @@ router.post('/save-repackage', async (req, res, next) => {
         price: wmProduct.cost,
         cost: wmProduct.cost,
         lot_no: product.lot_no,
-        expired_date: moment(wmProduct.expired_date, 'YYYY-MM-DD').isValid() ? moment(wmProduct.expired_date).format('YYYY-MM-DD') : null ,
-        location_id: wmProduct.location_id ,
+        lot_time: wmProduct.lot_time,
+        expired_date: moment(wmProduct.expired_date, 'YYYY-MM-DD').isValid() ? moment(wmProduct.expired_date).format('YYYY-MM-DD') : null,
+        location_id: wmProduct.location_id,
         unit_generic_id: product.unit_generic_id,
         people_user_id: peopleUserId,
         created_at: moment().format('YYYY-MM-DD HH:mm:ss')
       }]
       console.log('------');
       console.log(newProducts);
-      
-      
+
+
       // stock card
-      let srcBalances = await productModel.getBalance(db, wmProduct.product_id, wmProduct.warehouse_id);
+      let srcBalances = await productModel.getBalance(db, wmProduct.product_id, wmProduct.warehouse_id, wmProduct.lot_no, wmProduct.lot_time);
       srcBalances = Object.assign({}, srcBalances[0][0])
 
       let objStockcardOut: IStockcardItem = {}
@@ -849,10 +850,10 @@ router.post('/save-repackage', async (req, res, next) => {
       stockCard.push(objStockcardIn)
 
       // save stock card
-      await productModel.saveStockCard(db, stockCard);
-      // // save true data
-      await productModel.saveProducts(db, newProducts);
-      await productModel.decreaseQty(db, dstProducts);
+      // await productModel.saveStockCard(db, stockCard);
+      // // // save true data
+      // await productModel.saveProducts(db, newProducts);
+      // await productModel.decreaseQty(db, dstProducts);
       res.send({ ok: true })
     } else {
       res.send({ ok: false, error: 'จำนวนคงเหลือต่ำกว่า' })

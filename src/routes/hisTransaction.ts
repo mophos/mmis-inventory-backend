@@ -309,6 +309,7 @@ router.post('/import', co(async (req, res, next) => {
                 obj.wm_product_id = v.wm_product_id;
                 obj.hn = `${hospcode}-${h.hn}`;
                 obj.lot_no = v.lot_no;
+                obj.lot_time = v.lot_time;
                 obj.transaction_id = h.transaction_id;
                 obj.warehouse_id = h.warehouse_id;
                 obj.product_id = h.product_id;
@@ -358,19 +359,13 @@ router.post('/import', co(async (req, res, next) => {
                 }
 
                 await hisTransactionModel.decreaseProductQty(db, obj.wm_product_id, obj.cutQty);
-                let balance = await hisTransactionModel.getHisForStockCard(db, h.warehouse_id, h.product_id);
-                //get balance 
+                let balance = await hisTransactionModel.getBalance(db, obj.wm_product_id);
                 balance = balance[0];
 
-                let out_unit_cost;
-                let balance_qty;
-                let balance_generic_qty;
-                let balance_unit_cost;
-
-                out_unit_cost = balance[0].balance_unit_cost;
-                balance_qty = balance[0].balance_qty;
-                balance_generic_qty = balance[0].balance_generic_qty;
-                balance_unit_cost = balance[0].balance_unit_cost;
+                let balance_qty = balance[0].balance_qty;
+                let balance_lot_qty = balance[0].balance_lot_qty;
+                let balance_generic_qty = balance[0].balance_generic_qty;
+                let balance_unit_cost = balance[0].balance_unit_cost;
 
                 let data = {
                   stock_date: moment(h.date_serv).format('YYYY-MM-DD HH:mm:ss'),
@@ -382,8 +377,9 @@ router.post('/import', co(async (req, res, next) => {
                   in_qty: 0,
                   in_unit_cost: 0,
                   out_qty: obj.cutQty,
-                  out_unit_cost: balance_unit_cost,
+                  out_unit_cost: v.cost,
                   balance_qty: balance_qty,
+                  balance_lot_qty: balance_lot_qty,
                   balance_generic_qty: balance_generic_qty,
                   balance_unit_cost: balance_unit_cost,
                   ref_src: h.warehouse_id,
@@ -391,7 +387,9 @@ router.post('/import', co(async (req, res, next) => {
                   comment: 'ตัดจ่าย HIS',
                   unit_generic_id: unitId[0].unit_generic_id,
                   lot_no: v.lot_no,
-                  expired_date: v.expired_date
+                  lot_time: v.lot_time,
+                  expired_date: v.expired_date,
+                  wm_product_id_out: obj.wm_product_id
                 };
                 if (obj.cutQty > 0) {
                   stockCards.push(data);

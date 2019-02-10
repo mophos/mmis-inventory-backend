@@ -236,7 +236,7 @@ export class StockCard {
       .insert(data);
   }
 
-  saveFastStockTransaction(db: Knex, data: any[]) {
+  saveFastStockTransaction(db: Knex, data: any) {
     return db('wm_stock_card')
       .insert(data);
   }

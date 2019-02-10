@@ -561,6 +561,7 @@ router.get('/report/approve/requis3', wrap(async (req, res, next) => {
           value.sPage = page;
           value.nPage = approve_requis[i].length;
           value.full_name = signature[0].signature === 'N' ? '' : value.full_name
+          value.full_namec = signature[0].signature === 'N' ? '' : value.full_namec
           value.total_cost = inventoryReportModel.comma(value.unit_cost * value.confirm_qty);
           value.approve_date = moment(value.approve_date).format('D MMMM ') + (moment(value.approve_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
@@ -1460,17 +1461,17 @@ router.get('/report/issue', wrap(async (req, res, next) => {
     let issue_body = await issueModel.getListReport(db, issue_id);
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
-
     for (let i of issue_body) {
       i.issue_date = (moment(i.issue_date).format('D MMMM ') + (moment(i.issue_date).get('year') + 543));
 
       let ListDetail: any = await inventoryReportModel.getProductList(db, i.issue_id);
-
+      let sum = 0
       for (let i of ListDetail[0]) {
-        i.qty = inventoryReportModel.comma(i.qty);
+        sum +=  i.qty * i.cost ;
         i.cost = inventoryReportModel.comma(i.qty * i.cost);
+        i.qty = inventoryReportModel.comma(i.qty);
       }
-
+      i.sum = inventoryReportModel.comma(sum);
       issueListDetail.push(ListDetail[0]);
     }
 
@@ -1479,7 +1480,6 @@ router.get('/report/issue', wrap(async (req, res, next) => {
         element.expired_date = moment(element.expired_date, 'YYYY-MM-DD').isValid() ? moment(element.expired_date).format('DD/MM/') + (moment(element.expired_date).get('year')) : '-';
       });
     });
-
     res.render('product_issue', {
       hospitalName: hospitalName, issueBody: issue_body, issueListDetail: issueListDetail, issue_date: issue_date, printDate: printDate(req.decoded.SYS_PRINT_DATE), count: issueListDetail.length
     });
