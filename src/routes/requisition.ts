@@ -1280,8 +1280,8 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
                 objStockcardIn.comment = 'เบิก';
                 objStockcardIn.wm_product_id_in = wmProductIdIn;
 
-                await orderModel.saveStockCard(db, objStockcardIn);
                 await orderModel.saveStockCard(db, objStockcardOut);
+                await orderModel.saveStockCard(db, objStockcardIn);
               }
               // save stock card
               // // save true data
