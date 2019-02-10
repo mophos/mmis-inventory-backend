@@ -1049,12 +1049,16 @@ group by mpp.product_id
     return knex.raw(sql);
   }
   updatePlusStock(knex: Knex, data: any, wmProductId) {
-    let sql = `update wm_products set qty=qty+${+data.qty}
+    let sql = `update wm_products set qty=qty+${+data.qty},cost = (
+      select(sum(qty * cost) + (${ data.cost}*${data.qty})) / (sum(qty) + ${data.qty})from wm_products as w
+      where w.wm_product_id= '${wmProductId}')
       where wm_product_id = '${wmProductId}'`;
     return knex.raw(sql);
   }
   updateMinusStock(knex: Knex, data: any, wmProductId) {
-    let sql = `update wm_products set qty=qty-${+data.qty}
+    let sql = `update wm_products set qty=qty-${+data.qty},cost = (
+      select(sum(qty * cost) + (${ data.cost}*${data.qty})) / (sum(qty) + ${data.qty})from wm_products as w
+      where w.wm_product_id= '${wmProductId}')
       where wm_product_id = '${wmProductId}'`;
     return knex.raw(sql);
   }

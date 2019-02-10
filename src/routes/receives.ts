@@ -962,8 +962,8 @@ router.post('/approve', co(async (req, res, next) => {
         if (v.cost > 0) {
           adjust_price.push(obj_adjust);
         }
-        await stockcard.saveFastStockTransaction(db, data);
       }
+      await stockcard.saveFastStockTransaction(db, data);
 
 
 
@@ -1295,8 +1295,8 @@ router.post('/other/approve', co(async (req, res, next) => {
         //////////////////////////////////////////
 
         // await receiveModel.saveProducts(db, products);
+        await stockcard.saveFastStockTransaction(db, objS);
       }
-      await stockcard.saveFastStockTransaction(db, data);
 
       res.send({ ok: true });
     }
