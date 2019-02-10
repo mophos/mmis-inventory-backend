@@ -425,6 +425,21 @@ export class ToolModel {
     return knex.raw(sql);
   }
 
+  adjustStockLot(knex: Knex, genericId, warehouseId) {
+    let sql = `SELECT
+    product_id,
+    lot_no,
+    generic_id,
+    balance_lot_qty
+    FROM
+    view_stock_card_warehouse 
+    where warehouse_id = '${warehouseId}' 
+    and generic_id = '${genericId}'
+    group by product_id,lot_no
+    `;
+    return knex.raw(sql);
+  }
+
   adjustStockUpdate(knex: Knex, data) {
     return knex('wm_stock_card')
       .update(data).where('stock_card_id', data.stock_card_id);
@@ -434,7 +449,7 @@ export class ToolModel {
     return knex.raw(
       `SELECT
       vscw.stock_card_id, vscw.product_id,vscw.lot_no,vscw.warehouse_id,vscw.in_qty,
-      vscw.out_qty, vscw.cost, vscw.balance_qty,
+      vscw.out_qty, vscw.cost, vscw.balance_lot_qty,
       vscw.in_unit_cost as in_unit_cost,
       vscw.balance_unit_cost as balance_unit_cost,
       vscw.out_unit_cost as out_unit_cost,
