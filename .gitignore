@@ -12,3 +12,4 @@ app/*
 views/css.pug
 data/*
 .idea
+package-lock.json
