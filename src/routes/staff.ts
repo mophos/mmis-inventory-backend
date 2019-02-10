@@ -1401,7 +1401,7 @@ router.post('/issue-transaction/approve', co(async (req, res, next) => {
           }
         }
 
-        // let a = await issueModel.updateSummaryApprove(db, v, summary);
+        await issueModel.updateSummaryApprove(db, v, summary);
         // update wm_product
         // let b = await issueModel.saveProductStock(db, _cutProduct);
         // let c = await stockCardModel.saveFastStockTransaction(db, data);
