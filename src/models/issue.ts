@@ -454,8 +454,6 @@ WHERE
     let sql = `
         UPDATE wm_products SET qty=qty-${data.cutQty} WHERE wm_product_id='${data.wm_product_id}'
         `;
-
-
     return knex.raw(sql);
 
   }
