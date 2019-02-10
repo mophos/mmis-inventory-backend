@@ -1360,8 +1360,6 @@ router.post('/issue-transaction/approve', co(async (req, res, next) => {
         for (const e of rs[0]) {
           if (rs.out_qty != 0) {
 
-            let srcBalance = await issueModel.getBalance(db, warehouseId, e.product_id, e.lot_no, e.lot_time);
-            srcBalance = srcBalance[0];
 
             let objStockcard: any = {};
             let cutProduct: any = {};
@@ -1369,6 +1367,8 @@ router.post('/issue-transaction/approve', co(async (req, res, next) => {
             cutProduct.wm_product_id = e.wm_product_id;
             // _cutProduct.push(cutProduct);
             await issueModel.saveProductStock(db, cutProduct);
+            let srcBalance = await issueModel.getBalance(db, warehouseId, e.product_id, e.lot_no, e.lot_time);
+            srcBalance = srcBalance[0];
 
             objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
             objStockcard.product_id = e.product_id;
