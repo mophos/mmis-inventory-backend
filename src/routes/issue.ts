@@ -279,14 +279,15 @@ router.post('/approve', co(async (req, res, next) => {
 
         let rs = await issueModel.getIssueApprove(db, v, warehouseId);
         for (const e of rs[0]) {
-          let balance = await issueModel.getBalance(db, warehouseId, e.product_id, e.lot_no, e.lot_time);
-          balance = balance[0];
 
           if (e.out_qty != 0) {
             let cutProduct: any = {};
             cutProduct.cutQty = e.out_qty;
             cutProduct.wm_product_id = e.wm_product_id;
             await issueModel.saveProductStock(db, cutProduct);
+
+            let balance = await issueModel.getBalance(db, warehouseId, e.product_id, e.lot_no, e.lot_time);
+            balance = balance[0];
 
             let objStockcard: any = {};
             objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
