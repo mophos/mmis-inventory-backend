@@ -388,7 +388,7 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
   let results = await transferModel.getProductListIds(db, transferIds);
   let dstProducts = [];
   let srcProducts = [];
-  let srcWarehouseId = null;
+  // let srcWarehouseId = null;
   let balances = [];
   for (let v of results) {
     if (+v.product_qty != 0) {
@@ -406,7 +406,7 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
       obj.transfer_code = v.transfer_code;
       obj.transfer_id = v.transfer_id;
       obj.qty = +v.product_qty;
-      obj.price = v.price;
+      obj.price = v.cost;
       obj.cost = v.cost;
       obj.lot_no = v.lot_no;
       obj.lot_time = v.lot_time;
@@ -421,7 +421,6 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
       let obj_remain_src: any = {}
       let remain_dst = await transferModel.getProductRemainByTransferIds(db, v.dst_warehouse_id, v.product_id, v.lot_no, v.lot_time);
       remain_dst = remain_dst[0]
-      console.log('length', remain_dst.length);
 
       obj_remaint_dst.product_id = v.product_id;
       obj_remaint_dst.warehouse_id = v.dst_warehouse_id;
@@ -433,7 +432,6 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
 
       let remain_src = await transferModel.getProductRemainByTransferIds(db, v.src_warehouse_id, v.product_id, v.lot_no, v.lot_time);
       remain_src = remain_src[0];
-      console.log('length', remain_src.length);
       obj_remain_src.product_id = v.product_id;
       obj_remain_src.warehouse_id = v.src_warehouse_id;
       obj_remain_src.lot_no = v.lot_no;
@@ -467,11 +465,6 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
       let dstBalance = 0;
       let dstBalanceLot = 0;
       let dstBalanceGeneric = 0;
-
-      console.log('---------------------------------------');
-      console.log(balances);
-      console.log(v.product_id, v.dst_warehouse_id, v.lot_no, v.lot_time);
-      console.log('---------------------------------------');
 
       let dstIdx = _.findIndex(balances, {
         product_id: v.product_id,
