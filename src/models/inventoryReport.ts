@@ -1706,12 +1706,12 @@ FROM
         mg.generic_id,
         mg.generic_name,
         mg.working_code,
-        sum( vscw.in_qty ) / mug.qty AS receive_qty,
+        vscw.in_qty / mug.qty AS receive_qty,
         mug.qty,
         mul.unit_name AS large_unit_name,
         mus.unit_name AS small_unit_name,
         vscw.in_unit_cost as cost,
-        sum( vscw.cost ) AS costAmount,
+        vscw.cost AS costAmount,
         wrt.receive_type_name
     FROM
         ${dateSetting} AS vscw
@@ -1729,9 +1729,7 @@ FROM
         if (warehouseId !== '0') {
             sql += `  and vscw.warehouse_id = '${warehouseId}' `
         }
-        sql += ` GROUP BY
-        vscw.generic_id,
-        wro.receive_other_id 
+        sql += ` 
     ORDER BY
         wro.receive_other_id,
         mg.working_code`
@@ -3192,7 +3190,7 @@ OR sc.ref_src like ?
         mu2.unit_name AS package,
         ws.in_unit_cost AS cost,
         ws.in_qty AS total_qty,
-        ( ws.in_qty / mug.qty ) * mug.cost AS total_cost,
+        ws.in_qty * ws.in_unit_cost AS total_cost,
         mgt.generic_type_name,
         mga.account_name,
         mgh.NAME AS generic_hosp_name,
