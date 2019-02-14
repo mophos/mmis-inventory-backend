@@ -437,7 +437,7 @@ export class RequisitionOrderModel {
       sql += ` and (ro.requisition_code like '${q}' or
       w1.warehouse_name like '${q}') `
     }
-    sql += ` order by ro.requisition_date desc
+    sql += ` order by ro.requisition_order_id desc
     limit ${limit} offset ${offset}`;
 
     return db.raw(sql);
@@ -1099,7 +1099,7 @@ export class RequisitionOrderModel {
       wrci.generic_id,
       wp.unit_generic_id,
       wp.location_id,
-      sum(wrci.confirm_qty) as confirm_qty, 
+      wrci.confirm_qty, 
       wp.cost as cost,
       wp.lot_no,
       wp.lot_time,
