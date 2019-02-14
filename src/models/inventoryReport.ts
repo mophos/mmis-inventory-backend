@@ -1628,7 +1628,7 @@ FROM
             .where('adjust_generic_id', adGId);
     }
 
-    payIssue(knex: Knex, startDate: any, endDate: any, warehouseId: any, transectionId){
+    payIssue(knex: Knex, startDate: any, endDate: any, warehouseId: any, transectionId) {
         let sql = `SELECT
         mg.working_code as generic_code,
         mg.generic_name,
@@ -1655,15 +1655,15 @@ FROM
     and wip.qty > 0 
     and wis.issue_date BETWEEN '${startDate}'
     AND '${endDate}'`
-    if (warehouseId !== '0') {
-        sql += ` and wp.warehouse_id = ${warehouseId}`
-    }
-    sql += ` group by mg.generic_id,wis.transaction_issue_id,mug.from_unit_id
+        if (warehouseId !== '0') {
+            sql += ` and wp.warehouse_id = ${warehouseId}`
+        }
+        sql += ` group by mg.generic_id,wis.transaction_issue_id,mug.from_unit_id
     order by mg.generic_name,wis.transaction_issue_id`
-    return knex.raw(sql);
+        return knex.raw(sql);
     }
 
-    payReq(knex: Knex, startDate: any, endDate: any, warehouseId: any, reqTypeId){
+    payReq(knex: Knex, startDate: any, endDate: any, warehouseId: any, reqTypeId) {
         let sql = `SELECT
             mg.working_code as generic_code,
             mg.generic_name,
@@ -1697,45 +1697,45 @@ FROM
         return knex.raw(sql);
 
     }
-    receiveOrthorCost(knex: Knex, startDate: any, endDate: any, warehouseId: any, receiveTpyeId: any) {
 
-        let sql = `
-        SELECT
+    receiveOrthorCost(knex: Knex, startDate: any, endDate: any, warehouseId: any, receiveTpyeId: any, dateSetting = 'view_stock_card_warehouse') {
+        let sql = `SELECT
         wro.receive_other_id,
         wro.receive_date,
         wro.receive_code,
         mg.generic_id,
         mg.generic_name,
         mg.working_code,
-        sum( wrod.receive_qty ) AS receive_qty,
+        sum( vscw.in_qty ) / mug.qty AS receive_qty,
         mug.qty,
         mul.unit_name AS large_unit_name,
         mus.unit_name AS small_unit_name,
-        wrod.cost,
-        sum( wrod.receive_qty ) * wrod.cost as costAmount,
-        wrt.receive_type_name 
-        FROM
-        wm_receive_other AS wro
-        LEFT JOIN wm_receive_other_detail AS wrod ON wrod.receive_other_id = wro.receive_other_id
-        LEFT JOIN mm_products AS mp ON mp.product_id = wrod.product_id
-        LEFT JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
-        LEFT JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wrod.unit_generic_id
-        LEFT JOIN mm_units AS mul ON mul.unit_id = mug.from_unit_id
-        LEFT JOIN mm_units AS mus ON mus.unit_id = mug.to_unit_id
-        LEFT JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id 
-        WHERE
-        wro.receive_date BETWEEN '${startDate}'
-        AND '${endDate}'
-        AND wro.receive_type_id in (${receiveTpyeId})`
-
-
+        vscw.in_unit_cost as cost,
+        sum( vscw.cost ) AS costAmount,
+        wrt.receive_type_name
+    FROM
+        ${dateSetting} AS vscw
+        JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
+        JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
+        JOIN mm_unit_generics AS mug ON mug.unit_generic_id = vscw.unit_generic_id
+        JOIN mm_units AS mul ON mul.unit_id = mug.from_unit_id
+        JOIN mm_units AS mus ON mus.unit_id = mug.to_unit_id
+        JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id
+    WHERE
+        vscw.transaction_type = 'REV_OTHER' 
+        AND vscw.stock_date BETWEEN '${startDate} 00:00:00' 
+        AND '${endDate} 23:59:59' 
+        AND wro.receive_type_id in (${receiveTpyeId}) `
         if (warehouseId !== '0') {
-            sql += `  and wrod.warehouse_id = ${warehouseId}`
+            sql += `  and vscw.warehouse_id = '${warehouseId}' `
         }
-        sql += ` GROUP BY mg.generic_id, wro.receive_other_id`;
-
+        sql += ` GROUP BY
+        vscw.generic_id,
+        wro.receive_other_id 
+    ORDER BY
+        wro.receive_other_id,
+        mg.working_code`
         return knex.raw(sql);
-
     }
 
 
@@ -3173,16 +3173,16 @@ OR sc.ref_src like ?
             .groupBy('mg.generic_id')
     }
 
-    productReceive(knex: Knex, startdate: any, enddate: any, genericTypeId: any) {
+    productReceive(knex: Knex, startdate: any, enddate: any, genericTypeId: any, dateSetting = 'view_stock_card_warehouse') {
         let sql = `SELECT
         wr.delivery_code,
         wr.receive_code,
         ppo.purchase_order_number,
         ppo.order_date,
         wr.receive_date,
-        wrd.receive_qty,
-        mu.unit_name as small_unit,
-        mu2.unit_name as large_unit,
+        ws.in_qty / mug.qty AS receive_qty,
+        mu.unit_name AS small_unit,
+        mu2.unit_name AS large_unit,
         mg.working_code AS generic_code,
         mg.generic_name,
         mp.working_code AS product_code,
@@ -3190,37 +3190,36 @@ OR sc.ref_src like ?
         mu.unit_name,
         mug.qty AS conversion,
         mu2.unit_name AS package,
-        wrd.cost,
-        wrd.receive_qty * mug.qty AS total_qty,
-        wrd.receive_qty * wrd.cost AS total_cost,
+        ws.in_unit_cost AS cost,
+        ws.in_qty AS total_qty,
+        ( ws.in_qty / mug.qty ) * mug.cost AS total_cost,
         mgt.generic_type_name,
         mga.account_name,
-        mgh. NAME AS generic_hosp_name,
-        ml.labeler_name as labeler_name_po,
-        wrd.lot_no,
+        mgh.NAME AS generic_hosp_name,
+        ml.labeler_name AS labeler_name_po,
+        ws.lot_no,
         lb.bid_name
-      FROM
-        wm_receives AS wr
-      JOIN wm_receive_detail AS wrd ON wrd.receive_id = wr.receive_id
-      JOIN pc_purchasing_order AS ppo ON ppo.purchase_order_id = wr.purchase_order_id
-      JOIN wm_receive_approve AS wra ON wra.receive_id = wr.receive_id
-      JOIN mm_products AS mp ON mp.product_id = wrd.product_id
-      JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
-      JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wrd.unit_generic_id
-      JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
-      JOIN mm_units mu2 ON mu2.unit_id = mug.from_unit_id
-      LEFT JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
-      LEFT JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
-      LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
-      LEFT JOIN mm_labelers ml ON ppo.labeler_id = ml.labeler_id
-      LEFT JOIN l_bid_type as lb ON lb.bid_id = mg.purchasing_method
-      WHERE
-        wrd.is_free = 'N'
-      AND wr.receive_date BETWEEN '${startdate}'
-      AND '${enddate}'
-      AND mg.generic_type_id IN ( ${genericTypeId} )
-      ORDER BY
-        wr.receive_date`
+    FROM
+        ${dateSetting} as ws
+        JOIN wm_receives AS wr ON ws.document_ref_id = wr.receive_id
+        JOIN pc_purchasing_order AS ppo ON ppo.purchase_order_id = wr.purchase_order_id
+        JOIN mm_products AS mp ON mp.product_id = ws.product_id
+        JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
+        JOIN mm_unit_generics AS mug ON mug.unit_generic_id = ws.unit_generic_id
+        JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
+        JOIN mm_units mu2 ON mu2.unit_id = mug.from_unit_id
+        LEFT JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
+        LEFT JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
+        LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
+        LEFT JOIN mm_labelers ml ON ppo.labeler_id = ml.labeler_id
+        LEFT JOIN l_bid_type AS lb ON lb.bid_id = mg.purchasing_method 
+    WHERE
+        ws.transaction_type = 'REV'
+        AND ws.stock_date BETWEEN '${startdate} 23:59:59' 
+        AND '${enddate} 23:59:59' 
+        AND mg.generic_type_id IN ( ${genericTypeId} ) 
+    ORDER BY
+        mg.generic_id`
         return knex.raw(sql)
     }
     productReceive3(knex: Knex, startdate: any, enddate: any, genericTypeId: any) {
@@ -3288,7 +3287,7 @@ OR sc.ref_src like ?
             .distinct('bg_year')
             .select(knex.raw('bg_year + 543 as bg_year'));
     }
-    monthlyReport(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any) {
+    monthlyReport(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting = 'view_stock_card_warehouse') {
         let sql = `
         SELECT
 	sum( ifnull( blb.bl, 0 ) ) AS balance,
@@ -3319,7 +3318,7 @@ FROM
 		sum( IF ( sc.in_qty > 0, sc.cost, 0 ) ) AS in_cost,
 		sum( IF ( sc.out_qty > 0, sc.cost, 0 ) ) AS out_cost 
 	FROM
-		view_stock_card_warehouse AS sc 
+		${dateSetting} AS sc 
 	WHERE
 		sc.warehouse_id = ${wareHouseId} 
         AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${(+month) % 12 == 0 ? +year + 1 : year}-${(+month % 12) + 1}-01 00:00:00'
@@ -3331,7 +3330,7 @@ FROM
 		sc.generic_id,
 		sum( IF ( sc.in_qty > 0, sc.cost, 0 ) ) - sum( IF ( sc.out_qty > 0, sc.cost, 0 ) ) AS bl 
 	FROM
-		view_stock_card_warehouse AS sc 
+		${dateSetting} AS sc 
 	WHERE
 		sc.warehouse_id = ${wareHouseId} 
 		AND sc.stock_date < '${year}-${month}-01 00:00:00'
@@ -3349,7 +3348,7 @@ GROUP BY
     `
         return knex.raw(sql)
     }
-    monthlyReportM(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any) {
+    monthlyReportM(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any ,dateSetting = 'view_stock_card_warehouse') {
         let sql = `
         SELECT
 	sum( ifnull( blb.bl, 0 ) ) AS balance,
@@ -3380,7 +3379,7 @@ FROM
 		sum( IF ( sc.in_qty > 0, sc.cost, 0 ) ) AS in_cost,
 		sum( IF ( sc.out_qty > 0, sc.cost, 0 ) ) AS out_cost 
 	FROM
-		view_stock_card_warehouse AS sc 
+		${dateSetting} AS sc 
 	WHERE
 		sc.warehouse_id = ${wareHouseId}  
         AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${(+month) % 12 == 0 ? +year + 1 : year}-${(+month % 12) + 1}-01 00:00:00'
@@ -3392,7 +3391,7 @@ FROM
 		sc.generic_id,
 		sum( IF ( sc.in_qty > 0, sc.cost, 0 ) ) - sum( IF ( sc.out_qty > 0, sc.cost, 0 ) ) AS bl 
 	FROM
-		view_stock_card_warehouse AS sc 
+		${dateSetting} AS sc 
 	WHERE
 		sc.warehouse_id = ${wareHouseId}  
 		AND sc.stock_date < '${year}-${month}-01 00:00:00'
