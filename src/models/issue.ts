@@ -93,7 +93,8 @@ export class IssueModel {
       mu.unit_name AS from_unit_name,
       mu2.unit_name AS to_unit_name,
       wp.lot_no,
-      wp.lot_time
+      wp.lot_time,
+      wp.expired_date
     FROM
       wm_issue_generics sg
     JOIN wm_issue_summary ss ON ss.issue_id = sg.issue_id
