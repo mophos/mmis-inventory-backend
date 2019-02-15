@@ -228,6 +228,7 @@ router.get('/report/monthlyReport', wrap(async (req, res, next) => {
   const warehouseId: any = req.decoded.warehouseId
   const month = req.query.month
   const year = req.query.year
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let genericType = req.query.genericTypes
   genericType = Array.isArray(genericType) ? genericType : [genericType];
 
@@ -236,8 +237,8 @@ router.get('/report/monthlyReport', wrap(async (req, res, next) => {
     let hospitalName = hosdetail[0].hospname;
     let monthName = moment((+year) + '-' + (+month) + '-1').format('MMMM');
     let monthbeforName = moment((+year) + '-' + (+month - 1) + '-1').format('MMMM');
-    const rsM: any = await inventoryReportModel.monthlyReportM(db, month, year, genericType, warehouseId);
-    const rs: any = await inventoryReportModel.monthlyReport(db, month, year, genericType, warehouseId);
+    const rsM: any = await inventoryReportModel.monthlyReportM(db, month, year, genericType, warehouseId, dateSetting);
+    const rs: any = await inventoryReportModel.monthlyReport(db, month, year, genericType, warehouseId, dateSetting);
     let ans: any = []
     for (const items of rsM[0]) {
       rs[0].push(items)
@@ -367,15 +368,16 @@ router.get('/report/receiveOrthorCost/:startDate/:endDate/:warehouseId/:warehous
   let endDate = req.params.endDate;
   let warehouseId = req.params.warehouseId;
   let warehouseName = req.params.warehouseName;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let receiveTpyeId = Array.isArray(req.query.receiveTpyeId) ? req.query.receiveTpyeId : [req.query.receiveTpyeId];
   // warehouseId = warehouseId ? +warehouseId : 'ทุกคลังสินค้า'
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
 
-    let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId, receiveTpyeId);
+    let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId, receiveTpyeId, dateSetting);
     let hospitalName = hosdetail[0].hospname;
     //  res.send(data[0])
-    let sum = inventoryReportModel.comma(_.sumBy(data[0], (o: any) => { return o.receive_qty * o.cost; }));
+    let sum = inventoryReportModel.comma(_.sumBy(data[0], (o: any) => { return o.costAmount; }));
 
     for (let tmp of data[0]) {
       tmp.receive_date = moment(tmp.receive_date).isValid() ? moment(tmp.receive_date).format('DD MMM ') + (moment(tmp.receive_date).get('year') + 543) : '';
@@ -1467,7 +1469,7 @@ router.get('/report/issue', wrap(async (req, res, next) => {
       let ListDetail: any = await inventoryReportModel.getProductList(db, i.issue_id);
       let sum = 0
       for (let i of ListDetail[0]) {
-        sum +=  i.qty * i.cost ;
+        sum += i.qty * i.cost;
         i.cost = inventoryReportModel.comma(i.qty * i.cost);
         i.qty = inventoryReportModel.comma(i.qty);
       }
@@ -2520,11 +2522,11 @@ router.get('/report/check/receives2', wrap(async (req, res, next) => {
     let _generic_name: any = []
     totalPrice = 0
     for (let object of objects) {
-      object.receive_date = moment(object.receive_date, 'YYYY-MM-DD').isValid()?moment(object.receive_date).format('D MMM ') + (moment(object.receive_date).get('year') + 543) : '-';
-      object.delivery_date = moment(object.delivery_date, 'YYYY-MM-DD').isValid()?moment(object.delivery_date).format('D MMM ') + (moment(object.delivery_date).get('year') + 543) : '-';
-      object.podate =  moment(object.podate, 'YYYY-MM-DD').isValid()? moment(object.podate).format('D MMMM ') + (moment(object.podate).get('year') + 543) : '-';
-      check_receive.podate = moment(check_receive.podate, 'YYYY-MM-DD').isValid()?moment(check_receive.podate).format('D MMMM ') + (moment(check_receive.podate).get('year') + 543) : '-';
-      object.approve_date = moment(object.approve_date, 'YYYY-MM-DD').isValid()?moment(object.approve_date).format('D MMM ') + (moment(object.approve_date).get('year') + 543) : '-';
+      object.receive_date = moment(object.receive_date, 'YYYY-MM-DD').isValid() ? moment(object.receive_date).format('D MMM ') + (moment(object.receive_date).get('year') + 543) : '-';
+      object.delivery_date = moment(object.delivery_date, 'YYYY-MM-DD').isValid() ? moment(object.delivery_date).format('D MMM ') + (moment(object.delivery_date).get('year') + 543) : '-';
+      object.podate = moment(object.podate, 'YYYY-MM-DD').isValid() ? moment(object.podate).format('D MMMM ') + (moment(object.podate).get('year') + 543) : '-';
+      check_receive.podate = moment(check_receive.podate, 'YYYY-MM-DD').isValid() ? moment(check_receive.podate).format('D MMMM ') + (moment(check_receive.podate).get('year') + 543) : '-';
+      object.approve_date = moment(object.approve_date, 'YYYY-MM-DD').isValid() ? moment(object.approve_date).format('D MMM ') + (moment(object.approve_date).get('year') + 543) : '-';
       // _bahtText.push(inventoryReportModel.bahtText(object.total_price));
       totalPrice += object.total_price;
       object.total_price = inventoryReportModel.comma(object.total_price);
@@ -2562,7 +2564,7 @@ router.get('/report/check/receives2', wrap(async (req, res, next) => {
     totalPrice: totalPrice,
     _bahtText: _bahtText,
     master: master,
-    bookPrefix:book_prefix,
+    bookPrefix: book_prefix,
     hospitalName: hospitalName,
     serialYear: serialYear,
     check_receive: check_receive,
@@ -2738,12 +2740,13 @@ router.get('/report/product-receive', wrap(async (req, res, next) => {
   let startdate = req.query.startDate
   let enddate = req.query.endDate
   let genericType = req.query.genericType;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
 
-  let productReceive = await inventoryReportModel.productReceive(db, startdate, enddate, genericType);
+  let productReceive = await inventoryReportModel.productReceive(db, startdate, enddate, genericType, dateSetting);
   // console.log(productReceive);
   if (productReceive[0].length == 0) { res.render('error404') }
 
@@ -3212,11 +3215,12 @@ router.get('/report/receive/export', async (req, res, next) => {
   let startdate = req.query.startDate
   let enddate = req.query.endDate
   let genericType = req.query.genericType;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
 
   console.log(startdate, enddate);
 
   // get tmt data
-  let rs: any = await inventoryReportModel.productReceive(db, startdate, enddate, genericType);
+  let rs: any = await inventoryReportModel.productReceive(db, startdate, enddate, genericType, dateSetting);
   let json = [];
   if (rs[0].length) {
     let i = 0;
@@ -3382,12 +3386,13 @@ router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:wa
   let endDate = req.params.endDate;
   let warehouseId = req.params.warehouseId;
   let warehouseName = req.params.warehouseName;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let receiveTpyeId = Array.isArray(req.query.receiveTpyeId) ? req.query.receiveTpyeId : [req.query.receiveTpyeId];
 
   // get tmt data
   let hosdetail = await inventoryReportModel.hospital(db);
 
-  let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId, receiveTpyeId);
+  let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId, receiveTpyeId, dateSetting);
   if (!data[0].length || data[0] === []) {
     res.render('error404')
   } else {
