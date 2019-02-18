@@ -753,7 +753,7 @@ WHERE
       .innerJoin('wm_receive_other as rt', 'rt.receive_other_id', 'rd.receive_other_id')
       .innerJoin('mm_products as mp', 'mp.product_id', 'rd.product_id')
       .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'rd.unit_generic_id')
-      .groupByRaw('rd.product_id, rd.lot_no');
+      .groupByRaw('rd.receive_detail_id');
   }
 
   saveCheckSummary(knex: Knex, data: any) {

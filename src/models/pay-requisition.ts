@@ -380,4 +380,11 @@ group by wwp.warehouse_id,wwp.product_id
       .where('requisition_order_id', requisitionId);
   }
 
+  checkProductToSave(knex: Knex, warehouseId, productId, lotNo, lotTime) {
+    return knex('wm_products')
+      .where('warehouse_id', warehouseId)
+      .where('product_id', productId)
+      .where('lot_no', lotNo)
+      .where('lot_time', lotTime)
+  }
 }

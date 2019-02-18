@@ -190,20 +190,19 @@ router.get('/info-summary/:borrowId', co(async (req, res, next) => {
 router.get('/info-detail/:borrowId', co(async (req, res, next) => {
   let db = req.db;
   let borrowId = req.params.borrowId;
-  let srcWarehouseId = req.decoded.warehouseId;
 
   try {
     let rs = await borrowModel.getDetailDst(db, borrowId);
     const rsGenerics = await borrowModel.getGenericInfo(db, borrowId, rs[0].src_warehouse_id);
     let _generics = rsGenerics[0];
-    // for (const g of _generics) {
-    //   const rsProducts = await borrowModel.getProductsInfo(db, borrowId, g.borrow_generic_id);
-    //   let _products = rsProducts[0];
-    //   g.products = _products;
-    // g.transfer_qty = _.sumBy(_products, function (e: any) {
-    //   return e.product_qty * e.conversion_qty;
-    // });
-    // }
+    for (const g of _generics) {
+      const rsProducts = await borrowModel.getProductsInfo(db, borrowId, g.borrow_generic_id);
+      let _products = rsProducts[0];
+      g.products = _products;
+    g.transfer_qty = _.sumBy(_products, function (e: any) {
+      return e.product_qty * e.conversion_qty;
+    });
+    }
     res.send({ ok: true, rows: _generics });
   } catch (error) {
     res.send({ ok: false, error: error.message });

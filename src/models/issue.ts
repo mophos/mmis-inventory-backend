@@ -92,7 +92,9 @@ export class IssueModel {
       wp.qty AS product_remain_qty,
       mu.unit_name AS from_unit_name,
       mu2.unit_name AS to_unit_name,
-      wp.lot_no
+      wp.lot_no,
+      wp.lot_time,
+      wp.expired_date
     FROM
       wm_issue_generics sg
     JOIN wm_issue_summary ss ON ss.issue_id = sg.issue_id
@@ -305,56 +307,23 @@ export class IssueModel {
     wp.cost AS out_unit_cost,
     sp.wm_product_id,
     wp.lot_no,
-    wp.expired_date,  
+    wp.lot_time,
+    wp.expired_date,
+    ss.issue_id as ref_src,
+    ts.transaction_name,
     (
-      SELECT
-        sum(wp2.qty)
-      FROM
-        wm_products wp2
-      WHERE
-        wp2.product_id = sp.product_id
-      AND wp2.warehouse_id = '${warehouseId}'
-      GROUP BY
-        wp2.product_id
-    )-sp.qty AS balance_qty,
-  (
       SELECT
         avg(wp2.cost)
       FROM
         wm_products wp2
       WHERE
         wp2.product_id = sp.product_id
-      AND wp2.warehouse_id = '${warehouseId}'
+      AND wp2.warehouse_id = wp.warehouse_id
+      and wp2.lot_no = wp.lot_no
+      and wp2.lot_time = wp.lot_time
       GROUP BY
-        wp2.product_id
-    ) AS balance_unit_cost,
-    (
-      SELECT
-        sum(wp.qty)
-      FROM
-        wm_products wp
-      WHERE
-        wp.product_id IN (
-          SELECT
-            mp.product_id
-          FROM
-            mm_products mp
-          WHERE
-            mp.generic_id IN (
-              SELECT
-                generic_id
-              FROM
-                mm_products mp
-              WHERE
-                mp.product_id = sp.product_id
-            )
-        )
-      AND wp.warehouse_id = '${warehouseId}'
-      GROUP BY
-        wp.warehouse_id
-    )-sp.qty AS balance_generic,
-    ss.issue_id as ref_src,
-    ts.transaction_name
+        wp2.product_id,wp2.lot_no,wp2.lot_time
+    ) AS balance_unit_cost
   FROM
     wm_issue_summary ss
   JOIN wm_issue_generics sg ON ss.issue_id = sg.issue_id
@@ -483,19 +452,10 @@ WHERE
   }
 
   saveProductStock(knex: Knex, data: any) {
-    let sqls = [];
-
-    data.forEach(v => {
-      // let qty = v.qty * v.conversion_qty;
-      let sql = `
-        UPDATE wm_products SET qty=qty-${v.cutQty} WHERE wm_product_id='${v.wm_product_id}'
+    let sql = `
+        UPDATE wm_products SET qty=qty-${data.cutQty} WHERE wm_product_id='${data.wm_product_id}'
         `;
-      sqls.push(sql);
-    });
-
-    let queries = sqls.join(';');
-
-    return knex.raw(queries);
+    return knex.raw(sql);
 
   }
 
@@ -550,43 +510,91 @@ WHERE
       .where('wm.product_id', productId)
   }
 
-  getBalance(knex: Knex, productId, warehouseId) {
+  // getBalance(knex: Knex, productId, warehouseId) {
+  //   let sql = `SELECT
+  //       wp.product_id,
+  //       sum(wp.qty) AS balance,
+  //       wp.warehouse_id,
+  //       wp.unit_generic_id,
+  //       mp.generic_id,
+  //       (SELECT
+  //         sum(wp.qty)
+  //       FROM
+  //         wm_products wp
+  //       WHERE
+  //         wp.product_id in (
+  //           SELECT
+  //             mp.product_id
+  //           FROM
+  //             mm_products mp
+  //           WHERE
+  //             mp.generic_id in (
+  //               SELECT
+  //                 generic_id
+  //               FROM
+  //                 mm_products mp
+  //               WHERE
+  //                 mp.product_id = '${productId}'
+  //             )
+  //         ) and wp.warehouse_id = '${warehouseId}'
+  //       GROUP BY wp.warehouse_id) as balance_generic
+  //     FROM
+  //       wm_products wp
+  //     join mm_products mp on wp.product_id = mp.product_id
+  //     WHERE
+  //       wp.product_id= '${productId}'
+  //     AND wp.warehouse_id = '${warehouseId}'
+  //     GROUP BY
+  //       wp.product_id,
+  //       wp.warehouse_id`;
+  //   return knex.raw(sql);
+  // }
+  getBalance(knex: Knex, warehouseId, productId, lotNo, lotTime) {
     let sql = `SELECT
-        wp.product_id,
-        sum(wp.qty) AS balance,
-        wp.warehouse_id,
-        wp.unit_generic_id,
-        mp.generic_id,
-        (SELECT
-          sum(wp.qty)
-        FROM
-          wm_products wp
-        WHERE
-          wp.product_id in (
-            SELECT
-              mp.product_id
-            FROM
-              mm_products mp
-            WHERE
-              mp.generic_id in (
-                SELECT
-                  generic_id
-                FROM
-                  mm_products mp
-                WHERE
-                  mp.product_id = '${productId}'
-              )
-          ) and wp.warehouse_id = '${warehouseId}'
-        GROUP BY wp.warehouse_id) as balance_generic
+      wp.product_id,
+      wp.warehouse_id,
+      wp.unit_generic_id,
+      mp.generic_id,
+      wp.lot_no,
+      wp.lot_time,
+      wp.qty as balance_lot,
+      (
+        select sum(w1.qty) from wm_products w1 where w1.warehouse_id =wp.warehouse_id and w1.product_id=wp.product_id group by w1.product_id
+      ) as balance,
+      (SELECT
+        sum(wp.qty)
       FROM
         wm_products wp
-      join mm_products mp on wp.product_id = mp.product_id
       WHERE
-        wp.product_id= '${productId}'
-      AND wp.warehouse_id = '${warehouseId}'
-      GROUP BY
-        wp.product_id,
-        wp.warehouse_id`;
+        wp.product_id in (
+          SELECT
+            mp.product_id
+          FROM
+            mm_products mp
+          WHERE
+            mp.generic_id in (
+              SELECT
+                generic_id
+              FROM
+                mm_products mp
+              WHERE
+                mp.product_id = '${productId}'
+            )
+        ) and wp.warehouse_id = '${warehouseId}'
+      GROUP BY wp.warehouse_id) as balance_generic
+    FROM
+      wm_products wp
+    join mm_products mp on wp.product_id = mp.product_id
+    WHERE
+      wp.product_id= '${productId}'
+    AND wp.warehouse_id = '${warehouseId}'
+    and wp.lot_no = '${lotNo}'
+    and wp.lot_time =  '${lotTime}'
+    GROUP BY
+      wp.product_id,
+      wp.warehouse_id,
+      wp.lot_no,
+      wp.lot_time`;
     return knex.raw(sql);
   }
 }

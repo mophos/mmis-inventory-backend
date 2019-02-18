@@ -407,6 +407,7 @@ router.post('/allocate', async (req, res, next) => {
           to_unit_name: p.to_unit_name,
           expired_date: p.expired_date,
           lot_no: p.lot_no,
+          lot_time: p.lot_time,
           product_id: p.product_id,
           product_qty: qty,
           cost: p.cost
@@ -426,7 +427,6 @@ router.post('/allocate', async (req, res, next) => {
 });
 
 router.post('/allocate-borrow', async (req, res, next) => {
-
   const db = req.db;
   const data: any = req.body.data;
   const warehouseId = req.body.srcWarehouseId || req.decoded.warehouseId;
@@ -438,8 +438,6 @@ router.post('/allocate-borrow', async (req, res, next) => {
       let idx: number = 0;
       if (rsProducts.length) {
         for (const p of rsProducts) {
-          d.genericQty = d.genericQty;
-
           if (d.genericId === p.generic_id) {
             const remainQty = p.qty;
             let qty = d.genericQty;
@@ -475,7 +473,17 @@ router.post('/allocate-borrow', async (req, res, next) => {
       }
     }
 
-
+    //push all wm_products
+    for (const p of rsProducts) {
+      let idx = _.findIndex(allocate, { wm_product_id: p.wm_product_id });
+      if(idx === -1){
+        allocate.push({
+          wm_product_id: p.wm_product_id,
+          product_qty: 0,
+          generic_id: p.generic_id
+        })
+      }
+    }
     res.send({ ok: true, rows: allocate });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -515,6 +523,7 @@ router.post('/allocate/baseunit', async (req, res, next) => {
           to_unit_name: p.to_unit_name,
           expired_date: p.expired_date,
           lot_no: p.lot_no,
+          lot_time: p.lot_time,
           product_id: p.product_id,
           product_qty: qty,
         }

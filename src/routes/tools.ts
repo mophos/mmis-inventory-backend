@@ -964,7 +964,7 @@ router.get('/calculate/balanceunitcost', async (req, res, next) => {
             out_qty: r.out_qty,
             in_unit_cost: r.in_unit_cost,
             out_unit_cost: r.out_unit_cost,
-            balance_qty: r.balance_qty,
+            balance_lot_qty: r.balance_lot_qty,
             balance_unit_cost: r.in_qty * r.in_unit_cost / r.in_qty
           }
 
@@ -972,16 +972,18 @@ router.get('/calculate/balanceunitcost', async (req, res, next) => {
           // copyOblect.push(obj);
         } else {
           const idxL = _.findLastIndex(products, { 'product_id': r.product_id, 'lot_no': r.lot_no, 'warehouse_id': r.warehouse_id });
-          let _balance = (+products[idxL].balance_qty * +products[idxL].balance_unit_cost) + (+r.in_qty * +r.in_unit_cost)
-          let _qty = (+products[idxL].balance_qty + +r.in_qty)
+          // console.log(products[idxL].balance_lot_qty, ' * ', products[idxL].balance_unit_cost, ' + ', r.in_qty, ' * ', r.in_unit_cost);
+          // console.log(products[idxL].balance_lot_qty, ' + ', r.in_qty);
+          let _balance = (+products[idxL].balance_lot_qty * +products[idxL].balance_unit_cost) + (+r.in_qty * +r.in_unit_cost)
+          let _qty = (+products[idxL].balance_lot_qty + +r.in_qty)
           let buc
-          if (r.in_qty > 0) {
+          if (r.in_qty > 0 && products[idxL].balance_lot_qty >= 0) {
             if (_balance == 0 && _qty == 0) {
               buc = products[idxL].balance_unit_cost;
             } else {
               buc = _balance / _qty
             }
-          } else if (r.out_qty > 0) {
+          } else if (r.out_qty > 0 || products[idxL].balance_lot_qty < 0) {
             buc = products[idxL].balance_unit_cost;
           }
           const obj = {
@@ -993,7 +995,7 @@ router.get('/calculate/balanceunitcost', async (req, res, next) => {
             out_qty: r.out_qty,
             in_unit_cost: r.in_unit_cost,
             out_unit_cost: r.out_unit_cost,
-            balance_qty: r.balance_qty,
+            balance_lot_qty: r.balance_lot_qty,
             balance_unit_cost: buc
           }
           products.push(obj);
@@ -1013,6 +1015,58 @@ router.get('/calculate/balanceunitcost', async (req, res, next) => {
     console.log(error);
 
     res.send({ error: error.message })
+  }
+
+});
+
+router.get('/calculate/stockcard/lot', async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.query.warehouseId;
+  try {
+    let generics = await toolModel.adjustStock1(db, warehouseId);
+    for (const g of generics[0]) {
+      let product: any = [];
+      let products = await toolModel.adjustStock2(db, g.generic_id, warehouseId); // รายการทั้งหทก
+      // let genericQty = 0;
+      // for (const p of products[0]) {
+      let productId = await toolModel.adjustStockLot(db, g.generic_id, warehouseId); //product id
+      for (const pd of productId[0]) {
+        const obj: any = {
+          generic_id: g.generic_id,
+          product_id: pd.product_id,
+          balance_lot_qty: 0,
+          lot_no: pd.lot_no
+        }
+        product.push(obj);
+      }
+      for (const pd of products[0]) {
+        const idxG = _.findIndex(product, { generic_id: g.generic_id });
+        if (idxG > -1) {
+          const idx = _.findIndex(product, { product_id: pd.product_id, lot_no: pd.lot_no });
+          if (idx > -1) {
+            product[idx].balance_lot_qty += +pd.in_qty;
+            product[idx].balance_lot_qty -= +pd.out_qty;
+
+          }
+          const obj: any = {
+            stock_card_id: pd.stock_card_id,
+            product_id: pd.product_id,
+            balance_lot_qty: product[idx].balance_lot_qty,
+          }
+
+          if (pd.balance_lot_qty != obj.balance_lot_qty && obj.balance_lot_qty) {
+            await toolModel.adjustStockUpdate(db, obj);
+            console.log(obj);
+          }
+        }
+      }
+    }
+    console.log('success');
+
+    res.send({ ok: true });
+  } catch (error) {
+    db.destroy();
+    res.send({ ok: false, error: error.message })
   }
 
 });

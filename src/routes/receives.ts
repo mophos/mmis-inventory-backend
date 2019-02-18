@@ -940,7 +940,6 @@ router.post('/approve', co(async (req, res, next) => {
         }
 
         const bl = await receiveModel.getBalanceLot(db, v.warehouse_id, v.product_id, v.lot_no, obj.lot_time);
-        console.log(bl[0], bl[0].length);
         balanceLot = bl[0].length == 0 ? qty : bl[0][0].balanceLot;
 
         objS.balance_lot_qty = balanceLot;
@@ -951,6 +950,7 @@ router.post('/approve', co(async (req, res, next) => {
         objS.ref_dst = v.warehouse_id;
         objS.comment = 'รับเข้าคลังจากใบสั่งซื้อ';
         objS.lot_no = v.lot_no;
+        objS.lot_time = lotTime;
         objS.expired_date = expiredDate;
         objS.wm_product_id_in = id;
         data.push(objS);
@@ -963,6 +963,7 @@ router.post('/approve', co(async (req, res, next) => {
           adjust_price.push(obj_adjust);
         }
       }
+      await stockcard.saveFastStockTransaction(db, data);
 
 
 
@@ -975,7 +976,7 @@ router.post('/approve', co(async (req, res, next) => {
       // }
 
       // save stock card receive
-      await stockcard.saveFastStockTransaction(db, data);
+
       // update cost uom
       await receiveModel.adjustCost(db, adjust_price);
 
@@ -1194,32 +1195,20 @@ router.post('/other/approve', co(async (req, res, next) => {
       balances = balances[0];
       for (const v of _rproducts) {
         const idx = _.findIndex(lot_time, { 'product_id': v.product_id, 'lot_no': v.lot_no });
-        if (v.is_free == 'N') {
-          if (idx > -1) {
-            lot_time[idx].lot_time += 1;
-            lotTime = lot_time[idx].lot_time;
-          } else {
-            let lotObj = {
-              product_id: v.product_id,
-              lot_no: v.lot_no,
-              lot_time: +v.lot_time + 1
-            };
-            lotTime = +v.lot_time + 1
-            lot_time.push(lotObj);
-          }
+
+        if (idx > -1) {
+          lot_time[idx].lot_time += 1;
+          lotTime = lot_time[idx].lot_time;
         } else {
-          if (idx > -1) {
-            lotTime = lot_time[idx].lot_time;
-          } else {
-            let lotObj = {
-              product_id: v.product_id,
-              lot_no: v.lot_no,
-              lot_time: +v.lot_time
-            };
-            lotTime = +v.lot_time;
-            lot_time.push(lotObj);
-          }
+          let lotObj = {
+            product_id: v.product_id,
+            lot_no: v.lot_no,
+            lot_time: +v.lot_time + 1
+          };
+          lotTime = +v.lot_time + 1
+          lot_time.push(lotObj);
         }
+
         let id = uuid();
         const idxWM = _.findIndex(products, { 'product_id': v.product_id, 'warehouse_id': v.warehouse_id, 'lot_no': v.lot_no, 'lot_time': lotTime });
         if (v.is_free == 'Y') {
@@ -1274,6 +1263,7 @@ router.post('/other/approve', co(async (req, res, next) => {
 
         let balance = 0;
         let balance_generic = 0;
+        let balanceLot = 0;
         let idxB = _.findIndex(balances, {
           product_id: v.product_id,
           warehouse_id: v.warehouse_id
@@ -1286,6 +1276,10 @@ router.post('/other/approve', co(async (req, res, next) => {
           balances[idxB].balance_generic += qty;
         }
 
+        const bl = await receiveModel.getBalanceLot(db, v.warehouse_id, v.product_id, v.lot_no, obj.lot_time);
+        balanceLot = bl[0].length == 0 ? qty : bl[0][0].balanceLot;
+
+        objS.balance_lot_qty = balanceLot;
         objS.balance_qty = balance;
         objS.balance_generic_qty = balance_generic;
         objS.balance_unit_cost = _cost;
@@ -1293,14 +1287,15 @@ router.post('/other/approve', co(async (req, res, next) => {
         objS.ref_dst = v.warehouse_id;
         objS.comment = 'รับเข้าคลังแบบอื่นๆ';
         objS.lot_no = v.lot_no;
+        objS.lot_time = lotTime;
         objS.expired_date = expiredDate;
         objS.wm_product_id_in = id;
-        data.push(objS);
+        // data.push(objS);
 
         //////////////////////////////////////////
 
         // await receiveModel.saveProducts(db, products);
-        await stockcard.saveFastStockTransaction(db, data);
+        await stockcard.saveFastStockTransaction(db, objS);
       }
 
       res.send({ ok: true });

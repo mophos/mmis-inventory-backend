@@ -285,7 +285,7 @@ export class ProductModel {
     if (warehouseId != 0) {
       sql += ` and p.warehouse_id = ${warehouseId} `
     }
-    sql += `group by p.unit_generic_id,p.lot_no, p.expired_date, p.warehouse_id
+    sql += `group by p.unit_generic_id,p.lot_no,p.lot_time, p.expired_date, p.warehouse_id
     HAVING sum(p.qty) != 0
     order by w.warehouse_name, p.expired_date`
     return knex.raw(sql, [productId]);
@@ -895,10 +895,11 @@ group by mpp.product_id
     return knex.raw(query);
   }
 
-  getBalance(knex: Knex, productId, warehouseId) {
+  getBalance(knex: Knex, productId, warehouseId, lotNo, lotTime) {
     let sql = `SELECT
       wp.product_id,
-      sum(wp.qty) AS balance,
+      sum(wp.qty) AS balance_lot,
+      (select sum(w1.qty) from wm_products w1 where w1.product_id=wp.product_id and w1.warehouse_id = wp.warehouse_id group by w1.product_id) as balance,
       wp.warehouse_id,
       wp.unit_generic_id,
       (SELECT
@@ -927,9 +928,13 @@ group by mpp.product_id
     WHERE
       wp.product_id= '${productId}'
     AND wp.warehouse_id = '${warehouseId}'
+    AND wp.lot_no = '${lotNo}'
+    AND wp.lot_time = '${lotTime}'
     GROUP BY
       wp.product_id,
-      wp.warehouse_id`;
+      wp.warehouse_id,
+      wp.lot_no,
+      wp.lot_time`;
     return knex.raw(sql);
   }
 
@@ -1027,5 +1032,44 @@ group by mpp.product_id
 
     return db.raw(queries);
   }
+  insertStock(knex: Knex, data: any) {
+    let sql = `INSERT INTO wm_products
+    (wm_product_id, warehouse_id, product_id, 
+    qty,cost, price, lot_no, lot_time,location_id,
+    expired_date, 
+    unit_generic_id,people_user_id, created_at)
+    VALUES('${data.wm_product_id}', '${data.warehouse_id}', '${data.product_id}',
+    ${data.qty}, ${data.cost}, ${data.price}, '${data.lot_no}','${data.lot_time}','${data.location_id}',`;
+    if (data.expired_date == null) {
+      sql += `null,`;
+    } else {
+      sql += `'${data.expired_date}',`
+    }
+    sql += `'${data.unit_generic_id}',${data.people_user_id}, '${data.created_at}')`;
+    return knex.raw(sql);
+  }
+  updatePlusStock(knex: Knex, data: any, wmProductId) {
+    let sql = `update wm_products as wp 
+    join (select wm_product_id,(sum(w.qty * w.cost) + (${ data.cost}*${data.qty})) / (sum(w.qty) + ${data.qty}) as cost from wm_products as w
+    where w.wm_product_id= '${wmProductId}') as w on wp.wm_product_id = wp.wm_product_id
+    set wp.qty=wp.qty+${+data.qty},wp.cost = w.cost,wp.price=w.cost
+    where wp.wm_product_id = '${wmProductId}'`;
+    return knex.raw(sql);
+  }
+  updateMinusStock(knex: Knex, data: any, wmProductId) {
+    let sql = `update wm_products as wp 
+    join (select wm_product_id,(sum(w.qty * w.cost) + (${ data.cost}*${data.qty})) / (sum(w.qty) + ${data.qty}) as cost from wm_products as w
+    where w.wm_product_id= '${wmProductId}') as w on wp.wm_product_id = wp.wm_product_id
+    set wp.qty=wp.qty-${+data.qty},wp.cost = w.cost,wp.price=w.cost
+    where wp.wm_product_id = '${wmProductId}'`;
+    return knex.raw(sql);
+  }
 
+  checkProductToSave(knex: Knex, warehouseId, productId, lotNo, lotTime) {
+    return knex('wm_products')
+      .where('warehouse_id', warehouseId)
+      .where('product_id', productId)
+      .where('lot_no', lotNo)
+      .where('lot_time', lotTime)
+  }
 }

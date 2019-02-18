@@ -152,7 +152,7 @@ export class HisTransactionModel {
 
     getProductInWarehouseForImport(db: Knex, warehouseIds: any[], productIds: any[]) {
         return db('wm_products as wp')
-            .select('wp.wm_product_id', 'wp.product_id', 'wp.qty', 'wp.lot_no',
+            .select('wp.wm_product_id', 'wp.product_id', 'wp.qty', 'wp.lot_no', 'wp.lot_time',
                 'wp.expired_date', 'wp.warehouse_id', 'mp.generic_id', 'wp.cost', 'wp.unit_generic_id')
             .leftJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
             .whereIn('wp.product_id', productIds)
@@ -232,11 +232,12 @@ export class HisTransactionModel {
             .where('people_user_id', peopleUserId)
             .del();
     }
-    getHisForStockCard(db: Knex, warehouseId: any, productId: any) {
+    getHisForStockCard(db: Knex, warehouseId: any, productId: any, lotNo, lotTime) {
         let sql = `SELECT
         wp.product_id,
-        sum( qty ) AS balance_qty,
+        sum( qty ) AS balance_lot_qty,
         avg( cost ) AS balance_unit_cost,
+        (select sum(w1.qty) from wm_products w1 where w1.warehouse_id=wp.warehouse_id and w1.product_id=wp.product_id group by w1.product_id) as balance_qty,
         (
         SELECT
             sum( qty ) 
@@ -259,8 +260,41 @@ export class HisTransactionModel {
         WHERE
             wp.product_id = '${productId}' 
             AND wp.warehouse_id = '${warehouseId}' 
+            AND wp.lot_no = '${lotNo}' 
+            AND wp.lot_time = '${lotTime}' 
         GROUP BY
-        wp.product_id`;
+        wp.product_id,
+        wp.lot_no,
+        wp.lot_time`;
+        return db.raw(sql)
+    }
+    getBalance(db: Knex, wmProductId) {
+        let sql = `SELECT
+        wp.product_id,
+        sum( qty ) AS balance_lot_qty,
+        avg( cost ) AS balance_unit_cost,
+        (select sum(w1.qty) from wm_products w1 where w1.warehouse_id=wp.warehouse_id and w1.product_id=wp.product_id group by w1.product_id) as balance_qty,
+        (
+        SELECT
+            sum( qty ) 
+        FROM
+            wm_products wp2 
+        WHERE
+            wp2.product_id IN (
+        SELECT
+            mp3.product_id 
+        FROM
+            mm_products mp3 
+        WHERE
+            mp3.generic_id IN ( SELECT generic_id FROM mm_products mp2 WHERE mp2.product_id = wp.product_id )  and wp2.warehouse_id=wp.warehouse_id
+        GROUP BY
+            warehouse_id 
+            ) 
+            ) AS balance_generic_qty 
+        FROM
+            wm_products wp 
+        WHERE
+            wp.wm_product_id = '${wmProductId}'`;
         return db.raw(sql)
     }
 

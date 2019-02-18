@@ -34,7 +34,7 @@ export class RequisitionOrderModel {
       .where('requisition_order_unpaid_id', requisitionOrderUnPaidId)
   }
 
-  saveStockCard(db: Knex, items: Array<object>) {
+  saveStockCard(db: Knex, items: any) {
     return db('wm_stock_card')
       .insert(items);
   }
@@ -437,7 +437,7 @@ export class RequisitionOrderModel {
       sql += ` and (ro.requisition_code like '${q}' or
       w1.warehouse_name like '${q}') `
     }
-    sql += ` order by ro.requisition_date desc
+    sql += ` order by ro.requisition_order_id desc
     limit ${limit} offset ${offset}`;
 
     return db.raw(sql);
@@ -839,7 +839,7 @@ export class RequisitionOrderModel {
   getConfirmItems(db: Knex, confirmId: any) {
     let sql = `
     select rci.wm_product_id, rci.generic_id, floor(rci.confirm_qty/ug.qty) as confirm_qty,
-    ug.qty as conversion_qty,mp.product_name,mp.working_code,wp.lot_no,wp.expired_date,
+    ug.qty as conversion_qty,mp.product_name,mp.working_code,wp.lot_no,wp.lot_time,wp.expired_date,
     mu.unit_name as to_unit_name,mu2.unit_name as from_unit_name,ug.qty as conversion_qty,
     wp.qty as small_remain_qty,wp.qty/ug.qty as pack_remain_qty,wp.unit_generic_id,wp.cost,
     wp.product_id
@@ -1098,30 +1098,13 @@ export class RequisitionOrderModel {
       wp.product_id,
       wrci.generic_id,
       wp.unit_generic_id,
-      sum(wrci.confirm_qty) as confirm_qty, 
-      sum(wp.cost) as cost,
+      wp.location_id,
+      wrci.confirm_qty, 
+      wp.cost as cost,
       wp.lot_no,
+      wp.lot_time,
+      wp.wm_product_id,
       wp.expired_date,
-      (
-        SELECT
-          sum(qty)
-        FROM
-          wm_products wmp
-        WHERE
-          wmp.product_id = wp.product_id and wmp.warehouse_id=wr.wm_withdraw
-        GROUP BY
-          wmp.product_id
-      ) AS src_balance_qty,
-    (
-        SELECT
-          sum(qty)
-        FROM
-          wm_products wmp
-        WHERE
-          wmp.product_id = wp.product_id and wmp.warehouse_id=wr.wm_requisition
-        GROUP BY
-          wmp.product_id
-      ) AS dst_balance_qty,
       wr.wm_requisition as dst_warehouse,
       wr.wm_withdraw as src_warehouse
     FROM
@@ -1129,8 +1112,7 @@ export class RequisitionOrderModel {
     join wm_requisition_orders wr on wrc.requisition_order_id = wr.requisition_order_id
     JOIN wm_requisition_confirm_items wrci ON wrc.confirm_id = wrci.confirm_id
     JOIN wm_products wp ON wrci.wm_product_id = wp.wm_product_id
-    where wrc.confirm_id='${confirmId}' and wrci.confirm_qty != 0
-    GROUP BY wp.product_id,wp.lot_no`;
+    where wrc.confirm_id='${confirmId}' and wrci.confirm_qty != 0`;
     return knex.raw(sql)
   }
   getBalance(knex: Knex, productId, warehouseId) {
