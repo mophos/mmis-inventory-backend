@@ -439,18 +439,11 @@ export class BorrowModel {
     return knex.raw(query);
   }
 
-  updateConfirm(knex: Knex, data: any[]) {
-    let sql = [];
-    data.forEach(v => {
-      let _sql = `
-      UPDATE wm_borrow_product
-      SET confirm_qty = ${v.updateQty}
-      WHERE wm_product_id = '${v.old_wm_product_id}'
-      `;
-      sql.push(_sql);
-    });
-    let query = sql.join(';');
-    return knex.raw(query);
+  updateConfirm(knex: Knex, data: any) {
+    let sql = `UPDATE wm_borrow_product
+    SET confirm_qty = ${data.qty}
+    WHERE wm_product_id = '${data.wm_product_id}'`;
+    return knex.raw(sql);
   }
 
   getProductForSave(knex: Knex, ids: any[]) {
@@ -480,8 +473,8 @@ export class BorrowModel {
     // .whereRaw('wp.product_id=d.product_id and wp.warehouse_id=t.dst_warehouse_id and wp.lot_no=d.lot_no and wp.expired_date=d.expired_date');
 
     return knex('wm_borrow_product as d')
-      .select('d.borrow_product_id', 'd.borrow_id', 'd.wm_product_id', 'd.qty as lot_qty', 'ug.qty as conversion_qty', 'p.lot_no',
-        'p.expired_date', 'p.cost', 'p.price', 'p.product_id',
+      .select('d.borrow_product_id', 'd.wm_product_id', 'ug.qty as conversion_qty', 'p.lot_no',
+        'p.expired_date', 'p.cost', 'p.price', 'p.product_id', 'p.lot_time', 'd.qty as lot_qty',
         'mp.generic_id', 't.*', 'tg.*', subBalanceSrc, subBalanceDst, 'p.unit_generic_id')
       .innerJoin('wm_borrow as t', 't.borrow_id', 'd.borrow_id')
       .joinRaw('join wm_borrow_generic as tg on tg.borrow_id = d.borrow_id and tg.borrow_generic_id = d.borrow_generic_id')
