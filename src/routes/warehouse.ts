@@ -4,7 +4,6 @@ import * as express from 'express';
 import * as moment from 'moment';
 import * as _ from 'lodash';
 
-let _Promise = require('bluebird');
 import * as wrap from 'co-express';
 
 import { WarehouseModel } from '../models/warehouse';
