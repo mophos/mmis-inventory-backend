@@ -444,84 +444,85 @@ router.post('/returned/approved', co(async (req, res, next) => {
   let db = req.db;
   let returnedIds = req.body.returnedIds;
   let peopleUserId = req.decoded.people_user_id;
-
+  // let warehouseId = req.decoded.warehouseId;
   try {
     let _rproducts = await borrowModel.getReturnedProductsImport(db, returnedIds);
 
-    let products: any = [];
-    _rproducts.forEach((v: any) => {
-      // let id = moment().add(10, 'ms').format('x');
+    let lot_time = [];
+    let lotTime = 0;
+    for (const v of _rproducts) {
+      // =================================== CAL LOT TIME ========================
+      const idx = _.findIndex(lot_time, { 'product_id': v.product_id, 'lot_no': v.lot_no, 'warehouse_id': v.warehouse_id });
+      if (idx > -1) {
+        lot_time[idx].lot_time += 1;
+        lotTime = lot_time[idx].lot_time;
+      } else {
+        let lotObj = {
+          product_id: v.product_id,
+          lot_no: v.lot_no,
+          lot_time: +v.lot_time + 1,
+          warehouse_id: v.warehouse_id
+        };
+        lotTime = +v.lot_time + 1
+        lot_time.push(lotObj);
+      }
+      // =================================== PRODUCT IN ========================
       let id = uuid();
-
-      let obj: any = {
+      let qty = (v.returned_qty * v.conversion_qty);
+      let cost = (v.cost * v.returned_qty) / qty;
+      let expiredDate = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date, 'YYYY-MM-DD').format('YYYY-MM-DD') : null;
+      let objIn: any = {
         wm_product_id: id,
         warehouse_id: v.warehouse_id,
         product_id: v.product_id,
         generic_id: v.generic_id,
-        returned_code: v.returned_code,
-        returned_id: v.returned_id,
-        balance: v.balance,
-        qty: (v.returned_qty * v.conversion_qty),
-        price: (v.cost * v.returned_qty) / (v.returned_qty * v.conversion_qty),
-        cost: (v.cost * v.returned_qty) / (v.returned_qty * v.conversion_qty),
+        qty: qty,
+        price: cost,
+        cost: cost,
         lot_no: v.lot_no,
-        expired_date: moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date, 'YYYY-MM-DD').format('YYYY-MM-DD') : null,
+        lot_time: lotTime,
+        expired_date: expiredDate,
         unit_generic_id: v.unit_generic_id,
         location_id: +v.location_id,
         people_user_id: req.decoded.people_user_id,
         created_at: moment().format('YYYY-MM-DD HH:mm:ss')
       };
-      // add product
-      products.push(obj);
-    });
-
-    //   // get balance
-    let warehouseId = req.decoded.warehouseId;
-    let balances = await borrowModel.getProductRemainByReturnedIds(db, returnedIds, warehouseId);
-
-    balances = balances[0];
-
-    // save stockcard
-    let data = [];
-
-    products.forEach(v => {
-      let obj: any = {};
-      // obj.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-      obj.product_id = v.product_id;
-      obj.generic_id = v.generic_id;
-      obj.unit_generic_id = v.unit_generic_id;
-      obj.transaction_type = TransactionType.RETURNED;
-      obj.document_ref_id = v.returned_id;
-      obj.document_ref = v.returned_code;
-      obj.in_qty = v.qty;
-      obj.in_unit_cost = v.cost;
-
-      let balance = 0;
-      let balance_generic = 0;
-      let idx = _.findIndex(balances, {
-        product_id: v.product_id,
-        warehouse_id: v.warehouse_id
-      });
-
-      if (idx > -1) {
-        balance = balances[idx].balance + v.qty;
-        balance_generic = balances[idx].balance_generic + v.qty;
-        balances[idx].balance += v.qty;
-        balances[idx].balance_generic += v.qty;
+      let wmProductIdIn;
+      const checkDst = await productModel.checkProductToSave(db, v.warehouse_id, v.product_id, v.lot_no, v.lot_time);
+      if (checkDst.length) {
+        wmProductIdIn = checkDst[0].wm_product_id;
+        await productModel.updatePlusStock(db, objIn, checkDst[0].wm_product_id)
+      } else {
+        wmProductIdIn = objIn.wm_product_id;
+        await productModel.insertStock(db, objIn)
       }
 
-      obj.balance_qty = balance;
-      obj.balance_generic_qty = balance_generic;
-      obj.balance_unit_cost = v.cost;
-      obj.ref_src = v.donator_id;
-      obj.ref_dst = v.warehouse_id;
-      obj.comment = 'คืน';
-      obj.lot_no = v.lot_no;
-      obj.expired_date = v.expired_date;
-      data.push(obj);
-    });
+      // =================================== STOCK IN ========================
+      let remain_dst = await productModel.getBalance(db, v.product_id, v.dst_warehouse_id, v.lot_no, v.lot_time);
+      remain_dst = remain_dst[0]
+      let stockIn: any = {};
+      stockIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+      stockIn.product_id = v.product_id;
+      stockIn.generic_id = v.generic_id;
+      stockIn.unit_generic_id = v.unit_generic_id;
+      stockIn.transaction_type = TransactionType.RETURNED;
+      stockIn.document_ref_id = v.returned_id;
+      stockIn.document_ref = v.returned_code;
+      stockIn.in_qty = qty;
+      stockIn.in_unit_cost = cost;
+      stockIn.balance_lot_qty = remain_dst[0].balance_lot;
+      stockIn.balance_qty = remain_dst[0].balance;
+      stockIn.balance_generic_qty = remain_dst[0].balance_generic;
+      stockIn.balance_unit_cost = v.cost;
+      stockIn.ref_src = v.donator_id;
+      stockIn.ref_dst = v.warehouse_id;
+      stockIn.comment = 'คืน';
+      stockIn.lot_no = v.lot_no;
+      stockIn.lot_time = lotTime;
+      stockIn.expired_date = expiredDate;
+      await stockCard.saveFastStockTransaction(db, stockIn);
+    }
 
-    await stockCard.saveFastStockTransaction(db, data);
     let rs = await borrowModel.getBorrowDetail(db, returnedIds);
     for (const v of rs) {
       if (v.borrow_id) {
@@ -532,7 +533,7 @@ router.post('/returned/approved', co(async (req, res, next) => {
     }
 
     await borrowModel.changeApproveStatusReturned(db, returnedIds, peopleUserId);
-    await borrowModel.saveProducts(db, products);
+    // await borrowModel.saveProducts(db, products);
 
     res.send({ ok: true });
 

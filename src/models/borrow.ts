@@ -817,10 +817,6 @@ export class BorrowModel {
   }
 
   getReturnedProductsImport(knex: Knex, returnedIds: any) {
-    let subBalance = knex('wm_products as wp')
-      .sum('wp.qty')
-      .as('balance')
-      .whereRaw('wp.product_id=rd.product_id and wp.lot_no=rd.lot_no and wp.expired_date=rd.expired_date');
 
     return knex('wm_returned_detail as rd')
       .select(
@@ -828,7 +824,7 @@ export class BorrowModel {
         'rd.lot_no', 'rd.expired_date', knex.raw('sum(rd.returned_qty) as returned_qty'),
         'rd.cost', 'rd.unit_generic_id',
         'rt.warehouse_id', 'rd.location_id',
-        'ug.qty as conversion_qty', 'mp.generic_id', 'rt.returned_code', subBalance)
+        'ug.qty as conversion_qty', 'mp.generic_id', 'rt.returned_code')
       .whereIn('rd.returned_id', returnedIds)
       .innerJoin('wm_returned as rt', 'rt.returned_id', 'rd.returned_id')
       .innerJoin('mm_products as mp', 'mp.product_id', 'rd.product_id')
