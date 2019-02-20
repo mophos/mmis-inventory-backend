@@ -2891,22 +2891,21 @@ router.post('/adjust-stock/', async (req, res, next) => {
         }
         const adjustGenericId = await adjustStockModel.saveGeneric(db, generic);
         for (const p of d.products) {
-          const product = {
-            adjust_generic_id: adjustGenericId,
-            wm_product_id: p.wm_product_id,
-            old_qty: p.old_qty,
-            new_qty: p.qty || 0
-          }
-          await adjustStockModel.saveProduct(db, product);
-          await adjustStockModel.updateQty(db, p.wm_product_id, p.qty);
-          const balanceGeneric = await adjustStockModel.getBalanceGeneric(db, d.generic_id, warehouseId);
-          const balanceProduct = await adjustStockModel.getBalanceProduct(db, p.product_id, warehouseId);
-          let data = {};
           if (p.qty > 0 || p.old_qty != p.qty) {
+            const product = {
+              adjust_generic_id: adjustGenericId,
+              wm_product_id: p.wm_product_id,
+              old_qty: p.old_qty,
+              new_qty: +p.qty || 0
+            }
+            await adjustStockModel.saveProduct(db, product);
+            await adjustStockModel.updateQty(db, p.wm_product_id, p.qty);
+            let balance = await productModel.getBalance(db, p.product_id, warehouseId, p.lot_no, p.lot_time);
+            balance = balance[0];
             if (p.old_qty > p.qty) {
               // ปรับยอดลดลง
               const adjQty = p.old_qty - p.qty;
-              data = {
+              const data = {
                 stock_date: moment().format('YYYY-MM-DD HH:mm:ss'),
                 product_id: p.product_id,
                 generic_id: d.generic_id,
@@ -2917,19 +2916,23 @@ router.post('/adjust-stock/', async (req, res, next) => {
                 in_unit_cost: 0,
                 out_qty: adjQty,
                 out_unit_cost: p.cost,
-                balance_generic_qty: balanceGeneric[0].qty,
-                balance_qty: balanceProduct[0].qty,
+                balance_generic_qty: balance[0].balance_generic,
+                balance_qty: balance[0].balance,
+                balance_lot_qty: balance[0].balance_lot,
                 balance_unit_cost: p.cost || 0,
                 ref_src: warehouseId,
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
+                lot_time: p.lot_time,
                 unit_generic_id: p.unit_generic_id,
+                wm_product_id_out: p.wm_product_id,
                 expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null
               }
+              await adjustStockModel.saveStockCard(db, data);
             } else {
               // ปรับยอดเพิ่มขึ้น
               const adjQty = p.qty - p.old_qty;
-              data = {
+              const data = {
                 stock_date: moment().format('YYYY-MM-DD HH:mm:ss'),
                 product_id: p.product_id,
                 generic_id: d.generic_id,
@@ -2940,17 +2943,20 @@ router.post('/adjust-stock/', async (req, res, next) => {
                 in_unit_cost: p.cost,
                 out_qty: 0,
                 out_unit_cost: 0,
-                balance_generic_qty: balanceGeneric[0].qty,
-                balance_qty: balanceProduct[0].qty,
+                balance_generic_qty: balance[0].balance_generic,
+                balance_qty: balance[0].balance,
+                balance_lot_qty: balance[0].balance_lot,
                 balance_unit_cost: p.cost,
                 ref_src: warehouseId,
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
+                lot_time: p.lot_time,
                 unit_generic_id: p.unit_generic_id,
-                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null
+                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null,
+                wm_product_id_in: p.wm_product_id
               }
+              await adjustStockModel.saveStockCard(db, data);
             }
-            await adjustStockModel.saveStockCard(db, data);
           }
         }
       }
