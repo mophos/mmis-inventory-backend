@@ -401,18 +401,11 @@ export class BorrowModel {
     return knex.raw(query);
   }
 
-  updateConfirm(knex: Knex, data: any[]) {
-    let sql = [];
-    data.forEach(v => {
-      let _sql = `
-      UPDATE wm_borrow_product
-      SET confirm_qty = ${v.updateQty}
-      WHERE wm_product_id = '${v.old_wm_product_id}'
-      `;
-      sql.push(_sql);
-    });
-    let query = sql.join(';');
-    return knex.raw(query);
+  updateConfirm(knex: Knex, data: any) {
+    let sql = `UPDATE wm_borrow_product
+    SET confirm_qty = ${data.qty}
+    WHERE wm_product_id = '${data.wm_product_id}'`;
+    return knex.raw(sql);
   }
 
   getProductForSave(knex: Knex, ids: any[]) {

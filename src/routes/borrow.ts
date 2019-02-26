@@ -628,15 +628,9 @@ router.get('/product-warehouse-lots/:productId/:warehouseId', co(async (req, res
 const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUserId: any) => {
   let results = await borrowModel.getProductListIds(db, borrowIds);
 
-  let dstProducts = [];
-  let srcProducts = [];
-  let balances = [];
   for (let v of results) {
     if (+v.lot_qty != 0) {
       let id = uuid();
-
-      // let rsLots: any = await borrowModel.getLotbalance(db, v.src_warehouse_id, v.product_id, v.lot_no);
-      // let rsProducts: any = await borrowModel.getProductbalance(db, v.src_warehouse_id, v.product_id, v.lot_no)
 
       // =================================== WM_PRODUCTS PLUS ========================
       let objIn: any = {};
@@ -710,7 +704,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       stockIn.lot_no = v.lot_no;
       stockIn.lot_time = v.lot_time;
       stockIn.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;;
-      stockIn.comment = 'รับโอน';
+      stockIn.comment = 'ยืม';
       stockIn.wm_product_id_in = wmProductIdIn;
 
       // =================================== STOCK CARD OUT ========================
@@ -735,7 +729,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       stockOut.lot_no = v.lot_no;
       stockOut.lot_time = v.lot_time;
       stockOut.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;;
-      stockOut.comment = 'รับโอน';
+      stockOut.comment = 'ให้ยืม';
       stockOut.wm_product_id_out = wmProductIdOut;
       await stockCard.saveFastStockTransaction(db, stockOut);
       await stockCard.saveFastStockTransaction(db, stockIn);
