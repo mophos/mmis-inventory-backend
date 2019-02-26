@@ -176,6 +176,7 @@ router.post('/', async (req, res, next) => {
                 balance_generic_qty: balance[0].balance_generic,
                 balance_qty: balance[0].balance,
                 balance_lot_qty: balance[0].balance_lot,
+                balance_unit_cost: p.cost,
                 ref_src: warehouseId,
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
