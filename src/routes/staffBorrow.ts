@@ -328,20 +328,8 @@ router.post('/save', co(async (req, res, next) => {
           create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
           create_by: req.decoded.people_user_id
         }
-        let rsBorrowGeneric = await borrowModel.saveBorrowGeneric(db, generics);
+        await borrowModel.saveBorrowGeneric(db, generics);
 
-        let products = [];
-        g.products.forEach(p => {
-          products.push({
-            borrow_id: borrowId,
-            borrow_generic_id: rsBorrowGeneric[0],
-            wm_product_id: p.wm_product_id,
-            qty: (p.product_qty * p.conversion_qty),
-            create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-            create_by: req.decoded.people_user_id
-          });
-        });
-        await borrowModel.saveBorrowProduct(db, products);
       }
       res.send({ ok: true });
 

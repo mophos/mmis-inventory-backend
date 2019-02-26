@@ -195,13 +195,60 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
   try {
     const rsGenerics = await borrowModel.getGenericInfo(db, borrowId, srcWarehouseId);
     let _generics = rsGenerics[0];
-    for (const g of _generics) {
-      const rsProducts = await borrowModel.getProductsInfo(db, borrowId, g.borrow_generic_id);
-      let _products = rsProducts[0];
-      g.products = _products;
-      // g.transfer_qty = _.sumBy(_products, function (e: any) {
-      //   return e.product_qty * e.conversion_qty;
-      // });
+    let allocate = [];
+    let rsProducts: any = [];
+    for (const d of _generics) {
+      rsProducts = await borrowModel.getGenericQty(db, d.generic_id, srcWarehouseId);
+      let idx: number = 0;
+      if (rsProducts[0].length) {
+        for (const p of rsProducts[0]) {
+          if (d.generic_id === p.generic_id) {
+            const remainQty = p.small_remain_qty;
+            let qty = d.borrow_qty;
+            if (qty > remainQty) {
+              qty = remainQty
+            }
+            p.small_remain_qty -= qty;
+            d.borrow_qty -= qty;
+            const obj = {
+              wm_product_id: p.wm_product_id,
+              product_name: p.product_name,
+              product_qty: qty / p.conversion_qty,
+              small_product_qty: qty,
+              pack_remain_qty: p.pack_remain_qty,
+              small_remain_qty: remainQty,
+              lot_no: p.lot_no,
+              lot_time: p.lot_time,
+              expired_date: p.expired_date,
+              from_unit_name: p.from_unit_name,
+              conversion_qty: p.conversion_qty,
+              to_unit_name: p.to_unit_name
+            }
+            if (qty > 0) {
+              allocate.push(obj);
+              idx++;
+            }
+            else if (d.borrow_qty <= 0) {
+              allocate.push({
+                wm_product_id: p.wm_product_id,
+                product_name: p.product_name,
+                product_qty: 0,
+                small_product_qty: qty,
+                pack_remain_qty: p.pack_remain_qty,
+                small_remain_qty: p.small_remain_qty,
+                lot_no: p.lot_no,
+                lot_time: p.lot_time,
+                expired_date: p.expired_date,
+                from_unit_name: p.from_unit_name,
+                conversion_qty: p.conversion_qty,
+                to_unit_name: p.to_unit_name
+              });
+              idx++;
+            }
+          }
+        }
+      }
+      d.products = allocate;
     }
     res.send({ ok: true, rows: _generics });
   } catch (error) {
