@@ -1687,7 +1687,7 @@ FROM
         where 
         wro.requisition_type_id in (${reqTypeId})
         and wrci.confirm_qty > 0 
-        and wro.requisition_date BETWEEN '${startDate}'
+        and wrc.approve_date BETWEEN '${startDate}'
         AND '${endDate}'`
         if (warehouseId !== '0') {
             sql += ` and wro.wm_withdraw = ${warehouseId}`
