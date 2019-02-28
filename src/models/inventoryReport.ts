@@ -2284,7 +2284,9 @@ OR sc.ref_src like ?
     }
 
     checkReceive(knex: Knex, receiveID) {
-        let sql = `SELECT wr.receive_id,
+        let sql = `SELECT 
+        v.bgtype_name,
+        wr.receive_id,
         wr.receive_code,
         wr.receive_date,
         waa.approve_date,
@@ -2326,6 +2328,7 @@ OR sc.ref_src like ?
         LEFT JOIN wm_receive_types wrt ON wrt.receive_type_id=wr.receive_type_id
         LEFT JOIN pc_purchasing_order ppo ON ppo.purchase_order_id=wr.purchase_order_id
         LEFT JOIN mm_generic_types mgt ON ppo.generic_type_id = mgt.generic_type_id
+        LEFT JOIN view_budget_subtype v ON v.bgtype_id = ppo.budgettype_id
         WHERE wr.receive_id in (${receiveID})
         GROUP BY wr.receive_id,ppo.purchase_order_id`
         return (knex.raw(sql))

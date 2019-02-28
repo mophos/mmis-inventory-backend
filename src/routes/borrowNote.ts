@@ -276,4 +276,19 @@ router.put('/update-requisition/:requisitionOrderId', async (req, res, next) => 
 
 });
 
+router.get('/remain/:warehouseId', async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.params.warehouseId;
+
+  try {
+    let rs: any = await borrowModel.getRemainQty(db, warehouseId);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+});
+
 export default router;
