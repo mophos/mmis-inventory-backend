@@ -183,16 +183,6 @@ export class BorrowNoteModel {
       });
   }
 
-  getRemainQty(db: Knex, warehouseId: any) {
-    return db('wm_products as wp')
-      .select('mg.generic_name', 'mp.product_name', 'mg.generic_id')
-      .sum('wp.qty as remain_qty')
-      .join('mm_products as mp', 'mp.product_id', 'wp.product_id')
-      .join('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
-      .where('wp.warehouse_id', warehouseId)
-      .groupBy('mp.generic_id')
-  }
-
   // approveRequisitionQtyForBorrowNote(db: Knex, borrowNoteDetailId: any) {
   //   return db('wm_borrow_note_detail')
   //     .where('borrow_note_detail_id', borrowNoteDetailId)
