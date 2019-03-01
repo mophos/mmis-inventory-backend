@@ -280,10 +280,7 @@ router.post('/', co(async (req, res, next) => {
             let rsSummary = await receiveModel.saveReceiveSummary(db, data);
 
             products.forEach((v: any) => {
-              // const _receiveQty = +v.receive_qty * +v.conversion_qty;
               let pdata: any = {
-                // receive_detail_id: moment().add(1, 'ms').format('x'),
-                // conversion_qty: +v.conversion_qty,
                 receive_id: rsSummary[0],
                 product_id: v.product_id,
                 receive_qty: +v.receive_qty,
@@ -311,10 +308,6 @@ router.post('/', co(async (req, res, next) => {
             res.send({ ok: true });
           }
         }
-
-        // if (summary.purchaseId) {
-        //   await receiveModel.savePurchaseStatus(db, receiveId, summary.purchaseId);
-        // }
 
       }
     } catch (error) {
@@ -845,7 +838,7 @@ router.post('/approve', co(async (req, res, next) => {
       let balances = await receiveModel.getProductRemainByReceiveIds(db, receiveIds, warehouseId);
       balances = balances[0];
       for (const v of _rproducts) {
-        const idx = _.findIndex(lot_time, { 'product_id': v.product_id, 'lot_no': v.lot_no });
+        const idx = _.findIndex(lot_time, { 'product_id': v.product_id, 'lot_no': v.lot_no, 'warehouse_id': v.warehouse_id });
         if (v.is_free == 'N') {
           if (idx > -1) {
             lot_time[idx].lot_time += 1;
@@ -854,7 +847,8 @@ router.post('/approve', co(async (req, res, next) => {
             let lotObj = {
               product_id: v.product_id,
               lot_no: v.lot_no,
-              lot_time: +v.lot_time + 1
+              lot_time: +v.lot_time + 1,
+              warehouse_id: v.warehouse_id
             };
             lotTime = +v.lot_time + 1
             lot_time.push(lotObj);
@@ -866,7 +860,8 @@ router.post('/approve', co(async (req, res, next) => {
             let lotObj = {
               product_id: v.product_id,
               lot_no: v.lot_no,
-              lot_time: +v.lot_time
+              lot_time: +v.lot_time,
+              warehouse_id: v.warehouse_id
             };
             lotTime = +v.lot_time;
             lot_time.push(lotObj);

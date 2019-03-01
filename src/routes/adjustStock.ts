@@ -2,6 +2,7 @@
 
 import * as express from 'express';
 import { AdjustStockModel } from '../models/adjustStock';
+import { ProductModel } from '../models/product';
 import { SerialModel } from '../models/serial';
 const router = express.Router();
 var moment = require('moment-timezone');
@@ -10,6 +11,7 @@ import * as crypto from 'crypto';
 
 const adjustStockModel = new AdjustStockModel();
 const serialModel = new SerialModel();
+const productModel = new ProductModel();
 
 
 router.get('/list', async (req, res, next) => {
@@ -119,19 +121,17 @@ router.post('/', async (req, res, next) => {
         const adjustGenericId = await adjustStockModel.saveGeneric(db, generic);
 
         for (const p of d.products) {
-          const product = {
-            adjust_generic_id: adjustGenericId,
-            wm_product_id: p.wm_product_id,
-            old_qty: p.old_qty,
-            new_qty: +p.qty || 0
-          }
-          await adjustStockModel.saveProduct(db, product);
-          await adjustStockModel.updateQty(db, p.wm_product_id, p.qty);
-          const balanceGeneric = await adjustStockModel.getBalanceGeneric(db, warehouseId, d.generic_id);
-          const balanceProduct = await adjustStockModel.getBalanceProduct(db, warehouseId, p.product_id);
-          const balanceLot = await adjustStockModel.getBalanceLot(db, warehouseId, p.product_id, p.lot_no, p.lot_time);
-          // let data = {};
           if (p.qty > 0 || p.old_qty != p.qty) {
+            const product = {
+              adjust_generic_id: adjustGenericId,
+              wm_product_id: p.wm_product_id,
+              old_qty: p.old_qty,
+              new_qty: +p.qty || 0
+            }
+            await adjustStockModel.saveProduct(db, product);
+            await adjustStockModel.updateQty(db, p.wm_product_id, p.qty);
+            let balance = await productModel.getBalance(db, p.product_id, warehouseId, p.lot_no, p.lot_time);
+            balance = balance[0];
             if (p.old_qty > p.qty) {
               //     // ปรับยอดลดลง
               const adjQty = p.old_qty - p.qty;
@@ -146,9 +146,9 @@ router.post('/', async (req, res, next) => {
                 in_unit_cost: 0,
                 out_qty: adjQty,
                 out_unit_cost: p.cost,
-                balance_generic_qty: balanceGeneric[0].qty,
-                balance_qty: balanceProduct[0].qty,
-                balance_lot_qty: balanceLot[0].qty,
+                balance_generic_qty: balance[0].balance_generic,
+                balance_qty: balance[0].balance,
+                balance_lot_qty: balance[0].balance_lot,
                 balance_unit_cost: p.cost,
                 ref_src: warehouseId,
                 comment: 'ปรับยอด',
@@ -173,8 +173,9 @@ router.post('/', async (req, res, next) => {
                 in_unit_cost: p.cost,
                 out_qty: 0,
                 out_unit_cost: 0,
-                balance_generic_qty: balanceGeneric[0].qty,
-                balance_qty: balanceProduct[0].qty,
+                balance_generic_qty: balance[0].balance_generic,
+                balance_qty: balance[0].balance,
+                balance_lot_qty: balance[0].balance_lot,
                 balance_unit_cost: p.cost,
                 ref_src: warehouseId,
                 comment: 'ปรับยอด',
@@ -184,11 +185,7 @@ router.post('/', async (req, res, next) => {
                 expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null,
                 wm_product_id_in: p.wm_product_id
               }
-              console.log('data', data);
-
-              const r = await adjustStockModel.saveStockCard(db, data);
-              console.log('r', r);
-
+              await adjustStockModel.saveStockCard(db, data);
             }
           }
         }

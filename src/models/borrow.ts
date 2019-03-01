@@ -439,18 +439,11 @@ export class BorrowModel {
     return knex.raw(query);
   }
 
-  updateConfirm(knex: Knex, data: any[]) {
-    let sql = [];
-    data.forEach(v => {
-      let _sql = `
-      UPDATE wm_borrow_product
-      SET confirm_qty = ${v.updateQty}
-      WHERE wm_product_id = '${v.old_wm_product_id}'
-      `;
-      sql.push(_sql);
-    });
-    let query = sql.join(';');
-    return knex.raw(query);
+  updateConfirm(knex: Knex, data: any) {
+    let sql = `UPDATE wm_borrow_product
+    SET confirm_qty = ${data.qty}
+    WHERE wm_product_id = '${data.wm_product_id}'`;
+    return knex.raw(sql);
   }
 
   getProductForSave(knex: Knex, ids: any[]) {
@@ -480,8 +473,8 @@ export class BorrowModel {
     // .whereRaw('wp.product_id=d.product_id and wp.warehouse_id=t.dst_warehouse_id and wp.lot_no=d.lot_no and wp.expired_date=d.expired_date');
 
     return knex('wm_borrow_product as d')
-      .select('d.borrow_product_id', 'd.borrow_id', 'd.wm_product_id', 'd.qty as lot_qty', 'ug.qty as conversion_qty', 'p.lot_no',
-        'p.expired_date', 'p.cost', 'p.price', 'p.product_id',
+      .select('d.borrow_product_id', 'd.wm_product_id', 'ug.qty as conversion_qty', 'p.lot_no',
+        'p.expired_date', 'p.cost', 'p.price', 'p.product_id', 'p.lot_time', 'd.qty as lot_qty',
         'mp.generic_id', 't.*', 'tg.*', subBalanceSrc, subBalanceDst, 'p.unit_generic_id')
       .innerJoin('wm_borrow as t', 't.borrow_id', 'd.borrow_id')
       .joinRaw('join wm_borrow_generic as tg on tg.borrow_id = d.borrow_id and tg.borrow_generic_id = d.borrow_generic_id')
@@ -643,7 +636,11 @@ export class BorrowModel {
 
   getGenericInfo(knex: Knex, borrowId: any, srcWarehouseId: any) {
     let sql = `
-    select b.*
+    select 
+    b.borrow_generic_id
+    , b.borrow_id
+    , mg.generic_id
+    , b.qty as borrow_qty_old
     , b.qty as borrow_qty
     , ug.qty as conversion_qty
     , mg.working_code, mg.generic_name
@@ -661,6 +658,35 @@ export class BorrowModel {
     where b.borrow_id = ?
     `;
     return knex.raw(sql, [borrowId]);
+  }
+
+  getGenericQty(knex: Knex, genericId: any, warehouseId: any) {
+    return knex.raw(`SELECT
+      wp.wm_product_id,
+      mp.generic_id,
+      mp.product_name,
+      FLOOR(wp.qty/ mug.qty) as pack_remain_qty,
+      wp.qty AS small_remain_qty,
+      wp.lot_no,
+      wp.lot_time,
+      wp.expired_date,
+      mp.product_name,
+      fu.unit_name AS from_unit_name,
+      mug.qty AS conversion_qty,
+      tu.unit_name AS to_unit_name 
+    FROM
+      wm_products AS wp
+      INNER JOIN mm_products AS mp ON mp.product_id = wp.product_id
+      INNER JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wp.unit_generic_id
+      INNER JOIN mm_units AS fu ON fu.unit_id = mug.from_unit_id
+      INNER JOIN mm_units AS tu ON tu.unit_id = mug.to_unit_id
+      INNER JOIN view_product_reserve AS vr ON vr.wm_product_id = wp.wm_product_id
+    WHERE
+      wp.warehouse_id = ${warehouseId}
+      AND mp.generic_id = ${genericId}
+      AND vr.remain_qty > 0
+    ORDER BY
+      wp.qty DESC`)
   }
 
   getProductRemainByBorrowIds(knex: Knex, productId: any, warehouseId: any) {
@@ -824,10 +850,6 @@ export class BorrowModel {
   }
 
   getReturnedProductsImport(knex: Knex, returnedIds: any) {
-    let subBalance = knex('wm_products as wp')
-      .sum('wp.qty')
-      .as('balance')
-      .whereRaw('wp.product_id=rd.product_id and wp.lot_no=rd.lot_no and wp.expired_date=rd.expired_date');
 
     return knex('wm_returned_detail as rd')
       .select(
@@ -835,7 +857,7 @@ export class BorrowModel {
         'rd.lot_no', 'rd.expired_date', knex.raw('sum(rd.returned_qty) as returned_qty'),
         'rd.cost', 'rd.unit_generic_id',
         'rt.warehouse_id', 'rd.location_id',
-        'ug.qty as conversion_qty', 'mp.generic_id', 'rt.returned_code', subBalance)
+        'ug.qty as conversion_qty', 'mp.generic_id', 'rt.returned_code')
       .whereIn('rd.returned_id', returnedIds)
       .innerJoin('wm_returned as rt', 'rt.returned_id', 'rd.returned_id')
       .innerJoin('mm_products as mp', 'mp.product_id', 'rd.product_id')

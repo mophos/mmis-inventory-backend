@@ -1,6 +1,5 @@
 import Knex = require('knex');
 import * as moment from 'moment';
-import { all } from 'bluebird';
 
 export class ToolModel {
 
@@ -484,7 +483,7 @@ export class ToolModel {
 
   insertProductInStockcard(knex: Knex, warehouseId: any) {
     return knex.raw(`
-    INSERT INTO wm_stock_card ( product_id, generic_id, unit_generic_id, transaction_type, in_qty, in_unit_cost, balance_generic_qty, balance_qty, balance_unit_cost, ref_src, COMMENT, lot_no )
+    INSERT INTO wm_stock_card ( product_id, generic_id, unit_generic_id, transaction_type, in_qty, in_unit_cost, balance_generic_qty, balance_qty, balance_unit_cost, ref_src, COMMENT, lot_no, lot_time, expired_date, wm_product_id_in )
     SELECT
       wp.product_id,
       mp.generic_id,
@@ -497,7 +496,10 @@ export class ToolModel {
       wp.cost,
       wp.warehouse_id,
       'ยอดยกมา',
-      wp.lot_no 
+      wp.lot_no,
+      wp.lot_time,
+      wp.expired_date,
+      wp.wm_product_id
       FROM
         wm_products wp
         JOIN mm_products mp ON mp.product_id = wp.product_id 

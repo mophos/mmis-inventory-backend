@@ -437,7 +437,7 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
       const checkSrc = await productModel.checkProductToSave(db, v.src_warehouse_id, v.product_id, v.lot_no, v.lot_time);
       if (checkSrc.length) {
         wmProductIdOut = checkSrc[0].wm_product_id;
-        await productModel.updatePlusStock(db, objIn, checkSrc[0].wm_product_id)
+        await productModel.updateMinusStock(db, objIn, checkSrc[0].wm_product_id)
       } else {
         wmProductIdOut = objIn.wm_product_id;
         await productModel.insertStock(db, objIn)

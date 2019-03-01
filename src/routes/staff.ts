@@ -550,146 +550,6 @@ router.post('/counting/cycle/save-remark', co(async (req, res, next) => {
   }
 }));
 
-// transfer
-const transferApprove = (async (db: Knex, transferIds: any[], peopleUserId: any) => {
-  let results = await transferModel.getProductListIds(db, transferIds);
-  let dstProducts = [];
-  let srcProducts = [];
-  let srcWarehouseId = null;
-  let balances = [];
-  for (let v of results) {
-    if (+v.product_qty != 0) {
-      let obj: any = {};
-      let id = uuid();
-
-      obj.wm_product_id = id;
-      obj.dst_warehouse_id = v.dst_warehouse_id;
-      obj.src_warehouse_id = v.src_warehouse_id;
-      obj.current_balance_dst = v.balance_dst;
-      obj.current_balance_src = v.balance_src;
-      obj.product_id = v.product_id;
-      obj.generic_id = v.generic_id;
-      obj.unit_generic_id = v.unit_generic_id;
-      obj.transfer_code = v.transfer_code;
-      obj.transfer_id = v.transfer_id;
-      obj.qty = +v.product_qty;
-      obj.price = v.price;
-      obj.cost = v.cost;
-      obj.lot_no = v.lot_no;
-      obj.lot_time = v.lot_time;
-      obj.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
-      obj.location_id = v.location_id;
-      obj.people_user_id = v.people_user_id;
-      obj.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
-      dstProducts.push(obj);
-
-      // get balance 
-      let obj_remaint_dst: any = {}
-      let obj_remain_src: any = {}
-      let remain_dst = await transferModel.getProductRemainByTransferIds(db, v.product_id, v.dst_warehouse_id, v.lot_no, v.lot_time);
-      remain_dst = remain_dst[0];
-      obj_remaint_dst.product_id = v.product_id;
-      obj_remaint_dst.warehouse_id = v.warehouse_id;
-      obj_remaint_dst.balance_lot = remain_dst.length > 0 ? remain_dst[0].balance_lot : 0;
-      obj_remaint_dst.balance = remain_dst.length > 0 ? remain_dst[0].balance : 0;
-      obj_remaint_dst.balance_generic = remain_dst.length > 0 ? remain_dst[0].balance_generic : 0;
-
-      let remain_src = await transferModel.getProductRemainByTransferIds(db, v.product_id, v.src_warehouse_id, v.lot_no, v.lot_time);
-      remain_src = remain_src[0];
-      obj_remain_src.product_id = v.product_id;
-      obj_remain_src.warehouse_id = v.warehouse_id;
-      obj_remain_src.balance_lot = remain_src.length > 0 ? remain_src[0].balance_lot : 0;
-      obj_remain_src.balance = remain_src.length > 0 ? remain_src[0].balance : 0;
-      obj_remain_src.balance_generic = remain_src.length > 0 ? remain_src[0].balance_generic : 0;
-
-      balances.push(obj_remaint_dst);
-      balances.push(obj_remain_src);
-
-    }
-  }
-
-  srcProducts = _.clone(dstProducts);
-
-  // =================================== TRANSFER IN ========================
-  let data = [];
-
-  dstProducts.forEach(v => {
-    if (v.qty != 0) {
-      let objIn: any = {};
-      objIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-      objIn.product_id = v.product_id;
-      objIn.generic_id = v.generic_id;
-      objIn.unit_generic_id = v.unit_generic_id;
-      objIn.transaction_type = TransactionType.TRANSFER_IN;
-      objIn.document_ref_id = v.transfer_id;
-      objIn.document_ref = v.transfer_code;
-      objIn.in_qty = v.qty;
-      objIn.in_unit_cost = v.cost;
-      let dstBalance = 0;
-      let dstBalanceGeneric = 0;
-      let dstIdx = _.findIndex(balances, {
-        product_id: v.product_id,
-        warehouse_id: v.dst_warehouse_id,
-      });
-      if (dstIdx > -1) {
-        dstBalance = balances[dstIdx].balance + v.qty;
-        balances[dstIdx].balance += v.qty;
-        dstBalanceGeneric = balances[dstIdx].balance_generic + v.qty;
-        balances[dstIdx].balance_generic += v.qty;
-      }
-      objIn.balance_qty = dstBalance;
-      objIn.balance_generic_qty = dstBalanceGeneric;
-      objIn.balance_unit_cost = v.cost;
-      objIn.ref_src = v.src_warehouse_id;
-      objIn.ref_dst = v.dst_warehouse_id;
-      objIn.lot_no = v.lot_no;
-      objIn.expired_date = v.expired_date;
-      objIn.comment = 'รับโอน';
-      data.push(objIn);
-    }
-  });
-
-  srcProducts.forEach(v => {
-    if (v.qty != 0) {
-      let objOut: any = {};
-      objOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-      objOut.product_id = v.product_id;
-      objOut.generic_id = v.generic_id;
-      objOut.unit_generic_id = v.unit_generic_id;
-      objOut.transaction_type = TransactionType.TRANSFER_OUT;
-      objOut.document_ref = v.transfer_code;
-      objOut.document_ref_id = v.transfer_id;
-      objOut.out_qty = v.qty;
-      objOut.out_unit_cost = v.cost;
-      let srcBalance = 0;
-      let srcBalanceGeneric = 0;
-      let srcIdx = _.findIndex(balances, {
-        product_id: v.product_id,
-        warehouse_id: v.src_warehouse_id,
-      });
-      if (srcIdx > -1) {
-        srcBalance = balances[srcIdx].balance - v.qty;
-        balances[srcIdx].balance -= v.qty;
-        srcBalanceGeneric = balances[srcIdx].balance_generic - v.qty;
-        balances[srcIdx].balance_generic -= v.qty;
-      }
-      objOut.balance_qty = srcBalance;
-      objOut.balance_unit_cost = v.cost;
-      objOut.ref_src = v.src_warehouse_id;
-      objOut.ref_dst = v.dst_warehouse_id;
-      objOut.balance_generic_qty = srcBalanceGeneric;
-      objOut.comment = 'โอน';
-      objOut.lot_no = v.lot_no;
-      objOut.expired_date = v.expired_date;
-      data.push(objOut);
-    }
-  });
-  await stockCardModel.saveFastStockTransaction(db, data);
-  await transferModel.saveDstProducts(db, dstProducts);
-  await transferModel.decreaseQty(db, dstProducts);
-  await transferModel.changeApproveStatusIds(db, transferIds, peopleUserId);
-});
-
 router.get('/transfer/all/:warehouseId', co(async (req, res, next) => {
   let db = req.db;
   let warehouseId = req.params.warehouseId;
@@ -828,7 +688,7 @@ router.post('/transfer/save', co(async (req, res, next) => {
 
         if (approveAuto) {
           await transferModel.changeConfirmStatusIds(db, transferId, peopleUserId);
-          await transferApprove(db, transferId, peopleUserId);
+          await transferApprove(db, transferId, warehouseId, peopleUserId);
         }
 
         res.send({ ok: true });
@@ -989,6 +849,7 @@ router.post('/transfer/approve', co(async (req, res, next) => {
 
   let db = req.db;
   let transferIds = req.body.transferIds;
+  let warehouseId = req.decoded.warehouseId;
   let peopleUserId = req.decoded.people_user_id;
 
   try {
@@ -1001,7 +862,7 @@ router.post('/transfer/approve', co(async (req, res, next) => {
     }
     if (isValid) {
       await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
-      await transferApprove(db, transferIds, peopleUserId);
+      await transferApprove(db, transferIds, warehouseId, peopleUserId);
       res.send({ ok: true });
     } else {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะบางรายการมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
@@ -1013,6 +874,119 @@ router.post('/transfer/approve', co(async (req, res, next) => {
   }
 
 }));
+
+const transferApprove = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUserId: any) => {
+  let results = await transferModel.getProductListIds(db, transferIds);
+  for (let v of results) {
+    if (+v.product_qty != 0) {
+      let objIn: any = {};
+      let objOut: any = {};
+      let id = uuid();
+
+      // =================================== TRANSFER IN ========================
+      objIn.wm_product_id = id;
+      objIn.warehouse_id = v.dst_warehouse_id;
+      objIn.product_id = v.product_id;
+      objIn.qty = +v.product_qty;
+      objIn.cost = v.cost;
+      objIn.price = v.cost;
+      objIn.lot_no = v.lot_no;
+      objIn.lot_time = v.lot_time;
+      objIn.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
+      objIn.unit_generic_id = v.unit_generic_id;
+      objIn.location_id = v.location_id;
+      objIn.people_user_id = v.people_user_id;
+      objIn.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
+
+      let wmProductIdIn;
+      const checkDst = await productModel.checkProductToSave(db, v.dst_warehouse_id, v.product_id, v.lot_no, v.lot_time);
+      if (checkDst.length) {
+        wmProductIdIn = checkDst[0].wm_product_id;
+        await productModel.updatePlusStock(db, objIn, checkDst[0].wm_product_id)
+      } else {
+        wmProductIdIn = objIn.wm_product_id;
+        await productModel.insertStock(db, objIn)
+      }
+      // =================================== TRANSFER OUT ========================
+      objOut.wm_product_id = id;
+      objOut.warehouse_id = v.src_warehouse_id;
+      objOut.product_id = v.product_id;
+      objOut.qty = +v.product_qty;
+      objOut.cost = v.cost;
+      objOut.price = v.cost;
+      objOut.lot_no = v.lot_no;
+      objOut.lot_time = v.lot_time;
+      objOut.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
+      objOut.unit_generic_id = v.unit_generic_id;
+      objOut.location_id = v.location_id;
+      objOut.people_user_id = v.people_user_id;
+      objOut.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
+
+      let wmProductIdOut;
+      const checkSrc = await productModel.checkProductToSave(db, v.src_warehouse_id, v.product_id, v.lot_no, v.lot_time);
+      if (checkSrc.length) {
+        wmProductIdOut = checkSrc[0].wm_product_id;
+        await productModel.updateMinusStock(db, objIn, checkSrc[0].wm_product_id)
+      } else {
+        wmProductIdOut = objIn.wm_product_id;
+        await productModel.insertStock(db, objIn)
+      }
+      // =================================== STOCK IN ========================
+      let remain_dst = await productModel.getBalance(db, v.product_id, v.dst_warehouse_id, v.lot_no, v.lot_time);
+      remain_dst = remain_dst[0]
+      let stockIn: any = {};
+      stockIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+      stockIn.product_id = v.product_id;
+      stockIn.generic_id = v.generic_id;
+      stockIn.unit_generic_id = v.unit_generic_id;
+      stockIn.transaction_type = TransactionType.TRANSFER_IN;
+      stockIn.document_ref_id = v.transfer_id;
+      stockIn.document_ref = v.transfer_code;
+      stockIn.in_qty = v.product_qty;
+      stockIn.in_unit_cost = v.cost;
+      stockIn.balance_lot_qty = remain_dst[0].balance_lot;
+      stockIn.balance_qty = remain_dst[0].balance;
+      stockIn.balance_generic_qty = remain_dst[0].balance_generic;
+      stockIn.balance_unit_cost = v.cost;
+      stockIn.ref_src = v.src_warehouse_id;
+      stockIn.ref_dst = v.dst_warehouse_id;
+      stockIn.lot_no = v.lot_no;
+      stockIn.lot_time = v.lot_time;
+      stockIn.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;;
+      stockIn.comment = 'รับโอน';
+      stockIn.wm_product_id_in = wmProductIdIn;
+
+      // =================================== STOCK OUT ========================
+      let remain_src = await productModel.getBalance(db, v.product_id, v.src_warehouse_id, v.lot_no, v.lot_time);
+      remain_src = remain_src[0]
+      let stockOut: any = {};
+      stockOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+      stockOut.product_id = v.product_id;
+      stockOut.generic_id = v.generic_id;
+      stockOut.unit_generic_id = v.unit_generic_id;
+      stockOut.transaction_type = TransactionType.TRANSFER_OUT;
+      stockOut.document_ref_id = v.transfer_id;
+      stockOut.document_ref = v.transfer_code;
+      stockOut.out_qty = v.product_qty;
+      stockOut.out_unit_cost = v.cost;
+      stockOut.balance_lot_qty = remain_src[0].balance_lot;
+      stockOut.balance_qty = remain_src[0].balance;
+      stockOut.balance_generic_qty = remain_src[0].balance_generic;
+      stockOut.balance_unit_cost = v.cost;
+      stockOut.ref_src = v.src_warehouse_id;
+      stockOut.ref_dst = v.dst_warehouse_id;
+      stockOut.lot_no = v.lot_no;
+      stockOut.lot_time = v.lot_time;
+      stockOut.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;;
+      stockOut.comment = 'โอน';
+      stockOut.wm_product_id_out = wmProductIdOut;
+      await stockCardModel.saveFastStockTransaction(db, stockOut);
+      await stockCardModel.saveFastStockTransaction(db, stockIn);
+
+    }
+  }
+  await transferModel.changeApproveStatusIds(db, transferIds, peopleUserId);
+});
 
 router.post('/transfer/confirm', co(async (req, res, next) => {
 
@@ -2891,22 +2865,21 @@ router.post('/adjust-stock/', async (req, res, next) => {
         }
         const adjustGenericId = await adjustStockModel.saveGeneric(db, generic);
         for (const p of d.products) {
-          const product = {
-            adjust_generic_id: adjustGenericId,
-            wm_product_id: p.wm_product_id,
-            old_qty: p.old_qty,
-            new_qty: p.qty || 0
-          }
-          await adjustStockModel.saveProduct(db, product);
-          await adjustStockModel.updateQty(db, p.wm_product_id, p.qty);
-          const balanceGeneric = await adjustStockModel.getBalanceGeneric(db, d.generic_id, warehouseId);
-          const balanceProduct = await adjustStockModel.getBalanceProduct(db, p.product_id, warehouseId);
-          let data = {};
           if (p.qty > 0 || p.old_qty != p.qty) {
+            const product = {
+              adjust_generic_id: adjustGenericId,
+              wm_product_id: p.wm_product_id,
+              old_qty: p.old_qty,
+              new_qty: +p.qty || 0
+            }
+            await adjustStockModel.saveProduct(db, product);
+            await adjustStockModel.updateQty(db, p.wm_product_id, p.qty);
+            let balance = await productModel.getBalance(db, p.product_id, warehouseId, p.lot_no, p.lot_time);
+            balance = balance[0];
             if (p.old_qty > p.qty) {
               // ปรับยอดลดลง
               const adjQty = p.old_qty - p.qty;
-              data = {
+              const data = {
                 stock_date: moment().format('YYYY-MM-DD HH:mm:ss'),
                 product_id: p.product_id,
                 generic_id: d.generic_id,
@@ -2917,19 +2890,23 @@ router.post('/adjust-stock/', async (req, res, next) => {
                 in_unit_cost: 0,
                 out_qty: adjQty,
                 out_unit_cost: p.cost,
-                balance_generic_qty: balanceGeneric[0].qty,
-                balance_qty: balanceProduct[0].qty,
+                balance_generic_qty: balance[0].balance_generic,
+                balance_qty: balance[0].balance,
+                balance_lot_qty: balance[0].balance_lot,
                 balance_unit_cost: p.cost || 0,
                 ref_src: warehouseId,
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
+                lot_time: p.lot_time,
                 unit_generic_id: p.unit_generic_id,
+                wm_product_id_out: p.wm_product_id,
                 expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null
               }
+              await adjustStockModel.saveStockCard(db, data);
             } else {
               // ปรับยอดเพิ่มขึ้น
               const adjQty = p.qty - p.old_qty;
-              data = {
+              const data = {
                 stock_date: moment().format('YYYY-MM-DD HH:mm:ss'),
                 product_id: p.product_id,
                 generic_id: d.generic_id,
@@ -2940,17 +2917,20 @@ router.post('/adjust-stock/', async (req, res, next) => {
                 in_unit_cost: p.cost,
                 out_qty: 0,
                 out_unit_cost: 0,
-                balance_generic_qty: balanceGeneric[0].qty,
-                balance_qty: balanceProduct[0].qty,
+                balance_generic_qty: balance[0].balance_generic,
+                balance_qty: balance[0].balance,
+                balance_lot_qty: balance[0].balance_lot,
                 balance_unit_cost: p.cost,
                 ref_src: warehouseId,
                 comment: 'ปรับยอด',
                 lot_no: p.lot_no,
+                lot_time: p.lot_time,
                 unit_generic_id: p.unit_generic_id,
-                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null
+                expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null,
+                wm_product_id_in: p.wm_product_id
               }
+              await adjustStockModel.saveStockCard(db, data);
             }
-            await adjustStockModel.saveStockCard(db, data);
           }
         }
       }

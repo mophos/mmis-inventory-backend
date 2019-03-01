@@ -847,10 +847,12 @@ export class WarehouseModel {
     from mm_shipping_networks as sn
     left join wm_warehouses as dst on dst.warehouse_id=sn.destination_warehouse_id
     where sn.source_warehouse_id = '${warehouseId}'
-    and dst.is_actived='Y' and sn.transfer_type in ('TRN','IST')
+    and dst.is_actived='Y' and sn.transfer_type in ('REQ','TRN')
     group by sn.destination_warehouse_id
     order by dst.short_code
     `;
+    console.log(sql, 'dfasdlfhaow;irhghwrkfhaskdjhfakjshdkh');
+    
     return knex.raw(sql);
   }
 

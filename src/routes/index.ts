@@ -1431,8 +1431,9 @@ router.get('/report/issueStraff', wrap(async (req, res, next) => {
     let ListDetail: any = await inventoryReportModel.getProductList(db, i.issue_id);
 
     for (let i of ListDetail[0]) {
+      let cost = i.qty * i.cost;
       i.qty = inventoryReportModel.comma(i.qty);
-      i.cost = inventoryReportModel.comma(i.qty * i.cost);
+      i.cost = inventoryReportModel.comma(cost);
     }
 
     issueListDetail.push(ListDetail[0]);
