@@ -92,9 +92,14 @@ html
                   td.center(style="border-bottom:1px dashed black;width:25%;")
                   td.left (ผู้เบิก)
                 td
-                td.right ลงชื่อ
-                td.center(style="border-bottom:1px dashed black;width:25%;")
-                td.left (ผู้จ่าย)    
+                if(c[0].full_namec) 
+                  td.right ลงชื่อ
+                  td.center(style="border-bottom:1px dashed black;width:25%;" ) #{c[0].full_namec}
+                  td.left (ผู้จ่าย)
+                else
+                  td.right ลงชื่อ
+                  td.center(style="border-bottom:1px dashed black;width:25%;")
+                  td.left (ผู้จ่าย)    
               tr
                 td(colspan='7') &nbsp;
               tr
