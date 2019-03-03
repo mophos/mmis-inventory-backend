@@ -35,6 +35,25 @@ export class ToolModel {
     return db.raw(sql);
   }
 
+  searchBorrows(db: Knex, query: any) {
+    let _query = `%${query}%`;
+    let sql = `SELECT
+      ro.borrow_id,
+      ro.borrow_date,
+      ro.approved_date AS confirm_date,
+      ro.borrow_code,
+      w.warehouse_name 
+    FROM
+      wm_borrow ro
+      JOIN wm_warehouses w ON ro.src_warehouse_id = w.warehouse_id 
+    WHERE
+      ro.approved = 'Y' 
+      AND ro.mark_deleted = 'N' 
+      AND ro.borrow_code LIKE '${_query}'`;
+      console.log(sql)
+    return db.raw(sql);
+  }
+
   searchTranfers(db: Knex, query: any) {
     let _query = `%${query}%`;
     let sql = `SELECT
