@@ -38,6 +38,23 @@ router.post('/stockcard/requisitions/search', async (req, res, next) => {
   }
 });
 
+router.post('/stockcard/borrows/search', async (req, res, next) => {
+  let db = req.db;
+  let query = req.body.query;
+
+  try {
+    let rs: any = await toolModel.searchBorrows(db, query);
+    console.log(rs);
+    
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
 router.post('/stockcard/tranfers/search', async (req, res, next) => {
   let db = req.db;
   let query = req.body.query;

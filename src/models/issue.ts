@@ -269,7 +269,7 @@ export class IssueModel {
   }
   _getissuesTemplate(knex: Knex, id: string) {
     return knex('wm_issue_template as wis')
-      .where('wis.warehouse_id', id)
+      // .where('wis.warehouse_id', id)
   }
   getIssues(knex: Knex, id: string) {
     let sql = `SELECT
