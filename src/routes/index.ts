@@ -501,6 +501,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
           value.sPage = page;
           value.nPage = approve_requis[i].length;
           value.full_name = signature[0].signature === 'N' ? '' : value.full_name
+          value.full_namec = signature[0].signature === 'N' ? '' : value.full_namec
           value.total_cost = inventoryReportModel.comma(value.unit_cost * value.confirm_qty);
           value.approve_date = moment(value.approve_date).format('D MMMM ') + (moment(value.approve_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
@@ -628,6 +629,7 @@ router.get('/report/approve/requis2', wrap(async (req, res, next) => {
           value.sPage = page;
           value.nPage = approve_requis[i].length;
           value.full_name = signature[0].signature === 'N' ? '' : value.full_name
+          value.full_namec = signature[0].signature === 'N' ? '' : value.full_namec
           value.total_cost = inventoryReportModel.comma(value.unit_cost * value.confirm_qty);
           value.approve_date = moment(value.approve_date).format('D MMMM ') + (moment(value.approve_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
@@ -686,6 +688,7 @@ router.get('/report/staff/approve/requis', wrap(async (req, res, next) => {
           value.sPage = page;
           value.nPage = approve_requis[i].length;
           value.full_name = signature[0].signature === 'N' ? '' : value.full_name
+          value.full_namec = signature[0].signature === 'N' ? '' : value.full_namec
           value.total_cost = inventoryReportModel.comma(value.total_cost);
           value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
