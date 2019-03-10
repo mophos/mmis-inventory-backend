@@ -3216,7 +3216,7 @@ OR sc.ref_src like ?
         LEFT JOIN l_bid_type AS lb ON lb.bid_id = mg.purchasing_method 
     WHERE
         ws.transaction_type = 'REV'
-        AND ws.stock_date BETWEEN '${startdate} 23:59:59' 
+        AND ws.stock_date BETWEEN '${startdate} 00:00:00' 
         AND '${enddate} 23:59:59' 
         AND mg.generic_type_id IN ( ${genericTypeId} ) 
     ORDER BY
