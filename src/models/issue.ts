@@ -271,6 +271,10 @@ export class IssueModel {
     return knex('wm_issue_template as wis')
       // .where('wis.warehouse_id', id)
   }
+  _getissuesTemplateStaff(knex: Knex, id: string) {
+    return knex('wm_issue_template as wis')
+      .where('wis.warehouse_id', id)
+  }
   getIssues(knex: Knex, id: string) {
     let sql = `SELECT
     wis.issue_code,

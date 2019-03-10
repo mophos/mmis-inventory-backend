@@ -3838,7 +3838,7 @@ router.get('/issue/_getissuestemplate/:warehouseId', co(async (req, res, next) =
   let warehouseId = req.decoded.warehouseId;
 
   try {
-    let rows = await issueModel._getissuesTemplate(db, warehouseId);
+    let rows = await issueModel._getissuesTemplateStaff(db, warehouseId);
     res.send({ ok: true, rows: rows });
   } catch (error) {
     res.send({ ok: false, error: error.message });
