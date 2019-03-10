@@ -312,7 +312,7 @@ export class ProductModel {
     return knex.raw(sql);
   }
 
-  adminSearchAllProductsLabeler(knex: Knex, query: any, labelerId: any) {
+  adminSearchAllProductsLabeler(knex: Knex, query: any, labelerId: any, genericTypeId: any) {
     let q_ = `${query}%`;
     let _q_ = `%${query}%`;
     let sql = `
@@ -347,6 +347,7 @@ export class ProductModel {
     AND mp.is_active = 'Y'
     AND mp.mark_deleted = 'N'
     AND l.labeler_id = '${labelerId}'
+    AND mg.generic_type_id IN (${genericTypeId})
     UNION ALL
     SELECT * from (
     SELECT
@@ -379,6 +380,7 @@ export class ProductModel {
     AND mp.is_active = 'Y'
     AND mp.mark_deleted = 'N'
     AND l.labeler_id = '${labelerId}'
+    AND mg.generic_type_id IN (${genericTypeId})
     ORDER BY
       mp.product_name ASC
     LIMIT 5) as a
@@ -416,13 +418,14 @@ export class ProductModel {
     AND mp.is_active = 'Y'
     AND mp.mark_deleted = 'N'
     AND l.labeler_id = '${labelerId}'
+    AND mg.generic_type_id IN (${genericTypeId})
     ORDER BY
       mp.product_name ASC
     LIMIT 10) as a) as s`;
     return knex.raw(sql);
   }
 
-  adminSearchAllProducts(knex: Knex, query: any) {
+  adminSearchAllProducts(knex: Knex, query: any, genericTypeId: any) {
     let q_ = `${query}%`;
     let _q_ = `%${query}%`;
     let sql = `
@@ -456,6 +459,7 @@ export class ProductModel {
       )
     AND mp.is_active = 'Y'
     AND mp.mark_deleted = 'N'
+    AND mg.generic_type_id IN (${genericTypeId})
     UNION ALL
     SELECT * from (
     SELECT
@@ -487,6 +491,7 @@ export class ProductModel {
       )
     AND mp.is_active = 'Y'
     AND mp.mark_deleted = 'N'
+    AND mg.generic_type_id IN (${genericTypeId})
     ORDER BY
       mp.product_name ASC
     LIMIT 5) as a
@@ -524,6 +529,7 @@ export class ProductModel {
       )
     AND mp.is_active = 'Y'
     AND mp.mark_deleted = 'N'
+    AND mg.generic_type_id IN (${genericTypeId})
     ORDER BY
       mp.product_name ASC
     LIMIT 10) as a) as s`;

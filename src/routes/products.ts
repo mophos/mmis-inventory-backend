@@ -56,13 +56,15 @@ router.get('/search-autocomplete', async (req, res, next) => {
   let db = req.db;
   const query = req.query.q;
   const labelerId = req.query.labelerId;
+  let genericTypes = req.decoded.generic_type_id;
+  console.log('asdfkalsdhfluawlighaildhf', genericTypes);
 
   try {
     let rs: any;
     if (labelerId) {
-      rs = await productModel.adminSearchAllProductsLabeler(db, query, labelerId);
+      rs = await productModel.adminSearchAllProductsLabeler(db, query, labelerId, genericTypes);
     } else {
-      rs = await productModel.adminSearchAllProducts(db, query);
+      rs = await productModel.adminSearchAllProducts(db, query, genericTypes);
     }
 
     if (rs[0].length) {

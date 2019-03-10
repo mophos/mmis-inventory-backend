@@ -824,7 +824,7 @@ WHERE
 
   // receive with purchase
 
-  getPurchaseList(knex: Knex, limit: number, offset: number, sort: any = {}, genericTypeId = []) {
+  getPurchaseList(knex: Knex, limit: number, offset: number, sort: any = {}, genericTypeId = [], warehouseId : any) {
     let sql = `
     select pc.purchase_order_book_number, pc.purchase_order_id,
       IF(pc.purchase_order_book_number is null, pc.purchase_order_number, pc.purchase_order_book_number) as purchase_order_number,
@@ -865,6 +865,7 @@ WHERE
     left join l_bid_process as cmp on cmp.id = pc.purchase_method_id
     left join cm_contracts as cm on cm.contract_id = pc.contract_id
     where pc.purchase_order_status = 'APPROVED'
+    and pc.warehouse_id = ${warehouseId}
     and pc.purchase_order_status != 'COMPLETED'
     and pc.is_cancel != 'Y'
     and pc.purchase_order_id in (select poi.purchase_order_id from pc_purchasing_order_item poi join mm_generics mg on mg.generic_id = poi.generic_id where mg.generic_type_id in (${genericTypeId}) group by poi.purchase_order_id)
@@ -982,7 +983,7 @@ WHERE
 
   }
 
-  getPurchaseListSearch(knex: Knex, limit: number, offset: number, query, sort: any = {}) {
+  getPurchaseListSearch(knex: Knex, limit: number, offset: number, query, sort: any = {},warehouseId:any) {
     let _query = `%${query}%`;
     let sql = `
     select pc.purchase_order_book_number, pc.purchase_order_id, pc.purchase_order_number,
@@ -1023,6 +1024,7 @@ WHERE
     left join l_bid_process as cmp on cmp.id = pc.purchase_method_id
     where pc.purchase_order_status = 'APPROVED'
     and pc.purchase_order_status != 'COMPLETED'
+    and pc.warehouse_id = ${warehouseId}
     and pc.is_cancel != 'Y'
     and(
       pc.purchase_order_book_number LIKE '${_query}'
@@ -1070,7 +1072,7 @@ WHERE
     return knex.raw(sql);
 
   }
-  getPurchaseListTotal(knex: Knex, genericTypeId = []) {
+  getPurchaseListTotal(knex: Knex, genericTypeId = [],warehouseId:any) {
 
     let sql = `
     select count(*) as total
@@ -1080,6 +1082,7 @@ WHERE
     where pc.purchase_order_status = 'APPROVED'
     and pc.purchase_order_status != 'COMPLETED'
     and pc.is_cancel != 'Y'
+    and pc.warehouse_id = ${warehouseId}
     and pc.purchase_order_id in (select poi.purchase_order_id from pc_purchasing_order_item poi join mm_generics mg on mg.generic_id = poi.generic_id where mg.generic_type_id in (${genericTypeId}) group by poi.purchase_order_id)
 
       `;
@@ -1087,7 +1090,7 @@ WHERE
     return knex.raw(sql, []);
 
   }
-  getPurchaseListTotalSearch(knex: Knex, query) {
+  getPurchaseListTotalSearch(knex: Knex, query,warehouseId:any) {
     let _query = `%${query}%`;
     let sql = `
     select count(*) as total
@@ -1096,6 +1099,7 @@ WHERE
     left join l_bid_process as cmp on cmp.id = pc.purchase_method_id
     where pc.purchase_order_status = 'APPROVED'
     and pc.purchase_order_status != 'COMPLETED'
+    and pc.warehouse_id = ${warehouseId}
     and pc.is_cancel != 'Y'
     and(
       pc.purchase_order_book_number LIKE '${_query}'
