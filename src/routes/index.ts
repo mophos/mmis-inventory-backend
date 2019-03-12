@@ -484,6 +484,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
+    let all_cost: any = 0;
     for (let i in requisId) {
       const _approve_requis = await inventoryReportModel.approve_requis2(db, requisId[i]);
       approve_requis.push(_approve_requis[0])
@@ -491,6 +492,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
       let page = 0;
       for (const values of approve_requis[i]) {
         sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
+        all_cost += _.sumBy(values, 'total_cost')
         page++;
         for (const value of values) {
           if (dateApprove === 'Y' && value.approve_date) {
@@ -501,6 +503,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
           value.sPage = page;
           value.nPage = approve_requis[i].length;
           value.full_name = signature[0].signature === 'N' ? '' : value.full_name
+          value.full_namec = signature[0].signature === 'N' ? '' : value.full_namec
           value.total_cost = inventoryReportModel.comma(value.unit_cost * value.confirm_qty);
           value.approve_date = moment(value.approve_date).format('D MMMM ') + (moment(value.approve_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
@@ -518,7 +521,9 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
         // })
       }
     }
+    all_cost = inventoryReportModel.comma(all_cost);
     res.render('approve_requis', {
+      all_cost: all_cost,
       hospitalName: hospitalName,
       approve_requis: approve_requis,
       sum: sum
@@ -628,6 +633,7 @@ router.get('/report/approve/requis2', wrap(async (req, res, next) => {
           value.sPage = page;
           value.nPage = approve_requis[i].length;
           value.full_name = signature[0].signature === 'N' ? '' : value.full_name
+          value.full_namec = signature[0].signature === 'N' ? '' : value.full_namec
           value.total_cost = inventoryReportModel.comma(value.unit_cost * value.confirm_qty);
           value.approve_date = moment(value.approve_date).format('D MMMM ') + (moment(value.approve_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
@@ -686,6 +692,7 @@ router.get('/report/staff/approve/requis', wrap(async (req, res, next) => {
           value.sPage = page;
           value.nPage = approve_requis[i].length;
           value.full_name = signature[0].signature === 'N' ? '' : value.full_name
+          value.full_namec = signature[0].signature === 'N' ? '' : value.full_namec
           value.total_cost = inventoryReportModel.comma(value.total_cost);
           value.confirm_date = moment(value.confirm_date).format('D MMMM ') + (moment(value.confirm_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
@@ -1427,11 +1434,13 @@ router.get('/report/issueStraff', wrap(async (req, res, next) => {
 
     let ListDetail: any = await inventoryReportModel.getProductList(db, i.issue_id);
 
+    let sum = 0
     for (let i of ListDetail[0]) {
-      i.qty = inventoryReportModel.comma(i.qty);
+      sum += i.qty * i.cost;
       i.cost = inventoryReportModel.comma(i.qty * i.cost);
+      i.qty = inventoryReportModel.comma(i.qty);
     }
-
+    i.sum = inventoryReportModel.comma(sum);
     issueListDetail.push(ListDetail[0]);
   }
 

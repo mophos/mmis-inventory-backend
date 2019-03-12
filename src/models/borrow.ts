@@ -579,7 +579,7 @@ export class BorrowModel {
   getProductsInfo(knex: Knex, borrowId: any, borrowGenericId: any) {
     let sql = `SELECT
     bp.*,
-    CEIL(bp.qty / ug.qty) as product_qty,
+    CEIL(bp.qty/ ug.qty) as product_qty,
     FLOOR(wp.qty/ ug.qty) as pack_remain_qty,
     wp.qty AS small_remain_qty,
     wp.lot_no,
@@ -651,9 +651,38 @@ export class BorrowModel {
       from view_product_reserve pr
       group by pr.warehouse_id, pr.generic_id
     ) sg on sg.generic_id = b.generic_id and sg.warehouse_id = ${srcWarehouseId}
-    where b.borrow_id = ?
+    where b.borrow_id = ${borrowId}
     `;
-    return knex.raw(sql, [borrowId]);
+    return knex.raw(sql);
+  }
+
+  getGenericQty(knex: Knex, genericId: any, warehouseId: any) {
+    return knex.raw(`SELECT
+      wp.wm_product_id,
+      mp.generic_id,
+      mp.product_name,
+      FLOOR(wp.qty/ mug.qty) as pack_remain_qty,
+      wp.qty AS small_remain_qty,
+      wp.lot_no,
+      wp.lot_time,
+      wp.expired_date,
+      mp.product_name,
+      fu.unit_name AS from_unit_name,
+      mug.qty AS conversion_qty,
+      tu.unit_name AS to_unit_name 
+    FROM
+      wm_products AS wp
+      INNER JOIN mm_products AS mp ON mp.product_id = wp.product_id
+      INNER JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wp.unit_generic_id
+      INNER JOIN mm_units AS fu ON fu.unit_id = mug.from_unit_id
+      INNER JOIN mm_units AS tu ON tu.unit_id = mug.to_unit_id
+      INNER JOIN view_product_reserve AS vr ON vr.wm_product_id = wp.wm_product_id
+    WHERE
+      wp.warehouse_id = ${warehouseId}
+      AND mp.generic_id = ${genericId}
+      AND vr.remain_qty > 0
+    ORDER BY
+      wp.qty DESC`)
   }
 
   getProductRemainByBorrowIds(knex: Knex, productId: any, warehouseId: any) {

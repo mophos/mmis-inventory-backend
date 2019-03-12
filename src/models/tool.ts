@@ -35,6 +35,25 @@ export class ToolModel {
     return db.raw(sql);
   }
 
+  searchBorrows(db: Knex, query: any) {
+    let _query = `%${query}%`;
+    let sql = `SELECT
+      ro.borrow_id,
+      ro.borrow_date,
+      ro.approved_date AS confirm_date,
+      ro.borrow_code,
+      w.warehouse_name 
+    FROM
+      wm_borrow ro
+      JOIN wm_warehouses w ON ro.src_warehouse_id = w.warehouse_id 
+    WHERE
+      ro.approved = 'Y' 
+      AND ro.mark_deleted = 'N' 
+      AND ro.borrow_code LIKE '${_query}'`;
+      console.log(sql)
+    return db.raw(sql);
+  }
+
   searchTranfers(db: Knex, query: any) {
     let _query = `%${query}%`;
     let sql = `SELECT
@@ -483,7 +502,7 @@ export class ToolModel {
 
   insertProductInStockcard(knex: Knex, warehouseId: any) {
     return knex.raw(`
-    INSERT INTO wm_stock_card ( product_id, generic_id, unit_generic_id, transaction_type, in_qty, in_unit_cost, balance_generic_qty, balance_qty, balance_unit_cost, ref_src, COMMENT, lot_no )
+    INSERT INTO wm_stock_card ( product_id, generic_id, unit_generic_id, transaction_type, in_qty, in_unit_cost, balance_generic_qty, balance_qty, balance_unit_cost, ref_src, COMMENT, lot_no, lot_time, expired_date, wm_product_id_in )
     SELECT
       wp.product_id,
       mp.generic_id,
@@ -496,7 +515,10 @@ export class ToolModel {
       wp.cost,
       wp.warehouse_id,
       'ยอดยกมา',
-      wp.lot_no 
+      wp.lot_no,
+      wp.lot_time,
+      wp.expired_date,
+      wp.wm_product_id
       FROM
         wm_products wp
         JOIN mm_products mp ON mp.product_id = wp.product_id 

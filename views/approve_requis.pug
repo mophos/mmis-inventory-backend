@@ -74,6 +74,9 @@ html
               td(colspan='9' height='10px;')
             tr
               td.right(colspan='9') รวมทั้งหมด #{s} รายการ | คิดเป็นมูลค่า #{sum[l]} บาท
+            if(c[0].sPage === c[0].nPage)
+              tr
+                td.right(colspan='9') รวมมูลค่า #{all_cost} บาท
             tr 
               td(colspan='9') &nbsp; 
             tr 
@@ -86,7 +89,6 @@ html
                   td.right ลงชื่อ
                   td.center(style="border-bottom:1px dashed black;width:25%;" ) #{c[0].full_name}
                   td.left (ผู้เบิก)
-                  
                 else
                   td.right ลงชื่อ
                   td.center(style="border-bottom:1px dashed black;width:25%;")
@@ -96,7 +98,6 @@ html
                   td.right ลงชื่อ
                   td.center(style="border-bottom:1px dashed black;width:25%;" ) #{c[0].full_namec}
                   td.left (ผู้จ่าย)
-                  
                 else
                   td.right ลงชื่อ
                   td.center(style="border-bottom:1px dashed black;width:25%;")

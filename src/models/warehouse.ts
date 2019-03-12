@@ -528,7 +528,7 @@ export class WarehouseModel {
       .where('wp.is_actived', 'Y')
       .where('mp.mark_deleted', 'N')
       .where('g.mark_deleted', 'N')
-      .where('g.minmax_group_id',groupId)
+      .where('g.minmax_group_id', groupId)
       .where(w => {
         w.where('mp.product_name', 'like', _query)
           .orWhere('g.generic_name', 'like', _query)
@@ -794,6 +794,10 @@ export class WarehouseModel {
       `;
     return knex.raw(sql, [templateId]);
   }
+  getTemplateDetail(knex: Knex, templateId: any) {
+    return knex(`wm_issue_template_detail`)
+      .where('template_id', templateId)
+  }
   getIssueTemplate(knex: Knex, templateId: any) {
     let sql = `
       select wrt.template_id, wrt.warehouse_id,
@@ -847,10 +851,12 @@ export class WarehouseModel {
     from mm_shipping_networks as sn
     left join wm_warehouses as dst on dst.warehouse_id=sn.destination_warehouse_id
     where sn.source_warehouse_id = '${warehouseId}'
-    and dst.is_actived='Y' and sn.transfer_type in ('TRN','IST')
+    and dst.is_actived='Y' and sn.transfer_type in ('REQ','TRN')
     group by sn.destination_warehouse_id
     order by dst.short_code
     `;
+    console.log(sql, 'dfasdlfhaow;irhghwrkfhaskdjhfakjshdkh');
+
     return knex.raw(sql);
   }
 

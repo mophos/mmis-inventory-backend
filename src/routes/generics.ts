@@ -449,7 +449,8 @@ router.post('/allocate-borrow', async (req, res, next) => {
             const obj = {
               wm_product_id: p.wm_product_id,
               product_qty: qty,
-              generic_id: p.generic_id
+              generic_id: p.generic_id,
+              conversion_qty: p.conversion_qty
             }
             if (qty > 0) {
               allocate.push(obj);
@@ -458,7 +459,8 @@ router.post('/allocate-borrow', async (req, res, next) => {
               allocate.push({
                 wm_product_id: p.wm_product_id,
                 product_qty: d.genericQty,
-                generic_id: d.genericId
+                generic_id: d.genericId,
+                conversion_qty: p.conversion_qty
               });
               idx++;
             }
@@ -468,7 +470,8 @@ router.post('/allocate-borrow', async (req, res, next) => {
         allocate.push({
           wm_product_id: '',
           product_qty: d.genericQty,
-          generic_id: d.genericId
+          generic_id: d.genericId,
+          conversion_qty: 0
         })
       }
     }
@@ -480,7 +483,8 @@ router.post('/allocate-borrow', async (req, res, next) => {
         allocate.push({
           wm_product_id: p.wm_product_id,
           product_qty: 0,
-          generic_id: p.generic_id
+          generic_id: p.generic_id,
+          conversion_qty: 0
         })
       }
     }
