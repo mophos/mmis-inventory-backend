@@ -579,7 +579,7 @@ export class BorrowModel {
   getProductsInfo(knex: Knex, borrowId: any, borrowGenericId: any) {
     let sql = `SELECT
     bp.*,
-    CEIL(bp.qty / ug.qty) as product_qty,
+    CEIL(bp.qty/ ug.qty) as product_qty,
     FLOOR(wp.qty/ ug.qty) as pack_remain_qty,
     wp.qty AS small_remain_qty,
     wp.lot_no,
@@ -636,11 +636,7 @@ export class BorrowModel {
 
   getGenericInfo(knex: Knex, borrowId: any, srcWarehouseId: any) {
     let sql = `
-    select 
-    b.borrow_generic_id
-    , b.borrow_id
-    , mg.generic_id
-    , b.qty as borrow_qty_old
+    select b.*
     , b.qty as borrow_qty
     , ug.qty as conversion_qty
     , mg.working_code, mg.generic_name
@@ -655,9 +651,9 @@ export class BorrowModel {
       from view_product_reserve pr
       group by pr.warehouse_id, pr.generic_id
     ) sg on sg.generic_id = b.generic_id and sg.warehouse_id = ${srcWarehouseId}
-    where b.borrow_id = ?
+    where b.borrow_id = ${borrowId}
     `;
-    return knex.raw(sql, [borrowId]);
+    return knex.raw(sql);
   }
 
   getGenericQty(knex: Knex, genericId: any, warehouseId: any) {
