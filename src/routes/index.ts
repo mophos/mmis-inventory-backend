@@ -781,7 +781,6 @@ router.get('/report/UnPaid/requis', wrap(async (req, res, next) => {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
     _.forEach(requisId, object => {
-      console.log('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', object,rs[0])
       let tmp = _.find(rs[0], ['requisition_order_id', +object])
       tmp.unpaid_date = moment(tmp.unpaid_date).format('D MMMM ') + (moment(tmp.unpaid_date).get('year') + 543);
       tmp.requisition_date = moment(tmp.requisition_date).format('D MMMM ') + (moment(tmp.requisition_date).get('year') + 543);

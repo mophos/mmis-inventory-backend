@@ -57,14 +57,17 @@ router.get('/search-autocomplete', async (req, res, next) => {
   const query = req.query.q;
   const labelerId = req.query.labelerId;
   let genericTypes = req.decoded.generic_type_id;
-  console.log('asdfkalsdhfluawlighaildhf', genericTypes);
-
+  let limit = req.query.limit === 'Y' ? false : true;
   try {
     let rs: any;
-    if (labelerId) {
-      rs = await productModel.adminSearchAllProductsLabeler(db, query, labelerId, genericTypes);
+    if (labelerId && limit) {
+      rs = await productModel.adminSearchAllProductsLabelerLimit(db, query, labelerId, genericTypes);
+    } else if (labelerId && !limit) {
+      rs = await productModel.adminSearchAllProductsLabelerAll(db, query, labelerId, genericTypes);
+    } else if (!labelerId && limit) {
+      rs = await productModel.adminSearchAllProductsLimit(db, query, genericTypes);
     } else {
-      rs = await productModel.adminSearchAllProducts(db, query, genericTypes);
+      rs = await productModel.adminSearchAllProductsAll(db, query, genericTypes);
     }
 
     if (rs[0].length) {
