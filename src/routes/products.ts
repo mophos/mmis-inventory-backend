@@ -56,13 +56,17 @@ router.get('/search-autocomplete', async (req, res, next) => {
   let db = req.db;
   const query = req.query.q;
   const labelerId = req.query.labelerId;
-
+  let limit = req.query.limit === 'Y' ? false : true;
   try {
     let rs: any;
-    if (labelerId) {
-      rs = await productModel.adminSearchAllProductsLabeler(db, query, labelerId);
+    if (labelerId && limit) {
+      rs = await productModel.adminSearchAllProductsLabelerLimit(db, query, labelerId);
+    } else if (labelerId && !limit) {
+      rs = await productModel.adminSearchAllProductsLabelerAll(db, query, labelerId);
+    } else if (!labelerId && limit) {
+      rs = await productModel.adminSearchAllProductsLimit(db, query);
     } else {
-      rs = await productModel.adminSearchAllProducts(db, query);
+      rs = await productModel.adminSearchAllProductsAll(db, query);
     }
 
     if (rs[0].length) {
