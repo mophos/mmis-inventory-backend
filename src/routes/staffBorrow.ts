@@ -327,9 +327,24 @@ router.post('/save', co(async (req, res, next) => {
           unit_generic_id: g.unit_generic_id,
           create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
           create_by: req.decoded.people_user_id
-        }
-        await borrowModel.saveBorrowGeneric(db, generics);
+        };
+        let rsBorrowGeneric = await borrowModel.saveBorrowGeneric(db, generics);
 
+        let products = [];
+        g.products[0].forEach(p => {
+            // if (p.product_qty != 0) { // เอาออกเพื่อให้แก้ไขแล้วเปลี่ยน lot ได้
+            products.push({
+              borrow_id: borrowId,
+              borrow_generic_id: rsBorrowGeneric[0],
+              wm_product_id: p.wm_product_id,
+              qty: p.product_qty,
+              create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+              create_by: req.decoded.people_user_id
+            });
+          // }
+        });
+        console.log('xxxxxxxxxxxxxxxxxxxxxxxxx', products)
+        await borrowModel.saveBorrowProduct(db, products);
       }
       res.send({ ok: true });
 

@@ -2284,15 +2284,15 @@ OR sc.ref_src like ?
     }
 
     checkReceive(knex: Knex, receiveID) {
-        let sql = `SELECT 
+        let sql = `SELECT
         v.bgtype_name,
         wr.receive_id,
         wr.receive_code,
         wr.receive_date,
         waa.approve_date,
-        ppo.order_date as podate,
+        po.order_date as podate,
         wr.delivery_code,
-        ROUND(sum(if(wrd.is_free = 'N',wrd.receive_qty*wrd.cost,0)),2) AS total_price,
+        SUM(wrd.receive_qty * wrd.cost) AS total_price,
         wrd.receive_qty,
         wrt.receive_type_name,
         wr.purchase_order_id,
@@ -2300,37 +2300,26 @@ OR sc.ref_src like ?
         ml.labeler_name_po,
         wr.delivery_date,
         wr.delivery_code,
-        ppo.purchase_order_book_number,
-        ppo.purchase_order_number,
-        ppo.chief_id,
-        ppo.buyer_id,
-        ppo.supply_id,
-        subq.amount_qty,
+        po.purchase_order_book_number,
+        po.purchase_order_number,
+        po.chief_id,
+        po.buyer_id,
+        po.supply_id,
+        COUNT(wrd.receive_detail_id) AS amount_qty,
         mgt.generic_type_name
-        FROM wm_receives wr
-        JOIN wm_receive_detail wrd ON wrd.receive_id=wr.receive_id
+        FROM
+        wm_receives wr 
+        LEFT JOIN wm_receive_detail wrd ON wrd.receive_id = wr.receive_id
         LEFT JOIN wm_receive_approve waa ON waa.receive_id = wr.receive_id
-        LEFT JOIN (SELECT q.receive_id, count(q.product_id) as amount_qty from (
-            SELECT
-               wrr.receive_id, wrdd.product_id
-            FROM
-                wm_receives wrr
-                JOIN wm_receive_detail wrdd ON wrdd.receive_id = wrr.receive_id
-                LEFT JOIN pc_purchasing_order ppoo ON ppoo.purchase_order_id = wrr.purchase_order_id
-                LEFT JOIN mm_products mp ON mp.product_id = wrdd.product_id
-                LEFT JOIN mm_generics mg ON mg.generic_id = mp.generic_id 
-                WHERE
-               wrr.receive_id in (${receiveID})
-							 GROUP BY wrr.receive_id ,wrdd.product_id , wrdd.is_free ) as q
-							 group by q.receive_id
-        ) as subq ON subq.receive_id = wr.receive_id
-        LEFT JOIN mm_labelers ml ON ml.labeler_id=wrd.vendor_labeler_id
-        LEFT JOIN wm_receive_types wrt ON wrt.receive_type_id=wr.receive_type_id
-        LEFT JOIN pc_purchasing_order ppo ON ppo.purchase_order_id=wr.purchase_order_id
-        LEFT JOIN mm_generic_types mgt ON ppo.generic_type_id = mgt.generic_type_id
-        LEFT JOIN view_budget_subtype v ON v.bgtype_id = ppo.budgettype_id
-        WHERE wr.receive_id in (${receiveID})
-        GROUP BY wr.receive_id,ppo.purchase_order_id`
+        LEFT JOIN pc_purchasing_order po ON po.purchase_order_id = wr.purchase_order_id
+        LEFT JOIN view_budget_subtype v ON v.bgtypesub_id = po.budget_detail_id
+        LEFT JOIN wm_receive_types wrt ON wrt.receive_type_id = wr.receive_type_id
+        LEFT JOIN mm_labelers ml ON ml.labeler_id = po.labeler_id
+        LEFT JOIN mm_products mp ON mp.product_id = wrd.product_id
+        LEFT JOIN mm_generics mg ON mg.generic_id = mp.generic_id
+        LEFt JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
+        WHERE wr.receive_id IN (${receiveID})
+        GROUP BY wr.receive_id`
         return (knex.raw(sql))
     }
 
