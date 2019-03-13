@@ -3163,7 +3163,7 @@ OR sc.ref_src like ?
             .groupBy('mg.generic_id')
     }
 
-    productReceive(knex: Knex, startdate: any, enddate: any, genericTypeId: any, dateSetting = 'view_stock_card_warehouse') {
+    productReceive(knex: Knex, startdate: any, enddate: any, genericTypeId: any, dateSetting = 'view_stock_card_warehouse', warehouseId, isFree) {
         let sql = `SELECT
         wr.delivery_code,
         wr.receive_code,
@@ -3207,9 +3207,15 @@ OR sc.ref_src like ?
         ws.transaction_type = 'REV'
         AND ws.stock_date BETWEEN '${startdate} 00:00:00' 
         AND '${enddate} 23:59:59' 
-        AND mg.generic_type_id IN ( ${genericTypeId} ) 
-    ORDER BY
-        mg.generic_id`
+        AND mg.generic_type_id IN ( ${genericTypeId} ) `
+        if (warehouseId != 0) {
+            sql += ` AND ws.warehouse_id = '${warehouseId}' `
+        }
+        if (isFree === 'false') {
+            sql += ` AND ws.in_unit_cost > 0 `
+        }
+        sql += ` ORDER BY
+        ppo.purchase_order_number`
         return knex.raw(sql)
     }
     productReceive3(knex: Knex, startdate: any, enddate: any, genericTypeId: any) {
@@ -3338,7 +3344,7 @@ GROUP BY
     `
         return knex.raw(sql)
     }
-    monthlyReportM(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any ,dateSetting = 'view_stock_card_warehouse') {
+    monthlyReportM(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting = 'view_stock_card_warehouse') {
         let sql = `
         SELECT
 	sum( ifnull( blb.bl, 0 ) ) AS balance,
