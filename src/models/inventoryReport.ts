@@ -3432,7 +3432,7 @@ GROUP BY
 		'  ',
 		IFNULL( mgg4.group_name_4, ' ' ) 
 	) AS group_name,
-	(sum(in_qty*in_unit_cost) - sum(out_qty*out_unit_cost)) / (sum(in_qty) - sum(out_qty)) AS cost,
+	(sum(in_qty*in_unit_cost) - sum(out_qty*out_unit_cost)) / (sum(in_qty) - sum(out_qty) AS cost,
 	(
 	SELECT
 		avg( cost ) 
