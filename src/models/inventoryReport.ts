@@ -3446,10 +3446,10 @@ GROUP BY
 	mug.qty,
 	mu1.unit_name AS pack,
 	mu2.unit_name AS small_unit,
-	summit.summit,
+	ifnull(summit.summit,0 ) summit,
 	sum( vs.in_qty ) / mug.qty AS in_qty,
 	sum( vs.out_qty ) / mug.qty AS out_qty,
- summit.summit + sum( vs.in_qty ) - sum( vs.out_qty ) AS balance 
+    ifnull(summit.summit,0 ) + sum( vs.in_qty ) - sum( vs.out_qty ) AS balance 
 FROM
 	view_stock_card_warehouse vs
 	JOIN mm_products mp ON vs.product_id = mp.product_id
@@ -3469,8 +3469,7 @@ FROM
 		view_stock_card_warehouse 
 	WHERE
 	warehouse_id = ${wareHouseId}
-		AND stock_date BETWEEN '${year - 1}-10-01 00:00:00' 
-		AND '${year}-09-30 23:59:59' 
+		AND stock_date < '${year - 1}-10-01 00:00:00' 
 	GROUP BY
 		unit_generic_id,
 		product_id 
