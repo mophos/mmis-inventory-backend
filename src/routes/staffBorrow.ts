@@ -343,7 +343,6 @@ router.post('/save', co(async (req, res, next) => {
             });
           // }
         });
-        console.log('xxxxxxxxxxxxxxxxxxxxxxxxx', products)
         await borrowModel.saveBorrowProduct(db, products);
       }
       res.send({ ok: true });

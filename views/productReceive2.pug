@@ -22,13 +22,15 @@ html
     table.table
       thead
         tr
-          th(style="font-size: 12pt;") ลำดับ
-          th(style="font-size: 12pt;") เลขที่ใบสั่งซื้อ
-          th(style="font-size: 12pt;") เลขที่ใบส่งของ
+          th(style="width: 10px;font-size: 12pt;") ลำดับ
+          th(style="width: 90px;font-size: 12pt;") เลขที่ใบสั่งซื้อ
           th(style="font-size: 12pt;") วันที่รับของ
-          th(style="font-size: 12pt;") รหัสเวชภัณฑ์
+            br 
+            | เลขที่ใบส่งของ
+          //- th(style="font-size: 12pt;") วันที่รับของ
+          th(style="width: 60px;font-size: 12pt;") รหัสเวชภัณฑ์
           th(style="font-size: 12pt;") ชื่อเวชภัณฑ์
-          th(style="font-size: 12pt;") จำนวนรับ
+          th(style="width: 70px;font-size: 12pt;") จำนวนรับ
           th(style="font-size: 12pt;") ราคาต่อหน่วย
           th(style="font-size: 12pt;") ราคาทั้งหมด
           th(style="font-size: 12pt;") ผู้จัดจำหน่าย
@@ -37,15 +39,19 @@ html
           for b in productReceive
             - y++
               tr
-                td(style="width: 10px;text-align: center; font-size: 13pt;") #{y}
+                td(style="text-align: center; font-size: 13pt;") #{y}
                 td(style="text-align: center; font-size: 13pt;") #{b.purchase_order_number}
-                td(style="text-align: center; font-size: 13pt;") #{b.delivery_code}
-                td(style="text-align: left; font-size: 13pt;") #{b.receive_date}
+                td(style="text-align: center; font-size: 13pt;") #{b.receive_date}
+                  br
+                  | #{b.delivery_code}
+                //- td(style="text-align: left; font-size: 13pt;") #{b.receive_date}
                 td(style="text-align: center; font-size: 13pt;") #{b.generic_code}
-                td(style="text-align: left; font-size: 13pt;") #{b.generic_name}
+                td(style="text-align: left; font-size: 12pt;") #{b.generic_name}
                   br
                   | #{b.product_name}
-                td(style="text-align: center; font-size: 13pt;") #{b.receive_qty} #{b.large_unit} (#{b.conversion} #{b.small_unit})
+                td(style="text-align: center; font-size: 13pt;") #{b.receive_qty} #{b.large_unit}
+                  br
+                  | (#{b.conversion} #{b.small_unit})
                 td(style="text-align: center; font-size: 13pt;") #{b.cost}
                 td(style="text-align: center; font-size: 13pt;") #{b.total_cost}
                 td(style="text-align: left; font-size: 13pt;") #{b.labeler_name_po}
