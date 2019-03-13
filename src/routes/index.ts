@@ -434,6 +434,94 @@ router.get('/report/pay-req/:startDate/:endDate/:warehouseId/:warehouseName', wr
   }
 }));
 
+router.get('/report/pay-req/excel/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
+  const db = req.db;
+  let startDate = req.params.startDate;
+  let endDate = req.params.endDate;
+  let warehouseId = req.params.warehouseId;
+  let reqTypeId = Array.isArray(req.query.reqTypeId) ? req.query.reqTypeId : [req.query.reqTypeId];
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let data = await inventoryReportModel.payReq(db, startDate, endDate, warehouseId, reqTypeId);
+    for (let tmp of data[0]) {
+      tmp.receive_qty = inventoryReportModel.commaQty(tmp.receive_qty);
+      tmp.cost = inventoryReportModel.comma(tmp.cost);
+      tmp.costAmount = inventoryReportModel.comma(tmp.costAmount);
+    }
+    startDate = moment(startDate).format('DDMM') + (moment(startDate).get('year') + 543)
+    endDate = moment(endDate).format('DDMM') + (moment(endDate).get('year') + 543)
+
+    let json = []
+    _.forEach(data[0], (v: any) => {
+      json.push({
+        'รหัสเวชภัณฑ์': v.generic_code,
+        'ชื่อเวชภัณฑ์': v.generic_name,
+        'จำนวนที่จ่าย': v.receive_qty,
+        'หน่วยย่อย': v.to_unit_name,
+        'ราคาต่อหน่วย': v.cost,
+        'มูลค่า': v.costAmount,
+        'ประเภทการเบิก': v.requisition_type,
+      })
+    });
+    // res.send({json:json})
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'รายงานการจ่าย(เบิก)' + startDate + '-' + endDate + '.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'รายงานการจ่าย(เบิก)' + startDate + '-' + endDate + '.xlsx');
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+}));
+
+router.get('/report/pay-issue/excel/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
+  const db = req.db;
+  let startDate = req.params.startDate;
+  let endDate = req.params.endDate;
+  let warehouseId = req.params.warehouseId;
+  let transectionId = Array.isArray(req.query.transectionId) ? req.query.transectionId : [req.query.transectionId];
+
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let data = await inventoryReportModel.payIssue(db, startDate, endDate, warehouseId, transectionId);
+    for (let tmp of data[0]) {
+      tmp.qty = inventoryReportModel.commaQty(tmp.qty);
+      tmp.cost = inventoryReportModel.comma(tmp.cost);
+      tmp.costAmount = inventoryReportModel.comma(tmp.costAmount);
+    }
+    startDate = moment(startDate).format('DDMM') + (moment(startDate).get('year') + 543)
+    endDate = moment(endDate).format('DDMM') + (moment(endDate).get('year') + 543)
+    
+    // res.send(data[0])
+    let json = []
+    _.forEach(data[0], (v: any) => {
+      json.push({
+        'รหัสเวชภัณฑ์': v.generic_code,
+        'ชื่อเวชภัณฑ์': v.generic_name,
+        'จำนวนที่จ่าย': v.qty,
+        'หน่วยย่อย': v.to_unit_name,
+        'ราคาต่อหน่วย': v.cost,
+        'มูลค่า': v.costAmount,
+        'ประเภทการตัดจ่าย': v.transaction_name,
+      })
+    });
+
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'รายงานการจ่าย(ตัดจ่าย)' + startDate + '-' + endDate + '.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'รายงานการจ่าย(ตัดจ่าย)' + startDate + '-' + endDate + '.xlsx');
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+}));
+
 router.get('/report/pay-issue/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
   const db = req.db;
   let startDate = req.params.startDate;
@@ -777,7 +865,7 @@ router.get('/report/UnPaid/requis', wrap(async (req, res, next) => {
     let warehouseId = req.decoded.warehouseId;
     let requisId = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
-    let rs: any = await inventoryReportModel.getUnPaidOrders(db, null, warehouseId);
+    let rs: any = await inventoryReportModel.getUnPaidOrders(db, warehouseId, null);
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
     _.forEach(requisId, object => {
@@ -2744,18 +2832,21 @@ router.get('/report/product-receive2', wrap(async (req, res, next) => {
     enddate: enddate
   });
 }));
+
 router.get('/report/product-receive', wrap(async (req, res, next) => {
   let db = req.db;
   let startdate = req.query.startDate
   let enddate = req.query.endDate
   let genericType = req.query.genericType;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let warehouseId = req.query.warehouseId
+  let isFree = req.query.isFree
 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
 
-  let productReceive = await inventoryReportModel.productReceive(db, startdate, enddate, genericType, dateSetting);
+  let productReceive = await inventoryReportModel.productReceive(db, startdate, enddate, genericType, dateSetting, warehouseId, isFree);
   // console.log(productReceive);
   if (productReceive[0].length == 0) { res.render('error404') }
 
@@ -2786,6 +2877,7 @@ router.get('/report/product-receive', wrap(async (req, res, next) => {
     enddate: enddate
   });
 }));
+
 router.get('/report/product/receive', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID = req.query.receiveID
@@ -3051,8 +3143,8 @@ router.get('/report/inventoryStatus/generic', wrap(async (req, res, next) => {
   let warehouseName = req.query.warehouseName
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  // let rs = await inventoryReportModel.inventoryStatusGeneric(db, warehouseId, genericType, statusDate);
-  let rs = await inventoryReportModel.inventoryStatusGenericTemporary(db, warehouseId, genericType);
+  let rs = await inventoryReportModel.inventoryStatusGeneric(db, warehouseId, genericType, statusDate);
+  // let rs = await inventoryReportModel.inventoryStatusGenericTemporary(db, warehouseId, genericType);
   let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
   let list = rs[0]
   let sumlist = [];
@@ -3225,11 +3317,13 @@ router.get('/report/receive/export', async (req, res, next) => {
   let enddate = req.query.endDate
   let genericType = req.query.genericType;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let warehouseId = req.query.warehouseId
+  let isFree = req.query.isFree
 
   console.log(startdate, enddate);
 
   // get tmt data
-  let rs: any = await inventoryReportModel.productReceive(db, startdate, enddate, genericType, dateSetting);
+  let rs: any = await inventoryReportModel.productReceive(db, startdate, enddate, genericType, dateSetting, warehouseId, isFree);
   let json = [];
   if (rs[0].length) {
     let i = 0;
@@ -3540,8 +3634,8 @@ router.get('/report/inventoryStatus/generic/excel', wrap(async (req, res, next) 
   let genericType = req.query.genericType
   let warehouseName = req.query.warehouseName
   let hosdetail = await inventoryReportModel.hospital(db);
-  // let rs = await inventoryReportModel.inventoryStatusGeneric(db, warehouseId, genericType, statusDate);
-  let rs = await inventoryReportModel.inventoryStatusGenericTemporary(db, warehouseId, genericType);
+  let rs = await inventoryReportModel.inventoryStatusGeneric(db, warehouseId, genericType, statusDate);
+  // let rs = await inventoryReportModel.inventoryStatusGenericTemporary(db, warehouseId, genericType);
   let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
   let json = [];
   let sum = 0;
@@ -4765,8 +4859,8 @@ router.get('/report/inventoryStatus/product', wrap(async (req, res, next) => {
   let warehouseName = req.query.warehouseName
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  // let rs = await inventoryReportModel.inventoryStatusProduct(db, warehouseId, genericType, statusDate);
-  let rs = await inventoryReportModel.inventoryStatusProductTemporary(db, warehouseId, genericType);
+  let rs = await inventoryReportModel.inventoryStatusProduct(db, warehouseId, genericType, statusDate);
+  // let rs = await inventoryReportModel.inventoryStatusProductTemporary(db, warehouseId, genericType);
   let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
   let list = rs[0]
   let sumlist = [];
@@ -4822,8 +4916,8 @@ router.get('/report/inventoryStatus/product/excel', wrap(async (req, res, next) 
   let warehouseName = req.query.warehouseName
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  // let rs = await inventoryReportModel.inventoryStatusProduct(db, warehouseId, genericType, statusDate);
-  let rs = await inventoryReportModel.inventoryStatusProductTemporary(db, warehouseId, genericType);
+  let rs = await inventoryReportModel.inventoryStatusProduct(db, warehouseId, genericType, statusDate);
+  // let rs = await inventoryReportModel.inventoryStatusProductTemporary(db, warehouseId, genericType);
   let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
   let json = [];
   let sum = 0;

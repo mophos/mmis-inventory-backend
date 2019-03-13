@@ -3163,7 +3163,7 @@ OR sc.ref_src like ?
             .groupBy('mg.generic_id')
     }
 
-    productReceive(knex: Knex, startdate: any, enddate: any, genericTypeId: any, dateSetting = 'view_stock_card_warehouse') {
+    productReceive(knex: Knex, startdate: any, enddate: any, genericTypeId: any, dateSetting = 'view_stock_card_warehouse', warehouseId, isFree) {
         let sql = `SELECT
         wr.delivery_code,
         wr.receive_code,
@@ -3207,9 +3207,15 @@ OR sc.ref_src like ?
         ws.transaction_type = 'REV'
         AND ws.stock_date BETWEEN '${startdate} 00:00:00' 
         AND '${enddate} 23:59:59' 
-        AND mg.generic_type_id IN ( ${genericTypeId} ) 
-    ORDER BY
-        mg.generic_id`
+        AND mg.generic_type_id IN ( ${genericTypeId} ) `
+        if (warehouseId != 0) {
+            sql += ` AND ws.warehouse_id = '${warehouseId}' `
+        }
+        if (isFree === 'false') {
+            sql += ` AND ws.in_unit_cost > 0 `
+        }
+        sql += ` ORDER BY
+        ppo.purchase_order_number`
         return knex.raw(sql)
     }
     productReceive3(knex: Knex, startdate: any, enddate: any, genericTypeId: any) {
@@ -3426,7 +3432,7 @@ GROUP BY
 		'  ',
 		IFNULL( mgg4.group_name_4, ' ' ) 
 	) AS group_name,
-	ROUND( avg( vs.balance_unit_cost ), 2 ) AS cost,
+	(sum(in_qty*in_unit_cost) - sum(out_qty*out_unit_cost)) / (sum(in_qty) - sum(out_qty) AS cost,
 	(
 	SELECT
 		avg( cost ) 
@@ -3440,10 +3446,10 @@ GROUP BY
 	mug.qty,
 	mu1.unit_name AS pack,
 	mu2.unit_name AS small_unit,
-	summit.summit,
+	ifnull(summit.summit,0 ) summit,
 	sum( vs.in_qty ) / mug.qty AS in_qty,
 	sum( vs.out_qty ) / mug.qty AS out_qty,
- summit.summit + sum( vs.in_qty ) - sum( vs.out_qty ) AS balance 
+    ifnull(summit.summit,0 ) + sum( vs.in_qty ) - sum( vs.out_qty ) AS balance 
 FROM
 	view_stock_card_warehouse vs
 	JOIN mm_products mp ON vs.product_id = mp.product_id
@@ -3463,8 +3469,7 @@ FROM
 		view_stock_card_warehouse 
 	WHERE
 	warehouse_id = ${wareHouseId}
-		AND stock_date BETWEEN '${year - 1}-10-01 00:00:00' 
-		AND '${year}-09-30 23:59:59' 
+		AND stock_date < '${year - 1}-10-01 00:00:00' 
 	GROUP BY
 		unit_generic_id,
 		product_id 
