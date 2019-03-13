@@ -434,6 +434,94 @@ router.get('/report/pay-req/:startDate/:endDate/:warehouseId/:warehouseName', wr
   }
 }));
 
+router.get('/report/pay-req/excel/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
+  const db = req.db;
+  let startDate = req.params.startDate;
+  let endDate = req.params.endDate;
+  let warehouseId = req.params.warehouseId;
+  let reqTypeId = Array.isArray(req.query.reqTypeId) ? req.query.reqTypeId : [req.query.reqTypeId];
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let data = await inventoryReportModel.payReq(db, startDate, endDate, warehouseId, reqTypeId);
+    for (let tmp of data[0]) {
+      tmp.receive_qty = inventoryReportModel.commaQty(tmp.receive_qty);
+      tmp.cost = inventoryReportModel.comma(tmp.cost);
+      tmp.costAmount = inventoryReportModel.comma(tmp.costAmount);
+    }
+    startDate = moment(startDate).format('DDMM') + (moment(startDate).get('year') + 543)
+    endDate = moment(endDate).format('DDMM') + (moment(endDate).get('year') + 543)
+
+    let json = []
+    _.forEach(data[0], (v: any) => {
+      json.push({
+        'รหัสเวชภัณฑ์': v.generic_code,
+        'ชื่อเวชภัณฑ์': v.generic_name,
+        'จำนวนที่จ่าย': v.receive_qty,
+        'หน่วยย่อย': v.to_unit_name,
+        'ราคาต่อหน่วย': v.cost,
+        'มูลค่า': v.costAmount,
+        'ประเภทการเบิก': v.requisition_type,
+      })
+    });
+    // res.send({json:json})
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'รายงานการจ่าย(เบิก)' + startDate + '-' + endDate + '.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'รายงานการจ่าย(เบิก)' + startDate + '-' + endDate + '.xlsx');
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+}));
+
+router.get('/report/pay-issue/excel/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
+  const db = req.db;
+  let startDate = req.params.startDate;
+  let endDate = req.params.endDate;
+  let warehouseId = req.params.warehouseId;
+  let transectionId = Array.isArray(req.query.transectionId) ? req.query.transectionId : [req.query.transectionId];
+
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let data = await inventoryReportModel.payIssue(db, startDate, endDate, warehouseId, transectionId);
+    for (let tmp of data[0]) {
+      tmp.qty = inventoryReportModel.commaQty(tmp.qty);
+      tmp.cost = inventoryReportModel.comma(tmp.cost);
+      tmp.costAmount = inventoryReportModel.comma(tmp.costAmount);
+    }
+    startDate = moment(startDate).format('DDMM') + (moment(startDate).get('year') + 543)
+    endDate = moment(endDate).format('DDMM') + (moment(endDate).get('year') + 543)
+    
+    // res.send(data[0])
+    let json = []
+    _.forEach(data[0], (v: any) => {
+      json.push({
+        'รหัสเวชภัณฑ์': v.generic_code,
+        'ชื่อเวชภัณฑ์': v.generic_name,
+        'จำนวนที่จ่าย': v.qty,
+        'หน่วยย่อย': v.to_unit_name,
+        'ราคาต่อหน่วย': v.cost,
+        'มูลค่า': v.costAmount,
+        'ประเภทการตัดจ่าย': v.transaction_name,
+      })
+    });
+
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'รายงานการจ่าย(ตัดจ่าย)' + startDate + '-' + endDate + '.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'รายงานการจ่าย(ตัดจ่าย)' + startDate + '-' + endDate + '.xlsx');
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+}));
+
 router.get('/report/pay-issue/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
   const db = req.db;
   let startDate = req.params.startDate;

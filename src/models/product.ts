@@ -200,7 +200,7 @@ export class ProductModel {
           (wm_product_id, warehouse_id, product_id, qty,
           cost, price, lot_no, location_id,expired_date, unit_generic_id,people_user_id, created_at)
           VALUES('${v.wm_product_id}', '${v.warehouse_id}', '${v.product_id}',
-          ${v.qty}, ${v.cost}, ${v.price}, '${v.lot_no}','${v.location_id}',`;
+          ${v.qty}, ${v.cost}, ${v.price}, '${v.lot_no}',${v.location_id},`;
       if (v.expired_date == null) {
         sql += `null,`;
       } else {
@@ -1265,7 +1265,7 @@ group by mpp.product_id
     expired_date, 
     unit_generic_id,people_user_id, created_at)
     VALUES('${data.wm_product_id}', '${data.warehouse_id}', '${data.product_id}',
-    ${data.qty}, ${data.cost}, ${data.price}, '${data.lot_no}','${data.lot_time}','${data.location_id}',`;
+    ${data.qty}, ${data.cost}, ${data.price}, '${data.lot_no}','${data.lot_time}',${data.location_id},`;
     if (data.expired_date == null) {
       sql += `null,`;
     } else {
