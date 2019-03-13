@@ -3844,8 +3844,8 @@ GROUP BY
             vscw.conversion_qty,
             vscw.large_unit,
             vscw.small_unit,
-            sum(vscw.balance_unit_cost * vscw.in_qty) / sum(vscw.in_qty) AS unit_cost,
-            ( sum( vscw.balance_unit_cost * vscw.in_qty ) / sum( vscw.in_qty ) ) * (sum( vscw.in_qty ) - sum( vscw.out_qty )) AS total_cost,
+            sum(vscw.in_qty * in_unit_cost) - sum(vscw.out_qty * vscw.out_unit_cost) / (sum( vscw.in_qty ) - sum( vscw.out_qty )) AS unit_cost,
+            sum(vscw.in_qty * in_unit_cost) - sum(vscw.out_qty * vscw.out_unit_cost) AS total_cost,
             mgp.min_qty,
 	        mgp.max_qty
         FROM
@@ -3885,8 +3885,8 @@ GROUP BY
             vscw.conversion_qty,
             vscw.large_unit,
             vscw.small_unit,
-            sum(vscw.balance_unit_cost * vscw.in_qty) / sum(vscw.in_qty) AS unit_cost,
-            ( sum( vscw.balance_unit_cost * vscw.in_qty ) / sum( vscw.in_qty ) ) * (sum( vscw.in_qty ) - sum( vscw.out_qty )) AS total_cost
+            sum(vscw.in_qty * in_unit_cost) - sum(vscw.out_qty * vscw.out_unit_cost) / (sum( vscw.in_qty ) - sum( vscw.out_qty )) AS unit_cost,
+            sum(vscw.in_qty * in_unit_cost) - sum(vscw.out_qty * vscw.out_unit_cost) AS total_cost
         FROM
             view_stock_card_warehouse AS vscw
             JOIN mm_products AS mp ON mp.product_id = vscw.product_id
@@ -3905,104 +3905,6 @@ GROUP BY
         ORDER BY
             mp.product_name
         `
-        return knex.raw(sql)
-    }
-
-    inventoryStatusGenericTemporary(knex: Knex, warehouseId: any, genericTypeId: any) {
-        let sql = `SELECT
-            q.generic_id,
-            q.generic_name,
-            q.generic_code,
-            sum(q.qty) AS qty,
-            q.conversion_qty,
-            q.large_unit,
-            q.small_unit,
-            avg( q.unit_cost ) AS unit_cost,
-            sum(total_cost) AS total_cost,
-            q.min_qty,
-            q.max_qty
-        FROM
-            (
-            SELECT
-            mg.generic_id,
-            mg.working_code AS generic_code,
-            mg.generic_name,
-            wp.product_id,
-            mp.working_code AS product_code,
-            mp.product_name,
-            wp.lot_no,
-            wp.qty,
-            mug.qty as conversion_qty,
-            mu1.unit_name as large_unit,
-            mu2.unit_name as small_unit,
-            wp.cost as unit_cost,
-            wp.qty * wp.cost AS total_cost,
-            mgp.min_qty,
-            mgp.max_qty
-        FROM
-            wm_products AS wp
-            JOIN mm_products AS mp ON mp.product_id = wp.product_id
-            JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
-            JOIN mm_unit_generics as mug ON mug.unit_generic_id = wp.unit_generic_id
-            LEFT JOIN mm_generic_planning AS mgp ON mgp.warehouse_id = '1' 
-            AND mgp.generic_id = mg.generic_id
-            JOIN mm_units as mu1 ON mug.from_unit_id = mu1.unit_id
-            JOIN mm_units as mu2 ON mug.to_unit_id = mu2.unit_id
-        WHERE
-            wp.qty > 0
-            AND mg.generic_type_id IN ( ${ genericTypeId} )`
-        if (warehouseId != '0') {
-            sql += `AND wp.warehouse_id = '${warehouseId}'`
-        }
-        sql += `GROUP BY
-            wp.product_id,
-            wp.lot_no 
-            ) AS q 
-        GROUP BY
-            q.generic_id
-        ORDER BY
-            q.generic_name`
-        return knex.raw(sql)
-    }
-
-    inventoryStatusProductTemporary(knex: Knex, warehouseId: any, genericTypeId: any) {
-        let sql = `SELECT
-        mg.generic_id,
-        mg.working_code AS generic_code,
-        mg.generic_name,
-        wp.product_id,
-        mp.working_code AS product_code,
-        mp.product_name,
-        wp.lot_no,
-        wp.qty,
-        mug.qty as conversion_qty,
-        mu1.unit_name as large_unit,
-        mu2.unit_name as small_unit,
-        wp.cost as unit_cost,
-        wp.qty * wp.cost AS total_cost,
-        mgp.min_qty,
-        mgp.max_qty
-    FROM
-        wm_products AS wp
-        JOIN mm_products AS mp ON mp.product_id = wp.product_id
-        JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
-        JOIN mm_unit_generics as mug ON mug.unit_generic_id = wp.unit_generic_id
-        LEFT JOIN mm_generic_planning AS mgp ON mgp.warehouse_id = '${warehouseId}' 
-        AND mgp.generic_id = mg.generic_id
-        JOIN mm_units as mu1 ON mug.from_unit_id = mu1.unit_id
-        JOIN mm_units as mu2 ON mug.to_unit_id = mu2.unit_id
-    WHERE
-        wp.qty > 0
-        AND mg.generic_type_id IN ( ${ genericTypeId} )`
-        if (warehouseId != '0') {
-            sql += `AND wp.warehouse_id = '${warehouseId}'`
-        }
-        sql += `GROUP BY
-            wp.product_id,
-            wp.lot_no 
-        ORDER BY
-            mp.product_name,
-            wp.lot_no`
         return knex.raw(sql)
     }
 
