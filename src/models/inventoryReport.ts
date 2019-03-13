@@ -1653,7 +1653,7 @@ FROM
     where 
     wis.transaction_issue_id in (${transectionId})
     and wip.qty > 0 
-    and wis.issue_date BETWEEN '${startDate}'
+    and wis.approve_date BETWEEN '${startDate}'
     AND '${endDate}'`
         if (warehouseId !== '0') {
             sql += ` and wp.warehouse_id = ${warehouseId}`
@@ -3338,7 +3338,7 @@ GROUP BY
     `
         return knex.raw(sql)
     }
-    monthlyReportM(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any ,dateSetting = 'view_stock_card_warehouse') {
+    monthlyReportM(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting = 'view_stock_card_warehouse') {
         let sql = `
         SELECT
 	sum( ifnull( blb.bl, 0 ) ) AS balance,
