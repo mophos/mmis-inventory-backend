@@ -1653,7 +1653,7 @@ FROM
     where 
     wis.transaction_issue_id in (${transectionId})
     and wip.qty > 0 
-    and wis.issue_date BETWEEN '${startDate}'
+    and wis.approve_date BETWEEN '${startDate}'
     AND '${endDate}'`
         if (warehouseId !== '0') {
             sql += ` and wp.warehouse_id = ${warehouseId}`
