@@ -482,6 +482,7 @@ export class BorrowModel {
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
       .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'p.unit_generic_id')
       .whereIn('d.borrow_id', borrowIds)
+      .andWhereRaw('d.qty>0')
       .groupByRaw('d.wm_product_id')
       .orderBy('p.expired_date');
   }
