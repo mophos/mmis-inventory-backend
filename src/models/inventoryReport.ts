@@ -1954,7 +1954,7 @@ FROM
         return knex.raw(sql, date)
     }
 
-    unReceive(knex: Knex, startdate: any, enddate: any) {
+    unReceive(knex: Knex, startdate: any, enddate: any, warehouseId: any) {
         let sql = `SELECT * FROM
         (
         SELECT 
@@ -1981,7 +1981,8 @@ FROM
                 JOIN mm_labelers ml on ml.labeler_id = mp.v_labeler_id
                 LEFT JOIN wm_receives r on r.purchase_order_id = po.purchase_order_id
                 LEFT JOIN wm_receive_detail rd on rd.receive_id = r.receive_id AND poi.product_id = rd.product_id
-                WHERE po.purchase_order_status = 'APPROVED' AND po.order_date BETWEEN '${startdate}' AND '${enddate}'
+                WHERE po.purchase_order_status = 'APPROVED' AND po.order_date BETWEEN '${startdate}' AND '${enddate}' 
+                AND po.warehouse_id = '${warehouseId}' 
                 GROUP BY po.purchase_order_id,poi.product_id
                 ORDER BY
                 po.purchase_order_number DESC
