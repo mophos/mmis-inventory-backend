@@ -3123,7 +3123,7 @@ OR sc.ref_src like ?
         return knex.raw(sql);
     }
 
-    genericsNomovement(knex: Knex, warehouseId: any, startdate: any, enddate: any) {
+    genericsNomovement(knex: Knex, warehouseId: any, startdate: any, enddate: any, generic_type_id: any) {
         let sql = `SELECT
         mg.generic_id,
         mg.generic_name,
@@ -3146,7 +3146,54 @@ OR sc.ref_src like ?
     ) AS v ON v.generic_id = mg.generic_id
     JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
     WHERE
-        v.generic_id IS NULL`
+        v.generic_id IS NULL
+        AND mg.generic_type_id IN ( ${generic_type_id} )
+    ORDER BY
+        mg.generic_type_id,
+        mg.generic_name`
+        return knex.raw(sql);
+    }
+
+    genericsmovement(knex: Knex, warehouseId: any, startdate: any, enddate: any, generic_type_id: any, dateSetting = 'view_stock_card_warehouse') {
+        let sql = `SELECT
+        q.generic_id,
+        q.generic_code,
+        q.generic_name,
+        ( sum( ws.in_qty ) - sum( ws.out_qty ) ) / mug.qty AS qty,
+        concat( mu1.unit_name, " (", mug.qty, " ", mu2.unit_name, ")" ) AS package,
+        mgt.generic_type_name
+    FROM
+        ${dateSetting} AS ws
+        JOIN (
+    SELECT
+        vscw.generic_id,
+        mmg.working_code AS generic_code,
+        mmg.generic_name 
+    FROM
+        view_stock_card_warehouse AS vscw
+        JOIN mm_generics AS mmg ON mmg.generic_id = vscw.generic_id 
+    WHERE
+        vscw.stock_date BETWEEN '${startdate} 00:00:00' 
+        AND '${enddate} 23:59:59' 
+        AND vscw.warehouse_id = '${warehouseId}' 
+        AND mmg.generic_type_id IN ( ${generic_type_id} ) 
+        AND vscw.transaction_type != 'SUMMIT' 
+    GROUP BY
+        vscw.generic_id 
+        ) AS q ON q.generic_id = ws.generic_id
+        JOIN mm_generics AS mg ON mg.generic_id = ws.generic_id
+        JOIN mm_unit_generics AS mug ON mug.unit_generic_id = ws.unit_generic_id
+        JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id
+        JOIN mm_units AS mu2 ON mu2.unit_id = mug.to_unit_id 
+        JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+    WHERE
+        ws.stock_date < '${enddate} 23:59:59' 
+        AND ws.warehouse_id = '${warehouseId}' 
+        AND mg.generic_type_id IN ( ${generic_type_id} ) 
+    GROUP BY
+        ws.generic_id 
+    ORDER BY
+        mg.generic_name`
         return knex.raw(sql);
     }
 
@@ -3772,7 +3819,7 @@ GROUP BY
         return knex.raw(sql)
     }
 
-    getGenericInStockcrad(knex: Knex, warehouseId: string, startDate: any, endDate: any, dateSetting = 'view_stock_card_warehouse', offset: any) {
+    getGenericInStockcrad(knex: Knex, warehouseId: string, startDate: any, endDate: any, dateSetting = 'view_stock_card_warehouse', offset: any, genericTypes: any) {
         let sql = `SELECT
             vscw.generic_id,
             mp.generic_name
@@ -3783,6 +3830,8 @@ GROUP BY
             vscw.stock_date BETWEEN '${startDate} 00:00:00' 
             AND '${endDate} 23:59:59'
             AND vscw.warehouse_id = '${warehouseId}'
+            AND mp.generic_type_id IN ( ${genericTypes} )
+            AND vscw.transaction_type != 'SUMMIT' 
             GROUP BY
                 vscw.generic_id
             ORDER BY
