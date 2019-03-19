@@ -236,7 +236,7 @@ router.get('/report/monthlyReport', wrap(async (req, res, next) => {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
     let monthName = moment((+year) + '-' + (+month) + '-1').format('MMMM');
-    let monthbeforName = moment(((+month) % 12 == 1 ? +year - 1 : +year) + '-' + ((+month) % 12 == 1 ? 12 : +month-1) + '-1').format('MMMM');
+    let monthbeforName = moment(((+month) % 12 == 1 ? +year - 1 : +year) + '-' + ((+month) % 12 == 1 ? 12 : +month - 1) + '-1').format('MMMM');
     const rsM: any = await inventoryReportModel.monthlyReportM(db, month, year, genericType, warehouseId, dateSetting);
     const rs: any = await inventoryReportModel.monthlyReport(db, month, year, genericType, warehouseId, dateSetting);
     let ans: any = []
@@ -2229,11 +2229,12 @@ router.get('/report/un-receive', wrap(async (req, res, next) => {
   let db = req.db;
   let startdate = req.query.startdate
   let enddate = req.query.enddate
+  let warehouseId = req.decoded.warehouseId
 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  let unReceive = await inventoryReportModel.unReceive(db, startdate, enddate);
+  let unReceive = await inventoryReportModel.unReceive(db, startdate, enddate, warehouseId);
   unReceive = unReceive[0];
 
   unReceive.forEach(value => {
