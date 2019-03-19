@@ -3193,6 +3193,7 @@ OR sc.ref_src like ?
     GROUP BY
         ws.generic_id 
     ORDER BY
+        mg.generic_type_id,
         mg.generic_name`
         return knex.raw(sql);
     }
