@@ -3301,13 +3301,39 @@ router.get('/report/generics-no-movement/:warehouseId/:startdate/:enddate', wrap
   let warehouseId = req.params.warehouseId
   let startdate = req.params.startdate
   let enddate = req.params.enddate
+  let genericTypes = req.decoded.generic_type_id;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.genericsNomovement(db, warehouseId, startdate, enddate);
+  let rs = await inventoryReportModel.genericsNomovement(db, warehouseId, startdate, enddate, genericTypes);
   let generics = rs[0];
   console.log(generics);
 
   res.render('genericsNomovement', {
+
+    hospitalName: hospitalName,
+    printDate: printDate(req.decoded.SYS_PRINT_DATE),
+    generics: generics
+  });
+}));
+
+router.get('/report/generics-movement/:warehouseId/:startdate/:enddate', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.params.warehouseId
+  let startdate = req.params.startdate
+  let enddate = req.params.enddate
+  let genericTypes = req.decoded.generic_type_id;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let rs = await inventoryReportModel.genericsmovement(db, warehouseId, startdate, enddate, genericTypes, dateSetting);
+  let generics = rs[0];
+  console.log(generics);
+
+  generics.forEach(v => {
+    v.qty = inventoryReportModel.commaQty(v.qty)
+  });
+
+  res.render('genericsmovement', {
 
     hospitalName: hospitalName,
     printDate: printDate(req.decoded.SYS_PRINT_DATE),
@@ -4290,6 +4316,7 @@ router.get('/report/genericStock/haveMovement', wrap(async (req, res, next) => {
   let offset = req.query.offset;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
+  let genericTypes = req.decoded.generic_type_id;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let _endDate = moment(endDate).format('YYYY-MM-DD');
   let _startDate = moment(startDate).format('YYYY-MM-DD');
@@ -4297,7 +4324,7 @@ router.get('/report/genericStock/haveMovement', wrap(async (req, res, next) => {
   let inventory_stock: any = [];
   let genericId = [];
   let data = [];
-  let rs = await inventoryReportModel.getGenericInStockcrad(db, warehouseId, startDate, endDate, dateSetting, offset)
+  let rs = await inventoryReportModel.getGenericInStockcrad(db, warehouseId, startDate, endDate, dateSetting, offset, genericTypes)
   rs = rs[0];
   for (const v of rs) {
     genericId.push(v.generic_id)
@@ -4434,6 +4461,7 @@ router.get('/report/genericStock/haveMovement/staff', wrap(async (req, res, next
   let offset = req.query.offset;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
+  let genericTypes = req.decoded.generic_type_id;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let _endDate = moment(endDate).format('YYYY-MM-DD');
   let _startDate = moment(startDate).format('YYYY-MM-DD');
@@ -4441,7 +4469,7 @@ router.get('/report/genericStock/haveMovement/staff', wrap(async (req, res, next
   let inventory_stock: any = [];
   let genericId = [];
   let data = [];
-  let rs = await inventoryReportModel.getGenericInStockcrad(db, warehouseId, startDate, endDate, dateSetting, offset)
+  let rs = await inventoryReportModel.getGenericInStockcrad(db, warehouseId, startDate, endDate, dateSetting, offset, genericTypes)
   rs = rs[0];
   for (const v of rs) {
     genericId.push(v.generic_id)
@@ -4575,9 +4603,10 @@ router.get('/report/getGenericInStockcrad', wrap(async (req, res, next) => {
   let warehouseId = req.query.warehouseId;
   let startDate = req.query.startDate;
   let endDate = req.query.endDate;
+  let genericTypes = req.decoded.generic_type_id;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let offset = '';
-  let rs = await inventoryReportModel.getGenericInStockcrad(db, warehouseId, startDate, endDate, dateSetting, offset)
+  let rs = await inventoryReportModel.getGenericInStockcrad(db, warehouseId, startDate, endDate, dateSetting, offset, genericTypes)
   res.send({ ok: true, rows: rs[0].length })
 }));
 // --------------------------------------------------------------------------------------- //
