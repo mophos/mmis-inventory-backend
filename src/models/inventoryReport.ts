@@ -1701,7 +1701,7 @@ FROM
     receiveOrthorCost(knex: Knex, startDate: any, endDate: any, warehouseId: any, receiveTpyeId: any, dateSetting = 'view_stock_card_warehouse') {
         let sql = `SELECT
         wro.receive_other_id,
-        wro.receive_date,
+        vscw.stock_date as receive_date,
         wro.receive_code,
         mg.generic_id,
         mg.generic_name,
