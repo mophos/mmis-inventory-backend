@@ -3510,7 +3510,7 @@ router.get('/warehouses/export', async (req, res, next) => {
      })
     } catch (error) {
       console.log(error);
-      res.send({ ok: false, error: 'ไม่สามารถส่งออกไฟล์ .xlsx ได้' });
+      res.send({ ok: false, error: error });
     }
   } else {
     res.send({ ok: false, error: 'ไม่พบตารางข้อมูลที่ต้องการ' });
