@@ -9,23 +9,29 @@ html
     table.table
       thead
         tr 
-          td.center.bold(colspan='4') #{hospitalName}
+          td.center.bold(colspan='7') #{hospitalName}
         tr 
-          td.center.bold(colspan='4') รายการเฉพาะที่ไม่มีการเคลื่อนไหว
+          td.center.bold(colspan='7') รายการคงคลังเฉพาะที่ไม่มีการเคลื่อนไหว
         tr 
-          td.left(colspan='4') #{printDate}
+          td.left(colspan='7') #{printDate}
         tr
           th.left #
           th.left รหัสยา
           th.left ชื่อยา
+          th.right จำนวน &nbsp;
+          th.left หน่วย
+          th.left lot
           th.left ชนิด
       tbody
       - y=0
       for i in generics
         - y++
         tr
-          td.left #{y}
-          td.left #{i.working_code}
-          td.left #{i.generic_name}
+          td.left #{y} &nbsp;
+          td.left #{i.product_code}
+          td.left #{i.product_name}
+          td.right #{i.qty} &nbsp;
+          td.left #{i.package}
+          td.left #{i.lot_no}
           td.left #{i.generic_type_name}
 
