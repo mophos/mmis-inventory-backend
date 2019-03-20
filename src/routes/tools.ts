@@ -1071,9 +1071,9 @@ router.get('/calculate/stockcard/lot', async (req, res, next) => {
             balance_lot_qty: product[idx].balance_lot_qty,
           }
 
-          if (pd.balance_lot_qty != obj.balance_lot_qty && obj.balance_lot_qty) {
-            await toolModel.adjustStockUpdate(db, obj);
+          if (pd.balance_lot_qty != obj.balance_lot_qty && (obj.balance_lot_qty || obj.balance_lot_qty >= 0)) {
             console.log(obj);
+            await toolModel.adjustStockUpdate(db, obj);
           }
         }
       }
