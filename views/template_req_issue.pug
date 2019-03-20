@@ -1,0 +1,38 @@
+include css.pug
+style(media='print').
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    span.page
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='7') #{hospitalName}
+        tr
+          td.center.bold(colspan='7' ) รายงาน template
+        //- tr
+        //-   td.center(colspan='7') วันที่รับเข้า ตั้งแต่วันที่ #{startDate} ถึงวันที่ #{endDate}
+        tr
+          td.left(colspan='7' ) คลัง #{header.src_warehouse_name}
+        tr
+          td.left(colspan='7' ) เบิกคลัง #{header.dst_warehouse_name}
+        tr
+          td.left(colspan='7' ) #{printDate}
+        tr
+          th.center(style="width:10%") #
+          th.left(style="width:15%") รหัสเวชภัณฑ์
+          th.left ชื่อเวชภัณฑ์
+          th.right(style="width:25%") หน่วย
+      tbody
+        - var y = 0
+        - for(var b of data)
+          - y++
+          tr
+            td.center #{y}
+            td #{b.working_code}
+            td #{b.generic_name}
+            td.right #{b.unit}
