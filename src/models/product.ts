@@ -883,13 +883,13 @@ export class ProductModel {
 		select mg.working_code,mg.generic_id,mg.generic_name,wtd.unit_generic_id,u.unit_name as large_unit,mug.qty,u2.unit_name as small_unit,mgp.min_qty,
     mgp.max_qty,sum(wp.qty) as gen_qty
 		from wm_requisition_template_detail wtd
-    inner join mm_generics mg on wtd.generic_id = mg.generic_id
+    LEFT join mm_generics mg on wtd.generic_id = mg.generic_id
     left join mm_unit_generics mug on mug.unit_generic_id = wtd.unit_generic_id
     left join mm_units u on u.unit_id = mug.from_unit_id
     left join mm_units u2 on u2.unit_id = mug.to_unit_id
     LEFT JOIN mm_generic_planning mgp ON wtd.generic_id = mgp.generic_id AND mgp.warehouse_id = ${warehouseId} 
-    JOIN mm_products mp ON mp.generic_id = wtd.generic_id
-	  JOIN wm_products wp ON wp.product_id = mp.product_id AND wp.warehouse_id = ${warehouseId} 
+    LEFT JOIN mm_products mp ON mp.generic_id = wtd.generic_id
+	  LEFT JOIN wm_products wp ON wp.product_id = mp.product_id AND wp.warehouse_id = ${warehouseId} 
     where wtd.template_id = ${templateId} 
     group by wtd.generic_id 
     ORDER BY wtd.id`
