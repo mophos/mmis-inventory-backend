@@ -58,6 +58,21 @@ export class StaffModel {
     return knex.raw(sql);
   }
 
+  getallRequisitionTemplate(knex: Knex, templateId: string) {
+    let sql = `
+  select wrt.template_id, wrt.src_warehouse_id, wrt.dst_warehouse_id, 
+  ws.warehouse_name as src_warehouse_name, 
+  wd.warehouse_name as dst_warehouse_name, 
+  wrt.template_subject, wrt.created_date
+  from wm_requisition_template as wrt
+  inner join wm_warehouses as ws on wrt.src_warehouse_id = ws.warehouse_id
+  inner join wm_warehouses as wd on wrt.dst_warehouse_id = wd.warehouse_id
+  where wrt.template_id=?
+    `;
+
+    return knex.raw(sql, [templateId]);
+  }
+
   getBorrowRequest(knex: Knex, warehouseId) {
     let subQuery = knex('wm_borrow_check').select('borrow_id');
     let queryTotal = knex('wm_borrow_detail as d')

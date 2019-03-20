@@ -1,10 +1,14 @@
 include css.pug
+style(type='text/css' media='print').
+  @page{
+      margin-top: 1cm;
+      margin-left: 3cm;
+      margin-right: 1.5cm;
+  }
 style(type='text/css').
   body{
   font-family:'THSarabunNewIT';
   font-size: 13pt;
-  margin-left: 50px;
-  margin-right: 50px;
   }
 doctype html
 html
@@ -14,7 +18,7 @@ html
   body
     button.btn.btn-sm.btn-success.btnprint(onclick='window.print()') Print
     - for(var v of data)
-      img(src=APIURL+'krut.png' height='60px')
+      img(src=APIURL+'krut.png' height='60px' )
       .headkut.h1 บันทึกข้อความ
       br
       table.table
