@@ -1509,10 +1509,6 @@ router.post('/purchases/list/edi', co(async (req, res, nex) => {
     let sys_hospital = req.decoded.SYS_HOSPITAL;
     const hospcode = JSON.parse(sys_hospital).hospcode
 
-    // const sys = await poModel.hospital(db)
-    // const hospname = sys[0].hospname;
-    // const hospcode = sys[0].hospcode;
-
     const settings: any = await receiveModel.getSettingEDI(db, 'TOKEN');
     let data: any = {
       token: settings[0].value,
@@ -1520,10 +1516,10 @@ router.post('/purchases/list/edi', co(async (req, res, nex) => {
     }
     for (const r of rows[0]) {
       data.po_no = r.purchase_order_number
-      const rsASN = await receiveModel.getASN(data);
-      console.log('=-------=');
-      console.log(rsASN);
-      r.ans = rsASN;
+      const rsASN: any = await receiveModel.getASN(data);
+      if (rsASN.asns != undefined) {
+        r.asn = rsASN.asns[0];
+      }
     }
 
     let total = +rstotal[0][0].total

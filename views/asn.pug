@@ -1,0 +1,58 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success.btnprint(onclick='window.print()') Print
+    br 
+    | เลขที่ #{data.header.po_number}
+    br 
+    | วันที่ออกใบ ASN #{data.header.asn_date}
+    br 
+    | วันที่ส่ง #{data.header.shipped_date}
+    br
+    table.table
+      thead
+        tr
+          td no
+          td distitem_code
+          td item_name
+          td shipped_qty
+          td shipped_uom
+      - for(var l of data.line)
+        tbody
+          tr
+            td #{l.line_number}
+            td #{l.distitem_code}
+            td #{l.item_name}
+            td #{l.shipped_qty}
+            td #{l.shipped_uom}
+          tr
+            td(colspan="5")
+              table.table
+                thead
+                  tr
+                    td lot_qty
+                    td lot_uom
+                    td lot_number
+                    td pack_qty
+                    td pack_uom
+                    td pack_size_desc
+                    td price_per_unit
+                    td mfg_date
+                    td expired_date
+                -for(var i of l.subline)
+                  tr
+                    td #{i.lot_qty}
+                    td #{i.lot_uom}
+                    td #{i.lot_number}
+                    td #{i.pack_qty}
+                    td #{i.pack_uom}
+                    td #{i.pack_size_desc}
+                    td #{i.price_per_unit}
+                    td #{i.mfg_date}
+                    td #{i.expired_date}
+                  tr
+                    td(colspan="9")
