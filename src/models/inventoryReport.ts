@@ -3123,31 +3123,46 @@ OR sc.ref_src like ?
         return knex.raw(sql);
     }
 
-    genericsNomovement(knex: Knex, warehouseId: any, startdate: any, enddate: any, generic_type_id: any) {
+    genericsNomovement(knex: Knex, warehouseId: any, startdate: any, enddate: any, generic_type_id: any, dateSetting = 'view_stock_card_warehouse') {
         let sql = `SELECT
-        mg.generic_id,
+        ws.generic_id,
+        mg.working_code as generic_code,
         mg.generic_name,
-        mg.working_code,
+        mp.working_code AS product_code,
+        mp.product_name,
+        ( sum( ws.in_qty ) - sum( ws.out_qty ) ) / mug.qty AS qty,
+        concat( mu1.unit_name, " (", mug.qty, " ", mu2.unit_name, ")" ) AS package,
+        ws.lot_no,
         mgt.generic_type_name
     FROM
-        mm_generics AS mg
-    LEFT JOIN (
-        SELECT
-            vscw.generic_id,
-            vscw.generic_name
-        FROM
-            view_stock_card_warehouse AS vscw
-        WHERE
-            vscw.warehouse_id = '${warehouseId}'
-        AND vscw.stock_date BETWEEN '${startdate} 00:00:00'
-        AND '${enddate} 23:59:59'
-        GROUP BY
-            vscw.generic_id
-    ) AS v ON v.generic_id = mg.generic_id
-    JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+        ${dateSetting} AS ws
+        LEFT JOIN (
+    SELECT
+        * 
+    FROM
+        ${dateSetting} AS vscw 
     WHERE
-        v.generic_id IS NULL
-        AND mg.generic_type_id IN ( ${generic_type_id} )
+        vscw.stock_date BETWEEN '${startdate} 00:00:00' 
+        AND '${enddate} 23:59:59' 
+        AND vscw.warehouse_id = '${warehouseId}' 
+        AND vscw.transaction_type != 'SUMMIT' 
+    GROUP BY
+        vscw.generic_id 
+        ) AS q ON q.generic_id = ws.generic_id
+        JOIN mm_generics AS mg ON mg.generic_id = ws.generic_id
+        JOIN mm_products AS mp ON mp.product_id = ws.product_id
+        JOIN mm_unit_generics AS mug ON mug.unit_generic_id = ws.unit_generic_id
+        JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id
+        JOIN mm_units AS mu2 ON mu2.unit_id = mug.to_unit_id
+        JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+    WHERE
+        q.generic_id IS NULL 
+        AND ws.warehouse_id = ${warehouseId}
+        AND mg.generic_type_id IN ( ${generic_type_id} ) 
+        AND ws.stock_date < '${enddate} 23:59:59' 
+    GROUP BY
+        ws.product_id,
+        ws.lot_no
     ORDER BY
         mg.generic_type_id,
         mg.generic_name`
@@ -3159,8 +3174,11 @@ OR sc.ref_src like ?
         q.generic_id,
         q.generic_code,
         q.generic_name,
+        mp.working_code AS product_code,
+	    mp.product_name,
         ( sum( ws.in_qty ) - sum( ws.out_qty ) ) / mug.qty AS qty,
         concat( mu1.unit_name, " (", mug.qty, " ", mu2.unit_name, ")" ) AS package,
+        ws.lot_no,
         mgt.generic_type_name
     FROM
         ${dateSetting} AS ws
@@ -3176,12 +3194,12 @@ OR sc.ref_src like ?
         vscw.stock_date BETWEEN '${startdate} 00:00:00' 
         AND '${enddate} 23:59:59' 
         AND vscw.warehouse_id = '${warehouseId}' 
-        AND mmg.generic_type_id IN ( ${generic_type_id} ) 
         AND vscw.transaction_type != 'SUMMIT' 
     GROUP BY
         vscw.generic_id 
         ) AS q ON q.generic_id = ws.generic_id
         JOIN mm_generics AS mg ON mg.generic_id = ws.generic_id
+        JOIN mm_products AS mp ON mp.product_id = ws.product_id
         JOIN mm_unit_generics AS mug ON mug.unit_generic_id = ws.unit_generic_id
         JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id
         JOIN mm_units AS mu2 ON mu2.unit_id = mug.to_unit_id 
@@ -3191,7 +3209,8 @@ OR sc.ref_src like ?
         AND ws.warehouse_id = '${warehouseId}' 
         AND mg.generic_type_id IN ( ${generic_type_id} ) 
     GROUP BY
-        ws.generic_id 
+        ws.product_id,
+	    ws.lot_no
     ORDER BY
         mg.generic_type_id,
         mg.generic_name`
