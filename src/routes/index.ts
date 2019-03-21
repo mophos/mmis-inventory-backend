@@ -3311,9 +3311,10 @@ router.get('/report/generics-no-movement/:warehouseId/:startdate/:enddate', wrap
   let startdate = req.params.startdate
   let enddate = req.params.enddate
   let genericTypes = req.decoded.generic_type_id;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.genericsNomovement(db, warehouseId, startdate, enddate, genericTypes);
+  let rs = await inventoryReportModel.genericsNomovement(db, warehouseId, startdate, enddate, genericTypes, dateSetting);
   let generics = rs[0];
   console.log(generics);
 
