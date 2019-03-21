@@ -323,7 +323,7 @@ router.post('/save', co(async (req, res, next) => {
           borrow_id: borrowId,
           generic_id: g.generic_id,
           qty: g.borrow_qty,
-          primary_unit_id: g.primary_unit_id,
+          // primary_unit_id: g.primary_unit_id,
           unit_generic_id: g.unit_generic_id,
           create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
           create_by: req.decoded.people_user_id

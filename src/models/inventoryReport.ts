@@ -877,7 +877,7 @@ mgt.generic_type_id `
         mp.working_code as trade_code,
         mg.generic_id,
         wp.product_id,
-        bp.qty as borrow_qty,
+        sum(bp.qty) as borrow_qty,
         mup.qty as conversion_qty,
         mul.unit_name AS large_unit,
         mup.qty AS unit_qty,
@@ -3895,7 +3895,7 @@ GROUP BY
             vscw.conversion_qty,
             vscw.large_unit,
             vscw.small_unit,
-            sum(vscw.in_qty * in_unit_cost) - sum(vscw.out_qty * vscw.out_unit_cost) / (sum( vscw.in_qty ) - sum( vscw.out_qty )) AS unit_cost,
+            sum((vscw.in_qty * in_unit_cost) - (vscw.out_qty * vscw.out_unit_cost)) / sum( vscw.in_qty - vscw.out_qty ) AS unit_cost,
             sum(vscw.in_qty * in_unit_cost) - sum(vscw.out_qty * vscw.out_unit_cost) AS total_cost,
             mgp.min_qty,
 	        mgp.max_qty
@@ -3936,7 +3936,7 @@ GROUP BY
             vscw.conversion_qty,
             vscw.large_unit,
             vscw.small_unit,
-            sum(vscw.in_qty * in_unit_cost) - sum(vscw.out_qty * vscw.out_unit_cost) / (sum( vscw.in_qty ) - sum( vscw.out_qty )) AS unit_cost,
+            sum((vscw.in_qty * in_unit_cost) - (vscw.out_qty * vscw.out_unit_cost)) / sum( vscw.in_qty - vscw.out_qty ) AS unit_cost,
             sum(vscw.in_qty * in_unit_cost) - sum(vscw.out_qty * vscw.out_unit_cost) AS total_cost
         FROM
             view_stock_card_warehouse AS vscw

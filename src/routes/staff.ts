@@ -3479,6 +3479,44 @@ router.get('/period/status', (async (req, res, next) => {
   }
 }));
 
+router.get('/warehouses/export', async (req, res, next) => {
+  let templateId = req.query.templateId;
+  let warehouseId = req.query.warehouseId;
+  let db = req.db;
+  const printDate = 'วันที่พิมพ์ ' + moment().format('D MMMM ') + (moment().get('year') + 543) + moment().format(', HH:mm:ss น.');
+
+  if (templateId) {
+    try {
+      // let _tableName = `template`;
+      let header = await staffModel.getallRequisitionTemplate(db, templateId);
+      let result = await productModel.getAllProductInTemplateWarehouse(db, templateId, warehouseId);
+      let data = []
+      result[0].forEach(v => {
+        let unit = '';
+        if (v.large_unit || v.qty || v.small_unit) {
+          unit = v.large_unit + '(' + v.qty + ' ' + v.small_unit + ')';
+        }
+        data.push({
+          working_code: v.working_code,
+          generic_name: v.generic_name,
+          unit: unit
+        })
+      });
+      // create tmp file
+     res.render('template_req_issue',{
+      header: header[0][0],
+      data: data,
+      printDate: printDate
+     })
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error });
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบตารางข้อมูลที่ต้องการ' });
+  }
+});
+
 router.get('/warehouses/export/excel', async (req, res, next) => {
   let templateId = req.query.templateId;
   let warehouseId = req.query.warehouseId;
@@ -3513,7 +3551,7 @@ router.get('/warehouses/export/excel', async (req, res, next) => {
       // console.log(result);
 
       // create tmp file
-      let tmpFile = `${_tableName}-${moment().format('x')}.xls`;
+      let tmpFile = `${_tableName}-${moment().format('x')}.xlsx`;
       tmpFile = path.join(pathTmp, tmpFile);
       let excel = json2xls(r);
       fs.writeFileSync(tmpFile, excel, 'binary');
@@ -3526,7 +3564,7 @@ router.get('/warehouses/export/excel', async (req, res, next) => {
       });
     } catch (error) {
       console.log(error);
-      res.send({ ok: false, error: 'ไม่สามารถส่งออกไฟล์ .xls ได้' });
+      res.send({ ok: false, error: 'ไม่สามารถส่งออกไฟล์ .xlsx ได้' });
     }
   } else {
     res.send({ ok: false, error: 'ไม่พบตารางข้อมูลที่ต้องการ' });
