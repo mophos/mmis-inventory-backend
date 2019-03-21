@@ -1269,7 +1269,7 @@ mgt.generic_type_id `
             SELECT
 	mp.product_id AS product_id,
 	mp.product_name AS product_name,
-	mg.generic_id AS generic_id,
+	mg.working_code AS generic_id,
 	mg.generic_name AS generic_name,
 	mgt.generic_type_id AS generic_type_id,
 	mgt.generic_type_name AS generic_type_name,
@@ -1307,7 +1307,7 @@ FROM
         return (knex.raw(sql))
     }
 
-    list_receive2(knex: Knex, productId, receiveId) {
+    list_receive2(knex: Knex, productId, receiveId, warehouseId) {
         let sql = `SELECT
         wr.receive_code,
         wr.receive_id,
@@ -1328,7 +1328,8 @@ FROM
         ml2.labeler_name AS labeler_name_m,
         ml2.labeler_name_po AS labeler_name_po_m,
         wrd.cost,
-        ppoi.unit_price
+        ppoi.unit_price,
+        wrd.is_free
         FROM
             wm_receives wr
         JOIN wm_receive_detail wrd ON wr.receive_id = wrd.receive_id
@@ -1337,7 +1338,7 @@ FROM
             SELECT
 	mp.product_id AS product_id,
 	mp.product_name AS product_name,
-	mg.generic_id AS generic_id,
+	mg.working_code AS generic_id,
 	mg.generic_name AS generic_name,
 	mgt.generic_type_id AS generic_type_id,
 	mgt.generic_type_name AS generic_type_name,
@@ -1379,24 +1380,30 @@ FROM
         UNION
             SELECT
             '','','','','','','',
-                mg.generic_id,
+                mg.working_code generic_id,
                 mg.generic_name,
                 wp.qty,
                 mug.qty as small_qty,
                 '','',
-                wp.expired_date,wp.lot_no,'','','','',''
+                wp.expired_date,wp.lot_no,	wl.location_name,
+                '',
+                '',
+                '',
+                '',
+                '' 
             FROM
                 wm_products wp
-            JOIN mm_products mp ON mp.product_id = wp.product_id
-            JOIN mm_generics mg ON mp.generic_id = mg.generic_id
-            join mm_unit_generics mug on mug.unit_generic_id=wp.unit_generic_id
+                JOIN mm_products mp ON mp.product_id = wp.product_id
+                JOIN mm_generics mg ON mp.generic_id = mg.generic_id
+                JOIN mm_unit_generics mug ON mug.unit_generic_id = wp.unit_generic_id 
+                LEFT JOIN wm_locations wl ON wl.location_id = wp.location_id
             WHERE
-                wp.product_id = ?
+                wp.qty > 0 and wp.product_id = ? and wp.warehouse_id = ?
             GROUP BY
                 wp.lot_no`
-        return (knex.raw(sql, [receiveId, productId, productId]))
+        return (knex.raw(sql, [receiveId, productId, productId, warehouseId]))
     }
-    _list_receive2(knex: Knex, productId, receiveId) {
+    _list_receive2(knex: Knex, productId, receiveId, wareHouseId) {
         let sql = `SELECT
         wr.receive_code,
         wr.receive_other_id,
@@ -1443,10 +1450,10 @@ FROM
             JOIN mm_generics mg ON mp.generic_id = mg.generic_id
             join mm_unit_generics mug on mug.unit_generic_id=wp.unit_generic_id
             WHERE
-                wp.product_id = ?
+                wp.product_id = ? and wp.warehouse_id = ?
             GROUP BY
                 wp.lot_no`
-        return (knex.raw(sql, [receiveId, productId, productId]))
+        return (knex.raw(sql, [receiveId, productId, productId, wareHouseId]))
     }
     list_receive3(knex: Knex, receiveID) {
         let sql = `SELECT
@@ -1477,7 +1484,7 @@ FROM
             SELECT
 	mp.product_id AS product_id,
 	mp.product_name AS product_name,
-	mg.generic_id AS generic_id,
+	mg.working_code AS generic_id,
 	mg.generic_name AS generic_name,
 	mgt.generic_type_id AS generic_type_id,
 	mgt.generic_type_name AS generic_type_name,
@@ -1520,7 +1527,8 @@ FROM
             .select('wrd.product_id',
                 'wr.receive_id')
             .innerJoin('wm_receive_detail as wrd', 'wr.receive_id', 'wrd.receive_id')
-            .whereIn('wr.receive_id', receiveID);
+            .whereIn('wr.receive_id', receiveID)
+            .groupBy('wrd.product_id','wr.receive_id');
     }
     ///////// printRo1
     list_receive5(knex: Knex, receiveID) {
