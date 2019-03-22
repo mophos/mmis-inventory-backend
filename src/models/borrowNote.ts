@@ -60,6 +60,56 @@ export class BorrowNoteModel {
       .orderBy('mg.generic_name');
   }
 
+  getAllGeneric(db: Knex, warehouseId: any, dstWarehouseId: any) {
+    let sql = `
+    SELECT * FROM (
+    SELECT
+      mg.generic_id,
+      mg.generic_name,
+      SUM( d.qty ) AS qty,
+      lu.unit_name AS large_unit,
+      mug.qty AS conversion,
+      su.unit_name AS small_unit,
+      SUM( d.qty * mug.qty ) AS unpaidQty,
+      IFNULL( wp.wpQty, 0 ) AS wpQty,
+      mug.unit_generic_id
+    FROM
+      wm_borrow_note_detail d
+      JOIN wm_borrow_notes n ON n.borrow_note_id = d.borrow_note_id
+      JOIN mm_generics mg ON mg.generic_id = d.generic_id
+      JOIN mm_unit_generics mug ON mug.unit_generic_id = d.unit_generic_id
+      JOIN mm_units lu ON lu.unit_id = mug.from_unit_id
+      JOIN mm_units su ON su.unit_id = mug.to_unit_id
+      LEFT JOIN (
+        SELECT
+        mp.generic_id,
+        SUM( wp.remain_qty ) AS wpQty 
+      FROM
+        view_product_reserve wp
+        JOIN wm_products w ON w.wm_product_id = wp.wm_product_id
+        JOIN mm_products mp ON mp.product_id = wp.product_id 
+      WHERE
+        wp.warehouse_id = ${warehouseId}
+      GROUP BY
+        mp.generic_id,
+        w.unit_generic_id
+      ) AS wp ON wp.generic_id = mg.generic_id 
+      WHERE n.wm_borrow = ${dstWarehouseId}
+    GROUP BY
+      d.generic_id,
+      d.unit_generic_id
+    ORDER BY mg.generic_name
+    ) AS t ORDER BY t.wpQty - t.unpaidQty DESC`
+    return db.raw(sql)
+  }
+
+  getWarehouseDst(db: Knex, srcWarehouseId: any) {
+    return db('wm_borrow_notes as b')
+      .join('wm_warehouses as w', 'b.wm_borrow', 'w.warehouse_id')
+      .where('b.wm_withdarw', srcWarehouseId)
+      .groupBy('b.wm_borrow')
+  }
+
   getList(db: Knex, query: any, warehouse: any, limit: number = 20, offset: number = 0) {
     let sql = db('wm_borrow_notes as bn')
       .select('bn.*', 't.title_name', 'p.fname', 'p.lname', 'w.warehouse_name')
