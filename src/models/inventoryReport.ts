@@ -877,7 +877,7 @@ mgt.generic_type_id `
         mp.working_code as trade_code,
         mg.generic_id,
         wp.product_id,
-        bp.qty as borrow_qty,
+        sum(bp.qty) as borrow_qty,
         mup.qty as conversion_qty,
         mul.unit_name AS large_unit,
         mup.qty AS unit_qty,

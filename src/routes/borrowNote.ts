@@ -34,7 +34,7 @@ router.post('/', async (req, res, next) => {
       obj.unit_generic_id = v.unit_generic_id;
       _detail.push(obj);
     });
-    
+
     await borrowModel.saveDetail(db, _detail);
 
     res.send({ ok: true });
@@ -85,6 +85,37 @@ router.get('/:borrowNoteId/detail-list', async (req, res, next) => {
 
   try {
     let rs: any = await borrowModel.getDetailList(db, borrowNoteId);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+});
+
+router.get('/getall-remain', async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.decoded.warehouseId;
+  let dstWarehouseId = req.query.dstWarehouseId;
+
+  try {
+    let rs: any = await borrowModel.getAllGeneric(db, warehouseId, dstWarehouseId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+});
+
+router.get('/warehouses/dst', async (req, res, next) => {
+  let db = req.db;
+  let srcWarehouseId = req.decoded.warehouseId;
+
+  try {
+    let rs: any = await borrowModel.getWarehouseDst(db, srcWarehouseId);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
