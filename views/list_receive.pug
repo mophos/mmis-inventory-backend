@@ -17,7 +17,7 @@ html
       tbody
       for item in array2
         for a in item
-          if(a.receive_id!='')
+          if(a.receive_id!='' && a.is_free=='N')
             tr.dash-top
               td(colspan='2') เลขที่รับ  : #{a.receive_code}
               td(colspan='3') วันที่รับ : #{a.receive_date}
@@ -36,15 +36,25 @@ html
               td ผู้ผลิต
               td เลขทะเบียน
             tr
-            td #{a.generic_id}
-            td #{a.generic_name}
-            td #{a.location_name}
-            td #{a.receive_qty}x#{a.small_qty}
-            td #{a.expired_date}
-            td #{a.lot_no}
-            td #{a.labeler_name_po_m}
-            td 
+              td #{a.generic_id}
+              td #{a.generic_name}
+              td #{a.location_name}
+              td #{a.receive_qty}x#{a.small_qty}
+              td #{a.expired_date}
+              td #{a.lot_no}
+              td #{a.labeler_name_po_m}
+              td 
           -check=a.receive_id
+          if(a.receive_id!='' && a.is_free=='Y')
+            tr
+              td #{a.generic_id}
+              td #{a.generic_name} (ของแถม)
+              td #{a.location_name}
+              td #{a.receive_qty}x#{a.small_qty}
+              td #{a.expired_date}
+              td #{a.lot_no}
+              td 
+              td 
           if(a.receive_id=='')
             tr
               td คงคลัง
