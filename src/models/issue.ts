@@ -419,7 +419,7 @@ LEFT JOIN mm_unit_generics AS ug ON ug.unit_generic_id = sd.unit_generic_id
 LEFT JOIN mm_units AS uf ON uf.unit_id = ug.from_unit_id
 LEFT JOIN mm_units AS ut ON ut.unit_id = ug.to_unit_id
 WHERE
-	sd.template_id = ?
+	sd.template_id = ? AND g.mark_deleted = 'N'
     `;
 
     return knex.raw(sql, [id]);
