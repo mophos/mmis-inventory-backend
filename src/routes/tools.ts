@@ -45,7 +45,7 @@ router.post('/stockcard/borrows/search', async (req, res, next) => {
   try {
     let rs: any = await toolModel.searchBorrows(db, query);
     console.log(rs);
-    
+
     res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     console.log(error);
@@ -152,8 +152,6 @@ router.put('/stockcard/receives', async (req, res, next) => {
         in_qty: v.receive_qty * v.conversion_qty,
         in_unit_cost: v.cost / v.conversion_qty,
         balance_unit_cost: v.cost / v.conversion_qty,
-        // lot_no: v.lot_no,
-        // expired_date: v.expired_date
       }
 
       let qty;
@@ -161,27 +159,32 @@ router.put('/stockcard/receives', async (req, res, next) => {
       const qtyOld = v.receive_qty_old * v.conversion_qty_old;
       const costNew = v.cost / v.conversion_qty;
       const costOld = v.cost_old / v.conversion_qty_old;
+
+      // check cost receive new 62/03/24 12:00:00
+      const rs = await toolModel.getWmProductId(db, 'REV', receiveId, v.product_id, v.lot_no_old, v.expired_date_old);
+      const wmProductId = rs[0].wm_product_id_in;
+
+      ////////////////////////////////////
       if (qtyNew > qtyOld) {
         qty = qtyNew - qtyOld;
-        await toolModel.increasingQty(db, v.product_id, v.lot_no_old, warehouseId, qty) // เพิ่มขึ้น
+        await toolModel.increasingQtyWM(db, wmProductId, qty) // เพิ่มขึ้น
       } else if (qtyNew < qtyOld) {
         qty = qtyOld - qtyNew;
-        await toolModel.decreaseQty(db, v.product_id, v.lot_no_old, warehouseId, qty) // ลดลง
+        await toolModel.decreaseQtyWM(db, wmProductId, qty) // ลดลง
       }
-      console.log(v.expired_date, v.expired_date_old);
-      if (v.lot_no != v.lot_no_old || v.expired_date != v.expired_date_old || v.unit_generic_id != v.unit_generic_id_old) {
-        await toolModel.changeLotWmProduct(db, v.product_id, v.lot_no_old, v.lot_no, v.expired_date_old, v.expired_date, warehouseId, v.unit_generic_id_old, v.unit_generic_id);
-        await toolModel.changeLotStockcard(db, v.product_id, v.lot_no_old, v.lot_no, v.expired_date_old, v.expired_date, warehouseId);
+      if (v.lot_no != v.lot_no_old || v.expired_date != v.expired_date_old || v.unit_generic_id != v.unit_generic_id_old || costOld != costNew) {
+        await toolModel.changeLotWmProductWM(db, v.lot_no, v.expired_date, v.unit_generic_id, costNew, wmProductId)
+        await toolModel.changeLotStockcardWM(db, v.lot_no, v.expired_date, wmProductId);
       }
       await toolModel.updateReceiveDetail(db, receiveId, v);
-      const stockCardId = await toolModel.getStockCardId(db, receiveId, v.product_id, v.lot_no_old, 'REV');
-      await toolModel.updateStockcard(db, dataStock, stockCardId[0].stock_card_id);
+      // const stockCardId = await toolModel.getStockCardId(db, receiveId, v.product_id, v.lot_no_old, 'REV');
+      await toolModel.updateStockcard(db, dataStock, rs[0].stock_card_id);
 
       ///////////////save log/////////////////
       if (qtyOld != qtyNew || v.lot_no_old != v.lot_no || v.expired_date_old != v.expired_date) {
         const logs = {
           stock_card_log_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-          stock_card_id: stockCardId[0].stock_card_id,
+          stock_card_id: rs[0].stock_card_id,
           in_qty_old: qtyOld,
           in_unit_cost_old: costOld,
           out_qty_old: null,
