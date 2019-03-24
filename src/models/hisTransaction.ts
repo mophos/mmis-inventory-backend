@@ -1,5 +1,6 @@
 import Knex = require('knex');
 import * as moment from 'moment';
+import { join } from 'bluebird';
 
 export class HisTransactionModel {
 
@@ -131,52 +132,49 @@ export class HisTransactionModel {
 
     // get his transaction for issue
     getHisTransactionForImport(db: Knex, transactionIds: any[]) {
-        let subQuery = db('wm_products as wp')
-            .select(db.raw('sum(wp.qty)'))
-            .whereRaw('wp.product_id=mp.product_id and wp.warehouse_id=tt.mmis_warehouse')
-            .as('total')
-            ;
-
         return db('wm_his_transaction as tt')
             .select('tt.transaction_id', 'tt.date_serv', 'tt.hn', 'tt.seq', 'tt.mmis_warehouse as warehouse_id',
-                'mp.product_id', 'mp.generic_id', db.raw('tt.qty * hm.conversion as qty'), subQuery)
+                'mg.generic_id', 'hm.conversion', db.raw('tt.qty * hm.conversion as qty'))
             .joinRaw('inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode')
             .innerJoin('mm_generics as mg', 'mg.generic_id', 'hm.mmis')
-            .innerJoin('mm_products as mp', 'mp.generic_id', 'mg.generic_id')
             .whereIn('tt.transaction_id', transactionIds)
-            .groupBy('mp.product_id')
-            .havingRaw('total>0')
-            .orderBy('mp.product_id', 'ASC')
-            .orderBy('tt.date_serv', 'ASC');
+            .orderBy('tt.transaction_id', 'ASC');
     }
 
-    getProductInWarehouseForImport(db: Knex, warehouseIds: any[], productIds: any[]) {
+    getProductInWarehouseForImport(db: Knex, warehouseId: any, genericId: any) {
         return db('wm_products as wp')
-            .select('wp.wm_product_id', 'wp.product_id', 'wp.qty', 'wp.lot_no', 'wp.lot_time',
-                'wp.expired_date', 'wp.warehouse_id', 'mp.generic_id', 'wp.cost', 'wp.unit_generic_id')
-            .leftJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
-            .whereIn('wp.product_id', productIds)
-            .whereIn('wp.warehouse_id', warehouseIds)
-            .where('wp.qty', '>', 0)
-            .groupByRaw('wp.product_id, wp.lot_no')
-            .orderBy('wp.product_id', 'ASC')
+            .select('wp.*')
+            .join('mm_products as mp', 'mp.product_id', 'wp.product_id')
+            .where('wp.warehouse_id', warehouseId)
+            .andWhere('wp.qty', '>', 0)
+            .andWhere('mp.generic_id', genericId)
             .orderBy('wp.expired_date', 'ASC');
     }
 
     decreaseProductQty(db: Knex, id: any, qty: any) {
         return db('wm_products')
-            .decrement('qty', qty)
+            .update('qty', qty)
             .where('wm_product_id', id);
     }
 
-    changeStatusToCut(db: Knex, cutDate: any, peopleUserId: any, transactionIds: any[]) {
+    changeStatusToCut(db: Knex, cutDate: any, peopleUserId: any, transactionIds: any) {
         return db('wm_his_transaction')
             .update({
                 is_cut_stock: 'Y',
                 cut_stock_date: cutDate,
                 cut_stock_people_user_id: peopleUserId
             })
-            .whereIn('transaction_id', transactionIds);
+            .where('transaction_id', transactionIds);
+    }
+
+    changeQtyInHisTransaction(db: Knex, cutDate: any, peopleUserId: any, transactionIds: any, diff: any) {
+        return db('wm_his_transaction')
+            .update({
+                qty: diff,
+                cut_stock_date: cutDate,
+                cut_stock_people_user_id: peopleUserId
+            })
+            .where('transaction_id', transactionIds);
     }
 
     getRemainQty(db: Knex, productId: any) {
@@ -334,7 +332,7 @@ export class HisTransactionModel {
         wh.is_cut_stock = 'N' 
         AND hm.mmis IS NULL `
         if (warehouseId) {
-            sql += `AND wh.mmis_warehouse = '${warehouseId} `
+            sql += `AND wh.mmis_warehouse = '${warehouseId}' `
         }
         sql += `
     GROUP BY
