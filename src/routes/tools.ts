@@ -745,15 +745,15 @@ router.put('/stockcard/issues', async (req, res, next) => {
       for (const i of v.items) {
         await toolModel.updateIssueProduct(db, i);
         const dataStock = {
-          out_qty: i.product_qty,
+          out_qty: i.product_qty
         }
         let qty;
         if (i.product_qty > i.product_qty_old) {
           qty = i.product_qty - i.product_qty_old;
-          await toolModel.decreaseQtyWM(db, i.wm_product_id, i.product_qty) // ลดลง
+          await toolModel.decreaseQtyWM(db, i.wm_product_id, qty) // ลดลง
         } else if (i.product_qty < i.product_qty_old) {
           qty = i.product_qty_old - i.product_qty;
-          await toolModel.increasingQtyWM(db, i.wm_product_id, i.product_qty) // เพิ่มขึ้น
+          await toolModel.increasingQtyWM(db, i.wm_product_id, qty) // เพิ่มขึ้น
         }
         const stockCardId = await toolModel.getStockCardId(db, issueId, i.product_id, i.lot_no, 'IST');
         await toolModel.updateStockcard(db, dataStock, stockCardId[0].stock_card_id);
