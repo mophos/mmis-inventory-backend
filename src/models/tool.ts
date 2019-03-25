@@ -50,7 +50,7 @@ export class ToolModel {
       ro.approved = 'Y' 
       AND ro.mark_deleted = 'N' 
       AND ro.borrow_code LIKE '${_query}'`;
-      console.log(sql)
+    console.log(sql)
     return db.raw(sql);
   }
 
@@ -287,6 +287,7 @@ export class ToolModel {
     return knex.raw(sql);;
   }
 
+  // chageCost(knex:Knex,)
   changeLotWmProduct(knex: Knex, productId, lotNoOld, lotNoNew, expiredOld, expiredNew, warehouseId, unitGenericIdOld, unitGenericId) {
     const sql = `UPDATE wm_products 
     set lot_no = '${lotNoNew}',expired_date = '${expiredNew}',unit_generic_id =${unitGenericId}
@@ -300,6 +301,19 @@ export class ToolModel {
     set lot_no = '${lotNoNew}',expired_date = '${expiredNew}'
     WHERE product_id = '${productId}'  AND lot_no = '${lotNoOld}' AND expired_date = '${expiredOld}'`
     console.log(sql.toString());
+    return knex.raw(sql);
+  }
+  changeLotWmProductWM(knex: Knex, lotNoNew, expiredNew, unitGenericId, cost, wmProductId) {
+    const sql = `UPDATE wm_products 
+    set lot_no = '${lotNoNew}',expired_date = '${expiredNew}',unit_generic_id =${unitGenericId},cost = ${cost},price = ${cost}
+    WHERE wm_product_id = '${wmProductId}'`
+    return knex.raw(sql);
+  }
+
+  changeLotStockcardWM(knex: Knex, lotNoNew, expiredNew, wmProductId) {
+    const sql = `UPDATE wm_stock_card 
+    set lot_no = '${lotNoNew}',expired_date = '${expiredNew}'
+    WHERE wm_product_id_in = '${wmProductId}' or wm_product_id_out = '${wmProductId}' `
     return knex.raw(sql);
   }
 
@@ -526,5 +540,14 @@ export class ToolModel {
         wp.warehouse_id = ${warehouseId}
         AND wp.qty > 0`
     )
+  }
+
+  getWmProductId(knex: Knex, trasactionType, documentId, productId, lotNo, expiredDate) {
+    return knex('wm_stock_card')
+      .where('transaction_type', trasactionType)
+      .where('document_ref_id', documentId)
+      .where('product_id', productId)
+      .where('lot_no', lotNo)
+      .where('expired_date', expiredDate)
   }
 }

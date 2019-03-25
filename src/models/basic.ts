@@ -92,6 +92,15 @@ export class BasicModel {
       .where('warehouse_id', warehouseId);
   }
 
+  getProductLastLocation(knex: Knex, productId: any) {
+    return knex('wm_receive_detail as rd')
+      .select('wl.location_id', 'wl.location_name', 'wl.location_desc')
+      .join('wm_locations as wl', 'wl.location_id', 'rd.location_id')
+      .where('product_id', productId)
+      .orderBy('rd.receive_id', 'DESC')
+      .limit(1);
+  }
+
   getPeopleList(knex: Knex) {
     return knex('um_people as p')
       .select('p.*', 'ut.title_name')
