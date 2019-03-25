@@ -824,7 +824,7 @@ WHERE
 
   // receive with purchase
 
-  getPurchaseList(knex: Knex, limit: number, offset: number, sort: any = {}, genericTypeId = [], warehouseId : any) {
+  getPurchaseList(knex: Knex, limit: number, offset: number, sort: any = {}, genericTypeId = [], warehouseId: any) {
     let sql = `
     select pc.purchase_order_book_number, pc.purchase_order_id,
       IF(pc.purchase_order_book_number is null, pc.purchase_order_number, pc.purchase_order_book_number) as purchase_order_number,
@@ -983,7 +983,7 @@ WHERE
 
   }
 
-  getPurchaseListSearch(knex: Knex, limit: number, offset: number, query, sort: any = {},warehouseId:any) {
+  getPurchaseListSearch(knex: Knex, limit: number, offset: number, query, sort: any = {}, warehouseId: any) {
     let _query = `%${query}%`;
     let sql = `
     select pc.purchase_order_book_number, pc.purchase_order_id, pc.purchase_order_number,
@@ -1072,7 +1072,7 @@ WHERE
     return knex.raw(sql);
 
   }
-  getPurchaseListTotal(knex: Knex, genericTypeId = [],warehouseId:any) {
+  getPurchaseListTotal(knex: Knex, genericTypeId = [], warehouseId: any) {
 
     let sql = `
     select count(*) as total
@@ -1090,7 +1090,7 @@ WHERE
     return knex.raw(sql, []);
 
   }
-  getPurchaseListTotalSearch(knex: Knex, query,warehouseId:any) {
+  getPurchaseListTotalSearch(knex: Knex, query, warehouseId: any) {
     let _query = `%${query}%`;
     let sql = `
     select count(*) as total
@@ -1149,7 +1149,7 @@ WHERE
       pi.qty as purchase_qty, pi.unit_price as cost, lm.labeler_name as m_labeler_name,
       lv.labeler_name as v_labeler_name, p.working_code,
       mu.from_unit_id, mu.to_unit_id as base_unit_id, mu.qty as conversion_qty,
-      u1.unit_name as to_unit_name, u2.unit_name as from_unit_name, pi.giveaway, p.is_lot_control,
+      u1.unit_name as to_unit_name, u2.unit_name as from_unit_name, pi.giveaway, p.is_lot_control,p.is_expired_control,
       (
       	select ifnull(sum(rdx.receive_qty), 0)
       	from wm_receive_detail as rdx
