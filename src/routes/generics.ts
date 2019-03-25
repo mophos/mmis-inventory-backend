@@ -80,8 +80,8 @@ router.get('/warehouse/search/autocomplete', async (req, res, next) => {
   let q = req.query.q;
   let warehouseId = req.query.warehouseId;
   let limit = req.query.limit === 'Y' ? false : true;
-  let status = await genericModel.checkWarehouse(db, req.decoded.warehouseId);
-  this.admin = status[0].type_id === 1 ? true : false;
+  let status = await genericModel.checkUsers(db, req.decoded.people_user_id);
+  this.admin = status[0].warehouse_type_id === 1 ? true : false;
   if (warehouseId == undefined || warehouseId == null || warehouseId == '') {
     warehouseId = req.decoded.warehouseId;
   }
