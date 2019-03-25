@@ -1158,7 +1158,8 @@ WHERE
         and rdx.is_free = pi.giveaway
         and r.purchase_order_id=pi.purchase_order_id
         and r.is_cancel='N'
-      ) as total_received_qty
+      ) as total_received_qty,
+    (select location_id from wm_receive_detail where product_id = pi.product_id order by receive_id desc limit 1)  as location_id
     from pc_purchasing_order_item as pi
     inner join mm_products as p on p.product_id = pi.product_id
     left join mm_generics as g on g.generic_id = p.generic_id

@@ -3756,7 +3756,7 @@ GROUP BY
     }
 
     exportRemainQtyByTrade(knex: Knex, warehouseId: any) {
-        let sql = knex('wm_products as wp')
+        return knex('wm_products as wp')
             .select('mg.working_code', 'mg.generic_name', 'mp.product_name', 'wp.lot_no', 'mg.min_qty', 'mg.max_qty', 'u2.unit_name')
             .sum('wp.qty as qty')
             .join('mm_products as mp', 'mp.product_id', 'wp.product_id')
@@ -3768,9 +3768,6 @@ GROUP BY
             .groupBy('wp.product_id')
             .groupBy('wp.lot_no')
             .orderBy('mg.generic_name')
-        console.log(sql.toString());
-        return sql;
-
     }
 
     productExpired(knex: Knex, genericTypeId, warehouseId) {
