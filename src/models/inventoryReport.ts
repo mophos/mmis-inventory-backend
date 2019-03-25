@@ -877,7 +877,7 @@ mgt.generic_type_id `
         mp.working_code as trade_code,
         mg.generic_id,
         wp.product_id,
-        bp.qty as borrow_qty,
+        sum(bp.qty) as borrow_qty,
         mup.qty as conversion_qty,
         mul.unit_name AS large_unit,
         mup.qty AS unit_qty,
@@ -1269,7 +1269,7 @@ mgt.generic_type_id `
             SELECT
 	mp.product_id AS product_id,
 	mp.product_name AS product_name,
-	mg.generic_id AS generic_id,
+	mg.working_code AS generic_id,
 	mg.generic_name AS generic_name,
 	mgt.generic_type_id AS generic_type_id,
 	mgt.generic_type_name AS generic_type_name,
@@ -1307,7 +1307,7 @@ FROM
         return (knex.raw(sql))
     }
 
-    list_receive2(knex: Knex, productId, receiveId) {
+    list_receive2(knex: Knex, productId, receiveId, warehouseId) {
         let sql = `SELECT
         wr.receive_code,
         wr.receive_id,
@@ -1328,7 +1328,8 @@ FROM
         ml2.labeler_name AS labeler_name_m,
         ml2.labeler_name_po AS labeler_name_po_m,
         wrd.cost,
-        ppoi.unit_price
+        ppoi.unit_price,
+        wrd.is_free
         FROM
             wm_receives wr
         JOIN wm_receive_detail wrd ON wr.receive_id = wrd.receive_id
@@ -1337,7 +1338,7 @@ FROM
             SELECT
 	mp.product_id AS product_id,
 	mp.product_name AS product_name,
-	mg.generic_id AS generic_id,
+	mg.working_code AS generic_id,
 	mg.generic_name AS generic_name,
 	mgt.generic_type_id AS generic_type_id,
 	mgt.generic_type_name AS generic_type_name,
@@ -1379,24 +1380,30 @@ FROM
         UNION
             SELECT
             '','','','','','','',
-                mg.generic_id,
+                mg.working_code generic_id,
                 mg.generic_name,
                 wp.qty,
                 mug.qty as small_qty,
                 '','',
-                wp.expired_date,wp.lot_no,'','','','',''
+                wp.expired_date,wp.lot_no,	wl.location_name,
+                '',
+                '',
+                '',
+                '',
+                '' 
             FROM
                 wm_products wp
-            JOIN mm_products mp ON mp.product_id = wp.product_id
-            JOIN mm_generics mg ON mp.generic_id = mg.generic_id
-            join mm_unit_generics mug on mug.unit_generic_id=wp.unit_generic_id
+                JOIN mm_products mp ON mp.product_id = wp.product_id
+                JOIN mm_generics mg ON mp.generic_id = mg.generic_id
+                JOIN mm_unit_generics mug ON mug.unit_generic_id = wp.unit_generic_id 
+                LEFT JOIN wm_locations wl ON wl.location_id = wp.location_id
             WHERE
-                wp.product_id = ?
+                wp.qty > 0 and wp.product_id = ? and wp.warehouse_id = ?
             GROUP BY
                 wp.lot_no`
-        return (knex.raw(sql, [receiveId, productId, productId]))
+        return (knex.raw(sql, [receiveId, productId, productId, warehouseId]))
     }
-    _list_receive2(knex: Knex, productId, receiveId) {
+    _list_receive2(knex: Knex, productId, receiveId, wareHouseId) {
         let sql = `SELECT
         wr.receive_code,
         wr.receive_other_id,
@@ -1443,10 +1450,10 @@ FROM
             JOIN mm_generics mg ON mp.generic_id = mg.generic_id
             join mm_unit_generics mug on mug.unit_generic_id=wp.unit_generic_id
             WHERE
-                wp.product_id = ?
+                wp.product_id = ? and wp.warehouse_id = ?
             GROUP BY
                 wp.lot_no`
-        return (knex.raw(sql, [receiveId, productId, productId]))
+        return (knex.raw(sql, [receiveId, productId, productId, wareHouseId]))
     }
     list_receive3(knex: Knex, receiveID) {
         let sql = `SELECT
@@ -1477,7 +1484,7 @@ FROM
             SELECT
 	mp.product_id AS product_id,
 	mp.product_name AS product_name,
-	mg.generic_id AS generic_id,
+	mg.working_code AS generic_id,
 	mg.generic_name AS generic_name,
 	mgt.generic_type_id AS generic_type_id,
 	mgt.generic_type_name AS generic_type_name,
@@ -1520,7 +1527,8 @@ FROM
             .select('wrd.product_id',
                 'wr.receive_id')
             .innerJoin('wm_receive_detail as wrd', 'wr.receive_id', 'wrd.receive_id')
-            .whereIn('wr.receive_id', receiveID);
+            .whereIn('wr.receive_id', receiveID)
+            .groupBy('wrd.product_id','wr.receive_id');
     }
     ///////// printRo1
     list_receive5(knex: Knex, receiveID) {
@@ -3123,31 +3131,46 @@ OR sc.ref_src like ?
         return knex.raw(sql);
     }
 
-    genericsNomovement(knex: Knex, warehouseId: any, startdate: any, enddate: any, generic_type_id: any) {
+    genericsNomovement(knex: Knex, warehouseId: any, startdate: any, enddate: any, generic_type_id: any, dateSetting = 'view_stock_card_warehouse') {
         let sql = `SELECT
-        mg.generic_id,
+        ws.generic_id,
+        mg.working_code as generic_code,
         mg.generic_name,
-        mg.working_code,
+        mp.working_code AS product_code,
+        mp.product_name,
+        ( sum( ws.in_qty ) - sum( ws.out_qty ) ) / mug.qty AS qty,
+        concat( mu1.unit_name, " (", mug.qty, " ", mu2.unit_name, ")" ) AS package,
+        ws.lot_no,
         mgt.generic_type_name
     FROM
-        mm_generics AS mg
-    LEFT JOIN (
-        SELECT
-            vscw.generic_id,
-            vscw.generic_name
-        FROM
-            view_stock_card_warehouse AS vscw
-        WHERE
-            vscw.warehouse_id = '${warehouseId}'
-        AND vscw.stock_date BETWEEN '${startdate} 00:00:00'
-        AND '${enddate} 23:59:59'
-        GROUP BY
-            vscw.generic_id
-    ) AS v ON v.generic_id = mg.generic_id
-    JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+        ${dateSetting} AS ws
+        LEFT JOIN (
+    SELECT
+        * 
+    FROM
+        ${dateSetting} AS vscw 
     WHERE
-        v.generic_id IS NULL
-        AND mg.generic_type_id IN ( ${generic_type_id} )
+        vscw.stock_date BETWEEN '${startdate} 00:00:00' 
+        AND '${enddate} 23:59:59' 
+        AND vscw.warehouse_id = '${warehouseId}' 
+        AND vscw.transaction_type != 'SUMMIT' 
+    GROUP BY
+        vscw.generic_id 
+        ) AS q ON q.generic_id = ws.generic_id
+        JOIN mm_generics AS mg ON mg.generic_id = ws.generic_id
+        JOIN mm_products AS mp ON mp.product_id = ws.product_id
+        JOIN mm_unit_generics AS mug ON mug.unit_generic_id = ws.unit_generic_id
+        JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id
+        JOIN mm_units AS mu2 ON mu2.unit_id = mug.to_unit_id
+        JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+    WHERE
+        q.generic_id IS NULL 
+        AND ws.warehouse_id = ${warehouseId}
+        AND mg.generic_type_id IN ( ${generic_type_id} ) 
+        AND ws.stock_date < '${enddate} 23:59:59' 
+    GROUP BY
+        ws.product_id,
+        ws.lot_no
     ORDER BY
         mg.generic_type_id,
         mg.generic_name`
@@ -3159,8 +3182,11 @@ OR sc.ref_src like ?
         q.generic_id,
         q.generic_code,
         q.generic_name,
+        mp.working_code AS product_code,
+	    mp.product_name,
         ( sum( ws.in_qty ) - sum( ws.out_qty ) ) / mug.qty AS qty,
         concat( mu1.unit_name, " (", mug.qty, " ", mu2.unit_name, ")" ) AS package,
+        ws.lot_no,
         mgt.generic_type_name
     FROM
         ${dateSetting} AS ws
@@ -3176,12 +3202,12 @@ OR sc.ref_src like ?
         vscw.stock_date BETWEEN '${startdate} 00:00:00' 
         AND '${enddate} 23:59:59' 
         AND vscw.warehouse_id = '${warehouseId}' 
-        AND mmg.generic_type_id IN ( ${generic_type_id} ) 
         AND vscw.transaction_type != 'SUMMIT' 
     GROUP BY
         vscw.generic_id 
         ) AS q ON q.generic_id = ws.generic_id
         JOIN mm_generics AS mg ON mg.generic_id = ws.generic_id
+        JOIN mm_products AS mp ON mp.product_id = ws.product_id
         JOIN mm_unit_generics AS mug ON mug.unit_generic_id = ws.unit_generic_id
         JOIN mm_units AS mu1 ON mu1.unit_id = mug.from_unit_id
         JOIN mm_units AS mu2 ON mu2.unit_id = mug.to_unit_id 
@@ -3191,7 +3217,8 @@ OR sc.ref_src like ?
         AND ws.warehouse_id = '${warehouseId}' 
         AND mg.generic_type_id IN ( ${generic_type_id} ) 
     GROUP BY
-        ws.generic_id 
+        ws.product_id,
+	    ws.lot_no
     ORDER BY
         mg.generic_type_id,
         mg.generic_name`

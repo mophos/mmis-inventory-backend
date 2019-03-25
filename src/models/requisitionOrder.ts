@@ -226,6 +226,7 @@ export class RequisitionOrderModel {
       limit ${limit} offset ${offset}
     `;
 
+    console.log(sqlSrc,sqlDst)
     return srcWarehouseId ? db.raw(sqlSrc) : db.raw(sqlDst);
   }
 
@@ -907,7 +908,7 @@ export class RequisitionOrderModel {
     from wm_requisition_template_detail as td
     inner join mm_generics as g on g.generic_id=td.generic_id
     inner join wm_requisition_template as rt on rt.template_id=td.template_id
-    where td.template_id=?
+    where td.template_id=? and g.mark_deleted = 'N' AND g.is_active = 'Y'
     order by td.id
     `;
 
@@ -926,7 +927,7 @@ export class RequisitionOrderModel {
     from wm_requisition_template_detail as td
     inner join mm_generics as g on g.generic_id=td.generic_id
     inner join wm_requisition_template as rt on rt.template_id=td.template_id
-    where td.template_id=?
+    where td.template_id=? and g.mark_deleted = 'N' AND g.is_active = 'Y'
     order by g.generic_name
     `;
 

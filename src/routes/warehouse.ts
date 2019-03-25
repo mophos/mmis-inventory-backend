@@ -1235,6 +1235,7 @@ router.put('/products/lot-expired', wrap(async (req, res, next) => {
     try {
       let oldData: any = {
         lot_no: data.old_lot_no,
+        lot_time: data.lot_time,
         expired_date: moment(data.old_expired_date, 'DD/MM/YYYY').isValid() ? moment(data.old_expired_date, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
       }
 
@@ -1257,9 +1258,9 @@ router.put('/products/lot-expired', wrap(async (req, res, next) => {
 
       await warehouseModel.insertProductHistory(db, history);
 
-      await warehouseModel.updateProduct(db, data.product_id, oldData, newData);
-      await warehouseModel.updateReceiveDetail(db, data.product_id, oldData, newData);
-      await warehouseModel.updateReceiveOtherDetail(db, data.product_id, oldData, newData);
+      await warehouseModel.updateProduct(db, data.wm_product_id, oldData, newData);
+      // await warehouseModel.updateReceiveDetail(db, data.product_id, oldData, newData);
+      // await warehouseModel.updateReceiveOtherDetail(db, data.product_id, oldData, newData);
       await warehouseModel.updateStockCard(db, data.product_id, oldData, newData);
 
       res.send({ ok: true });

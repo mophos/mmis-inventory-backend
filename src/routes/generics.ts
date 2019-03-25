@@ -5,6 +5,8 @@ import * as moment from 'moment';
 import * as co from 'co-express';
 import * as _ from 'lodash';
 import { GenericModel } from '../models/generic';
+import { thisTypeAnnotation } from 'babel-types';
+import { stat } from 'fs';
 const router = express.Router();
 
 const genericModel = new GenericModel();
@@ -78,6 +80,8 @@ router.get('/warehouse/search/autocomplete', async (req, res, next) => {
   let q = req.query.q;
   let warehouseId = req.query.warehouseId;
   let limit = req.query.limit === 'Y' ? false : true;
+  let status = await genericModel.checkWarehouse(db, req.decoded.warehouseId);
+  this.admin = status[0].type_id === 1 ? true : false;
   if (warehouseId == undefined || warehouseId == null || warehouseId == '') {
     warehouseId = req.decoded.warehouseId;
   }
@@ -87,9 +91,17 @@ router.get('/warehouse/search/autocomplete', async (req, res, next) => {
     } else {
       let rs: any;
       if (limit) {
-        rs = await genericModel.warehouseSearchAutocompleteLimit(db, warehouseId, q);
+        if (this.admin) {
+          rs = await genericModel.warehouseSearchAutocompleteLimit(db, warehouseId, q);
+        } else {
+          rs = await genericModel.warehouseSearchAutocompleteLimitStaff(db, warehouseId, q);
+        }
       } else {
-        rs = await genericModel.warehouseSearchAutocompleteAll(db, warehouseId, q);
+        if (this.admin) {
+          rs = await genericModel.warehouseSearchAutocompleteAll(db, warehouseId, q);
+        } else {
+          rs = await genericModel.warehouseSearchAutocompleteAllStaff(db, warehouseId, q);
+        }
       }
       if (rs[0].length) {
         res.send(rs[0]);
@@ -479,7 +491,7 @@ router.post('/allocate-borrow', async (req, res, next) => {
     //push all wm_products
     for (const p of rsProducts) {
       let idx = _.findIndex(allocate, { wm_product_id: p.wm_product_id });
-      if(idx === -1){
+      if (idx === -1) {
         allocate.push({
           wm_product_id: p.wm_product_id,
           product_qty: 0,

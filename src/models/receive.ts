@@ -1371,7 +1371,7 @@ WHERE
 
   getPurchaseProductList(knex: Knex, purchaseOrderId: any) {
     let sql = `
-    select pi.product_id, p.product_name, pi.unit_generic_id,
+    select (SELECT location_id FROM wm_receive_detail WHERE product_id = pi.product_id LIMIT 1) AS location_id,pi.product_id, p.product_name, pi.unit_generic_id,
       p.m_labeler_id, p.v_labeler_id, g.generic_name, g.generic_id, g.working_code as generic_working_code,
       pi.qty as purchase_qty, pi.unit_price as cost, lm.labeler_name as m_labeler_name,
       lv.labeler_name as v_labeler_name, p.working_code,
