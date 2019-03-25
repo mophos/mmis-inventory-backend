@@ -437,7 +437,7 @@ export class ProductModel {
         l.labeler_name,
         ")"
       ) AS product_name,
-      (SELECT location_id FROM wm_receive_detail WHERE product_id = mp.product_id LIMIT 1) AS location_id,
+      (SELECT location_id FROM wm_receive_detail WHERE product_id = mp.product_id ORDER BY receive_detail_id DESC LIMIT 1) AS location_id,
       mp.product_id,
       mp.primary_unit_id,
       mp.working_code,
@@ -660,7 +660,7 @@ export class ProductModel {
         l.labeler_name,
         ")"
       ) AS product_name,
-      (SELECT location_id FROM wm_receive_detail WHERE product_id = mp.product_id LIMIT 1) AS location_id,
+      (SELECT location_id FROM wm_receive_detail WHERE product_id = mp.product_id ORDER BY receive_detail_id DESC LIMIT 1) AS location_id,
       mp.product_id,
       mp.primary_unit_id,
       mp.working_code,
@@ -693,7 +693,7 @@ export class ProductModel {
         l.labeler_name,
         ")"
       ) AS product_name,
-      (SELECT location_id FROM wm_receive_detail WHERE product_id = mp.product_id LIMIT 1) AS location_id,
+      (SELECT location_id FROM wm_receive_detail WHERE product_id = mp.product_id ORDER BY receive_detail_id DESC LIMIT 1) AS location_id,
       mp.product_id,
       mp.primary_unit_id,
       mp.working_code,
@@ -729,7 +729,7 @@ export class ProductModel {
         l.labeler_name,
         ")"
       ) AS product_name,
-      (SELECT location_id FROM wm_receive_detail WHERE product_id = mp.product_id LIMIT 1) AS location_id,
+      (SELECT location_id FROM wm_receive_detail WHERE product_id = mp.product_id ORDER BY receive_detail_id DESC LIMIT 1) AS location_id,
       mp.product_id,
       mp.primary_unit_id,
       mp.working_code,
