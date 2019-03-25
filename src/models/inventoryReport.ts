@@ -3757,13 +3757,16 @@ GROUP BY
 
     exportRemainQtyByTrade(knex: Knex, warehouseId: any) {
         return knex('wm_products as wp')
-            .select('mg.working_code', 'mg.generic_name', 'mp.product_name', 'wp.lot_no', 'mg.min_qty', 'mg.max_qty', 'wp.qty', 'u2.unit_name')
+            .select('mg.working_code', 'mg.generic_name', 'mp.product_name', 'wp.lot_no', 'mg.min_qty', 'mg.max_qty', 'u2.unit_name')
+            .sum('wp.qty as qty')
             .join('mm_products as mp', 'mp.product_id', 'wp.product_id')
             .join('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
             .join('mm_unit_generics as mug', 'mug.generic_id', 'mg.generic_id')
             .join('mm_units as u1', 'u1.unit_id', 'mug.from_unit_id')
             .join('mm_units as u2', 'u2.unit_id', 'mug.to_unit_id')
             .where('wp.warehouse_id', warehouseId)
+            .groupBy('wp.product_id')
+            .groupBy('wp.lot_no')
             .orderBy('mg.generic_name')
     }
 
