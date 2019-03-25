@@ -828,7 +828,7 @@ router.post('/approve', co(async (req, res, next) => {
     } else {
       await receiveModel.removeOldApprove(db, receiveIds);
       const receiveId = await receiveModel.saveApprove(db, approveDatas);
-      if (receiveId) {
+      if (approveDatas.length == receiveId.length) {
 
         // get product
         let _rproducts = await receiveModel.getReceiveProductsImport(db, receiveIds);
