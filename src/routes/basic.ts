@@ -116,13 +116,30 @@ router.get('/generic-warehouses/:genericId', co(async (req, res, next) => {
 
 }));
 
-router.get('/warehouse-location/:warehouseId', co(async (req, res, next) => {
+router.get('/warehouse-location', co(async (req, res, next) => {
 
   let db = req.db;
-  let warehouseId = req.params.warehouseId;
+  let warehouseId = req.query.warehouseId;
 
   try {
     let rows = await basicModel.getWarehouseLocation(db, warehouseId);
+    res.send({ ok: true, rows: rows });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/product-location', co(async (req, res, next) => {
+
+  let db = req.db;
+  let productId = req.query.productId;
+
+  try {
+    let rows = await basicModel.getProductLastLocation(db, productId);
+
     res.send({ ok: true, rows: rows });
   } catch (error) {
     res.send({ ok: false, error: error.message });
