@@ -41,6 +41,7 @@ FROM
 WHERE
   td.template_id = ?
   and g.mark_deleted = 'N'
+  AND g.is_active = 'Y'
 	group by g.generic_id
 ORDER BY
 	td.id
