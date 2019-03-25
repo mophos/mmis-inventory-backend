@@ -597,9 +597,11 @@ export class GenericModel {
     return knex.raw(sql, [warehouseId]);
   }
 
-  checkWarehouse(knex: Knex, warehouseId: any) {
-    return knex(`wm_warehouses`)
-      .where(`warehouse_id`, warehouseId);
+  checkUsers(knex: Knex, userPeopleId: any, warehouseId: any) {
+    return knex(`um_user_warehouse as uw`)
+      .join(`um_people_users as up`, `up.user_id`, `uw.user_id`)
+      .where(`up.people_user_id`, userPeopleId)
+      .andWhere(`uw.warehouse_id`, warehouseId)
   }
 
 }
