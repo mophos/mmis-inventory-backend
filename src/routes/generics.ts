@@ -80,8 +80,9 @@ router.get('/warehouse/search/autocomplete', async (req, res, next) => {
   let q = req.query.q;
   let warehouseId = req.query.warehouseId;
   let limit = req.query.limit === 'Y' ? false : true;
-  let status = await genericModel.checkUsers(db, req.decoded.people_user_id);
-  this.admin = status[0].warehouse_type_id === 1 ? true : false;
+  let status = await genericModel.checkUsers(db, req.decoded.people_user_id, req.decoded.warehouseId);
+  console.log('xxxxxxxxxxxxxxxxxx', status)
+  this.warehouse_type = status[0].warehouse_type_id === '1' ? true : false;
   if (warehouseId == undefined || warehouseId == null || warehouseId == '') {
     warehouseId = req.decoded.warehouseId;
   }
@@ -91,13 +92,13 @@ router.get('/warehouse/search/autocomplete', async (req, res, next) => {
     } else {
       let rs: any;
       if (limit) {
-        if (this.admin) {
+        if (this.warehouse_type) {
           rs = await genericModel.warehouseSearchAutocompleteLimit(db, warehouseId, q);
         } else {
           rs = await genericModel.warehouseSearchAutocompleteLimitStaff(db, warehouseId, q);
         }
       } else {
-        if (this.admin) {
+        if (this.warehouse_type) {
           rs = await genericModel.warehouseSearchAutocompleteAll(db, warehouseId, q);
         } else {
           rs = await genericModel.warehouseSearchAutocompleteAllStaff(db, warehouseId, q);
