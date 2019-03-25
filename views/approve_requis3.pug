@@ -82,9 +82,9 @@ html
               td(colspan='9') &nbsp; 
             table.table(style="font-size: 13pt;")
               tr
-                if(c[0].full_name) 
+                if(c[0].full_name_requisition) 
                   td.right ลงชื่อ
-                  td.center(style="border-bottom:1px dashed black;width:25%;" ) #{c[0].full_name}
+                  td.center(style="border-bottom:1px dashed black;width:25%;" ) #{c[0].full_name_requisition}
                   td.left (ผู้เบิก)
                   
                 else
@@ -104,9 +104,9 @@ html
               tr
                 td(colspan='7') &nbsp;
               tr
-                if(c[0].full_name)
+                if(c[0].full_name_requisition)
                   td.right (
-                  td.center(style="border-bottom:1px dashed black;width:25%;") #{c[0].full_name} 
+                  td.center(style="border-bottom:1px dashed black;width:25%;") #{c[0].full_name_requisition} 
                   td.left ) 
                 else
                   td.right (

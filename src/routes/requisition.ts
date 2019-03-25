@@ -75,6 +75,7 @@ router.post('/orders', async (req, res, next) => {
       let serial = await serialModel.getSerial(db, 'RQ', year, order.wm_withdraw);
       order.requisition_code = serial;
       order.people_id = people_id;
+      order.requisition_people_id = people_id;
       order.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
 
       let rsOrder: any = await orderModel.saveOrder(db, order);
@@ -174,10 +175,11 @@ router.post('/fast/orders', async (req, res, next) => {
 
 router.put('/orders/:requisitionId', async (req, res, next) => {
   let db = req.db;
-  let people_id = req.decoded.people_id;
-  let requisitionId: any = req.params.requisitionId;
-  let order: any = req.body.order;
-  let products = req.body.products;
+  const people_id = req.decoded.people_id;
+  const warehouseId = req.decoded.warehouseId;
+  const requisitionId: any = req.params.requisitionId;
+  const order: any = req.body.order;
+  const products = req.body.products;
 
   let year = moment(order.requisition_date, 'YYYY-MM-DD').get('year');
   let month = moment(order.requisition_date, 'YYYY-MM-DD').get('month') + 1;
@@ -190,6 +192,9 @@ router.put('/orders/:requisitionId', async (req, res, next) => {
 
     try {
       let _order: any = {};
+      if (+warehouseId == +order.wm_requisition) {
+        _order.requisition_people_id = people_id;
+      }
       _order.people_id = people_id;
       _order.updated_at = moment().format('YYYY-MM-DD HH:mm:ss');
       _order.requisition_type_id = order.requisition_type_id;
