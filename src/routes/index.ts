@@ -657,6 +657,7 @@ router.get('/report/approve/requis3', wrap(async (req, res, next) => {
           value.nPage = approve_requis[i].length;
           value.full_name = signature[0].signature === 'N' ? '' : value.full_name
           value.full_namec = signature[0].signature === 'N' ? '' : value.full_namec
+          value.full_name_requisition = signature[0].signature === 'N' ? '' : value.full_name_requisition
           value.total_cost = inventoryReportModel.comma(value.unit_cost * value.confirm_qty);
           value.approve_date = moment(value.approve_date).format('D MMMM ') + (moment(value.approve_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
@@ -1777,12 +1778,12 @@ router.get('/report/list/receive', wrap(async (req, res, next) => {
     productId.push(value.product_id);
     receiveId.push(value.receive_id);
   })
-console.log('----');
+  console.log('----');
 
   console.log(list_receive3);
-  
+
   for (let i = 0; i < productId.length; i++) {
-    list_receive2 = await inventoryReportModel.list_receive2(db, productId[i], receiveId[i],wareHouseId);
+    list_receive2 = await inventoryReportModel.list_receive2(db, productId[i], receiveId[i], wareHouseId);
     list_receive2 = list_receive2[0];
     //console.log(list_receive2);
 
