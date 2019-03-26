@@ -167,6 +167,7 @@ export class GenericModel {
     DISTINCT a.generic_id,
       a.generic_name,
       a.working_code,
+      a.issue_unit_id,
       (
         SELECT
           sum(wp.qty)
@@ -242,6 +243,7 @@ export class GenericModel {
     DISTINCT a.generic_id,
       a.generic_name,
       a.working_code,
+      a.issue_unit_id,
       (
         SELECT
           sum(wp.qty)
