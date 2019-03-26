@@ -73,6 +73,19 @@ export class StaffModel {
     return knex.raw(sql, [templateId]);
   }
 
+  getallIssueTemplate(knex: Knex, templateId: string) {
+    let sql = `
+  select wrt.template_id, wrt.warehouse_id,
+  ws.warehouse_name,
+  wrt.template_subject, wrt.created_date
+  from wm_issue_template as wrt
+  inner join wm_warehouses as ws on wrt.warehouse_id = ws.warehouse_id
+  where wrt.template_id=?
+    `;
+
+    return knex.raw(sql, [templateId]);
+  }
+
   getBorrowRequest(knex: Knex, warehouseId) {
     let subQuery = knex('wm_borrow_check').select('borrow_id');
     let queryTotal = knex('wm_borrow_detail as d')
