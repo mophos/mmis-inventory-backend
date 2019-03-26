@@ -1413,7 +1413,7 @@ FROM
         wr.delivery_code,
         wr.donator_id,
         ml.donator_name ,
-        mp.generic_id,
+        mg.working_code generic_id,
         mg.generic_name,
         wrd.receive_qty,
         mug.qty as small_qty,
@@ -1440,17 +1440,21 @@ FROM
         UNION
             SELECT
             '','','','','','',
-                mg.generic_id,
+                mg.working_code generic_id,
                 mg.generic_name,
                 wp.qty,
                 mug.qty as small_qty,
-                '','',
-                wp.expired_date,wp.lot_no,'','','',''
+                mus.unit_name as small_unit,
+                mu.unit_name as large_unit,
+                wp.expired_date,wp.lot_no,wl.location_name,'','',''
             FROM
                 wm_products wp
             JOIN mm_products mp ON mp.product_id = wp.product_id
             JOIN mm_generics mg ON mp.generic_id = mg.generic_id
             join mm_unit_generics mug on mug.unit_generic_id=wp.unit_generic_id
+            JOIN mm_units mu on mu.unit_id = mug.from_unit_id
+            JOIN mm_units mus on mus.unit_id = mug.to_unit_id
+            left JOIN wm_locations wl ON wl.location_id = wp.location_id
             WHERE
                 wp.product_id = ? and wp.warehouse_id = ?
             GROUP BY

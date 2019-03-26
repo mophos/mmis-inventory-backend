@@ -1865,8 +1865,8 @@ router.get('/report/list/receiveCodeOther/:sID/:eID', wrap(async (req, res, next
 
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.expired_date = moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543);
-      value2.receive_date = moment(value2.receive_date).format('DD-MM-YYYY');
+      value2.expired_date = value2.expired_date ? moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543) : '-';
+      value2.receive_date = value2.receive_date ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
     })
   })
   res.render('_list_receive3', { hospitalName: hospitalName, list_receive2: list_receive2, array2: array2, sID: sID, eID: eID });
