@@ -890,7 +890,7 @@ router.post('/approve', co(async (req, res, next) => {
             qty: qty,
             price: (v.cost * v.receive_qty) / qty,
             cost: (v.cost * v.receive_qty) / qty,
-            lot_no: v.lot_no,
+            lot_no: v.lot_no == null ? '-' : v.lot_no,
             expired_date: expiredDate,
             unit_generic_id: v.unit_generic_id,
             location_id: +v.location_id,
