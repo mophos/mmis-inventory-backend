@@ -306,15 +306,15 @@ router.post('/import', co(async (req, res, next) => {
 
         for (const p of wmProducts) {
           let check = false;
-          if (p.qty > qty && qty > 0) {
+          if (p.qty >= qty && qty > 0) {
             check = true;
             cutQty = qty;
             p.qty = p.qty - qty;
             qty = 0
-          } else if (p.qty < qty && qty > 0) {
+          } else if (p.qty < qty && qty > 0) { //กรณีตัดแล้วแต่คงคลังไม่พอ
             check = true;
             qty = qty - p.qty;
-            cutQty = qty
+            cutQty = p.qty
             p.qty = 0;
           }
 
@@ -392,8 +392,9 @@ router.post('/import', co(async (req, res, next) => {
           await hisTransactionModel.changeStatusToCut(db, cutStockDate, peopleUserId, h.transaction_id);
         } else if (qty > 0) {
           unCutStockIds.push(h.transaction_id);
+          //ตัดมากกว่าคงเหลือ ตัดแล้วเอามาหักลบ
           if (h.qty > qty) {
-            let diff = h.qty - qty
+            let diff = h.qty - cutQty
             await hisTransactionModel.changeQtyInHisTransaction(db, cutStockDate, peopleUserId, h.transaction_id, diff);
           }
         }
