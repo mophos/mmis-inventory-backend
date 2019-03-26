@@ -706,7 +706,7 @@ router.post('/other', co(async (req, res, next) => {
             location_id: v.location_id,
             warehouse_id: v.warehouse_id,
             cost: +v.cost,
-            lot_no: v.lot_no,
+            lot_no: v.lot_no == null ? '-' : v.lot_no,
             expired_date: moment(v.expired_date, 'DD/MM/YYYY').isValid() ? moment(v.expired_date, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
             manufacturer_labeler_id: v.manufacture_id
           }
