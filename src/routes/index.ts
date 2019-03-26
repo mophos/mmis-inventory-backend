@@ -657,6 +657,7 @@ router.get('/report/approve/requis3', wrap(async (req, res, next) => {
           value.nPage = approve_requis[i].length;
           value.full_name = signature[0].signature === 'N' ? '' : value.full_name
           value.full_namec = signature[0].signature === 'N' ? '' : value.full_namec
+          value.full_name_requisition = signature[0].signature === 'N' ? '' : value.full_name_requisition
           value.total_cost = inventoryReportModel.comma(value.unit_cost * value.confirm_qty);
           value.approve_date = moment(value.approve_date).format('D MMMM ') + (moment(value.approve_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
@@ -1777,12 +1778,12 @@ router.get('/report/list/receive', wrap(async (req, res, next) => {
     productId.push(value.product_id);
     receiveId.push(value.receive_id);
   })
-console.log('----');
+  console.log('----');
 
   console.log(list_receive3);
-  
+
   for (let i = 0; i < productId.length; i++) {
-    list_receive2 = await inventoryReportModel.list_receive2(db, productId[i], receiveId[i],wareHouseId);
+    list_receive2 = await inventoryReportModel.list_receive2(db, productId[i], receiveId[i], wareHouseId);
     list_receive2 = list_receive2[0];
     //console.log(list_receive2);
 
@@ -1864,8 +1865,8 @@ router.get('/report/list/receiveCodeOther/:sID/:eID', wrap(async (req, res, next
 
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.expired_date = moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543);
-      value2.receive_date = moment(value2.receive_date).format('DD-MM-YYYY');
+      value2.expired_date = value2.expired_date ? moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543) : '-';
+      value2.receive_date = value2.receive_date ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
     })
   })
   res.render('_list_receive3', { hospitalName: hospitalName, list_receive2: list_receive2, array2: array2, sID: sID, eID: eID });

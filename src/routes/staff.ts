@@ -3571,6 +3571,98 @@ router.get('/warehouses/export/excel', async (req, res, next) => {
   }
 });
 
+router.get('/warehouses/export-issue', async (req, res, next) => {
+  let templateId = req.query.templateId;
+  let warehouseId = req.query.warehouseId;
+  let db = req.db;
+  const printDate = 'วันที่พิมพ์ ' + moment().format('D MMMM ') + (moment().get('year') + 543) + moment().format(', HH:mm:ss น.');
+
+  if (templateId) {
+    try {
+      // let _tableName = `template`;
+      let header = await staffModel.getallIssueTemplate(db, templateId);
+      let result = await productModel.getAllProductInTemplateIssueWarehouse(db, templateId, warehouseId);
+      let data = []
+      result[0].forEach(v => {
+        let unit = '';
+        if (v.large_unit || v.qty || v.small_unit) {
+          unit = v.large_unit + '(' + v.qty + ' ' + v.small_unit + ')';
+        }
+        data.push({
+          working_code: v.working_code,
+          generic_name: v.generic_name,
+          unit: unit
+        })
+      });
+      // create tmp file
+      res.render('template_issue', {
+        header: header[0][0],
+        data: data,
+        printDate: printDate
+      })
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error });
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบตารางข้อมูลที่ต้องการ' });
+  }
+});
+
+router.get('/warehouses/export-issue/excel', async (req, res, next) => {
+  let templateId = req.query.templateId;
+  let warehouseId = req.query.warehouseId;
+  let db = req.db;
+
+  const pathTmp = path.join(process.env.MMIS_DATA, 'temp');
+  fse.ensureDirSync(pathTmp);
+
+  if (templateId) {
+    try {
+      let _tableName = `template`;
+
+      let result = await productModel.getAllProductInTemplateIssueWarehouse(db, templateId, warehouseId);
+      let r = [];
+      let i = 0;
+      result[0].forEach(v => {
+        i++;
+        let unit = '';
+        if (v.large_unit || v.qty || v.small_unit) {
+          unit = v.large_unit + '(' + v.qty + ' ' + v.small_unit + ')';
+        }
+        r.push({
+          'ลำดับ': i,
+          'รหัส': v.working_code,
+          'ชื่อสินค้า': v.generic_name,
+          'หน่วย': unit,
+          'min': v.min_qty,
+          'max': v.max_qty,
+          'คงเหลือ': v.gen_qty
+        })
+      });
+      // console.log(result);
+
+      // create tmp file
+      let tmpFile = `${_tableName}-${moment().format('x')}.xlsx`;
+      tmpFile = path.join(pathTmp, tmpFile);
+      let excel = json2xls(r);
+      fs.writeFileSync(tmpFile, excel, 'binary');
+      res.download(tmpFile, (err) => {
+        if (err) {
+          res.send({ ok: false, message: err })
+        } else {
+          fse.removeSync(tmpFile);
+        }
+      });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: 'ไม่สามารถส่งออกไฟล์ .xlsx ได้' });
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบตารางข้อมูลที่ต้องการ' });
+  }
+});
+
 router.get('/receives/other/detail/:receiveOtherId', co(async (req, res, next) => {
 
   let db = req.db;

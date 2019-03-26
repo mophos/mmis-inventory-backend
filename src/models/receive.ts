@@ -775,7 +775,7 @@ WHERE
         INSERT INTO wm_products(wm_product_id, warehouse_id, product_id, qty,
       cost, price, lot_no, expired_date, location_id, unit_generic_id, people_user_id, created_at,lot_time)
     VALUES('${v.wm_product_id}', '${v.warehouse_id}', '${v.product_id}', ${v.qty}, ${v.cost},
-      ${ v.price}, '${v.lot_no}', '${v.expired_date}', ${v.location_id},
+      ${ v.price}, ?,?, ${v.location_id},
       ${ v.unit_generic_id}, ${v.people_user_id}, '${v.created_at}',${v.lot_time})
       ON DUPLICATE KEY UPDATE qty = qty + ${ v.qty}, unit_generic_id = '${v.unit_generic_id}',cost = (
         select(sum(w.qty * w.cost) + ${ totalCost}) / (sum(w.qty) + ${v.qty})
@@ -787,7 +787,7 @@ WHERE
     // });
 
     // let queries = sqls.join(';');
-    return knex.raw(sql);
+    return knex.raw(sql, [v.lot_no, v.expired_date]);
   }
 
   adjustCost(knex: Knex, data: any[]) {
@@ -824,7 +824,7 @@ WHERE
 
   // receive with purchase
 
-  getPurchaseList(knex: Knex, limit: number, offset: number, sort: any = {}, genericTypeId = [], warehouseId : any) {
+  getPurchaseList(knex: Knex, limit: number, offset: number, sort: any = {}, genericTypeId = [], warehouseId: any) {
     let sql = `
     select pc.purchase_order_book_number, pc.purchase_order_id,
       IF(pc.purchase_order_book_number is null, pc.purchase_order_number, pc.purchase_order_book_number) as purchase_order_number,
@@ -983,7 +983,7 @@ WHERE
 
   }
 
-  getPurchaseListSearch(knex: Knex, limit: number, offset: number, query, sort: any = {},warehouseId:any) {
+  getPurchaseListSearch(knex: Knex, limit: number, offset: number, query, sort: any = {}, warehouseId: any) {
     let _query = `%${query}%`;
     let sql = `
     select pc.purchase_order_book_number, pc.purchase_order_id, pc.purchase_order_number,
@@ -1072,7 +1072,7 @@ WHERE
     return knex.raw(sql);
 
   }
-  getPurchaseListTotal(knex: Knex, genericTypeId = [],warehouseId:any) {
+  getPurchaseListTotal(knex: Knex, genericTypeId = [], warehouseId: any) {
 
     let sql = `
     select count(*) as total
@@ -1090,7 +1090,7 @@ WHERE
     return knex.raw(sql, []);
 
   }
-  getPurchaseListTotalSearch(knex: Knex, query,warehouseId:any) {
+  getPurchaseListTotalSearch(knex: Knex, query, warehouseId: any) {
     let _query = `%${query}%`;
     let sql = `
     select count(*) as total
@@ -1149,7 +1149,7 @@ WHERE
       pi.qty as purchase_qty, pi.unit_price as cost, lm.labeler_name as m_labeler_name,
       lv.labeler_name as v_labeler_name, p.working_code,
       mu.from_unit_id, mu.to_unit_id as base_unit_id, mu.qty as conversion_qty,
-      u1.unit_name as to_unit_name, u2.unit_name as from_unit_name, pi.giveaway, p.is_lot_control,
+      u1.unit_name as to_unit_name, u2.unit_name as from_unit_name, pi.giveaway, p.is_lot_control,p.is_expired_control,
       (
       	select ifnull(sum(rdx.receive_qty), 0)
       	from wm_receive_detail as rdx
@@ -1158,7 +1158,8 @@ WHERE
         and rdx.is_free = pi.giveaway
         and r.purchase_order_id=pi.purchase_order_id
         and r.is_cancel='N'
-      ) as total_received_qty
+      ) as total_received_qty,
+    (select location_id from wm_receive_detail where product_id = pi.product_id order by receive_id desc limit 1)  as location_id
     from pc_purchasing_order_item as pi
     inner join mm_products as p on p.product_id = pi.product_id
     left join mm_generics as g on g.generic_id = p.generic_id

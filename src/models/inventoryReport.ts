@@ -245,6 +245,7 @@ export class InventoryReportModel {
             mgd.dosage_name,
             ROUND(wp.cost * rci.confirm_qty, 2) AS total_cost,
             concat(up.fname, ' ', up.lname) as full_name,
+            concat(upr.fname, ' ', upr.lname) as full_name_requisition,
             concat(upc.fname, ' ', upc.lname) as full_namec,
             rci.wm_product_id,
             rci.unit_cost,
@@ -266,6 +267,7 @@ export class InventoryReportModel {
             JOIN mm_units AS mul ON mug.from_unit_id = mul.unit_id
             JOIN mm_units AS mus ON mug.to_unit_id = mus.unit_id
             join um_people as up on up.people_id = ro.people_id
+            join um_people as upr on upr.people_id = ro.people_id
             left join um_people as upc on upc.people_id = rc.people_id
             join ( SELECT vpr.warehouse_id,vpr.generic_id,sum(vpr.stock_qty) stock_qty from view_product_reserve vpr group by vpr.generic_id,vpr.warehouse_id ) as vpr2 on vpr2.generic_id = rci.generic_id and vpr2.warehouse_id = ro.wm_withdraw
             WHERE
@@ -1411,7 +1413,7 @@ FROM
         wr.delivery_code,
         wr.donator_id,
         ml.donator_name ,
-        mp.generic_id,
+        mg.working_code generic_id,
         mg.generic_name,
         wrd.receive_qty,
         mug.qty as small_qty,
@@ -1438,17 +1440,21 @@ FROM
         UNION
             SELECT
             '','','','','','',
-                mg.generic_id,
+                mg.working_code generic_id,
                 mg.generic_name,
                 wp.qty,
                 mug.qty as small_qty,
-                '','',
-                wp.expired_date,wp.lot_no,'','','',''
+                mus.unit_name as small_unit,
+                mu.unit_name as large_unit,
+                wp.expired_date,wp.lot_no,wl.location_name,'','',''
             FROM
                 wm_products wp
             JOIN mm_products mp ON mp.product_id = wp.product_id
             JOIN mm_generics mg ON mp.generic_id = mg.generic_id
             join mm_unit_generics mug on mug.unit_generic_id=wp.unit_generic_id
+            JOIN mm_units mu on mu.unit_id = mug.from_unit_id
+            JOIN mm_units mus on mus.unit_id = mug.to_unit_id
+            left JOIN wm_locations wl ON wl.location_id = wp.location_id
             WHERE
                 wp.product_id = ? and wp.warehouse_id = ?
             GROUP BY
@@ -1528,7 +1534,7 @@ FROM
                 'wr.receive_id')
             .innerJoin('wm_receive_detail as wrd', 'wr.receive_id', 'wrd.receive_id')
             .whereIn('wr.receive_id', receiveID)
-            .groupBy('wrd.product_id','wr.receive_id');
+            .groupBy('wrd.product_id', 'wr.receive_id');
     }
     ///////// printRo1
     list_receive5(knex: Knex, receiveID) {
@@ -3745,23 +3751,28 @@ GROUP BY
             .sum('wp.qty as qty')
             .join('mm_products as mp', 'mp.product_id', 'wp.product_id')
             .join('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
-            .join('mm_unit_generics as mug', 'mug.generic_id', 'mg.generic_id')
+            .join('mm_unit_generics as mug', 'wp.unit_generic_id', 'mug.unit_generic_id')
             .join('mm_units as u1', 'u1.unit_id', 'mug.from_unit_id')
             .join('mm_units as u2', 'u2.unit_id', 'mug.to_unit_id')
             .where('wp.warehouse_id', warehouseId)
+            .where('wp.qty', '>', 0)
             .groupBy('mg.generic_id')
             .orderBy('mg.generic_name')
     }
 
     exportRemainQtyByTrade(knex: Knex, warehouseId: any) {
         return knex('wm_products as wp')
-            .select('mg.working_code', 'mg.generic_name', 'mp.product_name', 'wp.lot_no', 'mg.min_qty', 'mg.max_qty', 'wp.qty', 'u2.unit_name')
+            .select('mg.working_code', 'mg.generic_name', 'mp.product_name', 'wp.lot_no', 'mg.min_qty', 'mg.max_qty', 'u2.unit_name')
+            .sum('wp.qty as qty')
             .join('mm_products as mp', 'mp.product_id', 'wp.product_id')
             .join('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
-            .join('mm_unit_generics as mug', 'mug.generic_id', 'mg.generic_id')
+            .join('mm_unit_generics as mug', 'mug.unit_generic_id', 'wp.unit_generic_id')
             .join('mm_units as u1', 'u1.unit_id', 'mug.from_unit_id')
             .join('mm_units as u2', 'u2.unit_id', 'mug.to_unit_id')
             .where('wp.warehouse_id', warehouseId)
+            .where('wp.qty', '>', 0)
+            .groupBy('wp.product_id')
+            .groupBy('wp.lot_no')
             .orderBy('mg.generic_name')
     }
 
