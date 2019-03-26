@@ -3755,6 +3755,7 @@ GROUP BY
             .join('mm_units as u1', 'u1.unit_id', 'mug.from_unit_id')
             .join('mm_units as u2', 'u2.unit_id', 'mug.to_unit_id')
             .where('wp.warehouse_id', warehouseId)
+            .where('wp.qty', '>', 0)
             .groupBy('mg.generic_id')
             .orderBy('mg.generic_name')
     }
@@ -3769,6 +3770,7 @@ GROUP BY
             .join('mm_units as u1', 'u1.unit_id', 'mug.from_unit_id')
             .join('mm_units as u2', 'u2.unit_id', 'mug.to_unit_id')
             .where('wp.warehouse_id', warehouseId)
+            .where('wp.qty', '>', 0)
             .groupBy('wp.product_id')
             .groupBy('wp.lot_no')
             .orderBy('mg.generic_name')

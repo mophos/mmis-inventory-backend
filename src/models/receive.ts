@@ -775,7 +775,7 @@ WHERE
         INSERT INTO wm_products(wm_product_id, warehouse_id, product_id, qty,
       cost, price, lot_no, expired_date, location_id, unit_generic_id, people_user_id, created_at,lot_time)
     VALUES('${v.wm_product_id}', '${v.warehouse_id}', '${v.product_id}', ${v.qty}, ${v.cost},
-      ${ v.price}, '${v.lot_no}', '${v.expired_date}', ${v.location_id},
+      ${ v.price}, ?,?, ${v.location_id},
       ${ v.unit_generic_id}, ${v.people_user_id}, '${v.created_at}',${v.lot_time})
       ON DUPLICATE KEY UPDATE qty = qty + ${ v.qty}, unit_generic_id = '${v.unit_generic_id}',cost = (
         select(sum(w.qty * w.cost) + ${ totalCost}) / (sum(w.qty) + ${v.qty})
@@ -787,7 +787,7 @@ WHERE
     // });
 
     // let queries = sqls.join(';');
-    return knex.raw(sql);
+    return knex.raw(sql, [v.lot_no, v.expired_date]);
   }
 
   adjustCost(knex: Knex, data: any[]) {
