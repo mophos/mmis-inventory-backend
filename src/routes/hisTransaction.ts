@@ -72,10 +72,7 @@ router.post('/upload', upload.single('file'), co(async (req, res, next) => {
       if (hisWarehouse != '' && hisWarehouse != null) {
         let idx = _.findIndex(rsWarehouseMapping, { his_warehouse: hisWarehouse.toString() });
 
-        console.log(excelData[x][0], excelData[x][1], excelData[x][2], excelData[x][3], excelData[x][4], excelData[x][5], 'xxxxxxxx', idx);
-        if (idx > -1 && excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] && excelData[x][5]) {
-
-
+        if (idx > -1 && excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] > 0 && excelData[x][5]) {
           let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3]);
           let qty;
           if (conversion.length) {
@@ -96,9 +93,7 @@ router.post('/upload', upload.single('file'), co(async (req, res, next) => {
             people_user_id: req.decoded.people_user_id,
             created_at: moment().format('YYYY-MM-DD HH:mm:ss')
           }
-          if (qty > 0) {
-            _data.push(obj);
-          }
+          _data.push(obj);
         }
       }
     }
@@ -238,6 +233,21 @@ router.post('/list', co(async (req, res, next) => {
   let hospcode = req.decoded.his_hospcode;
   try {
     let rs = await hisTransactionModel.getHisTransaction(db, hospcode, genericType);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.post('/history-list', co(async (req, res, next) => {
+  let db = req.db;
+  let genericType = req.body.genericTypes;
+  let date = req.body.date;
+  let hospcode = req.decoded.his_hospcode;
+  try {
+    let rs = await hisTransactionModel.getHisHistoryTransaction(db, hospcode, genericType, date);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
