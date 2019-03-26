@@ -288,7 +288,7 @@ router.post('/', co(async (req, res, next) => {
                 location_id: v.location_id,
                 warehouse_id: v.warehouse_id,
                 cost: +v.cost,
-                lot_no: v.lot_no,
+                lot_no: v.lot_no == null ? '-' : v.lot_no,
                 expired_date: moment(v.expired_date, 'DD/MM/YYYY').isValid() ? moment(v.expired_date, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
                 vendor_labeler_id: summary.supplierId,
                 manufacturer_labeler_id: v.manufacture_id,
@@ -890,7 +890,7 @@ router.post('/approve', co(async (req, res, next) => {
             qty: qty,
             price: (v.cost * v.receive_qty) / qty,
             cost: (v.cost * v.receive_qty) / qty,
-            lot_no: v.lot_no == null ? '-' : v.lot_no,
+            lot_no: v.lot_no,
             expired_date: expiredDate,
             unit_generic_id: v.unit_generic_id,
             location_id: +v.location_id,
@@ -936,7 +936,7 @@ router.post('/approve', co(async (req, res, next) => {
             balances[idxB].balance_generic += qty;
           }
 
-          const bl = await receiveModel.getBalanceLot(db, v.warehouse_id, v.product_id, v.lot_no == null ? '-' : v.lot_no, obj.lot_time);
+          const bl = await receiveModel.getBalanceLot(db, v.warehouse_id, v.product_id, v.lot_no, obj.lot_time);
           balanceLot = bl[0].length == 0 ? qty : bl[0][0].balanceLot;
 
           objS.balance_lot_qty = balanceLot;
@@ -946,7 +946,7 @@ router.post('/approve', co(async (req, res, next) => {
           objS.ref_src = v.vendor_labeler_id;
           objS.ref_dst = v.warehouse_id;
           objS.comment = 'รับเข้าคลังจากใบสั่งซื้อ';
-          objS.lot_no = v.lot_no == null ? '-' : v.lot_no
+          objS.lot_no = v.lot_no;
           objS.lot_time = lotTime;
           objS.expired_date = expiredDate;
           objS.wm_product_id_in = id;
