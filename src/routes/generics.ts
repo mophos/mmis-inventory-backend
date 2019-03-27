@@ -75,7 +75,7 @@ router.get('/search-autocomplete', async (req, res, next) => {
 });
 
 router.get('/warehouse/search/autocomplete', async (req, res, next) => {
-
+//search generic แบบ ตามที่ตั้งค่า generic_planning=
   let db = req.db;
   let q = req.query.q;
   let warehouseId = req.query.warehouseId;
@@ -120,7 +120,7 @@ router.get('/warehouse/search/autocomplete', async (req, res, next) => {
 });
 
 router.get('/warehouse/search/autocomplete/all', async (req, res, next) => {
-
+// search generics แบบ ทั้งหมด
   let db = req.db;
   let q = req.query.q;
   let warehouseId = req.query.warehouseId;
@@ -130,11 +130,13 @@ router.get('/warehouse/search/autocomplete/all', async (req, res, next) => {
   }
   try {
     if (q === '' || !q) {
-      res.send([]);
+      res.send({ ok: false, error: [] });
     } else {
       let rs: any;
       if (limit) {
         rs = await genericModel.warehouseSearchAutocompleteAll(db, warehouseId, q);
+      } else {
+        rs = await genericModel.warehouseSearchAutocompleteLimit(db, warehouseId, q);
       }
       if (rs[0].length) {
         res.send(rs[0]);
