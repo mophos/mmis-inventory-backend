@@ -7,6 +7,7 @@ import * as wrap from 'co-express';
 import * as _ from 'lodash';
 import { IssueModel } from '../models/issue'
 import { StockCard } from '../models/stockcard';
+import { listenerCount } from 'cluster';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const issueModel = new IssueModel();
@@ -1747,12 +1748,12 @@ router.get('/report/list/receiveOther', wrap(async (req, res, next) => {
 
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.costs = _.sumBy(value, function(o: any) { if (value2.generic_id == o.generic_id && value2.receive_other_id == o.receive_other_id) return +o.costs | 0; });      
-      value2.costs = inventoryReportModel.comma(value2.costs)      
+      value2.costs = _.sumBy(value, function (o: any) { if (value2.generic_id == o.generic_id && value2.receive_other_id == o.receive_other_id) return +o.costs | 0; });
+      value2.costs = inventoryReportModel.comma(value2.costs)
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
-      if(value2.receive_id == ''){
-        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty/+value2.small_qty)
+      if (value2.receive_id == '') {
+        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty / +value2.small_qty)
       }
       // value.small_qty=inventoryReportModel.comma(value.small_qty*value.cost);
       // value.cost=inventoryReportModel.comma(value.cost);
@@ -1797,12 +1798,12 @@ router.get('/report/list/receive', wrap(async (req, res, next) => {
 
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.cost = _.sumBy(value, function(o: any) { if (value2.generic_id == o.generic_id && value2.receive_id == o.receive_id) return +o.cost | 0; });      
+      value2.cost = _.sumBy(value, function (o: any) { if (value2.generic_id == o.generic_id && value2.receive_id == o.receive_id) return +o.cost | 0; });
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
-      value2.cost = inventoryReportModel.comma(value2.cost)      
-      if(value2.receive_id == ''){
-        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty/+value2.small_qty)
+      value2.cost = inventoryReportModel.comma(value2.cost)
+      if (value2.receive_id == '') {
+        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty / +value2.small_qty)
       }
       // value.small_qty=inventoryReportModel.comma(value.small_qty*value.cost);
       // value.cost=inventoryReportModel.comma(value.cost);
@@ -1837,11 +1838,11 @@ router.get('/report/list/receiveCode/:sID/:eID', wrap(async (req, res, next) => 
   }
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.cost = _.sumBy(value, function(o: any) { if (value2.product_id == o.product_id && value2.receive_id == o.receive_id) return +o.cost | 0; });      
+      value2.cost = _.sumBy(value, function (o: any) { if (value2.product_id == o.product_id && value2.receive_id == o.receive_id) return +o.cost | 0; });
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
-      if(value2.receive_id == ''){
-        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty/+value2.small_qty)
+      if (value2.receive_id == '') {
+        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty / +value2.small_qty)
       }
     })
   })
@@ -1873,12 +1874,12 @@ router.get('/report/list/receiveCodeOther/:sID/:eID', wrap(async (req, res, next
   }
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.costs = _.sumBy(value, function(o: any) { if (value2.product_id == o.product_id && value2.receive_other_id == o.receive_other_id) return +o.costs | 0; });
-      value2.costs = inventoryReportModel.comma(value2.costs)      
+      value2.costs = _.sumBy(value, function (o: any) { if (value2.product_id == o.product_id && value2.receive_other_id == o.receive_other_id) return +o.costs | 0; });
+      value2.costs = inventoryReportModel.comma(value2.costs)
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
-      if(value2.receive_id == ''){
-        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty/+value2.small_qty)
+      if (value2.receive_id == '') {
+        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty / +value2.small_qty)
       }
     })
   })
@@ -2055,11 +2056,11 @@ router.get('/report/list/receivePo/:sID/:eID', wrap(async (req, res, next) => {
   }
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.cost = _.sumBy(value, function(o: any) { if (value2.product_id == o.product_id && value2.receive_id == o.receive_id) return +o.cost | 0; });
+      value2.cost = _.sumBy(value, function (o: any) { if (value2.product_id == o.product_id && value2.receive_id == o.receive_id) return +o.cost | 0; });
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
-      if(value2.receive_id == ''){
-        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty/+value2.small_qty)
+      if (value2.receive_id == '') {
+        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty / +value2.small_qty)
       }
     })
   })
@@ -2092,12 +2093,12 @@ router.get('/report/list/receiveDate/:sDate/:eDate', wrap(async (req, res, next)
   }
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.cost = _.sumBy(value, function(o: any) { if (value2.product_id == o.product_id && value2.receive_id == o.receive_id) return +o.cost | 0; });
+      value2.cost = _.sumBy(value, function (o: any) { if (value2.product_id == o.product_id && value2.receive_id == o.receive_id) return +o.cost | 0; });
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
       value2.unit_price = inventoryReportModel.comma(value2.unit_price * value2.receive_qty)
-      if(value2.receive_id == ''){
-        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty/+value2.small_qty)
+      if (value2.receive_id == '') {
+        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty / +value2.small_qty)
       }
     })
   })
@@ -2190,12 +2191,12 @@ router.get('/report/list/receiveDateOther/:sDate/:eDate', wrap(async (req, res, 
   }
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.costs = _.sumBy(value, function(o: any) { if (value2.product_id == o.product_id && value2.receive_other_id == o.receive_other_id) return +o.costs | 0; });
+      value2.costs = _.sumBy(value, function (o: any) { if (value2.product_id == o.product_id && value2.receive_other_id == o.receive_other_id) return +o.costs | 0; });
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
       value2.costs = inventoryReportModel.comma(value2.costs)
-      if(value2.receive_id == ''){
-        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty/+value2.small_qty)
+      if (value2.receive_id == '') {
+        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty / +value2.small_qty)
       }
     })
   })
@@ -5014,5 +5015,28 @@ router.get('/report/inventoryStatus/product/excel', wrap(async (req, res, next) 
   // force download
   res.download(filePath, 'รายงานสถานะเวชภัณฑ์คงคลัง ' + warehouseName + 'ณ วันที่' + statusDate_text + '(Product).xlsx');
 }));
+
+router.get('/report/his-history', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.query.warehouseId
+  let date = req.query.date
+  let genericType = req.query.genericType
+  let warehouseName = req.query.warehouseName
+  let hospcode = req.decoded.his_hospcode;
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let dateText = moment(date).format('DD MMMM ') + (moment(date).get('year') + 543);
+  let rs = await inventoryReportModel.hisHistory(db, warehouseId, date, genericType, hospcode);
+  let list = rs[0]
+
+  res.render('hisHistory', {
+    dateText: dateText,
+    list: list,
+    printDate: printDate(req.decoded.SYS_PRINT_DATE),
+    hospitalName: hospitalName,
+    warehouseName: warehouseName,
+  });
+}
+));
 
 export default router;

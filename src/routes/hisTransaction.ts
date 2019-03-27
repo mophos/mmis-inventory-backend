@@ -231,8 +231,9 @@ router.post('/list', co(async (req, res, next) => {
   let db = req.db;
   let genericType = req.body.genericTypes;
   let hospcode = req.decoded.his_hospcode;
+  let warehouseId = req.decoded.warehouseId;
   try {
-    let rs = await hisTransactionModel.getHisTransaction(db, hospcode, genericType);
+    let rs: any = await hisTransactionModel.getHisTransactionStaff(db, hospcode, genericType, warehouseId);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -246,8 +247,9 @@ router.post('/history-list', co(async (req, res, next) => {
   let genericType = req.body.genericTypes;
   let date = req.body.date;
   let hospcode = req.decoded.his_hospcode;
+  let warehouseId = req.decoded.warehouseId;
   try {
-    let rs = await hisTransactionModel.getHisHistoryTransaction(db, hospcode, genericType, date);
+    let rs: any = await hisTransactionModel.getHisHistoryTransactionStaff(db, hospcode, genericType, warehouseId,date);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });

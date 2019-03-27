@@ -1549,7 +1549,7 @@ FROM
             .select('wrd.product_id',
                 'wro.receive_other_id')
             .innerJoin('wm_receive_other_detail as wrd', 'wro.receive_other_id', 'wrd.receive_other_id')
-            .groupBy('wrd.product_id','wro.receive_other_id')
+            .groupBy('wrd.product_id', 'wro.receive_other_id')
             .whereIn('wro.receive_other_id', receiveID);
     }
     _list_receive4(knex: Knex, sDate: any, eDate: any) {
@@ -1606,11 +1606,11 @@ FROM
 
     _list_receive6(knex: Knex, sID: any, eID: any) {
         return knex('wm_receives as wr')
-            .select('wrd.product_id','wr.receive_id')
+            .select('wrd.product_id', 'wr.receive_id')
             .innerJoin('wm_receive_detail as wrd', 'wr.receive_id', 'wrd.receive_id')
             .innerJoin('pc_purchasing_order as ppo', 'ppo.purchase_order_id', 'wr.purchase_order_id')
             .whereBetween('ppo.purchase_order_number', [sID, eID])
-            .groupBy('wrd.product_id','wr.receive_id')
+            .groupBy('wrd.product_id', 'wr.receive_id')
             .orderBy('wrd.product_id');
     }
     receiveSelect(knex: Knex, ID: any) {
@@ -4027,6 +4027,36 @@ GROUP BY
     ORDER BY
         mg.generic_type_id`
 
+        return (knex.raw(sql))
+    }
+
+    hisHistory(knex: Knex, warehouseId: any, date: any, genericType: any, hospcode: any) {
+        let sql = `SELECT
+        tt.*,
+        hm.mmis,
+        hm.conversion,
+        w.warehouse_name,
+        w.warehouse_id,
+        mg.generic_name,
+        mg.working_code,
+        mu.unit_name 
+    FROM
+        wm_his_transaction AS tt
+        INNER JOIN wm_his_mappings AS hm ON hm.his = tt.drug_code 
+        AND hm.hospcode = tt.hospcode
+        INNER JOIN wm_warehouses AS w ON w.warehouse_id = tt.mmis_warehouse
+        INNER JOIN mm_generics AS mg ON mg.generic_id = hm.mmis
+        LEFT JOIN mm_units AS mu ON mu.unit_id = mg.primary_unit_id 
+    WHERE
+        tt.is_cut_stock = 'Y' 
+        AND tt.hospcode = '${hospcode}' 
+        AND tt.mmis_warehouse = '${warehouseId}' 
+        AND tt.date_serv = '${date}'
+        AND mg.generic_type_id IN (${genericType})
+    GROUP BY
+        tt.transaction_id 
+    ORDER BY
+        tt.transaction_id ASC`
         return (knex.raw(sql))
     }
 
