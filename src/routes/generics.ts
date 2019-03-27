@@ -125,16 +125,19 @@ router.get('/warehouse/search/autocomplete/all', async (req, res, next) => {
   let q = req.query.q;
   let warehouseId = req.query.warehouseId;
   let limit = req.query.limit === 'Y' ? false : true;
+  console.log(req.query.limit, 'xczzxczxcxczxcxczxczxczxczxcz')
   if (warehouseId == undefined || warehouseId == null || warehouseId == '') {
     warehouseId = req.decoded.warehouseId;
   }
   try {
     if (q === '' || !q) {
-      res.send([]);
+      res.send({ ok: false, error: [] });
     } else {
       let rs: any;
       if (limit) {
         rs = await genericModel.warehouseSearchAutocompleteAll(db, warehouseId, q);
+      } else {
+        rs = await genericModel.warehouseSearchAutocompleteLimit(db, warehouseId, q);
       }
       if (rs[0].length) {
         res.send(rs[0]);
