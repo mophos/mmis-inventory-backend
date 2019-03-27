@@ -348,6 +348,7 @@ router.post('/warehouse/generics/min-max/search', co(async (req, res, next) => {
     res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
   }
 }));
+
 router.get('/warehouse/generics/min-max', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let genericType = req.query.genericType;
@@ -2387,15 +2388,15 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
 
         for (const p of wmProducts) {
           let check = false;
-          if (p.qty > qty && qty > 0) {
+          if (p.qty >= qty && qty > 0) {
             check = true;
             cutQty = qty;
             p.qty = p.qty - qty;
             qty = 0
-          } else if (p.qty < qty && qty > 0) {
+          } else if (p.qty < qty && qty > 0) { //กรณีตัดแล้วแต่คงคลังไม่พอ
             check = true;
             qty = qty - p.qty;
-            cutQty = qty
+            cutQty = p.qty
             p.qty = 0;
           }
 
@@ -2473,14 +2474,13 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
           await hisTransactionModel.changeStatusToCut(db, cutStockDate, peopleUserId, h.transaction_id);
         } else if (qty > 0) {
           unCutStockIds.push(h.transaction_id);
+          //ตัดมากกว่าคงเหลือ ตัดแล้วเอามาหักลบ
           if (h.qty > qty) {
-            let diff = h.qty - qty
+            let diff = h.qty - cutQty
             await hisTransactionModel.changeQtyInHisTransaction(db, cutStockDate, peopleUserId, h.transaction_id, diff);
           }
         }
       }
-      console.log(cutStockIds.length, unCutStockIds.length);
-
       res.send({ ok: true, un_cut_stock: unCutStockIds, cut_stock: cutStockIds });
 
     } catch (error) {
@@ -3570,6 +3570,69 @@ router.get('/warehouses/export/excel', async (req, res, next) => {
     res.send({ ok: false, error: 'ไม่พบตารางข้อมูลที่ต้องการ' });
   }
 });
+
+
+router.post('/warehouse/save-default-minmax', co(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let minF = req.body.minF;
+  let maxF = req.body.maxF;
+  let db = req.db;
+
+    try {
+      await staffModel.saveDefaultMinMax(db, warehouseId, +minF, +maxF);
+      res.send({ ok: true });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+
+}));
+
+
+router.post('/min-max/calculate', co(async (req, res, next) => {
+
+  let db = req.db;
+  let fromDate = req.body.fromDate;
+  let toDate = req.body.toDate;
+  let warehouseId = req.decoded.warehouseId;
+  let genericGroups = req.decoded.generic_type_id;
+
+  try {
+    if (genericGroups) {
+      let _ggs = [];
+      let ggs = genericGroups.split(',');
+      ggs.forEach(v => {
+        _ggs.push(v);
+      });
+      if (fromDate && toDate) {
+        let results: any = await staffModel.calculateMinMax(db, warehouseId, fromDate, toDate, _ggs);
+        let rs = results[0];
+        for (let r of rs) {
+          r.min_qty = Math.round(r.use_per_day * r.safety_min_day);
+          r.max_qty = Math.round(r.use_per_day * r.safety_max_day);
+          r.rop_qty = Math.round(r.use_per_day * r.lead_time_day);
+          if (r.carrying_cost) {
+            r.eoq_qty = Math.round(Math.sqrt((2 * r.use_total * r.ordering_cost) / r.carrying_cost));
+          } else {
+            r.eoq_qty = 0;
+          }
+        }
+        res.send({ ok: true, rows: rs, process_date: moment().format('YYYY-MM-DD HH:mm:ss') });
+      } else {
+        res.send({ ok: false, error: 'กรุณาระบุช่วงวันที่สำหรับการคำนวณ' });
+      }
+    } else {
+      res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+    }
+  } catch (error) {
+    throw error;
+  } finally {
+    db.destroy();
+  }
+
+}));
 
 router.get('/warehouses/export-issue', async (req, res, next) => {
   let templateId = req.query.templateId;

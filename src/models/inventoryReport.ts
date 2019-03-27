@@ -1457,6 +1457,7 @@ FROM
             left JOIN wm_locations wl ON wl.location_id = wp.location_id
             WHERE
                 wp.product_id = ? and wp.warehouse_id = ?
+                and wp.qty > 0
             GROUP BY
                 wp.lot_no`
         return (knex.raw(sql, [receiveId, productId, productId, wareHouseId]))
