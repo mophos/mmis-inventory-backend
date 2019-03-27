@@ -1747,6 +1747,8 @@ router.get('/report/list/receiveOther', wrap(async (req, res, next) => {
 
   array2.forEach(value => {
     value.forEach(value2 => {
+      value2.costs = _.sumBy(value, function(o: any) { if (value2.generic_id == o.generic_id && value2.receive_other_id == o.receive_other_id) return +o.costs | 0; });      
+      value2.costs = inventoryReportModel.comma(value2.costs)      
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
       if(value2.receive_id == ''){
@@ -1792,15 +1794,13 @@ router.get('/report/list/receive', wrap(async (req, res, next) => {
     array2.push(list_receive2);
     // //console.log(list_receive2[0].receive_code)
   }
-  // array2=array2[0];
-
-  console.log(array2);
-
 
   array2.forEach(value => {
     value.forEach(value2 => {
+      value2.cost = _.sumBy(value, function(o: any) { if (value2.generic_id == o.generic_id && value2.receive_id == o.receive_id) return +o.cost | 0; });      
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
+      value2.cost = inventoryReportModel.comma(value2.cost)      
       if(value2.receive_id == ''){
         value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty/+value2.small_qty)
       }
@@ -1835,9 +1835,9 @@ router.get('/report/list/receiveCode/:sID/:eID', wrap(async (req, res, next) => 
     //console.log(list_receive2);
     array2.push(list_receive2);
   }
-
   array2.forEach(value => {
     value.forEach(value2 => {
+      value2.cost = _.sumBy(value, function(o: any) { if (value2.product_id == o.product_id && value2.receive_id == o.receive_id) return +o.cost | 0; });      
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
       if(value2.receive_id == ''){
@@ -1847,6 +1847,7 @@ router.get('/report/list/receiveCode/:sID/:eID', wrap(async (req, res, next) => 
   })
   res.render('_list_receive2', { hospitalName: hospitalName, list_receive2: list_receive2, array2: array2, sID: sID, eID: eID });
 }));
+
 router.get('/report/list/receiveCodeOther/:sID/:eID', wrap(async (req, res, next) => {
   let db = req.db;
   let sID = req.params.sID;
@@ -1870,9 +1871,10 @@ router.get('/report/list/receiveCodeOther/:sID/:eID', wrap(async (req, res, next
     //console.log(list_receive2);
     array2.push(list_receive2);
   }
-
   array2.forEach(value => {
     value.forEach(value2 => {
+      value2.costs = _.sumBy(value, function(o: any) { if (value2.product_id == o.product_id && value2.receive_other_id == o.receive_other_id) return +o.costs | 0; });
+      value2.costs = inventoryReportModel.comma(value2.costs)      
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
       if(value2.receive_id == ''){
@@ -2051,9 +2053,9 @@ router.get('/report/list/receivePo/:sID/:eID', wrap(async (req, res, next) => {
     //console.log(list_receive2);
     array2.push(list_receive2);
   }
-
   array2.forEach(value => {
     value.forEach(value2 => {
+      value2.cost = _.sumBy(value, function(o: any) { if (value2.product_id == o.product_id && value2.receive_id == o.receive_id) return +o.cost | 0; });
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
       if(value2.receive_id == ''){
@@ -2088,9 +2090,9 @@ router.get('/report/list/receiveDate/:sDate/:eDate', wrap(async (req, res, next)
     //console.log(list_receive2);
     array2.push(list_receive2);
   }
-
   array2.forEach(value => {
     value.forEach(value2 => {
+      value2.cost = _.sumBy(value, function(o: any) { if (value2.product_id == o.product_id && value2.receive_id == o.receive_id) return +o.cost | 0; });
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
       value2.unit_price = inventoryReportModel.comma(value2.unit_price * value2.receive_qty)
@@ -2186,9 +2188,9 @@ router.get('/report/list/receiveDateOther/:sDate/:eDate', wrap(async (req, res, 
     //console.log(list_receive2);
     array2.push(list_receive2);
   }
-
   array2.forEach(value => {
     value.forEach(value2 => {
+      value2.costs = _.sumBy(value, function(o: any) { if (value2.product_id == o.product_id && value2.receive_other_id == o.receive_other_id) return +o.costs | 0; });
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
       value2.costs = inventoryReportModel.comma(value2.costs)
