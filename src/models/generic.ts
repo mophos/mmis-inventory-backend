@@ -306,11 +306,12 @@ export class GenericModel {
       where
 			a.generic_id in (
 			SELECT mp.generic_id from wm_products as wp join mm_products as mp on mp.product_id = wp.product_id WHERE wp.warehouse_id = ${warehouseId} group by mp.generic_id
-			)`
+      )`
+      console.log('xczxcxzczxcxzczxcxzczxcxzczx', sql)
     return knex.raw(sql);
   }
 
-  warehouseSearchAutocompleteLimitStaff(knex: Knex, warehouseId: any, q: any) {
+  warehouseSearchAutocompleteLimitStaff(knex: Knex, warehouseId: any, q: any, srcWarehouseId: any) {
     let q_ = `${q}%`;
     let _q_ = `%${q}%`;
     let sql = `SELECT
@@ -381,13 +382,13 @@ export class GenericModel {
       where
 			a.generic_id in (
 			SELECT mp.generic_id from wm_products as wp join mm_products as mp on mp.product_id = wp.product_id WHERE wp.warehouse_id = ${warehouseId} AND mp.generic_id IN (
-        SELECT generic_id FROM mm_generic_planning WHERE warehouse_id = 8 GROUP BY generic_id
+        SELECT generic_id FROM mm_generic_planning WHERE warehouse_id = ${srcWarehouseId} GROUP BY generic_id
       ) group by mp.generic_id
 			)`
     return knex.raw(sql);
   }
 
-  warehouseSearchAutocompleteAllStaff(knex: Knex, warehouseId: any, q: any) {
+  warehouseSearchAutocompleteAllStaff(knex: Knex, warehouseId: any, q: any, srcWarehouseId: any) {
     let q_ = `${q}%`;
     let _q_ = `%${q}%`;
     let sql = `SELECT
@@ -456,7 +457,7 @@ export class GenericModel {
       where
 			a.generic_id in (
 			SELECT mp.generic_id from wm_products as wp join mm_products as mp on mp.product_id = wp.product_id WHERE wp.warehouse_id = ${warehouseId} AND mp.generic_id IN (
-        SELECT generic_id FROM mm_generic_planning WHERE warehouse_id = 8 GROUP BY generic_id
+        SELECT generic_id FROM mm_generic_planning WHERE warehouse_id = ${srcWarehouseId} GROUP BY generic_id
       ) group by mp.generic_id
 			)`
     return knex.raw(sql);
