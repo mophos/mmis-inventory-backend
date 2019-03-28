@@ -1653,7 +1653,7 @@ router.get('/getUnitGeneric', co(async (req, res, nex) => {
 
 
 function getLotTime(lotTimes, productId, lotNo, lotTime, warehouseId, isFree) {
-  const idx = _.findIndex(lotTimes, { 'product_id': productId, 'lot_no': lotNo, 'warehouse_id': warehouseId });
+  const idx = _.findIndex(lotTimes, { 'product_id': productId, 'lot_no': lotNo, 'warehouse_id': warehouseId, 'lot_time': lotTime });
   let _lotTime = 0
   if (isFree == 'N') {
     if (idx > -1) {
@@ -1676,10 +1676,10 @@ function getLotTime(lotTimes, productId, lotNo, lotTime, warehouseId, isFree) {
       let lotObj = {
         product_id: productId,
         lot_no: lotNo,
-        lot_time: lotTime,
+        lot_time: lotTime + 1,
         warehouse_id: warehouseId
       };
-      _lotTime = +lotTime;
+      _lotTime = +lotTime + 1;
       lotTimes.push(lotObj);
     }
   }
