@@ -129,8 +129,8 @@ router.get('/warehouse/search/autocomplete/all', async (req, res, next) => {
     warehouseId = req.decoded.warehouseId;
   }
   try {
-    if (q === '' || !q) {
-      res.send({ ok: false, error: [] });
+   if (q === '' || !q) {
+      res.send([]);
     } else {
       let rs: any;
       if (limit) {
