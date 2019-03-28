@@ -238,7 +238,7 @@ export class StockCard {
 
   saveFastStockTransaction(db: Knex, data: any) {
     return db('wm_stock_card')
-      .insert(data);
+      .insert(data, 'stock_card_id');
   }
 
   // saveStockHisTransaction(db: Knex, transactionId: any) {
