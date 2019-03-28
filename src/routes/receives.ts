@@ -864,7 +864,6 @@ router.post('/approve', co(async (req, res, next) => {
             let update = false;
             let oldWmproducts;
             const dataWmProducts = await productModel.checkDuplicatedProduct(db, p.product_id, p.warehouse_id, p.lot_no, p.lot_time);
-            console.log(dataWmProducts)
             let wmProductId: any;
             try {
               if (dataWmProducts.length) {
@@ -1654,8 +1653,6 @@ router.get('/getUnitGeneric', co(async (req, res, nex) => {
 
 
 function getLotTime(lotTimes, productId, lotNo, lotTime, warehouseId, isFree) {
-  console.log(lotTimes, productId, lotNo, lotTime, warehouseId, isFree);
-
   const idx = _.findIndex(lotTimes, { 'product_id': productId, 'lot_no': lotNo, 'warehouse_id': warehouseId, 'lot_time': lotTime });
   let _lotTime = 0
   if (isFree == 'N') {
