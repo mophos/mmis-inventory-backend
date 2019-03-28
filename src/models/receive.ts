@@ -453,7 +453,7 @@ export class ReceiveModel {
 
   saveApprove(knex: Knex, data: any) {
     return knex('wm_receive_approve')
-      .insert(data);
+      .insert(data, 'approve_id');
   }
 
   removeOldApprove(knex: Knex, receiveIds: any) {
@@ -524,9 +524,16 @@ export class ReceiveModel {
       .update(data);
   }
 
+  checkDuplicated(knex: Knex, warehouseId: any, productId: any, lotNo: any, lotTime: any) {
+    return knex('wm_receives')
+      .where('warehouse_id', warehouseId)
+      .where('product_id', productId)
+      .where('lot_no', lotNo)
+      .where('lot_time', lotTime);
+  }
+
   checkDuplicatedApprove(knex: Knex, receiveId: any) {
     return knex('wm_receive_approve')
-      .count('* as total')
       .where('receive_id', receiveId);
   }
 
@@ -682,7 +689,7 @@ WHERE
     // .whereIn('rd.receive_id', receive_id)
   }
 
-  getReceiveProductsImport(knex: Knex, receiveIds: any) {
+  getReceiveProductApprove(knex: Knex, receiveIds: any) {
     let subBalance = knex('wm_products as wp')
       .sum('wp.qty')
       .as('balance')
@@ -768,38 +775,55 @@ WHERE
 
 
   saveProducts(knex: Knex, v: any) {
-    let sqls = [];
-    // data.forEach(v => {
     let totalCost = v.cost * v.qty;
     let sql = `
-        INSERT INTO wm_products(wm_product_id, warehouse_id, product_id, qty,
-      cost, price, lot_no, expired_date, location_id, unit_generic_id, people_user_id, created_at,lot_time)
-    VALUES('${v.wm_product_id}', '${v.warehouse_id}', '${v.product_id}', ${v.qty}, ${v.cost},
-      ${ v.price}, ?,?, ${v.location_id},
-      ${ v.unit_generic_id}, ${v.people_user_id}, '${v.created_at}',${v.lot_time})
-      ON DUPLICATE KEY UPDATE qty = qty + ${ v.qty}, unit_generic_id = '${v.unit_generic_id}',cost = (
-        select(sum(w.qty * w.cost) + ${ totalCost}) / (sum(w.qty) + ${v.qty})
-      from wm_products as w
-      where w.product_id = '${v.product_id}' and w.lot_no = '${v.lot_no}' and w.warehouse_id = '${v.warehouse_id}'
-      group by w.product_id)
-    `;
-    // sqls.push(sql);
-    // });
-
-    // let queries = sqls.join(';');
-    return knex.raw(sql, [v.lot_no, v.expired_date]);
+        INSERT INTO wm_products(wm_product_id, warehouse_id, product_id, qty,cost,
+        price, lot_no, expired_date, location_id,
+        unit_generic_id, people_user_id, created_at,lot_time)
+        VALUES(?,?,?,?,?,
+        ?,?,?,?,
+        ?,?,?,?)
+        ON DUPLICATE KEY UPDATE qty = qty + ?, unit_generic_id = ?,cost = (
+        select(sum(w.qty * w.cost) + ? / (sum(w.qty) + ?))
+        from wm_products as w
+        where w.product_id = ? and w.lot_no = ? and w.warehouse_id = ?
+        group by w.product_id)`;
+    return knex.raw(sql, [v.wm_product_id, v.warehouse_id, v.product_id, v.qty, v.cost,
+    v.price, v.lot_no, v.expired_date, v.location_id,
+    v.unit_generic_id, v.people_user_id, v.created_at, v.lot_time,
+    v.qty, v.unit_generic_id,
+      totalCost, v.qty,
+    v.product_id, v.lot_no, v.warehouse_id
+    ]);
   }
 
-  adjustCost(knex: Knex, data: any[]) {
-    let sqls = [];
-    data.forEach(v => {
-      let sql = `
-    UPDATE mm_unit_generics set cost = ${ v.cost} where unit_generic_id = ${v.unit_generic_id} `;
-      sqls.push(sql);
-    });
-    let queries = sqls.join(';');
-    return knex.raw(queries);
+  insertProduct(knex: Knex, v: any) {
+    return knex('wm_products')
+      .insert(v, 'wm_product_id');
   }
+
+  async updateProduct(knex: Knex, v: any) {
+    let totalCost = +v.cost * v.qty;
+    const cost = await this.getSumCost(knex, totalCost, v.qty, v.product_id, v.lot_no, v.warehouse_id);
+    return knex.raw(`UPDATE wm_products set qty = qty + ?, unit_generic_id = ?,cost = ? where wm_product_id = ?`,
+      [v.qty, v.unit_generic_id, cost[0][0].cost, v.wm_product_id])
+
+  }
+
+  async getSumCost(knex: Knex, totalCost, qty, productId, lotNo, warehouseId) {
+    return await knex.raw(`select((sum(w.qty * w.cost) + ?) / (sum(w.qty) + ?)) as cost
+    from wm_products as w
+    where w.product_id = ? and w.lot_no = ? and w.warehouse_id = ?
+    group by w.product_id`, [totalCost, qty, productId, lotNo, warehouseId])
+  }
+
+
+  adjustCost(knex: Knex, data: any) {
+    return knex('mm_unit_generics')
+      .update({ 'cost': data.cost })
+      .where('unit_generic_id', data.unit_generic_id)
+  }
+
   checkPickApprove(knex: Knex, receiveId: string) {
     return knex('wm_pick_detail as pd')
       .join('wm_pick as p', 'p.pick_id', 'pd.pick_id')
@@ -2006,4 +2030,26 @@ WHERE
       .where('lot_no', data.lot_no)
       .where('lot_time', data.lot_time)
   }
+
+  getCostProductWmProductId(knex: Knex, data) {
+    return knex('wm_products')
+      .select('cost')
+      .where('wm_product_id', data);
+  }
+
+  saveApproveComment(knex: Knex, receiveId, data) {
+    return knex('wm_receive_approve')
+      .where('receive_id', receiveId)
+      .update({ 'comment': data })
+  }
+  // returnInsert(knex: Knex, table, column, id) {
+  //   return knex(table)
+  //     .where(column, id)
+  //     .del();
+  // }
+  // returnUpdate(knex: Knex, table, column, id) {
+  //   return knex(table)
+  //     .where(column, id)
+  //     .del();
+  // }
 }
