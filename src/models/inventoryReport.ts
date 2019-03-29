@@ -3345,6 +3345,40 @@ OR sc.ref_src like ?
         ppo.purchase_order_number`
         return knex.raw(sql)
     }
+
+    productReceiveAccount(knex: Knex, startdate: any, enddate: any, genericTypeId: any, dateSetting = 'view_stock_card_warehouse', warehouseId) {
+        let sql = `SELECT
+        ws.in_qty / mug.qty AS receive_qty,
+        ws.in_unit_cost AS cost,
+        ws.in_qty AS total_qty,
+        sum(ws.in_qty * ws.in_unit_cost) AS total_cost,
+        mgt.generic_type_name,
+        mga.account_name,
+        mgt.generic_type_code
+    FROM
+        ${dateSetting} AS ws
+        JOIN mm_products AS mp ON mp.product_id = ws.product_id
+        JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
+        JOIN mm_unit_generics AS mug ON mug.unit_generic_id = ws.unit_generic_id
+        JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
+        JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
+    WHERE
+        ws.transaction_type = 'REV' 
+        AND ws.stock_date BETWEEN '${startdate} 00:00:00' 
+        AND '${enddate} 23:59:59' 
+        AND mg.generic_type_id IN ( ${genericTypeId} ) `
+        if (warehouseId != 0) {
+            sql += `AND ws.warehouse_id = '${warehouseId}' `
+        }
+        sql += ` GROUP BY
+        mg.generic_type_id,
+        mg.account_id
+    ORDER BY
+        mg.generic_type_id,
+        mg.account_id`
+        return knex.raw(sql)
+    }
+
     productReceive3(knex: Knex, startdate: any, enddate: any, genericTypeId: any) {
         let sql = `SELECT
         r.receive_id,

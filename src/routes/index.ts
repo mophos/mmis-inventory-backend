@@ -2969,6 +2969,43 @@ router.get('/report/product-receive', wrap(async (req, res, next) => {
   });
 }));
 
+router.get('/report/product-receive-account', wrap(async (req, res, next) => {
+  let db = req.db;
+  let startdate = req.query.startDate
+  let enddate = req.query.endDate
+  let genericType = req.query.genericType;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let warehouseId = req.query.warehouseId
+
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let province = hosdetail[0].province;
+
+  let productReceive = await inventoryReportModel.productReceiveAccount(db, startdate, enddate, genericType, dateSetting, warehouseId);
+  // console.log(productReceive);
+  if (productReceive[0].length == 0) { res.render('error404') }
+
+  productReceive = productReceive[0];
+  startdate = moment(startdate).format('D MMMM ') + (moment(startdate).get('year') + 543);
+  enddate = moment(enddate).format('D MMMM ') + (moment(enddate).get('year') + 543);
+  let allcost: any = 0;
+  productReceive.forEach(value => {
+    allcost += value.total_cost;
+    value.total_cost = inventoryReportModel.comma(value.total_cost);
+  });
+
+  allcost = inventoryReportModel.comma(allcost);
+
+  res.render('productReceiveAccount', {
+    allcost: allcost,
+    hospitalName: hospitalName,
+    printDate: printDate(req.decoded.SYS_PRINT_DATE),
+    productReceive: productReceive,
+    startdate: startdate,
+    enddate: enddate
+  });
+}));
+
 router.get('/report/product/receive', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID = req.query.receiveID
