@@ -1757,6 +1757,44 @@ FROM
         return knex.raw(sql);
     }
 
+    receiveOrthorCostAccount(knex: Knex, startDate: any, endDate: any, warehouseId: any, receiveTpyeId: any, dateSetting = 'view_stock_card_warehouse') {
+        let sql = `SELECT
+        wro.receive_code,
+        mgt.generic_type_code,
+        vscw.cost AS costAmount,
+        wrt.receive_type_name,
+        mgt.generic_type_name,
+        mga.account_name,
+        sum( vscw.cost ) AS totalCost,
+        wro.receive_type_id 
+    FROM
+        ${dateSetting} AS vscw
+        JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
+        JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
+        JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id
+        JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+        JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id 
+    WHERE
+        vscw.transaction_type = 'REV_OTHER' 
+        AND vscw.stock_date BETWEEN '${startDate} 00:00:00' 
+        AND '${endDate} 23:59:59' 
+        AND wro.receive_type_id = ${receiveTpyeId} `
+        if (warehouseId != 0) {
+            sql += `AND vscw.warehouse_id = '${warehouseId}' `
+        }
+        sql += ` GROUP BY
+        wrt.receive_type_id,
+        mg.generic_type_id,
+        mg.account_id 
+    HAVING
+        totalCost > 0 
+    ORDER BY
+        wrt.receive_type_id,
+        mg.generic_type_id,
+        mg.account_id`
+        return knex.raw(sql);
+    }
+
 
     async hospital(knex: Knex) {
         let array = [];

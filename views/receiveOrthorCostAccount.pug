@@ -1,0 +1,44 @@
+include css.pug
+style(media='print').
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    span.page
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='7') #{hospitalName}
+        tr
+          td.center.bold(colspan='7' ) รายงานมูลค่าจากการรับอื่นๆ
+        tr
+          td.center(colspan='7') วันที่รับเข้า ตั้งแต่วันที่ #{startDate} ถึงวันที่ #{endDate}
+        tr
+          td.left(colspan='7' ) ณ คลังสินค้า #{warehouseName}
+        tr
+          td.left(colspan='7' ) #{printDate}
+      tbody
+        - var y = 0
+        - for(var b of list)
+          - y++
+          tr
+            td.left.bold(colspan='7' style='border-top:1px dashed ;padding-top: 5px') #{y}. ประเภทการรับ: #{b.head}
+            - for(var a of b.detail)
+              tr
+                if(a.generic_type_code == 'MEDICINE')
+                  td(style="width:7%")
+                    span &nbsp;
+                  td.right(style="width:15%") #{a.account_name}: &nbsp;
+                else
+                  td(style="width:7%")
+                    span &nbsp;
+                  td.right(style="width:15%") #{a.generic_type_name}: &nbsp;
+                td.left(colspan='5') #{a.totalCost}
+          tr
+            td.right(colspan='7') มูลค่ารวม: #{b.cost}
+        tfooter
+          tr
+            td.tbfooter.right(colspan="8" style='padding-top: 5px') มูลค่ารวมทั้งหมด #{sum} บาท

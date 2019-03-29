@@ -402,6 +402,63 @@ router.get('/report/receiveOrthorCost/:startDate/:endDate/:warehouseId/:warehous
   }
 }));
 
+router.get('/report/receiveOrthorCostAccount', wrap(async (req, res, next) => {
+  const db = req.db;
+  let startDate = req.query.startDate;
+  let endDate = req.query.endDate;
+  let warehouseId = req.query.warehouseId;
+  let warehouseName = req.query.warehouseName;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let receiveTpyeId = Array.isArray(req.query.receiveTpyeId) ? req.query.receiveTpyeId : [req.query.receiveTpyeId];
+  // warehouseId = warehouseId ? +warehouseId : 'ทุกคลังสินค้า'
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    let list: any = [];
+    let sum: any = 0;
+
+    for (let i of receiveTpyeId) {
+      let data = await inventoryReportModel.receiveOrthorCostAccount(db, startDate, endDate, warehouseId, i, dateSetting);
+      data = data[0]
+      if (data.length) {
+        let _obj = [];
+        for (const n of data) {
+          _obj.push({
+            generic_type_name: n.generic_type_name,
+            account_name: n.account_name,
+            generic_type_code: n.generic_type_code,
+            totalCost: inventoryReportModel.comma(n.totalCost)
+          })
+          sum += n.totalCost
+        }
+        let cost = inventoryReportModel.comma(_.sumBy(data, (o: any) => { return o.totalCost; }));
+        let obj = {
+          head: data[0].receive_type_name,
+          cost: cost,
+          detail: _obj
+        }
+        list.push(obj)
+      }
+    }
+    sum = inventoryReportModel.comma(sum);
+
+    startDate = moment(startDate).format('DD MMMM ') + (moment(startDate).get('year') + 543)
+    endDate = moment(endDate).format('DD MMMM ') + (moment(endDate).get('year') + 543)
+    res.render('receiveOrthorCostAccount', {
+      hospitalName: hospitalName,
+      printDate: printDate(req.decoded.SYS_PRINT_DATE),
+      warehouseName: warehouseName,
+      // data: data[0],
+      list: list,
+      startDate: startDate,
+      endDate: endDate,
+      sum: sum
+    });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+}));
+
 router.get('/report/pay-req/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
   const db = req.db;
   let startDate = req.params.startDate;
