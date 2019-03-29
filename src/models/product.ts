@@ -183,12 +183,12 @@ export class ProductModel {
       .del();
   }
 
-  checkDuplicatedProduct(knex: Knex, productId: any, warehouseId: any, lotNo: any) {
+  checkDuplicatedProduct(knex: Knex, productId: any, warehouseId: any, lotNo: any, lotTime) {
     return knex('wm_products')
-      .count('* as total')
       .where('product_id', productId)
       .andWhere('warehouse_id', warehouseId)
-      .andWhere('lot_no', lotNo);
+      .andWhere('lot_no', lotNo)
+      .andWhere('lot_time', lotTime);
   }
 
   saveProducts(knex: Knex, data: any[]) {
