@@ -999,11 +999,7 @@ router.post('/other/approve', co(async (req, res, next) => {
         approveDatas.push(_approveData);
       }
     }
-    console.log('----===');
-    
-    console.log(approveDatas);
-    console.log(receiveIds);
-    
+
     if (!receiveIds.length) {
       res.send({ ok: false, error: 'ไม่มีรายการอนุมัติ กรุณา refresh ใหม่' });
     } else {
@@ -1017,10 +1013,6 @@ router.post('/other/approve', co(async (req, res, next) => {
       if (approveId.length > 0) {
         const _receiveOtherIds = await receiveModel.getApproveOtherStatus(db, approveId);
         const receiveOtherIds = _.map(_receiveOtherIds,'receive_other_id')
-        console.log(approveId);
-        console.log(_receiveOtherIds);
-        console.log(receiveOtherIds);
-        
         // get product
         let _rproducts = await receiveModel.getReceiveOtherProductsImport(db, receiveOtherIds);
         let products: any = [];
@@ -1129,11 +1121,10 @@ router.post('/other/approve', co(async (req, res, next) => {
           // data.push(objS);
 
           //////////////////////////////////////////
-
           // await receiveModel.saveProducts(db, products);
           await stockcard.saveFastStockTransaction(db, objS);
-          res.send({ ok: true });
         }
+        res.send({ ok: true });
       } else {
         res.send({ ok: false, error: 'การอนุมัติมีปัญหา กรุณาติดต่อเจ้าหน้าที่ศูนย์เทคฯ' })
       }
