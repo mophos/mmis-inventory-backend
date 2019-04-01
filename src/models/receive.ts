@@ -534,7 +534,14 @@ export class ReceiveModel {
 
   checkDuplicatedApprove(knex: Knex, receiveId: any) {
     return knex('wm_receive_approve')
-      .where('receive_id', receiveId);
+      .select('receive_id')
+      .where('receive_id', receiveId)
+      .union((v) => {
+        v.select('document_ref_id').from('wm_stock_card')
+          .where('document_ref_id', receiveId)
+          .whereIn('document_ref', knex('wm_receives').select('receive_code').where('receive_id', receiveId))
+          .groupBy('document_ref')
+      });
   }
 
   checkDuplicatedApproveOther(knex: Knex, receiveId: any) {

@@ -2764,7 +2764,7 @@ OR sc.ref_src like ?
           mup.qty AS conversion_qty,
           mus.unit_name AS small_unit,
           sum(rci.confirm_qty) AS confirm_qty,
-          (
+          sum((
             SELECT
               sum(qty)
             FROM
@@ -2773,7 +2773,7 @@ OR sc.ref_src like ?
               w.wm_product_id = wp.wm_product_id
             GROUP BY
               w.product_id
-          ) AS remain,
+          )) AS remain,
           wp.lot_no,
           wp.expired_date,
           r.requisition_code,
