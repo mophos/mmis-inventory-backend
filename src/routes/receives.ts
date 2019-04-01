@@ -806,8 +806,11 @@ router.post('/approve', co(async (req, res, next) => {
     const insertDB = [];
     const updateDB = [];
     const errorDB = [];
+    var errApp: any = []
+    var sussApp: any = []
     // new
     for (const r of receiveIds) {
+
       const checkApprove = await receiveModel.checkDuplicatedApprove(db, r);
       if (checkApprove.length == 0) {
         const approveData = {
@@ -819,7 +822,6 @@ router.post('/approve', co(async (req, res, next) => {
         }
 
         const receiveApproveId: any = await receiveModel.saveApprove(db, approveData);
-
         if (receiveApproveId.length > 0) {
           insertDB.push({ 'table': 'wm_receive_approve', 'key': 'approve_id', 'value': receiveApproveId[0] });
         } else {
@@ -827,6 +829,7 @@ router.post('/approve', co(async (req, res, next) => {
         }
 
         if (receiveApproveId.length > 0) {
+          sussApp.push(r)
           let products = await receiveModel.getReceiveProductApprove(db, r);
           let lotTimes = [];
           let lotTime: any;
@@ -940,6 +943,8 @@ router.post('/approve', co(async (req, res, next) => {
             // End Save Stockcard
           }
         }
+      } else {
+        errApp.push(r)
       }
       if (errorDB.length > 0) {
         for (const e of errorDB) {
@@ -949,8 +954,15 @@ router.post('/approve', co(async (req, res, next) => {
         }
       }
     }
-    let pickReturn: any = await pick(req, receiveIds);
-    res.send(pickReturn);
+    if(sussApp>0){
+      let pickReturn: any = await pick(req, receiveIds);
+
+      if (pickReturn.ok) res.send({ ok: true, errDupApprove: errApp });
+      else res.send({ ok: false, message: pickReturn.message });
+    } else {
+      res.send({ ok: false, error: 'ไม่มีรายการที่สามารถยืนยันได้' });
+    }
+    
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
