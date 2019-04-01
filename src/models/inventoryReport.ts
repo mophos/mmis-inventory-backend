@@ -2685,25 +2685,37 @@ OR sc.ref_src like ?
 
     getProductList(knex: Knex, issueId: any) {
         let sql = `
-        select sd.*, w.warehouse_name, g.generic_name, mp.product_name, uf.unit_name as from_unit_name,
-        ut.unit_name as to_unit_name, ug.qty as unit_conversion_qty
-        from (
-            SELECT wis.issue_id, wip.product_id, wp.lot_no, wp.expired_date, wip.qty,wp.cost, mug.qty as conversion_qty,
-                    mug.unit_generic_id, wis.warehouse_id, wis.updated_at, wig.generic_id
-            FROM wm_issue_summary wis 
-            LEFT JOIN wm_issue_generics wig ON wig.issue_id = wis.issue_id
-	        LEFT JOIN wm_issue_products wip ON wip.issue_generic_id = wig.issue_generic_id
-	        LEFT JOIN wm_products wp on wp.wm_product_id = wip.wm_product_id
-            LEFT JOIN mm_unit_generics mug on mug.unit_generic_id = wp.unit_generic_id
-        ) as sd 
-        left join wm_products as wp on wp.product_id=sd.product_id and wp.lot_no=sd.lot_no and wp.warehouse_id=sd.warehouse_id
-        left join wm_warehouses as w on w.warehouse_id=sd.warehouse_id
-        left join mm_products as mp on mp.product_id=wp.product_id
-        left join mm_generics as g on g.generic_id=mp.generic_id
-        left join mm_unit_generics as ug on ug.unit_generic_id=sd.unit_generic_id
-        left join mm_units as uf on uf.unit_id=ug.from_unit_id
-        left join mm_units as ut on ut.unit_id=ug.to_unit_id
-        where sd.issue_id=?
+        SELECT
+        w.warehouse_name,
+        g.generic_name,
+        mp.product_name,
+        wis.issue_id,
+        wip.product_id,
+        wp.lot_no,
+        wp.expired_date,
+        wip.qty,
+        wp.cost,
+        mug.qty AS conversion_qty,
+        mug.unit_generic_id,
+        wis.warehouse_id,
+        wis.updated_at,
+        wp.lot_time,
+        uf.unit_name AS from_unit_name,
+        ut.unit_name AS to_unit_name,
+        mug.qty AS unit_conversion_qty 
+    FROM
+        wm_issue_summary wis
+        LEFT JOIN wm_issue_generics wig ON wig.issue_id = wis.issue_id
+        LEFT JOIN wm_issue_products wip ON wip.issue_generic_id = wig.issue_generic_id
+        LEFT JOIN wm_warehouses AS w ON w.warehouse_id = wis.warehouse_id
+        LEFT JOIN wm_products wp ON wp.wm_product_id = wip.wm_product_id
+        LEFT JOIN mm_products AS mp ON mp.product_id = wp.product_id
+        LEFT JOIN mm_generics AS g ON g.generic_id = mp.generic_id
+        LEFT JOIN mm_unit_generics mug ON mug.unit_generic_id = wp.unit_generic_id
+        LEFT JOIN mm_units AS uf ON uf.unit_id = mug.from_unit_id
+        LEFT JOIN mm_units AS ut ON ut.unit_id = mug.to_unit_id
+        WHERE
+        wis.issue_id=?
         `;
 
         return knex.raw(sql, [issueId]);

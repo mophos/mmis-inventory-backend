@@ -827,7 +827,7 @@ router.post('/approve', co(async (req, res, next) => {
         }
 
         if (receiveApproveId.length > 0) {
-          let products = await receiveModel.getReceiveProductApprove(db, receiveIds);
+          let products = await receiveModel.getReceiveProductApprove(db, r);
           let lotTimes = [];
           let lotTime: any;
           for (const p of products) {
