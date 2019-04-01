@@ -558,6 +558,13 @@ export class ReceiveModel {
       .where('receive_id', receiveId);
   }
 
+  getApproveOtherStatus(knex: Knex, approveIds: any) {
+    return knex('wm_receive_approve')
+    .select('receive_other_id')
+      .whereIn('approve_id', approveIds)
+      .groupBy('receive_other_id');
+  }
+
   getReceiveInfo(knex: Knex, receiveId: any) {
     return knex('wm_receives as r')
       .select('r.receive_id', 'r.receive_code', 'r.receive_tmp_code', 'r.receive_date', 'r.delivery_code', 'r.delivery_date',
