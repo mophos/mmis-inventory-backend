@@ -3110,9 +3110,14 @@ router.post('/receives/other/approve', co(async (req, res, next) => {
       });
 
       await receiveModel.removeOldApproveOther(db, receiveIds);
-      const approveId = await receiveModel.saveApprove(db, approveDatas);
+      var approveId = []
+      for (const json of approveDatas) {
+         var idx = await receiveModel.saveApprove(db, json);
+         approveId.push(idx[0])
+      }
       if ( approveId.length > 0) {
-        const receiveOtherIds = await receiveModel.getApproveOtherStatus(db, approveId);
+        const _receiveOtherIds = await receiveModel.getApproveOtherStatus(db, approveId);
+        const receiveOtherIds = _.map(_receiveOtherIds,'receive_other_id')
         // get product
         let _rproducts = await receiveModel.getReceiveOtherProductsImport(db, receiveOtherIds);
         let products: any = [];
