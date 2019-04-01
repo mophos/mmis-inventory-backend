@@ -168,7 +168,12 @@ router.get('/report/getBudgetYear', wrap(async (req, res, next) => {
 }))
 router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
   const db = req.db;
-  const warehouseId: any = req.decoded.warehouseId
+  let warehouseId: any;
+  if (req.query.warehouseId) {
+    warehouseId = req.query.warehouseId;
+  } else {
+    warehouseId = req.query.decoded.warehouseId;
+  }
   const month = req.query.month
   const year = req.query.year
   let genericType = req.query.genericTypes
@@ -226,7 +231,12 @@ router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
 }))
 router.get('/report/monthlyReport', wrap(async (req, res, next) => {
   const db = req.db;
-  const warehouseId: any = req.decoded.warehouseId
+  let warehouseId: any;
+  if (req.query.warehouseId) {
+    warehouseId = req.query.warehouseId;
+  } else {
+    warehouseId = req.query.decoded.warehouseId;
+  }
   const month = req.query.month
   const year = req.query.year
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
