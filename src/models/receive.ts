@@ -689,7 +689,7 @@ WHERE
     // .whereIn('rd.receive_id', receive_id)
   }
 
-  getReceiveProductApprove(knex: Knex, receiveIds: any) {
+  getReceiveProductApprove(knex: Knex, receiveId: any) {
     let subBalance = knex('wm_products as wp')
       .sum('wp.qty')
       .as('balance')
@@ -711,7 +711,7 @@ WHERE
         'ug.qty as conversion_qty', 'mp.generic_id', 'r.receive_code', subBalance, subLotTime)
       // knex.raw('sum(rd.receive_qty) as receive_qty'),
       // knex.raw('sum(reqd.requisition_qty) as requisition_qty'), )
-      .whereIn('rd.receive_id', receiveIds)
+      .where('rd.receive_id', receiveId)
       .innerJoin('wm_receives as r', 'r.receive_id', 'rd.receive_id')
       .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'rd.unit_generic_id')
       // .leftJoin('wm_requisition_detail as reqd', join => {
