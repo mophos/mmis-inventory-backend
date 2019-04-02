@@ -168,12 +168,11 @@ router.get('/report/getBudgetYear', wrap(async (req, res, next) => {
 }))
 router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
   const db = req.db;
-  let warehouseId: any;
-  if (req.query.warehouseId) {
-    warehouseId = req.query.warehouseId;
-  } else {
-    warehouseId = req.query.decoded.warehouseId;
+  let warehouseId: any = req.query.warehouseId
+  if (!warehouseId) {
+    warehouseId = req.decoded.warehouseId;
   }
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   const month = req.query.month
   const year = req.query.year
   let genericType = req.query.genericTypes
@@ -182,8 +181,8 @@ router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
 
   try {
     let monthName = moment((+year) + '-' + (+month) + '-1').format('MMMM');
-    const rsM: any = await inventoryReportModel.monthlyReportM(db, month, year, genericType, warehouseId);
-    const rs: any = await inventoryReportModel.monthlyReport(db, month, year, genericType, warehouseId);
+    const rsM: any = await inventoryReportModel.monthlyReportM(db, month, year, genericType, warehouseId, dateSetting);
+    const rs: any = await inventoryReportModel.monthlyReport(db, month, year, genericType, warehouseId, dateSetting);
     let ans: any = []
     for (const items of rsM[0]) {
       rs[0].push(items)
@@ -216,7 +215,7 @@ router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
       'จ่ายออกจากคลัง (ใน 1 เดือน)': inventoryReportModel.comma(sum.out_cost),
       'เหลือคงคลัง (เมื่อสิ้นเดือน)': inventoryReportModel.comma(sum.balanceAfter)
     })
-    let tmpFile = `${_tableName}เดือน${monthName}-${moment().format('x')}.xls`;
+    let tmpFile = `${_tableName}เดือน${monthName}-${moment().format('x')}.xlsx`;
     const xls = json2xls(r);
     const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
     // create directory
@@ -229,13 +228,12 @@ router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
     res.send({ ok: false, error: error.message })
   }
 }))
+
 router.get('/report/monthlyReport', wrap(async (req, res, next) => {
   const db = req.db;
-  let warehouseId: any;
-  if (req.query.warehouseId) {
-    warehouseId = req.query.warehouseId;
-  } else {
-    warehouseId = req.query.decoded.warehouseId;
+  let warehouseId: any = req.query.warehouseId;
+  if (!warehouseId) {
+    warehouseId = req.decoded.warehouseId;
   }
   const month = req.query.month
   const year = req.query.year
@@ -288,6 +286,7 @@ router.get('/report/monthlyReport', wrap(async (req, res, next) => {
     res.send({ ok: false, error: error.message })
   }
 }))
+
 router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
   const db = req.db;
   const year = req.params.year - 543
