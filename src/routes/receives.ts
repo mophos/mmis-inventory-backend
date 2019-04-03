@@ -800,8 +800,6 @@ router.post('/approve', co(async (req, res, next) => {
   let db = req.db;
   let receiveIds = Array.isArray(req.body.receiveIds) ? req.body.receiveIds : [req.body.receiveIds];
   let comment = req.body.comment;
-  // let approveDate = req.body.approveDate;
-  let warehouseId = req.decoded.warehouseId;
   try {
     const insertDB = [];
     const updateDB = [];
