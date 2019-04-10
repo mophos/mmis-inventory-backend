@@ -3278,47 +3278,52 @@ router.get('/report/inventoryStatus/generic', wrap(async (req, res, next) => {
   let statusDate = req.query.statusDate
   let genericType = req.query.genericType
   let warehouseName = req.query.warehouseName
-  let hosdetail = await inventoryReportModel.hospital(db);
-  let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.inventoryStatusGeneric(db, warehouseId, genericType, statusDate);
-  let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
-  let list = rs[0]
-  let sumlist = [];
-  let sum = 0
-  let totalsum = 0;
-  let totalsumShow: any;
-  if (list.length <= 0) {
-    res.render('error404');
-  } else {
-    list = _.chunk(list, 35)
-    // res.send({list:list});
-    for (let i in list) {
-      sum = _.sumBy(list[i], 'total_cost')
-      sumlist.push(sum)
-      for (let ii in list[i]) {
-        list[i][ii].total_cost = inventoryReportModel.comma(list[i][ii].total_cost);
-        list[i][ii].unit_cost = inventoryReportModel.comma(list[i][ii].unit_cost);
-        list[i][ii].qty = inventoryReportModel.commaQty(list[i][ii].qty);
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    let rs = await inventoryReportModel.inventoryStatusGeneric(db, warehouseId, genericType, statusDate);
+    let statusDate_text = moment(statusDate).format('DD MMMM ') + (moment(statusDate).get('year') + 543);
+    let list = rs[0]
+    let sumlist = [];
+    let sum = 0
+    let totalsum = 0;
+    let totalsumShow: any;
+    if (list.length <= 0) {
+      res.render('error404');
+    } else {
+      list = _.chunk(list, 35)
+      // res.send({list:list});
+      for (let i in list) {
+        sum = _.sumBy(list[i], 'total_cost')
+        sumlist.push(sum)
+        for (let ii in list[i]) {
+          list[i][ii].total_cost = inventoryReportModel.comma(list[i][ii].total_cost);
+          list[i][ii].unit_cost = inventoryReportModel.comma(list[i][ii].unit_cost);
+          list[i][ii].qty = inventoryReportModel.commaQty(list[i][ii].qty);
+        }
       }
-    }
-    for (let s in sumlist) {
-      totalsum = totalsum + sumlist[s]
-      sumlist[s] = inventoryReportModel.comma(sumlist[s]);
-    }
-    totalsumShow = inventoryReportModel.comma(totalsum);
-    // res.send(sumlist);
+      for (let s in sumlist) {
+        totalsum = totalsum + sumlist[s]
+        sumlist[s] = inventoryReportModel.comma(sumlist[s]);
+      }
+      totalsumShow = inventoryReportModel.comma(totalsum);
+      // res.send(sumlist);
 
-    res.render('inventorystatusgeneric', {
-      statusDate_text: statusDate_text,
-      printDate: printDate(req.decoded.SYS_PRINT_DATE),
-      hospitalName: hospitalName,
-      list: list,
-      warehouseName: warehouseName,
-      sumlist: sumlist,
-      totalsum: totalsum,
-      totalsumShow: totalsumShow
-    });
+      res.render('inventorystatusgeneric', {
+        statusDate_text: statusDate_text,
+        printDate: printDate(req.decoded.SYS_PRINT_DATE),
+        hospitalName: hospitalName,
+        list: list,
+        warehouseName: warehouseName,
+        sumlist: sumlist,
+        totalsum: totalsum,
+        totalsumShow: totalsumShow
+      });
+    }
+  } catch (error) {
+    res.render('error504');
   }
+
 }));
 
 router.get('/report/summary/disbursement', wrap(async (req, res, next) => {
