@@ -318,6 +318,7 @@ export class ProductModel {
     let sql = `
     select DISTINCT * from (
     SELECT
+    mp.m_labeler_id,
       concat(
         mp.product_name,
         " (",
@@ -352,6 +353,7 @@ export class ProductModel {
     UNION ALL
     SELECT * from (
     SELECT
+    mp.m_labeler_id,
       concat(
         mp.product_name,
         " (",
@@ -389,6 +391,7 @@ export class ProductModel {
     UNION ALL
     SELECT * from (
     SELECT
+    mp.m_labeler_id,
       concat(
         mp.product_name,
         " (",
@@ -434,6 +437,7 @@ export class ProductModel {
     let sql = `
     select DISTINCT * from (
     SELECT
+    mp.m_labeler_id,
       concat(
         mp.product_name,
         " (",
@@ -468,6 +472,7 @@ export class ProductModel {
     UNION ALL
     SELECT * from (
     SELECT
+    mp.m_labeler_id,
       concat(
         mp.product_name,
         " (",
@@ -504,6 +509,7 @@ export class ProductModel {
     UNION ALL
     SELECT * from (
     SELECT
+    mp.m_labeler_id,
       concat(
         mp.product_name,
         " (",
@@ -548,6 +554,7 @@ export class ProductModel {
     let sql = `
     select DISTINCT * from (
     SELECT
+    mp.m_labeler_id,
       concat(
         mp.product_name,
         " (",
@@ -581,6 +588,7 @@ export class ProductModel {
     UNION ALL
     SELECT * from (
     SELECT
+    mp.m_labeler_id,
       concat(
         mp.product_name,
         " (",
@@ -618,6 +626,7 @@ export class ProductModel {
     
     SELECT * from (
     SELECT
+    mp.m_labeler_id,
       concat(
         mp.product_name,
         " (",
@@ -662,6 +671,7 @@ export class ProductModel {
     let sql = `
     select DISTINCT * from (
     SELECT
+    mp.m_labeler_id,
       concat(
         mp.product_name,
         " (",
@@ -695,6 +705,7 @@ export class ProductModel {
     UNION ALL
     SELECT * from (
     SELECT
+    mp.m_labeler_id,
       concat(
         mp.product_name,
         " (",
@@ -731,6 +742,7 @@ export class ProductModel {
     
     SELECT * from (
     SELECT
+    mp.m_labeler_id,
       concat(
         mp.product_name,
         " (",
