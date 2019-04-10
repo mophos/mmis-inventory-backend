@@ -14,10 +14,11 @@ router.post('/purchases/list', co(async (req, res, nex) => {
   let offset = req.body.offset;
   let sort = req.body.sort;
   let db = req.db;
+  let warehouseId = req.decoded.warehouseId;
 
   try {
-    const rows = await returnModel.getPurchaseList(db, limit, offset, sort, query);
-    const rstotal = await returnModel.getPurchaseListTotal(db, query);
+    const rows = await returnModel.getPurchaseList(db, limit, offset, sort, query, warehouseId);
+    const rstotal = await returnModel.getPurchaseListTotal(db, query, warehouseId);
     let total = +rstotal[0][0].total
     res.send({ ok: true, rows: rows[0], total: total });
   } catch (error) {
