@@ -1649,74 +1649,142 @@ FROM
             .where('adjust_generic_id', adGId);
     }
 
-    payIssue(knex: Knex, startDate: any, endDate: any, warehouseId: any, transectionId) {
-        let sql = `SELECT
-        mg.working_code as generic_code,
-        mg.generic_name,
-        sum(IFNULL(wip.qty,0)) qty,
-        mug.qty as conversion,
-        mut.unit_name as to_unit_name,
-        muf.unit_name as from_unit_name,
-        wti.transaction_name,
-        wp.cost,
-        ROUND(sum(IFNULL(wp.cost * wip.qty,0)),2) costAmount
-    FROM
-        mm_generics as mg
-        join wm_issue_generics as wig on wig.generic_id = mg.generic_id
-        join wm_issue_products as wip on wip.issue_generic_id = wig.issue_generic_id
-        join wm_issue_summary as wis on wis.issue_id = wig.issue_id
-        join wm_transaction_issues as wti on wti.transaction_id = wis.transaction_issue_id
-        join wm_products as wp on wp.wm_product_id = wip.wm_product_id
-        join mm_unit_generics as mug on mug.unit_generic_id = wp.unit_generic_id
-        join mm_units as mut on mut.unit_id = mug.to_unit_id
-        join mm_units as muf on muf.unit_id = mug.from_unit_id
-        
-    where 
-    wis.transaction_issue_id in (${transectionId})
-    and wip.qty > 0 
-    and wis.approve_date BETWEEN '${startDate}'
-    AND '${endDate}'`
-        if (warehouseId !== '0') {
-            sql += ` and wp.warehouse_id = ${warehouseId}`
-        }
-        sql += ` group by mg.generic_id,wis.transaction_issue_id,mug.from_unit_id
-    order by mg.generic_name,wis.transaction_issue_id`
-        return knex.raw(sql);
-    }
-
-    payReq(knex: Knex, startDate: any, endDate: any, warehouseId: any, reqTypeId) {
+    payIssue(knex: Knex, startDate: any, endDate: any, warehouseId: any, transectionId, dateSetting = 'view_stock_card_warehouse') {
         let sql = `SELECT
             mg.working_code as generic_code,
             mg.generic_name,
-            sum(IFNULL(wrci.confirm_qty,0)) receive_qty,
-            mug.qty as conversion,
-            mut.unit_name as to_unit_name,
-            muf.unit_name as from_unit_name,
-            wrt.requisition_type,
-            wrci.unit_cost cost,
-            ROUND(sum(IFNULL(wrci.unit_cost * wrci.confirm_qty,0)),2) costAmount
+            sum(vscw.out_qty) as qty,
+            mug.qty AS conversion,
+            mut.unit_name AS to_unit_name,
+            muf.unit_name AS from_unit_name,
+            wts.transaction_name,
+            sum( vscw.out_cost ) / sum( vscw.out_qty ) as cost,
+            sum(vscw.out_cost) as costAmount
         FROM
-            mm_generics as mg
-            join wm_requisition_confirm_items as wrci on wrci.generic_id = mg.generic_id
-            join wm_requisition_confirms as wrc on wrc.confirm_id = wrci.confirm_id
-            join wm_requisition_orders as wro on wro.requisition_order_id =wrc.requisition_order_id
-            join wm_requisition_type as wrt on wrt.requisition_type_id = wro.requisition_type_id
-            join wm_products as wp on wp.wm_product_id = wrci.wm_product_id
-            join mm_unit_generics as mug on mug.unit_generic_id = wp.unit_generic_id
-            join mm_units as mut on mut.unit_id = mug.to_unit_id
-            join mm_units as muf on muf.unit_id = mug.from_unit_id
-        where 
-        wro.requisition_type_id in (${reqTypeId})
-        and wrci.confirm_qty > 0 
-        and wrc.approve_date BETWEEN '${startDate}'
-        AND '${endDate}'`
-        if (warehouseId !== '0') {
-            sql += ` and wro.wm_withdraw = ${warehouseId}`
+            ${dateSetting} AS vscw 
+            JOIN wm_issue_summary AS wis ON wis.issue_id = vscw.document_ref_id
+            JOIN wm_transaction_issues AS wts ON wts.transaction_id = wis.transaction_issue_id
+            JOIN mm_unit_generics AS mug ON mug.unit_generic_id = vscw.unit_generic_id
+            JOIN mm_units AS mut ON mut.unit_id = mug.to_unit_id
+            JOIN mm_units AS muf ON muf.unit_id = mug.from_unit_id
+            JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
+        WHERE
+            vscw.stock_date BETWEEN '${startDate} 00:00:00' 
+            AND '${endDate} 23:59:59'
+            AND wis.transaction_issue_id IN ( ${transectionId} )
+            AND vscw.transaction_type = 'IST' `
+        if (warehouseId != 0) {
+            sql += `AND vscw.warehouse_id = '${warehouseId}' `
         }
-        sql += ` group by mg.generic_id,wro.requisition_type_id,mug.from_unit_id
-        order by mg.generic_name,wrt.requisition_type_id`
+        sql += `GROUP BY
+            vscw.generic_id,
+            wis.transaction_issue_id,
+            mug.from_unit_id
+        ORDER BY
+            mg.generic_name,
+            wis.transaction_issue_id`
         return knex.raw(sql);
+    }
 
+    payIssueAccount(knex: Knex, startDate: any, endDate: any, warehouseId: any, reqTypeId, dateSetting = 'view_stock_card_warehouse') {
+        let sql = `SELECT
+            wts.transaction_name,
+            sum( vscw.out_cost ) AS totalCost,
+            mgt.generic_type_name,
+            mgt.generic_type_code,
+            mga.account_name 
+        FROM
+            ${dateSetting} AS vscw
+            JOIN wm_issue_summary AS wis ON wis.issue_id = vscw.document_ref_id
+	        JOIN wm_transaction_issues AS wts ON wts.transaction_id = wis.transaction_issue_id
+	        JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
+	        JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+	        JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
+        WHERE 
+            wis.transaction_issue_id = '${reqTypeId}' 
+            AND vscw.stock_date BETWEEN '${startDate} 00:00:00' 
+            AND '${endDate} 23:59:59' 
+            AND transaction_type = 'IST' `
+        if (warehouseId !== '0') {
+            sql += ` AND vscw.warehouse_id = ${warehouseId} `
+        }
+        sql += ` GROUP BY
+            wis.transaction_issue_id,
+            mg.generic_type_id,
+            mg.account_id 
+        ORDER BY
+            wis.transaction_issue_id,
+            mg.generic_type_id`
+        return knex.raw(sql);
+    }
+
+    payReq(knex: Knex, startDate: any, endDate: any, warehouseId: any, reqTypeId, dateSetting = 'view_stock_card_warehouse') {
+        let sql = `SELECT
+            mg.working_code AS generic_code,
+            mg.generic_name,
+            sum( vscw.out_qty ) AS receive_qty,
+            mug.qty AS conversion,
+            mut.unit_name AS to_unit_name,
+            muf.unit_name AS from_unit_name,
+            wrt.requisition_type,
+            sum( vscw.out_cost ) / sum( vscw.out_qty ) as cost,
+            sum( vscw.out_cost ) AS costAmount
+        FROM
+            ${dateSetting} AS vscw
+            JOIN wm_requisition_orders AS wro ON wro.requisition_order_id = vscw.document_ref_id
+            JOIN wm_requisition_type AS wrt ON wrt.requisition_type_id = wro.requisition_type_id
+            JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
+            JOIN mm_unit_generics AS mug ON mug.unit_generic_id = vscw.unit_generic_id
+            JOIN mm_units AS mut ON mut.unit_id = mug.to_unit_id
+            JOIN mm_units AS muf ON muf.unit_id = mug.from_unit_id 
+        WHERE 
+            wro.requisition_type_id in (${reqTypeId})
+            AND vscw.stock_date BETWEEN '${startDate} 00:00:00' 
+            AND '${endDate} 23:59:59' 
+            AND transaction_type = 'REQ_OUT' `
+        if (warehouseId !== '0') {
+            sql += ` AND vscw.warehouse_id = ${warehouseId} `
+        }
+        sql += ` GROUP BY
+            vscw.generic_id,
+            wro.requisition_type_id,
+            mug.from_unit_id 
+        ORDER BY
+            mg.generic_name,
+            wrt.requisition_type_id`
+        return knex.raw(sql);
+    }
+
+    payReqAccount(knex: Knex, startDate: any, endDate: any, warehouseId: any, reqTypeId, dateSetting = 'view_stock_card_warehouse') {
+        let sql = `SELECT
+            wrt.requisition_type,
+            sum( vscw.out_cost ) AS totalCost,
+            mgt.generic_type_name,
+            mgt.generic_type_code,
+            mga.account_name
+        FROM
+            ${dateSetting} AS vscw
+            JOIN wm_requisition_orders AS wro ON wro.requisition_order_id = vscw.document_ref_id
+	        JOIN wm_requisition_type AS wrt ON wrt.requisition_type_id = wro.requisition_type_id
+	        JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
+	        JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+	        JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
+        WHERE 
+            wro.requisition_type_id = '${reqTypeId}' 
+            AND vscw.stock_date BETWEEN '${startDate} 00:00:00' 
+            AND '${endDate} 23:59:59' 
+            AND transaction_type = 'REQ_OUT' `
+        if (warehouseId !== '0') {
+            sql += ` AND vscw.warehouse_id = ${warehouseId} `
+        }
+        sql += ` GROUP BY
+            wro.requisition_type_id,
+            mg.generic_type_id,
+            mg.account_id
+        ORDER BY
+            wrt.requisition_type_id,
+            mg.generic_type_id`
+        return knex.raw(sql);
     }
 
     receiveOrthorCost(knex: Knex, startDate: any, endDate: any, warehouseId: any, receiveTpyeId: any, dateSetting = 'view_stock_card_warehouse') {
@@ -3456,7 +3524,7 @@ OR sc.ref_src like ?
             .distinct('bg_year')
             .select(knex.raw('bg_year + 543 as bg_year'));
     }
-    monthlyReport(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting:any) {
+    monthlyReport(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting: any) {
         let sql = `
         SELECT
 	sum( ifnull( blb.bl, 0 ) ) AS balance,
@@ -3517,7 +3585,7 @@ GROUP BY
     `
         return knex.raw(sql)
     }
-    monthlyReportM(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting :any) {
+    monthlyReportM(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting: any) {
         let sql = `
         SELECT
 	sum( ifnull( blb.bl, 0 ) ) AS balance,
