@@ -694,8 +694,8 @@ router.get('/report/approve/requis3', wrap(async (req, res, next) => {
   let db = req.db;
   let approve_requis: any = []
   let sum: any = []
-  const line = await inventoryReportModel.getLine(db, 'AR');
-  const signature = await inventoryReportModel.getSignature(db, 'AR')
+  const line = await inventoryReportModel.getLine(db, 'LR');
+  const signature = await inventoryReportModel.getSignature(db, 'LR')
   let page_re: any = line[0].line;
   const dateApprove = req.decoded.WM_REPORT_DATE_APPROVE; // Y = วันที่อนุมัติ
   let warehouse_id: any = req.decoded.warehouseId
@@ -733,6 +733,7 @@ router.get('/report/approve/requis3', wrap(async (req, res, next) => {
           value.generic_stock_qty = inventoryReportModel.commaQty(value.generic_stock_qty);
           value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
           value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
+          value.location_name = value.location_name === null ? '-' : value.location_name
           value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
           value.today = printDate(req.decoded.SYS_PRINT_DATE);
           if (req.decoded.SYS_PRINT_DATE_EDIT === 'Y') {

@@ -29,13 +29,13 @@ html
               td.left(colspan='9')(style="font-size: 15pt; padding-bottom: 10px;") อนุมัติให้เบิกเวชภัณฑ์ตามรายการนี้
             tr 
               th.left(style="width: 1%;") #
-              th.left(style="width: 29%;") ชื่อเวชภัณฑ์
-              th.left(style="width: 5%;") รูปแบบ
+              th.left(style="width: 31%;") ชื่อเวชภัณฑ์
+              //- th.left(style="width: 5%;") รูปแบบ
               th.right(style="width: 14%;") จำนวนอนุมัติ&nbsp;
               th.left(style="width: 8%;") &nbsp;lot
               th.right(style="width: 7%;") วันหมดอายุ
-              th.right(style="width: 14%;") จำนวนคงเหลือ
               th.right(style="width: 12%;") คงคลัง
+              th.right(style="width: 12%;") สถานที่เก็บ
           tbody
           - var y=0
           - var s=0
@@ -45,22 +45,21 @@ html
               if ( (y-1) === 0)
                 td #{s+1}.
                 td(style="font-size: 12pt;") &nbsp;#{a.generic_name}
-                td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
+                //- td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
                 - s++
               else
                 if ( c[y-2].generic_name !== a.generic_name )  
                   td #{s+1}.
                   td(style="font-size: 12pt;") &nbsp;#{a.generic_name}
-                  td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
+                  //- td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
                   - s++
                 else 
                   td 
                   td 
-                  td.right 
+                  //- td.right 
               td.right(style="font-size: 12pt;") &nbsp;#{a.confirm_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit}) &nbsp;
               td(style="font-size: 12pt; word-break:break-all;") &nbsp;#{a.lot_no}
               td.right(style="font-size: 12pt;") &nbsp;#{a.expired_date}
-              td.right(style="font-size: 12pt;") &nbsp;#{a.stock_qty } #{a.large_unit} (#{a.conversion_qty} #{a.small_unit})
               if ( (y-1) === 0)
                 td.right(style="font-size: 12pt;") &nbsp;#{a.generic_stock_qty }  #{a.small_unit}
               else
@@ -68,6 +67,7 @@ html
                   td.right(style="font-size: 12pt;") &nbsp;#{a.generic_stock_qty }  #{a.small_unit}
                 else 
                   td 
+              td.right(style="font-size: 12pt;") &nbsp;#{a.location_name }
             .pagebreak
           tfoot
             tr.dash-top
@@ -80,71 +80,80 @@ html
               td(colspan='9') &nbsp; 
             tr 
               td(colspan='9') &nbsp; 
-            table.table(style="font-size: 13pt;")
-              tr
-                if(c[0].full_name_requisition) 
-                  td.right ลงชื่อ
-                  td.center(style="border-bottom:1px dashed black;width:25%;" ) #{c[0].full_name_requisition}
-                  td.left (ผู้เบิก)
-                  
-                else
-                  td.right ลงชื่อ
-                  td.center(style="border-bottom:1px dashed black;width:25%;")
-                  td.left (ผู้เบิก)
-                td
-                if(c[0].full_namec) 
-                  td.right ลงชื่อ
-                  td.center(style="border-bottom:1px dashed black;width:25%;" ) #{c[0].full_namec}
-                  td.left (ผู้จ่าย)
-                  
-                else
-                  td.right ลงชื่อ
-                  td.center(style="border-bottom:1px dashed black;width:25%;")
-                  td.left (ผู้จ่าย)     
-              tr
-                td(colspan='7') &nbsp;
-              tr
-                if(c[0].full_name_requisition)
-                  td.right (
-                  td.center(style="border-bottom:1px dashed black;width:25%;") #{c[0].full_name_requisition} 
-                  td.left ) 
-                else
-                  td.right (
-                  td.center(style="border-bottom:1px dashed black;width:25%;")
-                  td.left ) 
-                td
-                if(c[0].full_namec)
-                  td.right (
-                  td.center(style="border-bottom:1px dashed black;width:25%;") #{c[0].full_namec} 
-                  td.left ) 
-                else
-                  td.right (
-                  td.center(style="border-bottom:1px dashed black;width:25%;")
-                  td.left ) 
-              tr
-                td(colspan="7")
-                  br
-                  br
-                  br
-                  br
-              tr
-                td.right ลงชื่อ
-                td.center(style="border-bottom:1px dashed black;width:25%;")
-                td.left (ผู้อนุมัติ)  
-                td
-                td.right ลงชื่อ
-                td.center(style="border-bottom:1px dashed black;width:25%;")
-                td.left (ผู้รับ)    
-              tr
-                td(colspan='7') &nbsp;
-              tr
-                td.right (
-                td.center(style="border-bottom:1px dashed black;width:25%;")
-                td.left ) 
-                td
-                td.right (
-                td.center(style="border-bottom:1px dashed black;width:25%;")
-                td.left ) 
         - l++
+          table.table(style="font-size: 13pt;")
+            tr
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td &nbsp;
+              td.right ผู้จัดยา
+              td.center(style="border-bottom:1px dashed black;width:25%;")
+              td.left ลงชื่อ
       .pagebreak
+      
+
       
