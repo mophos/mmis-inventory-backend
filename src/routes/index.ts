@@ -474,10 +474,11 @@ router.get('/report/pay-req/:startDate/:endDate/:warehouseId/:warehouseName', wr
   let endDate = req.params.endDate;
   let warehouseId = req.params.warehouseId;
   let warehouseName = req.params.warehouseName;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let reqTypeId = Array.isArray(req.query.reqTypeId) ? req.query.reqTypeId : [req.query.reqTypeId];
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
-    let data = await inventoryReportModel.payReq(db, startDate, endDate, warehouseId, reqTypeId);
+    let data = await inventoryReportModel.payReq(db, startDate, endDate, warehouseId, reqTypeId, dateSetting);
     let hospitalName = hosdetail[0].hospname;
     let sum = inventoryReportModel.comma(_.sumBy(data[0], (o: any) => { return o.receive_qty * o.cost; }));
     for (let tmp of data[0]) {
@@ -506,10 +507,11 @@ router.get('/report/pay-req/excel/:startDate/:endDate/:warehouseId/:warehouseNam
   let startDate = req.params.startDate;
   let endDate = req.params.endDate;
   let warehouseId = req.params.warehouseId;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let reqTypeId = Array.isArray(req.query.reqTypeId) ? req.query.reqTypeId : [req.query.reqTypeId];
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
-    let data = await inventoryReportModel.payReq(db, startDate, endDate, warehouseId, reqTypeId);
+    let data = await inventoryReportModel.payReq(db, startDate, endDate, warehouseId, reqTypeId, dateSetting);
     for (let tmp of data[0]) {
       tmp.receive_qty = inventoryReportModel.commaQty(tmp.receive_qty);
       tmp.cost = inventoryReportModel.comma(tmp.cost);
@@ -544,16 +546,74 @@ router.get('/report/pay-req/excel/:startDate/:endDate/:warehouseId/:warehouseNam
   }
 }));
 
+router.get('/report/pay-req-account/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
+  const db = req.db;
+  let startDate = req.params.startDate;
+  let endDate = req.params.endDate;
+  let warehouseId = req.params.warehouseId;
+  let warehouseName = req.params.warehouseName;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let reqTypeId = Array.isArray(req.query.reqTypeId) ? req.query.reqTypeId : [req.query.reqTypeId];
+  // warehouseId = warehouseId ? +warehouseId : 'ทุกคลังสินค้า'
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    let list: any = [];
+    let sum: any = 0;
+
+    for (let i of reqTypeId) {
+      let data = await inventoryReportModel.payReqAccount(db, startDate, endDate, warehouseId, i, dateSetting);
+      data = data[0]
+      if (data.length) {
+        let _obj = [];
+        for (const n of data) {
+          _obj.push({
+            generic_type_name: n.generic_type_name,
+            account_name: n.account_name,
+            generic_type_code: n.generic_type_code,
+            totalCost: inventoryReportModel.comma(n.totalCost)
+          })
+          sum += n.totalCost
+        }
+        let cost = inventoryReportModel.comma(_.sumBy(data, (o: any) => { return o.totalCost; }));
+        let obj = {
+          head: data[0].requisition_type,
+          cost: cost,
+          detail: _obj
+        }
+        list.push(obj)
+      }
+    }
+    sum = inventoryReportModel.comma(sum);
+
+    startDate = moment(startDate).format('DD MMMM ') + (moment(startDate).get('year') + 543)
+    endDate = moment(endDate).format('DD MMMM ') + (moment(endDate).get('year') + 543)
+    res.render('payReqAccount', {
+      hospitalName: hospitalName,
+      printDate: printDate(req.decoded.SYS_PRINT_DATE),
+      warehouseName: warehouseName,
+      // data: data[0],
+      list: list,
+      startDate: startDate,
+      endDate: endDate,
+      sum: sum
+    });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+}));
+
 router.get('/report/pay-issue/excel/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
   const db = req.db;
   let startDate = req.params.startDate;
   let endDate = req.params.endDate;
   let warehouseId = req.params.warehouseId;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let transectionId = Array.isArray(req.query.transectionId) ? req.query.transectionId : [req.query.transectionId];
 
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
-    let data = await inventoryReportModel.payIssue(db, startDate, endDate, warehouseId, transectionId);
+    let data = await inventoryReportModel.payIssue(db, startDate, endDate, warehouseId, transectionId, dateSetting);
     for (let tmp of data[0]) {
       tmp.qty = inventoryReportModel.commaQty(tmp.qty);
       tmp.cost = inventoryReportModel.comma(tmp.cost);
@@ -595,11 +655,12 @@ router.get('/report/pay-issue/:startDate/:endDate/:warehouseId/:warehouseName', 
   let endDate = req.params.endDate;
   let warehouseId = req.params.warehouseId;
   let warehouseName = req.params.warehouseName;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let transectionId = Array.isArray(req.query.transectionId) ? req.query.transectionId : [req.query.transectionId];
 
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
-    let data = await inventoryReportModel.payIssue(db, startDate, endDate, warehouseId, transectionId);
+    let data = await inventoryReportModel.payIssue(db, startDate, endDate, warehouseId, transectionId, dateSetting);
     let hospitalName = hosdetail[0].hospname;
     let sum = inventoryReportModel.comma(_.sumBy(data[0], (o: any) => { return o.qty * o.cost; }));
     for (let tmp of data[0]) {
@@ -614,6 +675,63 @@ router.get('/report/pay-issue/:startDate/:endDate/:warehouseId/:warehouseName', 
       printDate: printDate(req.decoded.SYS_PRINT_DATE),
       warehouseName: warehouseName,
       data: data[0],
+      startDate: startDate,
+      endDate: endDate,
+      sum: sum
+    });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+}));
+
+router.get('/report/pay-issue-account/:startDate/:endDate/:warehouseId/:warehouseName', wrap(async (req, res, next) => {
+  const db = req.db;
+  let startDate = req.params.startDate;
+  let endDate = req.params.endDate;
+  let warehouseId = req.params.warehouseId;
+  let warehouseName = req.params.warehouseName;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let transectionId = Array.isArray(req.query.transectionId) ? req.query.transectionId : [req.query.transectionId];
+  // warehouseId = warehouseId ? +warehouseId : 'ทุกคลังสินค้า'
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    let list: any = [];
+    let sum: any = 0;
+
+    for (let i of transectionId) {
+      let data = await inventoryReportModel.payIssueAccount(db, startDate, endDate, warehouseId, i, dateSetting);
+      data = data[0]
+      if (data.length) {
+        let _obj = [];
+        for (const n of data) {
+          _obj.push({
+            generic_type_name: n.generic_type_name,
+            account_name: n.account_name,
+            generic_type_code: n.generic_type_code,
+            totalCost: inventoryReportModel.comma(n.totalCost)
+          })
+          sum += n.totalCost
+        }
+        let cost = inventoryReportModel.comma(_.sumBy(data, (o: any) => { return o.totalCost; }));
+        let obj = {
+          head: data[0].transaction_name,
+          cost: cost,
+          detail: _obj
+        }
+        list.push(obj)
+      }
+    }
+    sum = inventoryReportModel.comma(sum);
+
+    startDate = moment(startDate).format('DD MMMM ') + (moment(startDate).get('year') + 543)
+    endDate = moment(endDate).format('DD MMMM ') + (moment(endDate).get('year') + 543)
+    res.render('payissueAccount', {
+      hospitalName: hospitalName,
+      printDate: printDate(req.decoded.SYS_PRINT_DATE),
+      warehouseName: warehouseName,
+      // data: data[0],
+      list: list,
       startDate: startDate,
       endDate: endDate,
       sum: sum
