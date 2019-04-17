@@ -1,6 +1,6 @@
 import Knex = require('knex');
 import * as moment from 'moment';
-
+const request = require("request");
 export class ReceiveModel {
 
   getTypes(knex: Knex) {
@@ -560,7 +560,7 @@ export class ReceiveModel {
 
   getApproveOtherStatus(knex: Knex, approveIds: any) {
     return knex('wm_receive_approve')
-    .select('receive_other_id')
+      .select('receive_other_id')
       .whereIn('approve_id', approveIds)
       .groupBy('receive_other_id');
   }
@@ -906,6 +906,83 @@ WHERE
     and pc.warehouse_id = ${warehouseId}
     and pc.purchase_order_status != 'COMPLETED'
     and pc.is_cancel != 'Y'
+    and pc.is_edi = 'N'
+    and pc.purchase_order_id in (select poi.purchase_order_id from pc_purchasing_order_item poi join mm_generics mg on mg.generic_id = poi.generic_id where mg.generic_type_id in (${genericTypeId}) group by poi.purchase_order_id)
+    `;
+
+    if (sort.by) {
+      let reverse = sort.reverse ? 'DESC' : 'ASC';
+      if (sort.by === 'purchase_order_number') {
+        sql += ` order by pc.purchase_order_number ${reverse} `;
+      }
+
+      if (sort.by === 'order_date') {
+        sql += ` order by pc.order_date ${reverse} `;
+      }
+
+      if (sort.by === 'purchase_method_name') {
+        sql += ` order by cmp.name ${reverse} `;
+      }
+
+      if (sort.by === 'labeler_name') {
+        sql += ` order by ml.labeler_name ${reverse} `;
+      }
+
+    } else {
+      sql += `order by pc.purchase_order_number DESC`;
+    }
+
+    sql += ` limit ${limit} offset ${offset} `;
+
+    return knex.raw(sql);
+
+  }
+
+  getPurchaseListEDI(knex: Knex, limit: number, offset: number, sort: any = {}, genericTypeId = [], warehouseId: any) {
+    let sql = `
+    select pc.purchase_order_book_number, pc.purchase_order_id,
+      IF(pc.purchase_order_book_number is null, pc.purchase_order_number, pc.purchase_order_book_number) as purchase_order_number,
+      pc.order_date, cm.contract_no,
+      (
+        select sum(pci.qty * pci.unit_price)
+    from pc_purchasing_order_item as pci
+    where pci.purchase_order_id = pc.purchase_order_id
+    and pci.giveaway = 'N'
+    and pc.is_cancel = 'N'
+      ) as purchase_price,
+      pc.labeler_id as vendor_id, pc.contract_id,
+      cmp.name as purchase_method_name, ml.labeler_name,
+      (
+        select sum(pi.qty)
+    from pc_purchasing_order_item as pi
+    where pi.purchase_order_id = pc.purchase_order_id
+    and pc.is_cancel = 'N'
+      ) as purchase_qty,
+      (
+        select sum(rd.receive_qty)
+    from wm_receive_detail as rd
+    inner join wm_receives as r on r.receive_id = rd.receive_id
+    where r.purchase_order_id = pc.purchase_order_id
+    and r.is_cancel = 'N'
+      ) as receive_qty,
+      (
+        select sum(rd.receive_qty * rd.cost)
+    from wm_receive_detail as rd
+    inner join wm_receives as r on r.receive_id = rd.receive_id
+    where rd.is_free = 'N'
+    and r.purchase_order_id = pc.purchase_order_id
+    and r.is_cancel = 'N'
+        
+      ) as receive_price
+    from pc_purchasing_order as pc
+    left join mm_labelers as ml on ml.labeler_id = pc.labeler_id
+    left join l_bid_process as cmp on cmp.id = pc.purchase_method_id
+    left join cm_contracts as cm on cm.contract_id = pc.contract_id
+    where pc.purchase_order_status = 'APPROVED'
+    and pc.warehouse_id = ${warehouseId}
+    and pc.purchase_order_status != 'COMPLETED'
+    and pc.is_cancel != 'Y'
+    and pc.is_edi = 'Y'
     and pc.purchase_order_id in (select poi.purchase_order_id from pc_purchasing_order_item poi join mm_generics mg on mg.generic_id = poi.generic_id where mg.generic_type_id in (${genericTypeId}) group by poi.purchase_order_id)
     `;
 
@@ -1064,6 +1141,7 @@ WHERE
     and pc.purchase_order_status != 'COMPLETED'
     and pc.warehouse_id = ${warehouseId}
     and pc.is_cancel != 'Y'
+    and pc.is_edi = 'N'
     and(
       pc.purchase_order_book_number LIKE '${_query}'
         OR pc.purchase_order_number LIKE '${_query}'
@@ -1110,6 +1188,98 @@ WHERE
     return knex.raw(sql);
 
   }
+
+  getPurchaseListSearchEDI(knex: Knex, limit: number, offset: number, query, sort: any = {}, warehouseId: any) {
+    let _query = `%${query}%`;
+    let sql = `
+    select pc.purchase_order_book_number, pc.purchase_order_id, pc.purchase_order_number,
+      pc.order_date,
+      (
+        select sum(pci.qty * pci.unit_price)
+    from pc_purchasing_order_item as pci
+    where pci.purchase_order_id = pc.purchase_order_id
+    and pci.giveaway = 'N'
+    and pc.is_cancel = 'N'
+      ) as purchase_price,
+      pc.labeler_id as vendor_id, pc.contract_id,
+      cmp.name as purchase_method_name, ml.labeler_name,
+      (
+        select sum(pi.qty)
+    from pc_purchasing_order_item as pi
+    where pi.purchase_order_id = pc.purchase_order_id
+    and pc.is_cancel = 'N'
+      ) as purchase_qty,
+      (
+        select sum(rd.receive_qty)
+    from wm_receive_detail as rd
+    inner join wm_receives as r on r.receive_id = rd.receive_id
+    where r.purchase_order_id = pc.purchase_order_id
+    and r.is_cancel = 'N'
+      ) as receive_qty,
+      (
+        select sum(rd.receive_qty * rd.cost)
+    from wm_receive_detail as rd
+    inner join wm_receives as r on r.receive_id = rd.receive_id
+    where rd.is_free = 'N'
+    and r.purchase_order_id = pc.purchase_order_id
+    and r.is_cancel = 'N'
+        
+      ) as receive_price
+    from pc_purchasing_order as pc
+    left join mm_labelers as ml on ml.labeler_id = pc.labeler_id
+    left join l_bid_process as cmp on cmp.id = pc.purchase_method_id
+    where pc.purchase_order_status = 'APPROVED'
+    and pc.purchase_order_status != 'COMPLETED'
+    and pc.warehouse_id = ${warehouseId}
+    and pc.is_cancel != 'Y'
+    and pc.is_edi = 'Y'
+    and(
+      pc.purchase_order_book_number LIKE '${_query}'
+        OR pc.purchase_order_number LIKE '${_query}'
+        OR ml.labeler_name like '${_query}'
+        OR pc.purchase_order_id IN(
+        SELECT
+            poi.purchase_order_id
+          FROM
+            pc_purchasing_order_item poi
+          JOIN mm_products mp ON mp.product_id = poi.product_id
+          JOIN mm_generics mg ON mp.generic_id = mg.generic_id
+          WHERE
+            mp.product_name LIKE '${_query}'
+          OR mg.generic_name LIKE '${_query}'
+          OR mp.working_code = '${query}'
+          OR mg.working_code = '${query}'
+      )
+    ) `;
+
+    if (sort.by) {
+      let reverse = sort.reverse ? 'DESC' : 'ASC';
+      if (sort.by === 'purchase_order_number') {
+        sql += ` order by pc.purchase_order_number ${reverse} `;
+      }
+
+      if (sort.by === 'order_date') {
+        sql += ` order by pc.order_date ${reverse} `;
+      }
+
+      if (sort.by === 'purchase_method_name') {
+        sql += ` order by cmp.name ${reverse} `;
+      }
+
+      if (sort.by === 'labeler_name') {
+        sql += ` order by ml.labeler_name ${reverse} `;
+      }
+
+    } else {
+      sql += `order by pc.purchase_order_number DESC`;
+    }
+
+    sql += ` limit ${limit} offset ${offset} `;
+
+    return knex.raw(sql);
+
+  }
+
   getPurchaseListTotal(knex: Knex, genericTypeId = [], warehouseId: any) {
 
     let sql = `
@@ -1120,6 +1290,7 @@ WHERE
     where pc.purchase_order_status = 'APPROVED'
     and pc.purchase_order_status != 'COMPLETED'
     and pc.is_cancel != 'Y'
+    and pc.is_edi = 'N'
     and pc.warehouse_id = ${warehouseId}
     and pc.purchase_order_id in (select poi.purchase_order_id from pc_purchasing_order_item poi join mm_generics mg on mg.generic_id = poi.generic_id where mg.generic_type_id in (${genericTypeId}) group by poi.purchase_order_id)
 
@@ -1128,6 +1299,27 @@ WHERE
     return knex.raw(sql, []);
 
   }
+
+  getPurchaseListTotalEDI(knex: Knex, genericTypeId = [], warehouseId: any) {
+
+    let sql = `
+    select count(*) as total
+    from pc_purchasing_order as pc
+    left join mm_labelers as ml on ml.labeler_id = pc.labeler_id
+    left join l_bid_process as cmp on cmp.id = pc.purchase_method_id
+    where pc.purchase_order_status = 'APPROVED'
+    and pc.purchase_order_status != 'COMPLETED'
+    and pc.is_cancel != 'Y'
+    and pc.is_edi = 'Y'
+    and pc.warehouse_id = ${warehouseId}
+    and pc.purchase_order_id in (select poi.purchase_order_id from pc_purchasing_order_item poi join mm_generics mg on mg.generic_id = poi.generic_id where mg.generic_type_id in (${genericTypeId}) group by poi.purchase_order_id)
+
+      `;
+
+    return knex.raw(sql, []);
+
+  }
+
   getPurchaseListTotalSearch(knex: Knex, query, warehouseId: any) {
     let _query = `%${query}%`;
     let sql = `
@@ -1139,6 +1331,41 @@ WHERE
     and pc.purchase_order_status != 'COMPLETED'
     and pc.warehouse_id = ${warehouseId}
     and pc.is_cancel != 'Y'
+    and pc.is_edi = 'N'
+    and(
+      pc.purchase_order_book_number LIKE '${_query}'
+        OR pc.purchase_order_number LIKE '${_query}'
+        OR ml.labeler_name like '${_query}'
+        OR pc.purchase_order_id IN(
+        SELECT
+            poi.purchase_order_id
+          FROM
+            pc_purchasing_order_item poi
+          JOIN mm_products mp ON mp.product_id = poi.product_id
+          JOIN mm_generics mg ON mp.generic_id = mg.generic_id
+          WHERE
+            mp.product_name LIKE '${_query}'
+          OR mg.generic_name LIKE '${_query}'
+          OR mp.working_code = '${query}'
+          OR mg.working_code = '${query}'
+      )
+    ) `;
+    return knex.raw(sql);
+
+  }
+
+  getPurchaseListTotalSearchEDI(knex: Knex, query, warehouseId: any) {
+    let _query = `%${query}%`;
+    let sql = `
+    select count(*) as total
+    from pc_purchasing_order as pc
+    left join mm_labelers as ml on ml.labeler_id = pc.labeler_id
+    left join l_bid_process as cmp on cmp.id = pc.purchase_method_id
+    where pc.purchase_order_status = 'APPROVED'
+    and pc.purchase_order_status != 'COMPLETED'
+    and pc.warehouse_id = ${warehouseId}
+    and pc.is_cancel != 'Y'
+    and pc.is_edi = 'Y'
     and(
       pc.purchase_order_book_number LIKE '${_query}'
         OR pc.purchase_order_number LIKE '${_query}'
@@ -2045,6 +2272,48 @@ WHERE
       .where('lot_time', data.lot_time)
   }
 
+  getASN(data: any) {
+    return new Promise((resolve: any, reject: any) => {
+      var options = {
+        method: 'POST',
+        url: 'https://ananddrs.net/edi2018/api/notice/asnbypo.php',
+        agentOptions: {
+          rejectUnauthorized: false
+        },
+        headers:
+        {
+          'postman-token': 'c63b4187-f395-a969-dd57-19018273670b',
+          'cache-control': 'no-cache',
+          'content-type': 'application/json'
+        },
+        body: data,
+        json: true
+      };
+
+      request(options, function (error, response, body) {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(body);
+        }
+      });
+    });
+  }
+
+  getSettingEDI(knex: Knex, actionName: any) {
+    return knex('pc_edi')
+      .where('action_name', actionName)
+  }
+
+  getASNDetail(knex: Knex, tradeCode) {
+    return knex('mm_products as mp')
+      .select('mp.product_id', 'mp.product_name', 'mg.generic_id', 'mg.generic_name', 'num_days',
+        'mp.primary_unit_id', 'mp.is_lot_control', 'mp.is_expired_control', 'mp.m_labeler_id', 'ml.labeler_name as m_labeler_name')
+      .join('mm_generics as mg', 'mp.generic_id', 'mg.generic_id')
+      .join('mm_labelers as ml', 'mp.m_labeler_id', 'ml.labeler_id')
+      .join('wm_generic_expired_alert as ge', 'ge.generic_id', 'mg.generic_id')
+
+  }
   getCostProductWmProductId(knex: Knex, data) {
     return knex('wm_products')
       .select('cost')
