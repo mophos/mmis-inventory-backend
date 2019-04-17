@@ -1,7 +1,7 @@
 import Knex = require('knex');
 
 export class ReturnBudgetModel {
-  getPurchaseList(knex: Knex, limit: number, offset: number, sort: any = {}, query: any) {
+  getPurchaseList(knex: Knex, limit: number, offset: number, sort: any = {}, query: any, warehouseId: any) {
     let sql = `
     select pc.purchase_order_number, pc.purchase_order_id,
       pc.order_date,
@@ -28,6 +28,7 @@ export class ReturnBudgetModel {
     group by r.purchase_order_id
       ) as rc_price on rc_price.purchase_order_id = pc.purchase_order_id
     where pc.purchase_order_status = 'COMPLETED'
+    and pc.warehouse_id = ${warehouseId}
     and po_price.purchase_price > IFNULL(rc_price.receive_price, 0)
     and pc.is_return is null`;
 
@@ -62,7 +63,7 @@ export class ReturnBudgetModel {
     return knex.raw(sql);
   }
 
-  getPurchaseListTotal(knex: Knex, query: any) {
+  getPurchaseListTotal(knex: Knex, query: any, warehouseId: any) {
     let sql = `
     select count(*) as total
     from pc_purchasing_order as pc
@@ -83,6 +84,7 @@ export class ReturnBudgetModel {
     group by r.purchase_order_id
       ) as rc_price on rc_price.purchase_order_id = pc.purchase_order_id
     where pc.purchase_order_status = 'COMPLETED'
+    and pc.warehouse_id = ${warehouseId}
     and po_price.purchase_price > IFNULL(rc_price.receive_price, 0)
     and pc.is_return is null`;
 

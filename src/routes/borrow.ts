@@ -283,7 +283,7 @@ router.post('/save', co(async (req, res, next) => {
   let _summary = req.body.summary;
   let _generics = req.body.generics;
   let warehouseId = req.decoded.warehouseId;
- if (_generics.length && _summary) {
+  if (_generics.length && _summary) {
     try {
       let year = moment(_summary.borrowDate, 'YYYY-MM-DD').get('year');
       const month = moment(_summary.borrowDate, 'YYYY-MM-DD').get('month') + 1;
@@ -387,15 +387,15 @@ router.post('/save/from-note', co(async (req, res, next) => {
 
         let products = [];
         g.products[0].forEach(p => {
-            // if (p.product_qty != 0) { // เอาออกเพื่อให้แก้ไขแล้วเปลี่ยน lot ได้
-            products.push({
-              borrow_id: borrowId,
-              borrow_generic_id: rsBorrowGeneric[0],
-              wm_product_id: p.wm_product_id,
-              qty: p.product_qty,
-              create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-              create_by: req.decoded.people_user_id
-            });
+          // if (p.product_qty != 0) { // เอาออกเพื่อให้แก้ไขแล้วเปลี่ยน lot ได้
+          products.push({
+            borrow_id: borrowId,
+            borrow_generic_id: rsBorrowGeneric[0],
+            wm_product_id: p.wm_product_id,
+            qty: p.product_qty,
+            create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+            create_by: req.decoded.people_user_id
+          });
           // }
         });
         await borrowModel.saveBorrowProduct(db, products);
@@ -660,19 +660,19 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       const idx = _.findIndex(returnData, { 'src_warehouse_id': v.src_warehouse_id, 'dst_warehouse_id': v.dst_warehouse_id });
       let pack = await borrowModel.getConversion(db, v.unit_generic_id);
       let product = [];
-      
+
       if (idx > -1) {
         returnData[idx].products.push({
           generic_id: v.generic_id,
           unit_generic_id: v.unit_generic_id,
-          qty: (v.qty / pack[0].qty),
+          qty: v.qty,
           lot_no: v.lot_no
         })
       } else {
         product.push({
           generic_id: v.generic_id,
           unit_generic_id: v.unit_generic_id,
-          qty: (v.qty / pack[0].qty),
+          qty: v.qty,
           lot_no: v.lot_no
         })
         const obj: any = {
@@ -797,7 +797,6 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       let obj = {
         wm_product_id: v.wm_product_id,
         qty: v.lot_qty > remain_dst[0].balance_lot ? remain_dst[0].balance_lot : v.lot_qty
-
       }
       await borrowModel.updateConfirm(db, obj);
     }

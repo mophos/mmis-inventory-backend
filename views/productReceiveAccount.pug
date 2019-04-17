@@ -1,0 +1,45 @@
+include css.pug
+style(media='print').
+style(type='text/css').
+  @page{
+    margin-top: 1.5cm;
+    margin-left: 0.3cm;
+    margin-right: 0.3cm;
+ }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='7') #{hospitalName}
+        tr
+          td.center.bold(colspan='7') รายงานมูลค่าที่รับจากการสั่งซื้อ
+        tr
+          td.center(colspan='7') ตั้งแต่วันที่ #{startdate} ถึงวันที่ #{enddate}
+        tr
+          td.left(colspan='7') ณ คลังสินค้า #{warehouseName}
+        tr
+          td.left(colspan='7') #{printDate}
+        tr
+          td(style="border-top:1px dashed ;")
+      tbody
+        - var y = 0
+        - for(var b of productReceive)
+          - y++
+          tr
+            if(b.generic_type_code == 'MEDICINE')
+              td(style='padding-top: 5px;width:20%') #{b.account_name} &nbsp;
+              td.left #{b.total_cost} บาท
+              td(colspan='5') &nbsp;
+            else
+              td(style='padding-top: 5pxwidth:20%;') #{b.generic_type_name} &nbsp;
+              td.left #{b.total_cost} บาท
+              td(colspan='5') &nbsp;
+      tfooter 
+        tr
+          td.dash-top.right(colspan=12 style='padding-top: 5px') รวมมูลค่าทั้งสิ้น #{allcost} บาท

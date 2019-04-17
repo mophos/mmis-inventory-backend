@@ -36,7 +36,7 @@ html
             tr
               td.left #{(b*1)+1})
               td.left(style="") #{issueListDetail[i][b].generic_name} (#{issueListDetail[i][b].product_name})
-              td.left(style="") #{issueListDetail[i][b].lot_no}
+              td.left(style="") #{issueListDetail[i][b].lot_no}##{issueListDetail[i][b].lot_time}
               td.center #{issueListDetail[i][b].expired_date}   
               td.right #{issueListDetail[i][b].qty} #{issueListDetail[i][b].to_unit_name}
               td.right #{issueListDetail[i][b].cost}
