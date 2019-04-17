@@ -346,6 +346,73 @@ router.post('/save', co(async (req, res, next) => {
   }
 }));
 
+router.post('/save/from-note', co(async (req, res, next) => {
+  let db = req.db;
+  let _summary = req.body.summary;
+  let _generics = req.body.generics;
+  let warehouseId = req.decoded.warehouseId;
+  if (_generics.length && _summary) {
+    try {
+      let year = moment(_summary.borrowDate, 'YYYY-MM-DD').get('year');
+      const month = moment(_summary.borrowDate, 'YYYY-MM-DD').get('month') + 1;
+      if (month >= 10) {
+        year += 1;
+      }
+      let borrowCode = await serialModel.getSerial(db, 'BR', year, warehouseId);
+      let borrow = {
+        borrow_code: borrowCode,
+        borrow_date: _summary.borrowDate,
+        src_warehouse_id: _summary.srcWarehouseId,
+        dst_warehouse_id: _summary.dstWarehouseId,
+        people_id: _summary.peopleId,
+        remark: _summary.remark,
+        people_user_id: req.decoded.people_user_id,
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss')
+      }
+
+      let rsBorrow = await borrowModel.saveBorrow(db, borrow);
+      let borrowId = rsBorrow[0];
+
+      for (const g of _generics) {
+        let generics = {
+          borrow_id: borrowId,
+          generic_id: g.generic_id,
+          qty: g.borrow_qty,
+          // primary_unit_id: g.primary_unit_id,
+          unit_generic_id: g.unit_generic_id,
+          create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+          create_by: req.decoded.people_user_id
+        };
+        let rsBorrowGeneric = await borrowModel.saveBorrowGeneric(db, generics);
+
+        let products = [];
+        g.products[0].forEach(p => {
+            // if (p.product_qty != 0) { // เอาออกเพื่อให้แก้ไขแล้วเปลี่ยน lot ได้
+            products.push({
+              borrow_id: borrowId,
+              borrow_generic_id: rsBorrowGeneric[0],
+              wm_product_id: p.wm_product_id,
+              qty: p.product_qty,
+              create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+              create_by: req.decoded.people_user_id
+            });
+          // }
+        });
+        await borrowModel.saveBorrowProduct(db, products);
+      }
+      res.send({ ok: true });
+
+    } catch (error) {
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+
+  } else {
+    res.send({ ok: false, error: 'ไม่พบข้อมูลที่ต้องการบันทึก' });
+  }
+}));
+
 router.put('/save/:borrowId', co(async (req, res, next) => {
   let db = req.db;
   let _summary = req.body.summary;

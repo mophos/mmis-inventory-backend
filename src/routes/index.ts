@@ -7,7 +7,11 @@ import * as wrap from 'co-express';
 import * as _ from 'lodash';
 import { IssueModel } from '../models/issue'
 import { StockCard } from '../models/stockcard';
+<<<<<<< HEAD
 import { ReceiveModel } from '../models/receive';
+=======
+import { listenerCount } from 'cluster';
+>>>>>>> b95f92e632465897db751b0da16132f549bacc54
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const issueModel = new IssueModel();
@@ -659,6 +663,7 @@ router.get('/report/approve/requis3', wrap(async (req, res, next) => {
           value.nPage = approve_requis[i].length;
           value.full_name = signature[0].signature === 'N' ? '' : value.full_name
           value.full_namec = signature[0].signature === 'N' ? '' : value.full_namec
+          value.full_name_requisition = signature[0].signature === 'N' ? '' : value.full_name_requisition
           value.total_cost = inventoryReportModel.comma(value.unit_cost * value.confirm_qty);
           value.approve_date = moment(value.approve_date).format('D MMMM ') + (moment(value.approve_date).get('year') + 543);
           value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
@@ -1725,6 +1730,7 @@ router.get('/report/list/cost/type', wrap(async (req, res, next) => {
 router.get('/report/list/receiveOther', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID = req.query.receiveOtherID;
+  const wareHouseId = req.decoded.warehouseId
   let list_receive2;
   let productId = [];
   let receiveId = [];
@@ -1740,16 +1746,20 @@ router.get('/report/list/receiveOther', wrap(async (req, res, next) => {
   })
 
   for (let i = 0; i < productId.length; i++) {
-    list_receive2 = await inventoryReportModel._list_receive2(db, productId[i], receiveId[i]);
+    list_receive2 = await inventoryReportModel._list_receive2(db, productId[i], receiveId[i], wareHouseId);
     list_receive2 = list_receive2[0];
     array2.push(list_receive2);
   }
 
   array2.forEach(value => {
     value.forEach(value2 => {
+      value2.costs = _.sumBy(value, function (o: any) { if (value2.generic_id == o.generic_id && value2.receive_other_id == o.receive_other_id) return +o.costs | 0; });
+      value2.costs = inventoryReportModel.comma(value2.costs)
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
-      // value2.receive_date = moment(value2.receive_date).format('DD-MM-') + (moment(value2.receive_date).get('year') + 543);
-      value2.receive_date = moment(value2.receive_date).format('DD-MM-YYYY');
+      value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
+      if (value2.receive_id == '') {
+        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty / +value2.small_qty)
+      }
       // value.small_qty=inventoryReportModel.comma(value.small_qty*value.cost);
       // value.cost=inventoryReportModel.comma(value.cost);
     })
@@ -1762,7 +1772,7 @@ router.get('/report/list/receive', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID = req.query.receiveID;
   let list_receive2;
-
+  const wareHouseId = req.decoded.warehouseId
 
   let productId = [];
   let receiveId = [];
@@ -1778,24 +1788,28 @@ router.get('/report/list/receive', wrap(async (req, res, next) => {
     productId.push(value.product_id);
     receiveId.push(value.receive_id);
   })
+  console.log('----');
+
+  console.log(list_receive3);
 
   for (let i = 0; i < productId.length; i++) {
-    list_receive2 = await inventoryReportModel.list_receive2(db, productId[i], receiveId[i]);
+    list_receive2 = await inventoryReportModel.list_receive2(db, productId[i], receiveId[i], wareHouseId);
     list_receive2 = list_receive2[0];
     //console.log(list_receive2);
 
     array2.push(list_receive2);
     // //console.log(list_receive2[0].receive_code)
   }
-  // array2=array2[0];
-
-  // //console.log(array2);
-
 
   array2.forEach(value => {
     value.forEach(value2 => {
+      value2.cost = _.sumBy(value, function (o: any) { if (value2.generic_id == o.generic_id && value2.receive_id == o.receive_id) return +o.cost | 0; });
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
-      value2.receive_date = moment(value2.receive_date).format('DD-MM-YYYY');
+      value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
+      value2.cost = inventoryReportModel.comma(value2.cost)
+      if (value2.receive_id == '') {
+        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty / +value2.small_qty)
+      }
       // value.small_qty=inventoryReportModel.comma(value.small_qty*value.cost);
       // value.cost=inventoryReportModel.comma(value.cost);
     })
@@ -1808,6 +1822,7 @@ router.get('/report/list/receiveCode/:sID/:eID', wrap(async (req, res, next) => 
   let db = req.db;
   let sID = req.params.sID;
   let eID = req.params.eID;
+  const wareHouseId = req.decoded.warehouseId
   let list_receive2;
   let productId = [];
   let receiveId = [];
@@ -1821,24 +1836,29 @@ router.get('/report/list/receiveCode/:sID/:eID', wrap(async (req, res, next) => 
   })
   if (list_receive3[0] == undefined) res.render('error404');
   for (let i = 0; i < productId.length; i++) {
-    list_receive2 = await inventoryReportModel.list_receive2(db, productId[i], receiveId[i]);
+    list_receive2 = await inventoryReportModel.list_receive2(db, productId[i], receiveId[i], wareHouseId);
     list_receive2 = list_receive2[0];
     //console.log(list_receive2);
     array2.push(list_receive2);
   }
-
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.expired_date = moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543);
-      value2.receive_date = moment(value2.receive_date).format('DD-MM-YYYY');
+      value2.cost = _.sumBy(value, function (o: any) { if (value2.product_id == o.product_id && value2.receive_id == o.receive_id) return +o.cost | 0; });
+      value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
+      value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
+      if (value2.receive_id == '') {
+        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty / +value2.small_qty)
+      }
     })
   })
   res.render('_list_receive2', { hospitalName: hospitalName, list_receive2: list_receive2, array2: array2, sID: sID, eID: eID });
 }));
+
 router.get('/report/list/receiveCodeOther/:sID/:eID', wrap(async (req, res, next) => {
   let db = req.db;
   let sID = req.params.sID;
   let eID = req.params.eID;
+  const wareHouseId = req.decoded.warehouseId
   let list_receive2;
   let productId = [];
   let receiveId = [];
@@ -1852,16 +1872,20 @@ router.get('/report/list/receiveCodeOther/:sID/:eID', wrap(async (req, res, next
   })
   if (list_receive3[0] == undefined) res.render('error404');
   for (let i = 0; i < productId.length; i++) {
-    list_receive2 = await inventoryReportModel._list_receive2(db, productId[i], receiveId[i]);
+    list_receive2 = await inventoryReportModel._list_receive2(db, productId[i], receiveId[i], wareHouseId);
     list_receive2 = list_receive2[0];
     //console.log(list_receive2);
     array2.push(list_receive2);
   }
-
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.expired_date = moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543);
-      value2.receive_date = moment(value2.receive_date).format('DD-MM-YYYY');
+      value2.costs = _.sumBy(value, function (o: any) { if (value2.product_id == o.product_id && value2.receive_other_id == o.receive_other_id) return +o.costs | 0; });
+      value2.costs = inventoryReportModel.comma(value2.costs)
+      value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
+      value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
+      if (value2.receive_id == '') {
+        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty / +value2.small_qty)
+      }
     })
   })
   res.render('_list_receive3', { hospitalName: hospitalName, list_receive2: list_receive2, array2: array2, sID: sID, eID: eID });
@@ -2015,6 +2039,7 @@ router.get('/report/list/receivePo/:sID/:eID', wrap(async (req, res, next) => {
   let db = req.db;
   let sID = req.params.sID;
   let eID = req.params.eID;
+  const wareHouseId = req.decoded.warehouseId
   let list_receive2;
   let productId = [];
   let receiveId = [];
@@ -2029,16 +2054,19 @@ router.get('/report/list/receivePo/:sID/:eID', wrap(async (req, res, next) => {
   // res.send({productId:productId,receiveId:receiveId});
   if (list_receive3[0] == undefined) res.render('error404');
   for (let i = 0; i < productId.length; i++) {
-    list_receive2 = await inventoryReportModel.list_receive2(db, productId[i], receiveId[i]);
+    list_receive2 = await inventoryReportModel.list_receive2(db, productId[i], receiveId[i], wareHouseId);
     list_receive2 = list_receive2[0];
     //console.log(list_receive2);
     array2.push(list_receive2);
   }
-
   array2.forEach(value => {
     value.forEach(value2 => {
+      value2.cost = _.sumBy(value, function (o: any) { if (value2.product_id == o.product_id && value2.receive_id == o.receive_id) return +o.cost | 0; });
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
-      value2.receive_date = moment(value2.receive_date).format('DD-MM-YYYY');
+      value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
+      if (value2.receive_id == '') {
+        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty / +value2.small_qty)
+      }
     })
   })
   res.render('_list_receive2', { hospitalName: hospitalName, list_receive2: list_receive2, array2: array2, sID: sID, eID: eID });
@@ -2047,6 +2075,7 @@ router.get('/report/list/receiveDate/:sDate/:eDate', wrap(async (req, res, next)
   let db = req.db;
   let sDate = req.params.sDate;
   let eDate = req.params.eDate;
+  const wareHouseId = req.decoded.warehouseId
   let list_receive2;
   let productId = [];
   let receiveId = [];
@@ -2062,17 +2091,20 @@ router.get('/report/list/receiveDate/:sDate/:eDate', wrap(async (req, res, next)
   //console.log(receiveId);
   //console.log(productId);
   for (let i = 0; i < productId.length; i++) {
-    list_receive2 = await inventoryReportModel.list_receive2(db, productId[i], receiveId[i]);
+    list_receive2 = await inventoryReportModel.list_receive2(db, productId[i], receiveId[i], wareHouseId);
     list_receive2 = list_receive2[0];
     //console.log(list_receive2);
     array2.push(list_receive2);
   }
-
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.expired_date = value2.expired_date ? moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543) : '-';
-      value2.receive_date = value2.receive_date ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
+      value2.cost = _.sumBy(value, function (o: any) { if (value2.product_id == o.product_id && value2.receive_id == o.receive_id) return +o.cost | 0; });
+      value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
+      value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
       value2.unit_price = inventoryReportModel.comma(value2.unit_price * value2.receive_qty)
+      if (value2.receive_id == '') {
+        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty / +value2.small_qty)
+      }
     })
   })
   sDate = moment(sDate).format('DD MMMM ') + (+moment(sDate).get('year') + 543);
@@ -2141,6 +2173,7 @@ router.get('/report/list/receiveDateOther/:sDate/:eDate', wrap(async (req, res, 
   let db = req.db;
   let sDate = req.params.sDate;
   let eDate = req.params.eDate;
+  const wareHouseId = req.decoded.warehouseId
   let list_receive2;
   let productId = [];
   let receiveId = [];
@@ -2156,17 +2189,20 @@ router.get('/report/list/receiveDateOther/:sDate/:eDate', wrap(async (req, res, 
   //console.log(receiveId);
   //console.log(productId);
   for (let i = 0; i < productId.length; i++) {
-    list_receive2 = await inventoryReportModel._list_receive2(db, productId[i], receiveId[i]);
+    list_receive2 = await inventoryReportModel._list_receive2(db, productId[i], receiveId[i], wareHouseId);
     list_receive2 = list_receive2[0];
     //console.log(list_receive2);
     array2.push(list_receive2);
   }
-
   array2.forEach(value => {
     value.forEach(value2 => {
-      value2.expired_date = value2.expired_date ? moment(value2.expired_date).format('DD-MM-') + (moment(value2.expired_date).get('year') + 543) : '-';
-      value2.receive_date = value2.receive_date ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
+      value2.costs = _.sumBy(value, function (o: any) { if (value2.product_id == o.product_id && value2.receive_other_id == o.receive_other_id) return +o.costs | 0; });
+      value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
+      value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
       value2.costs = inventoryReportModel.comma(value2.costs)
+      if (value2.receive_id == '') {
+        value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty / +value2.small_qty)
+      }
     })
   })
   sDate = moment(sDate).format('DD MMMM ') + (+moment(sDate).get('year') + 543);
@@ -3304,9 +3340,10 @@ router.get('/report/generics-no-movement/:warehouseId/:startdate/:enddate', wrap
   let startdate = req.params.startdate
   let enddate = req.params.enddate
   let genericTypes = req.decoded.generic_type_id;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.genericsNomovement(db, warehouseId, startdate, enddate, genericTypes);
+  let rs = await inventoryReportModel.genericsNomovement(db, warehouseId, startdate, enddate, genericTypes, dateSetting);
   let generics = rs[0];
   console.log(generics);
 
@@ -5016,4 +5053,27 @@ router.get('/report/asn', wrap(async (req, res, next) => {
   });
 
 }));
+router.get('/report/his-history', wrap(async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.query.warehouseId
+  let date = req.query.date
+  let genericType = req.query.genericType
+  let warehouseName = req.query.warehouseName
+  let hospcode = req.decoded.his_hospcode;
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let dateText = moment(date).format('DD MMMM ') + (moment(date).get('year') + 543);
+  let rs = await inventoryReportModel.hisHistory(db, warehouseId, date, genericType, hospcode);
+  let list = rs[0]
+
+  res.render('hisHistory', {
+    dateText: dateText,
+    list: list,
+    printDate: printDate(req.decoded.SYS_PRINT_DATE),
+    hospitalName: hospitalName,
+    warehouseName: warehouseName,
+  });
+}
+));
+
 export default router;

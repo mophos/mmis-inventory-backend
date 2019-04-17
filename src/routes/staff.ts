@@ -348,6 +348,7 @@ router.post('/warehouse/generics/min-max/search', co(async (req, res, next) => {
     res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
   }
 }));
+
 router.get('/warehouse/generics/min-max', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let genericType = req.query.genericType;
@@ -2257,7 +2258,7 @@ router.post('/his-transaction/upload', upload.single('file'), co(async (req, res
     let _data: any = [];
     // x = 0 = header      
     for (let x = 1; x < maxRecord; x++) {
-      if (excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] && excelData[x][5]) {
+      if (excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] > 0 && excelData[x][5]) {
 
         let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3]);
         let qty;
@@ -2318,6 +2319,22 @@ router.post('/his-transaction/list', co(async (req, res, next) => {
   }
 }));
 
+router.post('/his-transaction/history-list', co(async (req, res, next) => {
+  let db = req.db;
+  let hospcode = req.decoded.his_hospcode;
+  let genericType = req.body.genericTypes;
+  let warehouseId = req.body.warehouseId;
+  let date = req.body.date;
+  try {
+    let rs: any = await hisTransactionModel.getHisHistoryTransactionStaff(db, hospcode, genericType, warehouseId,date);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
 router.delete('/his-transaction/remove/:warehoseId', co(async (req, res, next) => {
   let db = req.db;
   let hospcode = req.decoded.his_hospcode;
@@ -2352,141 +2369,119 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
   let db = req.db;
   let transactionIds = req.body.transactionIds;
   let hospcode = req.decoded.his_hospcode;
+  let peopleUserId = req.decoded.people_user_id;
+  let cutStockDate = moment().format('YYYY-MM-DD HH:mm:ss');
 
   if (transactionIds.length) {
     try {
-
-      let hisProducts = await hisTransactionModel.getHisTransactionForImport(db, transactionIds);
-      let productIds: any = [];
-      let warehouseIds: any = [];
-      hisProducts.forEach(v => {
-        productIds.push(v.product_id);
-        warehouseIds.push(v.warehouse_id);
-      });
-
-      let wmProducts = await hisTransactionModel.getProductInWarehouseForImport(db, warehouseIds, productIds);
       let unCutStockIds = [];
       let cutStockIds = [];
-      let stockCards = [];
 
-      let z = 0;
+      //หา generic_id จาก transaction_id
+      let hisProducts = await hisTransactionModel.getHisTransactionForImport(db, transactionIds);
+
       for (const h of hisProducts) {
-        if (!wmProducts.length) {
-          // ถ้าไม่มีรายการในคงคลังให้ยกเลิกการตัดสต๊อก
-          unCutStockIds.push(h.transaction_id);
-        } else {
+        let qty = h.qty
+        let cutQty;
+        //หาคงคลัง จาก wmProducts ตาม lot
+        let wmProducts = await hisTransactionModel.getProductInWarehouseForImport(db, h.warehouse_id, h.generic_id);
 
-          cutStockIds.push(h.transaction_id);
-          let i = 0;
-          for (const v of wmProducts) {
-            if (v.qty > 0) {
-              if (v.product_id === h.product_id && +v.warehouse_id === +h.warehouse_id) {
-                let obj: any = {};
-                obj.wm_product_id = v.wm_product_id;
-                obj.hn = `${hospcode}-${h.hn}`;
-                obj.lot_no = v.lot_no;
-                obj.transaction_id = h.transaction_id;
-                obj.warehouse_id = h.warehouse_id;
-                obj.product_id = h.product_id;
-                obj.date_serv = moment(h.date_serv).format('YYYY-MM-DD');
-                obj.balance = h.total;
+        for (const p of wmProducts) {
+          let check = false;
+          if (p.qty >= qty && qty > 0) {
+            check = true;
+            cutQty = qty;
+            p.qty = p.qty - qty;
+            qty = 0
+          } else if (p.qty < qty && qty > 0) { //กรณีตัดแล้วแต่คงคลังไม่พอ
+            check = true;
+            qty = qty - p.qty;
+            cutQty = p.qty
+            p.qty = 0;
+          }
 
-                if (v.qty >= h.qty && i !== (wmProducts.length - 1)) {
-                  obj.cutQty = h.qty;
-                  if (v.qty >= h.qty) {
-                    obj.remainQty = v.qty - h.qty;
-                    h.qty = 0;
-                  } else {
-                    obj.remainQty = 0;
-                  }
-                } else {
-                  if (i === (wmProducts.length - 1)) {
-                    obj.cutQty = h.qty;
-                    obj.remainQty = v.qty - h.qty;
-                  } else {
-                    obj.cutQty = v.qty;
-                    obj.remainQty = 0;
-                    h.qty -= v.qty;
-                  }
-                }
-
-                wmProducts[i].qty = obj.remainQty;
-                hisProducts[z].qty = h.qty;
-
-                //getUnitGeneric
-                let unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, h.generic_id);
-                let insertUnit = [];
-                //เช็ค unitId
-                if (!unitId.length) {
-                  let unit = await hisTransactionModel.getUnitGenericId(db, h.generic_id);
-                  //สร้าง unit 1 ต่อ 1 ใหม่
-                  let newUnit = {
-                    from_unit_id: unit[0].to_unit_id,
-                    to_unit_id: unit[0].to_unit_id,
-                    qty: 1,
-                    cost: unit[0].cost / unit[0].qty,
-                    generic_id: unit[0].generic_id
-                  }
-                  insertUnit.push(newUnit)
-                  //insert UnitGeneric
-                  await hisTransactionModel.insertUnitId(db, insertUnit);
-                  unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, h.generic_id);
-                }
-
-                await hisTransactionModel.decreaseProductQty(db, obj.wm_product_id, obj.cutQty);
-                let balance = await hisTransactionModel.getBalance(db, obj.wm_product_id);
-                balance = balance[0];
-
-                let balance_qty = balance[0].balance_qty;
-                let balance_lot_qty = balance[0].balance_lot_qty;
-                let balance_generic_qty = balance[0].balance_generic_qty;
-                let balance_unit_cost = balance[0].balance_unit_cost;
-
-                let data = {
-                  stock_date: moment(h.date_serv).format('YYYY-MM-DD HH:mm:ss'),
-                  product_id: h.product_id,
-                  generic_id: h.generic_id,
-                  transaction_type: 'HIS',
-                  document_ref_id: h.transaction_id,
-                  document_ref: null,
-                  in_qty: 0,
-                  in_unit_cost: 0,
-                  out_qty: obj.cutQty,
-                  out_unit_cost: v.cost,
-                  balance_qty: balance_qty,
-                  balance_lot_qty: balance_lot_qty,
-                  balance_generic_qty: balance_generic_qty,
-                  balance_unit_cost: balance_unit_cost,
-                  ref_src: h.warehouse_id,
-                  ref_dst: h.hn,
-                  comment: 'ตัดจ่าย HIS',
-                  unit_generic_id: unitId[0].unit_generic_id,
-                  lot_no: v.lot_no,
-                  lot_time: v.lot_time,
-                  expired_date: v.expired_date,
-                  wm_product_id_out: obj.wm_product_id
-                };
-                if (obj.cutQty > 0) {
-                  stockCards.push(data);
-                }
-
+          // checkUnitGeneric , ตัดคงคลัง , ลงstockcard
+          if (check) {
+            let stockCards = [];
+            //getUnitGeneric
+            let unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, h.generic_id);
+            let insertUnit = [];
+            //เช็ค unitId
+            if (!unitId.length) {
+              let unit = await hisTransactionModel.getUnitGenericId(db, h.generic_id);
+              //สร้าง unit 1 ต่อ 1 ใหม่
+              let newUnit = {
+                from_unit_id: unit[0].to_unit_id,
+                to_unit_id: unit[0].to_unit_id,
+                qty: 1,
+                cost: unit[0].cost / unit[0].qty,
+                generic_id: unit[0].generic_id
               }
+              insertUnit.push(newUnit)
+              //insert UnitGeneric
+              await hisTransactionModel.insertUnitId(db, insertUnit);
+              unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, h.generic_id);
             }
-            i++;
+
+            //ตัดคงคลัง
+            await hisTransactionModel.decreaseProductQty(db, p.wm_product_id, p.qty);
+
+            //getBalance เพื่อไปลง stockcard
+            let balance = await hisTransactionModel.getBalance(db, p.wm_product_id);
+            balance = balance[0];
+            let balance_qty = balance[0].balance_qty;
+            let balance_lot_qty = balance[0].balance_lot_qty;
+            let balance_generic_qty = balance[0].balance_generic_qty;
+            let balance_unit_cost = balance[0].balance_unit_cost;
+
+            //ทำ data เพื่อไปลง stockcard
+            let data = {
+              stock_date: moment(h.date_serv).format('YYYY-MM-DD HH:mm:ss'),
+              product_id: p.product_id,
+              generic_id: h.generic_id,
+              transaction_type: 'HIS',
+              document_ref_id: h.transaction_id,
+              document_ref: null,
+              in_qty: 0,
+              in_unit_cost: 0,
+              out_qty: cutQty,
+              out_unit_cost: p.cost,
+              balance_qty: balance_qty,
+              balance_lot_qty: balance_lot_qty,
+              balance_generic_qty: balance_generic_qty,
+              balance_unit_cost: balance_unit_cost,
+              ref_src: h.warehouse_id,
+              ref_dst: h.hn,
+              comment: 'ตัดจ่าย HIS',
+              unit_generic_id: unitId[0].unit_generic_id,
+              lot_no: p.lot_no,
+              lot_time: p.lot_time,
+              expired_date: p.expired_date,
+              wm_product_id_out: p.wm_product_id
+            };
+            if (cutQty > 0) {
+              stockCards.push(data);
+            }
+            console.log(data);
+            // save stockcard
+            await stockCardModel.saveStockHisTransaction(db, stockCards);
           }
         }
-        z++;
+
+        //เปลี่ยน สถานะ is_cut_stock
+        if (qty === 0) {
+          cutStockIds.push(h.transaction_id);
+          await hisTransactionModel.changeStatusToCut(db, cutStockDate, peopleUserId, h.transaction_id);
+        } else if (qty > 0) {
+          unCutStockIds.push(h.transaction_id);
+          //ตัดมากกว่าคงเหลือ ตัดแล้วเอามาหักลบ
+          if (h.qty > qty) {
+            let diff = h.qty - cutQty
+            await hisTransactionModel.changeQtyInHisTransaction(db, cutStockDate, peopleUserId, h.transaction_id, diff);
+          }
+        }
       }
-
-      // save transaction status
-      let peopleUserId = req.decoded.people_user_id;
-      let cutStockDate = moment().format('YYYY-MM-DD HH:mm:ss');
-
-      await hisTransactionModel.changeStatusToCut(db, cutStockDate, peopleUserId, cutStockIds);
-      // save stockcard 
-      await stockCardModel.saveStockHisTransaction(db, stockCards);
-
-      res.send({ ok: true, un_cut_stock: unCutStockIds });
+      res.send({ ok: true, un_cut_stock: unCutStockIds, cut_stock: cutStockIds });
 
     } catch (error) {
       console.log(error);
@@ -3115,119 +3110,124 @@ router.post('/receives/other/approve', co(async (req, res, next) => {
       });
 
       await receiveModel.removeOldApproveOther(db, receiveIds);
-      await receiveModel.saveApprove(db, approveDatas);
-      // get product
-      let _rproducts = await receiveModel.getReceiveOtherProductsImport(db, receiveIds);
-      let products: any = [];
-      let lot_time = [];
-      let lotTime = 0;
-      let data = [];
-      let balances = await receiveModel.getProductRemainByReceiveOtherIds(db, receiveIds, warehouseId);
-      balances = balances[0];
-      for (const v of _rproducts) {
-        const idx = _.findIndex(lot_time, { 'product_id': v.product_id, 'lot_no': v.lot_no });
-        if (idx > -1) {
-          lot_time[idx].lot_time += 1;
-          lotTime = lot_time[idx].lot_time;
-        } else {
-          let lotObj = {
+      const receiveId = await receiveModel.saveApprove(db, approveDatas);
+      if (approveDatas.length == receiveId.length) {
+        // get product
+        let _rproducts = await receiveModel.getReceiveOtherProductsImport(db, receiveIds);
+        let products: any = [];
+        let lot_time = [];
+        let lotTime = 0;
+        let data = [];
+        let balances = await receiveModel.getProductRemainByReceiveOtherIds(db, receiveIds, warehouseId);
+        balances = balances[0];
+        for (const v of _rproducts) {
+          const idx = _.findIndex(lot_time, { 'product_id': v.product_id, 'lot_no': v.lot_no });
+          if (idx > -1) {
+            lot_time[idx].lot_time += 1;
+            lotTime = lot_time[idx].lot_time;
+          } else {
+            let lotObj = {
+              product_id: v.product_id,
+              lot_no: v.lot_no,
+              lot_time: +v.lot_time + 1
+            };
+            lotTime = +v.lot_time + 1
+            lot_time.push(lotObj);
+          }
+          let id = uuid();
+          const idxWM = _.findIndex(products, { 'product_id': v.product_id, 'warehouse_id': v.warehouse_id, 'lot_no': v.lot_no, 'lot_time': lotTime });
+          if (v.is_free == 'Y') {
+            id = products[idxWM].wm_product_id;
+          }
+          await receiveModel.updateReceiveDetailSummary(db, v.receive_detail_id, { 'wm_product_id': id });
+          let obj_adjust: any = {};
+          let qty = v.receive_qty * v.conversion_qty;
+          let expiredDate = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date, 'YYYY-MM-DD').format('YYYY-MM-DD') : null;
+          let obj: any = {
+            wm_product_id: id,
+            warehouse_id: v.warehouse_id,
+            receive_other_id: v.receive_other_id,
             product_id: v.product_id,
+            generic_id: v.generic_id,
+            balance: v.balance,
+            receive_code: v.receive_code,
+            donator_id: v.donator_id,
+            qty: qty,
+            price: (v.cost * v.receive_qty) / qty,
+            cost: (v.cost * v.receive_qty) / qty,
             lot_no: v.lot_no,
-            lot_time: +v.lot_time + 1
+            expired_date: expiredDate,
+            unit_generic_id: v.unit_generic_id,
+            location_id: +v.location_id,
+            people_user_id: req.decoded.people_user_id,
+            created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+            lot_time: lotTime
           };
-          lotTime = +v.lot_time + 1
-          lot_time.push(lotObj);
+          // add product
+          products.push(obj);
+
+          // new version ////////////////////////////////////////
+
+          // save to wm_products
+          await receiveModel.saveProducts(db, obj);
+
+          // get cost from wm_product
+          const cost = await receiveModel.getCostProduct(db, obj);
+          let _cost = cost[0].cost
+
+          let objS: any = {};
+          objS.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+          objS.product_id = v.product_id;
+          objS.generic_id = v.generic_id;
+          objS.unit_generic_id = v.unit_generic_id;
+          objS.transaction_type = TransactionType.RECEIVE_OTHER;
+          objS.document_ref_id = v.receive_other_id;
+          objS.document_ref = v.receive_code;
+          objS.in_qty = qty;
+          objS.in_unit_cost = (v.cost * v.receive_qty) / qty;
+
+          let balance = 0;
+          let balance_generic = 0;
+          let balanceLot = 0;
+          let idxB = _.findIndex(balances, {
+            product_id: v.product_id,
+            warehouse_id: v.warehouse_id
+          });
+
+          if (idxB > -1) {
+            balance = balances[idxB].balance + qty;
+            balance_generic = balances[idxB].balance_generic + qty;
+            balances[idxB].balance += qty;
+            balances[idxB].balance_generic += qty;
+          }
+
+          const bl = await receiveModel.getBalanceLot(db, v.warehouse_id, v.product_id, v.lot_no, obj.lot_time);
+          balanceLot = bl[0].length == 0 ? qty : bl[0][0].balanceLot;
+
+          objS.balance_lot_qty = balanceLot;
+          objS.balance_qty = balance;
+          objS.balance_generic_qty = balance_generic;
+          objS.balance_unit_cost = _cost;
+          objS.ref_src = v.donator_id;
+          objS.ref_dst = v.warehouse_id;
+          objS.comment = 'รับเข้าคลังแบบอื่นๆ';
+          objS.lot_no = v.lot_no;
+          objS.lot_time = lotTime;
+          objS.expired_date = expiredDate;
+          objS.wm_product_id_in = id;
+          data.push(objS);
+
+          //////////////////////////////////////////
+
+          // await receiveModel.saveProducts(db, products);
         }
-        let id = uuid();
-        const idxWM = _.findIndex(products, { 'product_id': v.product_id, 'warehouse_id': v.warehouse_id, 'lot_no': v.lot_no, 'lot_time': lotTime });
-        if (v.is_free == 'Y') {
-          id = products[idxWM].wm_product_id;
-        }
-        await receiveModel.updateReceiveDetailSummary(db, v.receive_detail_id, { 'wm_product_id': id });
-        let obj_adjust: any = {};
-        let qty = v.receive_qty * v.conversion_qty;
-        let expiredDate = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date, 'YYYY-MM-DD').format('YYYY-MM-DD') : null;
-        let obj: any = {
-          wm_product_id: id,
-          warehouse_id: v.warehouse_id,
-          receive_other_id: v.receive_other_id,
-          product_id: v.product_id,
-          generic_id: v.generic_id,
-          balance: v.balance,
-          receive_code: v.receive_code,
-          donator_id: v.donator_id,
-          qty: qty,
-          price: (v.cost * v.receive_qty) / qty,
-          cost: (v.cost * v.receive_qty) / qty,
-          lot_no: v.lot_no,
-          expired_date: expiredDate,
-          unit_generic_id: v.unit_generic_id,
-          location_id: +v.location_id,
-          people_user_id: req.decoded.people_user_id,
-          created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
-          lot_time: lotTime
-        };
-        // add product
-        products.push(obj);
+        await stockCardModel.saveFastStockTransaction(db, data);
 
-        // new version ////////////////////////////////////////
+        res.send({ ok: true });
 
-        // save to wm_products
-        await receiveModel.saveProducts(db, obj);
-
-        // get cost from wm_product
-        const cost = await receiveModel.getCostProduct(db, obj);
-        let _cost = cost[0].cost
-
-        let objS: any = {};
-        objS.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-        objS.product_id = v.product_id;
-        objS.generic_id = v.generic_id;
-        objS.unit_generic_id = v.unit_generic_id;
-        objS.transaction_type = TransactionType.RECEIVE_OTHER;
-        objS.document_ref_id = v.receive_other_id;
-        objS.document_ref = v.receive_code;
-        objS.in_qty = qty;
-        objS.in_unit_cost = (v.cost * v.receive_qty) / qty;
-
-        let balance = 0;
-        let balance_generic = 0;
-        let balanceLot = 0;
-        let idxB = _.findIndex(balances, {
-          product_id: v.product_id,
-          warehouse_id: v.warehouse_id
-        });
-
-        if (idxB > -1) {
-          balance = balances[idxB].balance + qty;
-          balance_generic = balances[idxB].balance_generic + qty;
-          balances[idxB].balance += qty;
-          balances[idxB].balance_generic += qty;
-        }
-
-        const bl = await receiveModel.getBalanceLot(db, v.warehouse_id, v.product_id, v.lot_no, obj.lot_time);
-        balanceLot = bl[0].length == 0 ? qty : bl[0][0].balanceLot;
-
-        objS.balance_lot_qty = balanceLot;
-        objS.balance_qty = balance;
-        objS.balance_generic_qty = balance_generic;
-        objS.balance_unit_cost = _cost;
-        objS.ref_src = v.donator_id;
-        objS.ref_dst = v.warehouse_id;
-        objS.comment = 'รับเข้าคลังแบบอื่นๆ';
-        objS.lot_no = v.lot_no;
-        objS.lot_time = lotTime;
-        objS.expired_date = expiredDate;
-        objS.wm_product_id_in = id;
-        data.push(objS);
-
-        //////////////////////////////////////////
-
-        // await receiveModel.saveProducts(db, products);
+      } else {
+        res.send({ ok: false, error: 'การอนุมัติมีปัญหา กรุณาติดต่อเจ้าหน้าที่ศูนย์เทคฯ' })
       }
-      await stockCardModel.saveFastStockTransaction(db, data);
-
-      res.send({ ok: true });
     } else {
       res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการอนุมัติ' });
     }
@@ -3503,11 +3503,11 @@ router.get('/warehouses/export', async (req, res, next) => {
         })
       });
       // create tmp file
-     res.render('template_req_issue',{
-      header: header[0][0],
-      data: data,
-      printDate: printDate
-     })
+      res.render('template_req_issue', {
+        header: header[0][0],
+        data: data,
+        printDate: printDate
+      })
     } catch (error) {
       console.log(error);
       res.send({ ok: false, error: error });
@@ -3530,6 +3530,161 @@ router.get('/warehouses/export/excel', async (req, res, next) => {
       let _tableName = `template`;
 
       let result = await productModel.getAllProductInTemplateWarehouse(db, templateId, warehouseId);
+      let r = [];
+      let i = 0;
+      result[0].forEach(v => {
+        i++;
+        let unit = '';
+        if (v.large_unit || v.qty || v.small_unit) {
+          unit = v.large_unit + '(' + v.qty + ' ' + v.small_unit + ')';
+        }
+        r.push({
+          'ลำดับ': i,
+          'รหัส': v.working_code,
+          'ชื่อสินค้า': v.generic_name,
+          'หน่วย': unit,
+          'min': v.min_qty,
+          'max': v.max_qty,
+          'คงเหลือ': v.gen_qty
+        })
+      });
+      // console.log(result);
+
+      // create tmp file
+      let tmpFile = `${_tableName}-${moment().format('x')}.xlsx`;
+      tmpFile = path.join(pathTmp, tmpFile);
+      let excel = json2xls(r);
+      fs.writeFileSync(tmpFile, excel, 'binary');
+      res.download(tmpFile, (err) => {
+        if (err) {
+          res.send({ ok: false, message: err })
+        } else {
+          fse.removeSync(tmpFile);
+        }
+      });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: 'ไม่สามารถส่งออกไฟล์ .xlsx ได้' });
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบตารางข้อมูลที่ต้องการ' });
+  }
+});
+
+
+router.post('/warehouse/save-default-minmax', co(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let minF = req.body.minF;
+  let maxF = req.body.maxF;
+  let db = req.db;
+
+    try {
+      await staffModel.saveDefaultMinMax(db, warehouseId, +minF, +maxF);
+      res.send({ ok: true });
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error.message });
+    } finally {
+      db.destroy();
+    }
+
+}));
+
+
+router.post('/min-max/calculate', co(async (req, res, next) => {
+
+  let db = req.db;
+  let fromDate = req.body.fromDate;
+  let toDate = req.body.toDate;
+  let warehouseId = req.decoded.warehouseId;
+  let genericGroups = req.decoded.generic_type_id;
+
+  try {
+    if (genericGroups) {
+      let _ggs = [];
+      let ggs = genericGroups.split(',');
+      ggs.forEach(v => {
+        _ggs.push(v);
+      });
+      if (fromDate && toDate) {
+        let results: any = await staffModel.calculateMinMax(db, warehouseId, fromDate, toDate, _ggs);
+        let rs = results[0];
+        for (let r of rs) {
+          r.min_qty = Math.round(r.use_per_day * r.safety_min_day);
+          r.max_qty = Math.round(r.use_per_day * r.safety_max_day);
+          r.rop_qty = Math.round(r.use_per_day * r.lead_time_day);
+          if (r.carrying_cost) {
+            r.eoq_qty = Math.round(Math.sqrt((2 * r.use_total * r.ordering_cost) / r.carrying_cost));
+          } else {
+            r.eoq_qty = 0;
+          }
+        }
+        res.send({ ok: true, rows: rs, process_date: moment().format('YYYY-MM-DD HH:mm:ss') });
+      } else {
+        res.send({ ok: false, error: 'กรุณาระบุช่วงวันที่สำหรับการคำนวณ' });
+      }
+    } else {
+      res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+    }
+  } catch (error) {
+    throw error;
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/warehouses/export-issue', async (req, res, next) => {
+  let templateId = req.query.templateId;
+  let warehouseId = req.query.warehouseId;
+  let db = req.db;
+  const printDate = 'วันที่พิมพ์ ' + moment().format('D MMMM ') + (moment().get('year') + 543) + moment().format(', HH:mm:ss น.');
+
+  if (templateId) {
+    try {
+      // let _tableName = `template`;
+      let header = await staffModel.getallIssueTemplate(db, templateId);
+      let result = await productModel.getAllProductInTemplateIssueWarehouse(db, templateId, warehouseId);
+      let data = []
+      result[0].forEach(v => {
+        let unit = '';
+        if (v.large_unit || v.qty || v.small_unit) {
+          unit = v.large_unit + '(' + v.qty + ' ' + v.small_unit + ')';
+        }
+        data.push({
+          working_code: v.working_code,
+          generic_name: v.generic_name,
+          unit: unit
+        })
+      });
+      // create tmp file
+      res.render('template_issue', {
+        header: header[0][0],
+        data: data,
+        printDate: printDate
+      })
+    } catch (error) {
+      console.log(error);
+      res.send({ ok: false, error: error });
+    }
+  } else {
+    res.send({ ok: false, error: 'ไม่พบตารางข้อมูลที่ต้องการ' });
+  }
+});
+
+router.get('/warehouses/export-issue/excel', async (req, res, next) => {
+  let templateId = req.query.templateId;
+  let warehouseId = req.query.warehouseId;
+  let db = req.db;
+
+  const pathTmp = path.join(process.env.MMIS_DATA, 'temp');
+  fse.ensureDirSync(pathTmp);
+
+  if (templateId) {
+    try {
+      let _tableName = `template`;
+
+      let result = await productModel.getAllProductInTemplateIssueWarehouse(db, templateId, warehouseId);
       let r = [];
       let i = 0;
       result[0].forEach(v => {

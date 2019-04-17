@@ -1,5 +1,6 @@
 import Knex = require('knex');
 import * as moment from 'moment';
+import { join } from 'bluebird';
 
 export class HisTransactionModel {
 
@@ -82,22 +83,6 @@ export class HisTransactionModel {
     }
 
     getHisTransaction(db: Knex, hospcode: any, genericType: any) {
-        // let sql = `
-        // select tt.*, hm.mmis, hm.conversion, w.warehouse_name, w.warehouse_id, 
-        // mg.generic_name, mg.working_code, mu.unit_name
-        // from wm_his_transaction as tt
-        // inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode
-        // inner join wm_warehouses as w on w.warehouse_id=tt.mmis_warehouse
-        // inner join mm_generics as mg on mg.generic_id=hm.mmis
-        // left join mm_units as mu on mu.unit_id=mg.primary_unit_id
-
-        // where tt.is_cut_stock='N'
-        // and tt.hospcode=?
-        // and mg.generic_type_id in (${genericType})
-        // group by tt.transaction_id
-        // `;
-
-        // return db.raw(sql, [hospcode]);
         return db('wm_his_transaction as tt')
             .select('tt.*', 'hm.mmis', 'hm.conversion', 'w.warehouse_name', 'w.warehouse_id',
                 'mg.generic_name', 'mg.working_code', 'mu.unit_name')
@@ -107,6 +92,22 @@ export class HisTransactionModel {
             .leftJoin('mm_units as mu', 'mu.unit_id', 'mg.primary_unit_id')
             .where('tt.is_cut_stock', 'N')
             .andWhere('tt.hospcode', hospcode)
+            .whereIn('mg.generic_type_id', genericType)
+            .groupBy('tt.transaction_id')
+            .orderBy('tt.transaction_id');
+    }
+
+    getHisHistoryTransaction(db: Knex, hospcode: any, genericType: any, date: any) {
+        return db('wm_his_transaction as tt')
+            .select('tt.*', 'hm.mmis', 'hm.conversion', 'w.warehouse_name', 'w.warehouse_id',
+                'mg.generic_name', 'mg.working_code', 'mu.unit_name')
+            .joinRaw('inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode')
+            .innerJoin('wm_warehouses as w', 'w.warehouse_id', 'tt.mmis_warehouse')
+            .innerJoin('mm_generics as mg', 'mg.generic_id', 'hm.mmis')
+            .leftJoin('mm_units as mu', 'mu.unit_id', 'mg.primary_unit_id')
+            .where('tt.is_cut_stock', 'Y')
+            .andWhere('tt.hospcode', hospcode)
+            .andWhere('tt.date_serv', date)
             .whereIn('mg.generic_type_id', genericType)
             .groupBy('tt.transaction_id')
             .orderBy('tt.transaction_id');
@@ -129,54 +130,68 @@ export class HisTransactionModel {
             .orderBy('tt.transaction_id');
     }
 
-    // get his transaction for issue
-    getHisTransactionForImport(db: Knex, transactionIds: any[]) {
-        let subQuery = db('wm_products as wp')
-            .select(db.raw('sum(wp.qty)'))
-            .whereRaw('wp.product_id=mp.product_id and wp.warehouse_id=tt.mmis_warehouse')
-            .as('total')
-            ;
-
+    getHisHistoryTransactionStaff(db: Knex, hospcode: any, genericType: any, warehouseId: any, date: any) {
         return db('wm_his_transaction as tt')
-            .select('tt.transaction_id', 'tt.date_serv', 'tt.hn', 'tt.seq', 'tt.mmis_warehouse as warehouse_id',
-                'mp.product_id', 'mp.generic_id', db.raw('tt.qty * hm.conversion as qty'), subQuery)
+            .select('tt.*', 'hm.mmis', 'hm.conversion', 'w.warehouse_name', 'w.warehouse_id',
+                'mg.generic_name', 'mg.working_code', 'mu.unit_name')
             .joinRaw('inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode')
+            .innerJoin('wm_warehouses as w', 'w.warehouse_id', 'tt.mmis_warehouse')
             .innerJoin('mm_generics as mg', 'mg.generic_id', 'hm.mmis')
-            .innerJoin('mm_products as mp', 'mp.generic_id', 'mg.generic_id')
-            .whereIn('tt.transaction_id', transactionIds)
-            .groupBy('mp.product_id')
-            .havingRaw('total>0')
-            .orderBy('mp.product_id', 'ASC')
-            .orderBy('tt.date_serv', 'ASC');
+            .leftJoin('mm_units as mu', 'mu.unit_id', 'mg.primary_unit_id')
+            .where('tt.is_cut_stock', 'Y')
+            .andWhere('tt.hospcode', hospcode)
+            .andWhere('tt.mmis_warehouse', warehouseId)
+            .andWhere('tt.date_serv', date)
+            .whereIn('mg.generic_type_id', genericType)
+            .groupBy('tt.transaction_id')
+            .orderBy('tt.transaction_id');
     }
 
-    getProductInWarehouseForImport(db: Knex, warehouseIds: any[], productIds: any[]) {
+    // get his transaction for issue
+    getHisTransactionForImport(db: Knex, transactionIds: any[]) {
+        return db('wm_his_transaction as tt')
+            .select('tt.transaction_id', 'tt.date_serv', 'tt.hn', 'tt.seq', 'tt.mmis_warehouse as warehouse_id',
+                'mg.generic_id', 'hm.conversion', db.raw('tt.qty * hm.conversion as qty'))
+            .joinRaw('inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode')
+            .innerJoin('mm_generics as mg', 'mg.generic_id', 'hm.mmis')
+            .whereIn('tt.transaction_id', transactionIds)
+            .orderBy('tt.transaction_id', 'ASC');
+    }
+
+    getProductInWarehouseForImport(db: Knex, warehouseId: any, genericId: any) {
         return db('wm_products as wp')
-            .select('wp.wm_product_id', 'wp.product_id', 'wp.qty', 'wp.lot_no', 'wp.lot_time',
-                'wp.expired_date', 'wp.warehouse_id', 'mp.generic_id', 'wp.cost', 'wp.unit_generic_id')
-            .leftJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
-            .whereIn('wp.product_id', productIds)
-            .whereIn('wp.warehouse_id', warehouseIds)
-            .where('wp.qty', '>', 0)
-            .groupByRaw('wp.product_id, wp.lot_no')
-            .orderBy('wp.product_id', 'ASC')
+            .select('wp.*')
+            .join('mm_products as mp', 'mp.product_id', 'wp.product_id')
+            .where('wp.warehouse_id', warehouseId)
+            .andWhere('wp.qty', '>', 0)
+            .andWhere('mp.generic_id', genericId)
             .orderBy('wp.expired_date', 'ASC');
     }
 
     decreaseProductQty(db: Knex, id: any, qty: any) {
         return db('wm_products')
-            .decrement('qty', qty)
+            .update('qty', qty)
             .where('wm_product_id', id);
     }
 
-    changeStatusToCut(db: Knex, cutDate: any, peopleUserId: any, transactionIds: any[]) {
+    changeStatusToCut(db: Knex, cutDate: any, peopleUserId: any, transactionIds: any) {
         return db('wm_his_transaction')
             .update({
                 is_cut_stock: 'Y',
                 cut_stock_date: cutDate,
                 cut_stock_people_user_id: peopleUserId
             })
-            .whereIn('transaction_id', transactionIds);
+            .where('transaction_id', transactionIds);
+    }
+
+    changeQtyInHisTransaction(db: Knex, cutDate: any, peopleUserId: any, transactionIds: any, diff: any) {
+        return db('wm_his_transaction')
+            .update({
+                qty: diff,
+                cut_stock_date: cutDate,
+                cut_stock_people_user_id: peopleUserId
+            })
+            .where('transaction_id', transactionIds);
     }
 
     getRemainQty(db: Knex, productId: any) {
@@ -192,7 +207,7 @@ export class HisTransactionModel {
 
     getIssueTransactionMappingData(db: Knex, uuid: any, hospcode: any, warehouseId: any) {
         return db('tmp_import_issue as t')
-            .select('h.mmis', db.raw('sum(t.qty) as issue_qty'), 'g.generic_id', 'g.generic_name', 'u.unit_name')
+            .select('h.mmis', 'h.conversion as conversion_qty', db.raw('sum(t.qty) as issue_qty'), 'g.generic_id', 'g.generic_name', 'u.unit_name')
             .sum('vr.remain_qty as remain_qty')
             // .select(db.raw(`(SELECT sum(wp.qty) FROM wm_products wp WHERE wp.product_id IN ( SELECT mp.product_id FROM mm_products mp WHERE mp.generic_id = g.generic_id  GROUP BY mp.product_id ) and wp.warehouse_id=${warehouseId} GROUP BY  wp.warehouse_id) as remain_qty`))
             .innerJoin('wm_his_mappings as h', 'h.his', 't.icode')
@@ -334,7 +349,7 @@ export class HisTransactionModel {
         wh.is_cut_stock = 'N' 
         AND hm.mmis IS NULL `
         if (warehouseId) {
-            sql += `AND wh.mmis_warehouse = '${warehouseId} `
+            sql += `AND wh.mmis_warehouse = '${warehouseId}' `
         }
         sql += `
     GROUP BY

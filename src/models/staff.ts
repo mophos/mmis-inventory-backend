@@ -73,6 +73,55 @@ export class StaffModel {
     return knex.raw(sql, [templateId]);
   }
 
+  getallIssueTemplate(knex: Knex, templateId: string) {
+    let sql = `
+  select wrt.template_id, wrt.warehouse_id,
+  ws.warehouse_name,
+  wrt.template_subject, wrt.created_date
+  from wm_issue_template as wrt
+  inner join wm_warehouses as ws on wrt.warehouse_id = ws.warehouse_id
+  where wrt.template_id=?
+    `;
+
+    return knex.raw(sql, [templateId]);
+  }
+
+  calculateMinMax(knex: Knex, warehouseId: any, fromDate: any, toDate: any, genericGroups: any[]) {
+    let sql = `
+      select mp.generic_id, mg.working_code, mg.generic_name, sum(wp.qty) qty, mu.unit_name 
+      , IFNULL(sc.use_total, 0) use_total, IFNULL(sc.use_per_day, 0) use_per_day
+      , (select IFNULL(safety_min_day,(select IFNULL(a.default,0) from sys_settings a where a.action_name = 'WM_SAFETY_MIN_DAY')) from wm_warehouses a where warehouse_id = ${warehouseId}) safety_min_day
+      , (select IFNULL(safety_max_day,(select IFNULL(b.default,0) from sys_settings b where b.action_name = 'WM_SAFETY_MAX_DAY')) from wm_warehouses b where warehouse_id = ${warehouseId}) safety_max_day
+      , IFNULL(gp.lead_time_day, 0) lead_time_day
+      , IFNULL(gp.rop_qty, 0) rop_qty
+      , IFNULL(gp.ordering_cost, 0) ordering_cost
+      , IFNULL(gp.carrying_cost, 0) carrying_cost
+      , IFNULL(gp.eoq_qty, 0) eoq_qty
+      , mg.primary_unit_id
+      from wm_products wp
+      join mm_products mp on mp.product_id = wp.product_id
+      join mm_generics mg on mg.generic_id = mp.generic_id
+      join mm_units mu on mu.unit_id = mg.primary_unit_id
+      left join mm_generic_planning gp on gp.generic_id = mp.generic_id and gp.warehouse_id = wp.warehouse_id
+      left join (
+        select 
+        ws.generic_id
+        , SUM(ws.out_qty) use_total
+        , IFNULL(SUM(ws.out_qty), 0) / DATEDIFF(?, ?) use_per_day
+        from wm_stock_card ws
+        where ws.ref_src = ?
+        and ws.transaction_type in ('TRN_OUT', 'ISS', 'HIS', 'REQ_OUT', 'ADJUST', 'ADD_OUT')
+        and (date(ws.stock_date) between ? and ?)
+        group by ws.generic_id
+      ) sc on sc.generic_id = mp.generic_id
+      where wp.warehouse_id = ?
+      and mg.generic_type_id in (?)
+      group by mp.generic_id
+      order by mg.generic_name
+    `;
+    return knex.raw(sql, [toDate, fromDate, warehouseId, fromDate, toDate, warehouseId, genericGroups]);
+  }
+  
   getBorrowRequest(knex: Knex, warehouseId) {
     let subQuery = knex('wm_borrow_check').select('borrow_id');
     let queryTotal = knex('wm_borrow_detail as d')
@@ -431,6 +480,15 @@ export class StaffModel {
     return knex('wm_transfer')
       .update({ is_accepted: 'Y' })
       .where('transfer_id', transferId);
+  }
+
+  saveDefaultMinMax(knex: Knex,warehouseId, minF, maxF) {
+    return knex('wm_warehouses')
+      .update({ 
+        safety_max_day: maxF,
+        safety_min_day: minF
+       })
+      .where('warehouse_id', warehouseId);
   }
 
   transferGetTransferDetail(knex: Knex, transferId: any[]) {

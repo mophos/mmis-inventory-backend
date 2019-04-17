@@ -99,6 +99,7 @@ import borrowOtherRoute from './routes/borrow-other';
 import toolsRoute from './routes/tools';
 import returnBudgetRoute from "./routes/returnBudget";
 import staffBorrowRoute from './routes/staffBorrow';
+import staffAlertExpired from './routes/staffAlertExpired';
 import staffBorrowOtherRoute from './routes/staffBorrowOther';
 
 const app: express.Express = express();
@@ -271,6 +272,7 @@ app.use('/borrow-notes', checkAuth, adminAuth, borrowNoteRoute);
 // staff
 app.use('/staff/pay-requisition', checkAuth, staffAuth, payRequisitionRoute);
 app.use('/staff/borrow', checkAuth, staffAuth, staffBorrowRoute);
+app.use('/staff/alert-expired', checkAuth, staffAuth, staffAlertExpired);
 app.use('/staff', checkAuth, staffAuth, staffRoute);
 
 app.use('/users', checkAuth, userRoute);

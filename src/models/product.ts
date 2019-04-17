@@ -183,12 +183,12 @@ export class ProductModel {
       .del();
   }
 
-  checkDuplicatedProduct(knex: Knex, productId: any, warehouseId: any, lotNo: any) {
+  checkDuplicatedProduct(knex: Knex, productId: any, warehouseId: any, lotNo: any, lotTime) {
     return knex('wm_products')
-      .count('* as total')
       .where('product_id', productId)
       .andWhere('warehouse_id', warehouseId)
-      .andWhere('lot_no', lotNo);
+      .andWhere('lot_no', lotNo)
+      .andWhere('lot_time', lotTime);
   }
 
   saveProducts(knex: Knex, data: any[]) {
@@ -329,6 +329,7 @@ export class ProductModel {
       mp.working_code,
       mg.working_code AS generic_workign_code,
       mp.is_lot_control,
+      mp.is_expired_control,
       mu.unit_name AS primary_unit_name,
       mg.generic_name,
       mp.generic_id,
@@ -362,6 +363,7 @@ export class ProductModel {
       mp.working_code,
       mg.working_code AS generic_workign_code,
       mp.is_lot_control,
+      mp.is_expired_control,
       mu.unit_name AS primary_unit_name,
       mg.generic_name,
       mp.generic_id,
@@ -398,6 +400,7 @@ export class ProductModel {
       mp.working_code,
       mg.working_code AS generic_workign_code,
       mp.is_lot_control,
+      mp.is_expired_control,
       mu.unit_name AS primary_unit_name,
       mg.generic_name,
       mp.generic_id,
@@ -442,6 +445,7 @@ export class ProductModel {
       mp.working_code,
       mg.working_code AS generic_workign_code,
       mp.is_lot_control,
+      mp.is_expired_control,
       mu.unit_name AS primary_unit_name,
       mg.generic_name,
       mp.generic_id,
@@ -475,6 +479,7 @@ export class ProductModel {
       mp.working_code,
       mg.working_code AS generic_workign_code,
       mp.is_lot_control,
+      mp.is_expired_control,
       mu.unit_name AS primary_unit_name,
       mg.generic_name,
       mp.generic_id,
@@ -510,6 +515,7 @@ export class ProductModel {
       mp.working_code,
       mg.working_code AS generic_workign_code,
       mp.is_lot_control,
+      mp.is_expired_control,
       mu.unit_name AS primary_unit_name,
       mg.generic_name,
       mp.generic_id,
@@ -553,6 +559,7 @@ export class ProductModel {
       mp.working_code,
       mg.working_code AS generic_workign_code,
       mp.is_lot_control,
+      mp.is_expired_control,
       mu.unit_name AS primary_unit_name,
       mg.generic_name,
       mp.generic_id,
@@ -585,6 +592,7 @@ export class ProductModel {
       mp.working_code,
       mg.working_code AS generic_workign_code,
       mp.is_lot_control,
+      mp.is_expired_control,
       mu.unit_name AS primary_unit_name,
       mg.generic_name,
       mp.generic_id,
@@ -621,6 +629,7 @@ export class ProductModel {
       mp.working_code,
       mg.working_code AS generic_workign_code,
       mp.is_lot_control,
+      mp.is_expired_control,
       mu.unit_name AS primary_unit_name,
       mg.generic_name,
       mp.generic_id,
@@ -664,6 +673,7 @@ export class ProductModel {
       mp.working_code,
       mg.working_code AS generic_workign_code,
       mp.is_lot_control,
+      mp.is_expired_control,
       mu.unit_name AS primary_unit_name,
       mg.generic_name,
       mp.generic_id,
@@ -696,6 +706,7 @@ export class ProductModel {
       mp.working_code,
       mg.working_code AS generic_workign_code,
       mp.is_lot_control,
+      mp.is_expired_control,
       mu.unit_name AS primary_unit_name,
       mg.generic_name,
       mp.generic_id,
@@ -731,6 +742,7 @@ export class ProductModel {
       mp.working_code,
       mg.working_code AS generic_workign_code,
       mp.is_lot_control,
+      mp.is_expired_control,
       mu.unit_name AS primary_unit_name,
       mg.generic_name,
       mp.generic_id,
@@ -872,7 +884,7 @@ export class ProductModel {
     left join mm_unit_generics mug on mug.unit_generic_id = wtd.unit_generic_id
     left join mm_units u on u.unit_id = mug.from_unit_id
     left join mm_units u2 on u2.unit_id = mug.to_unit_id
-    where wtd.template_id = ? 
+    where wtd.template_id = ? and mg.mark_deleted = 'N' AND mg.is_active = 'Y'
     ORDER BY wtd.id
              `;
     return knex.raw(sql, [templateId]);
@@ -890,7 +902,25 @@ export class ProductModel {
     LEFT JOIN mm_generic_planning mgp ON wtd.generic_id = mgp.generic_id AND mgp.warehouse_id = ${warehouseId} 
     LEFT JOIN mm_products mp ON mp.generic_id = wtd.generic_id
 	  LEFT JOIN wm_products wp ON wp.product_id = mp.product_id AND wp.warehouse_id = ${warehouseId} 
-    where wtd.template_id = ${templateId} 
+    where wtd.template_id = ${templateId} and mg.mark_deleted = 'N' AND mg.is_active = 'Y'
+    group by wtd.generic_id 
+    ORDER BY wtd.id`
+    return knex.raw(sql);
+  }
+
+  getAllProductInTemplateIssueWarehouse(knex: Knex, templateId: any, warehouseId: any) {
+    let sql = `
+		select mg.working_code,mg.generic_id,mg.generic_name,wtd.unit_generic_id,u.unit_name as large_unit,mug.qty,u2.unit_name as small_unit,mgp.min_qty,
+    mgp.max_qty,sum(wp.qty) as gen_qty
+		from wm_issue_template_detail wtd
+    LEFT join mm_generics mg on wtd.generic_id = mg.generic_id
+    left join mm_unit_generics mug on mug.unit_generic_id = wtd.unit_generic_id
+    left join mm_units u on u.unit_id = mug.from_unit_id
+    left join mm_units u2 on u2.unit_id = mug.to_unit_id
+    LEFT JOIN mm_generic_planning mgp ON wtd.generic_id = mgp.generic_id AND mgp.warehouse_id = ${warehouseId} 
+    LEFT JOIN mm_products mp ON mp.generic_id = wtd.generic_id
+	  LEFT JOIN wm_products wp ON wp.product_id = mp.product_id AND wp.warehouse_id = ${warehouseId} 
+    where wtd.template_id = ${templateId} and mg.mark_deleted = 'N' AND mg.is_active = 'Y'
     group by wtd.generic_id 
     ORDER BY wtd.id`
     return knex.raw(sql);
@@ -904,7 +934,7 @@ export class ProductModel {
     left join mm_unit_generics mug on mug.unit_generic_id = wtd.unit_generic_id
     left join mm_units u on u.unit_id = mug.from_unit_id
     left join mm_units u2 on u2.unit_id = mug.to_unit_id
-		where wtd.template_id = ?
+		where wtd.template_id = ? and mg.mark_deleted = 'N' AND mg.is_active = 'Y'
              `;
     return knex.raw(sql, [templateId]);
   }

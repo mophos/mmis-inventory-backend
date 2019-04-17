@@ -39,7 +39,9 @@ FROM
 	INNER JOIN mm_unit_generics AS ug ON ug.generic_id = td.generic_id
 	INNER JOIN mm_units AS u ON u.unit_id = ug.to_unit_id 
 WHERE
-	td.template_id = ?
+  td.template_id = ?
+  and g.mark_deleted = 'N'
+  AND g.is_active = 'Y'
 	group by g.generic_id
 ORDER BY
 	td.id

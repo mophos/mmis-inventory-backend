@@ -1118,16 +1118,14 @@ export class WarehouseModel {
       .where('working_code', working)
   }
 
-  updateProduct(knex: Knex, productId: any, _old: any, _new: any) {
+  updateProduct(knex: Knex, wmProductId: any, _old: any, _new: any) {
     let sql = `
     update wm_products
     set lot_no = ?,
         expired_date = ?
-    where product_id = ?
-      and lot_no = ?
-      and expired_date <=> ?
+    where wm_product_id = '${wmProductId}'
     `;
-    return knex.raw(sql, [_new.lot_no, _new.expired_date, productId, _old.lot_no, _old.expired_date]);
+    return knex.raw(sql, [_new.lot_no, _new.expired_date]);
   }
 
   updateReceiveDetail(knex: Knex, productId: any, _old: any, _new: any) {
@@ -1162,8 +1160,9 @@ export class WarehouseModel {
     where product_id = ?
       and lot_no = ?
       and expired_date <=> ?
+      and lot_time = ?
     `;
-    return knex.raw(sql, [_new.lot_no, _new.expired_date, productId, _old.lot_no, _old.expired_date]);
+    return knex.raw(sql, [_new.lot_no, _new.expired_date, productId, _old.lot_no, _old.expired_date, _old.lot_time]);
   }
 
   insertProductHistory(knex: Knex, data: any) {

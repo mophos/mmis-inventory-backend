@@ -1,0 +1,45 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    span.page
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='8') #{hospitalName}
+        tr
+          td.center.bold(colspan='8') รายงานประวัติการจ่ายจ่าย HIS
+        tr
+          td.center.bold(colspan='8') ณ วันที่ #{dateText}
+        tr
+          td.center.bold(colspan='8') คลัง #{warehouseName}
+        tr
+          td.left.bold(colspan='4' ) #{printDate}
+          td.right.bold(colspan='4' ) 
+            //- span หน้า #{(i*1)+1}
+        tr
+          td.left(colspan='8') 
+        tr
+          th.center เลขที่
+          th.left HN
+          th.left รหัสเวชภัณฑ์
+          th.left ชื่อเวชภัณฑ์
+          th.left จำนวน
+          th.left หน่วย
+      tbody
+      - var y = 0
+      - for(var b of list)
+        - y++
+        tr
+          td.center #{y}
+          td.left #{b.hn}
+          td.left #{b.working_code}
+          td.left #{b.generic_name}
+          td.left #{b.qty}
+          td.left #{b.unit_name}
+      tfooter
+        tr
