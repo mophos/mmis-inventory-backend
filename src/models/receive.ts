@@ -2265,4 +2265,14 @@ WHERE
     return knex('pc_edi')
       .where('action_name', actionName)
   }
+
+  getASNDetail(knex: Knex, tradeCode) {
+    return knex('mm_products as mp')
+      .select('mp.product_id', 'mp.product_name', 'mg.generic_id', 'mg.generic_name', 'num_days',
+        'mp.primary_unit_id', 'mp.is_lot_control', 'mp.is_expired_control', 'mp.m_labeler_id', 'ml.labeler_name as m_labeler_name')
+      .join('mm_generics as mg', 'mp.generic_id', 'mg.generic_id')
+      .join('mm_labelers as ml', 'mp.m_labeler_id', 'ml.labeler_id')
+      .join('wm_generic_expired_alert as ge', 'ge.generic_id', 'mg.generic_id')
+
+  }
 }

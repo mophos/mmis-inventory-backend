@@ -1518,7 +1518,10 @@ router.post('/purchases/list/edi', co(async (req, res, nex) => {
       data.po_no = r.purchase_order_number
       const rsASN: any = await receiveModel.getASN(data);
       if (rsASN.asns != undefined) {
-        r.asn = rsASN.asns[0];
+        // r.asn = rsASN.asns[0];
+        r.asn = true;
+      } else {
+        r.asn = false;
       }
     }
 
@@ -1595,7 +1598,6 @@ router.post('/purchases/list/search/edi', co(async (req, res, nex) => {
     for (const r of rows[0]) {
       data.po_no = r.purchase_order_number
       const rsASN = await receiveModel.getASN(data);
-      console.log(rsASN);
       r.ans = rsASN;
     }
 
@@ -1902,6 +1904,51 @@ router.get('/getUnitGeneric', co(async (req, res, nex) => {
   try {
     let results = await receiveModel.getunitGeneric(db, unitGenericId);
     res.send({ ok: true, rows: results });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/asn', co(async (req, res, nex) => {
+  let db = req.db;
+  let purchaseOrderId = req.query.purchaseOrderId;
+  try {
+    let sys_hospital = req.decoded.SYS_HOSPITAL;
+    const hospcode = JSON.parse(sys_hospital).hospcode
+    const settings: any = await receiveModel.getSettingEDI(db, 'TOKEN');
+    const data: any = {
+      token: settings[0].value,
+      hosp_code: hospcode,
+      po_no: purchaseOrderId
+    }
+
+    const rs: any = await receiveModel.getASN(data);
+    console.log(data, rs);
+
+    if (rs.asns == undefined) {
+      res.send({ ok: false })
+    } else {
+      res.send({ ok: true, rows: rs.asns[0] });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/asn-detail', co(async (req, res, nex) => {
+  let db = req.db;
+  let tradeCode = req.query.tradeCode;
+  try {
+    const rs: any = await receiveModel.getASNDetail(db, tradeCode);
+    res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     console.log(error);
     res.send({ ok: false, error: error.message });

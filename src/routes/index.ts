@@ -4998,11 +4998,13 @@ router.get('/report/asn', wrap(async (req, res, next) => {
   }
 
   const rs: any = await receiveModel.getASN(data);
+
   if (rs.asns == undefined) { res.render('error404'); }
   rs.asns[0].header.asn_date = moment(rs.asns[0].header.asn_date).format('DD MMMM ') + (+moment(rs.asns[0].header.asn_date).format('YYYY') + 543);
   rs.asns[0].header.shipped_date = moment(rs.asns[0].header.shipped_date).format('DD MMMM ') + (+moment(rs.asns[0].header.shipped_date).format('YYYY') + 543);
   for (const l of rs.asns[0].line) {
     for (const i of l.subline) {
+      console.log(i);
       i.price_per_unit = await inventoryReportModel.comma(i.price_per_unit);
       i.mfg_date = moment(i.mfg_date).format('DD/MM/YYYY');
       i.expired_date = moment(i.expired_date).format('DD/MM/YYYY');
