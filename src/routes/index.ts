@@ -7,11 +7,8 @@ import * as wrap from 'co-express';
 import * as _ from 'lodash';
 import { IssueModel } from '../models/issue'
 import { StockCard } from '../models/stockcard';
-<<<<<<< HEAD
 import { ReceiveModel } from '../models/receive';
-=======
 import { listenerCount } from 'cluster';
->>>>>>> b95f92e632465897db751b0da16132f549bacc54
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const issueModel = new IssueModel();

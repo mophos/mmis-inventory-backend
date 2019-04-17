@@ -560,7 +560,7 @@ export class ReceiveModel {
 
   getApproveOtherStatus(knex: Knex, approveIds: any) {
     return knex('wm_receive_approve')
-    .select('receive_other_id')
+      .select('receive_other_id')
       .whereIn('approve_id', approveIds)
       .groupBy('receive_other_id');
   }
@@ -1188,7 +1188,6 @@ WHERE
     return knex.raw(sql);
 
   }
-<<<<<<< HEAD
 
   getPurchaseListSearchEDI(knex: Knex, limit: number, offset: number, query, sort: any = {}, warehouseId: any) {
     let _query = `%${query}%`;
@@ -1302,9 +1301,6 @@ WHERE
   }
 
   getPurchaseListTotalEDI(knex: Knex, genericTypeId = [], warehouseId: any) {
-=======
-  getPurchaseListTotal(knex: Knex, genericTypeId = [], warehouseId: any) {
->>>>>>> b95f92e632465897db751b0da16132f549bacc54
 
     let sql = `
     select count(*) as total
@@ -1323,7 +1319,6 @@ WHERE
     return knex.raw(sql, []);
 
   }
-<<<<<<< HEAD
 
   getPurchaseListTotalSearch(knex: Knex, query, warehouseId: any) {
     let _query = `%${query}%`;
@@ -1360,9 +1355,6 @@ WHERE
   }
 
   getPurchaseListTotalSearchEDI(knex: Knex, query, warehouseId: any) {
-=======
-  getPurchaseListTotalSearch(knex: Knex, query, warehouseId: any) {
->>>>>>> b95f92e632465897db751b0da16132f549bacc54
     let _query = `%${query}%`;
     let sql = `
     select count(*) as total
