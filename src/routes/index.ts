@@ -7,10 +7,12 @@ import * as wrap from 'co-express';
 import * as _ from 'lodash';
 import { IssueModel } from '../models/issue'
 import { StockCard } from '../models/stockcard';
+import { ReceiveModel } from '../models/receive';
 import { listenerCount } from 'cluster';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const issueModel = new IssueModel();
+const receiveModel = new ReceiveModel();
 
 const signale = require('signale');
 const path = require('path')
@@ -5243,6 +5245,38 @@ router.get('/report/inventoryStatus/product/excel', wrap(async (req, res, next) 
   res.download(filePath, 'รายงานสถานะเวชภัณฑ์คงคลัง ' + warehouseName + 'ณ วันที่' + statusDate_text + '(Product).xlsx');
 }));
 
+router.get('/report/asn', wrap(async (req, res, next) => {
+  let db = req.db;
+  let purchaseorderId = req.query.purchaseorderId
+
+  let sys_hospital = req.decoded.SYS_HOSPITAL;
+  const hospcode = JSON.parse(sys_hospital).hospcode
+  const settings: any = await receiveModel.getSettingEDI(db, 'TOKEN');
+  const data: any = {
+    token: settings[0].value,
+    hosp_code: hospcode,
+    po_no: purchaseorderId
+  }
+
+  const rs: any = await receiveModel.getASN(data);
+
+  if (rs.asns == undefined) { res.render('error404'); }
+  rs.asns[0].header.asn_date = moment(rs.asns[0].header.asn_date).format('DD MMMM ') + (+moment(rs.asns[0].header.asn_date).format('YYYY') + 543);
+  rs.asns[0].header.shipped_date = moment(rs.asns[0].header.shipped_date).format('DD MMMM ') + (+moment(rs.asns[0].header.shipped_date).format('YYYY') + 543);
+  for (const l of rs.asns[0].line) {
+    for (const i of l.subline) {
+      console.log(i);
+      i.price_per_unit = await inventoryReportModel.comma(i.price_per_unit);
+      i.mfg_date = moment(i.mfg_date).format('DD/MM/YYYY');
+      i.expired_date = moment(i.expired_date).format('DD/MM/YYYY');
+    }
+
+  }
+  res.render('asn', {
+    data: rs.asns[0]
+  });
+
+}));
 router.get('/report/his-history', wrap(async (req, res, next) => {
   let db = req.db;
   let warehouseId = req.query.warehouseId

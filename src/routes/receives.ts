@@ -1324,6 +1324,53 @@ router.post('/purchases/list', co(async (req, res, nex) => {
 
 }));
 
+router.post('/purchases/list/edi', co(async (req, res, nex) => {
+  let limit = req.body.limit;
+  let offset = req.body.offset;
+  let sort = req.body.sort;
+  let productGroups = req.decoded.generic_type_id;
+  let warehouseId = req.decoded.warehouseId;
+  let _pgs = [];
+  let db = req.db;
+  try {
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+    const rows = await receiveModel.getPurchaseListEDI(db, limit, offset, sort, _pgs, warehouseId);
+    const rstotal = await receiveModel.getPurchaseListTotalEDI(db, _pgs, warehouseId);
+
+    let sys_hospital = req.decoded.SYS_HOSPITAL;
+    const hospcode = JSON.parse(sys_hospital).hospcode
+
+    const settings: any = await receiveModel.getSettingEDI(db, 'TOKEN');
+    let data: any = {
+      token: settings[0].value,
+      hosp_code: hospcode
+    }
+    for (const r of rows[0]) {
+      data.po_no = r.purchase_order_number
+      const rsASN: any = await receiveModel.getASN(data);
+      if (rsASN.asns != undefined) {
+        // r.asn = rsASN.asns[0];
+        r.asn = true;
+      } else {
+        r.asn = false;
+      }
+    }
+
+    let total = +rstotal[0][0].total
+    res.send({ ok: true, rows: rows[0], total: total });
+  } catch (error) {
+    console.log(error);
+
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
 router.post('/s-purchases/list', co(async (req, res, nex) => {
   let query = req.body.query;
   let limit = req.body.limit;
@@ -1357,6 +1404,37 @@ router.post('/purchases/list/search', co(async (req, res, nex) => {
   try {
     const rows = await receiveModel.getPurchaseListSearch(db, limit, offset, query, sort, warehouseId);
     const rstotal = await receiveModel.getPurchaseListTotalSearch(db, query, warehouseId);
+    let total = +rstotal[0][0].total
+    res.send({ ok: true, rows: rows[0], total: total });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.post('/purchases/list/search/edi', co(async (req, res, nex) => {
+  let limit = req.body.limit;
+  let offset = req.body.offset;
+  let query = req.body.query;
+  let sort = req.body.sort;
+  let warehouseId = req.decoded.warehouseId
+  let db = req.db;
+  try {
+    const rows = await receiveModel.getPurchaseListSearchEDI(db, limit, offset, query, sort, warehouseId);
+    const rstotal = await receiveModel.getPurchaseListTotalSearchEDI(db, query, warehouseId);
+    const settings: any = await receiveModel.getSettingEDI(db, 'TOKEN');
+    let data: any = {
+      token: settings[0].value,
+      hosp_code: req.decoded.hospcode
+    }
+    for (const r of rows[0]) {
+      data.po_no = r.purchase_order_number
+      const rsASN = await receiveModel.getASN(data);
+      r.ans = rsASN;
+    }
+
     let total = +rstotal[0][0].total
     res.send({ ok: true, rows: rows[0], total: total });
   } catch (error) {
@@ -1660,6 +1738,51 @@ router.get('/getUnitGeneric', co(async (req, res, nex) => {
   try {
     let results = await receiveModel.getunitGeneric(db, unitGenericId);
     res.send({ ok: true, rows: results });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/asn', co(async (req, res, nex) => {
+  let db = req.db;
+  let purchaseOrderId = req.query.purchaseOrderId;
+  try {
+    let sys_hospital = req.decoded.SYS_HOSPITAL;
+    const hospcode = JSON.parse(sys_hospital).hospcode
+    const settings: any = await receiveModel.getSettingEDI(db, 'TOKEN');
+    const data: any = {
+      token: settings[0].value,
+      hosp_code: hospcode,
+      po_no: purchaseOrderId
+    }
+
+    const rs: any = await receiveModel.getASN(data);
+    console.log(data, rs);
+
+    if (rs.asns == undefined) {
+      res.send({ ok: false })
+    } else {
+      res.send({ ok: true, rows: rs.asns[0] });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/asn-detail', co(async (req, res, nex) => {
+  let db = req.db;
+  let tradeCode = req.query.tradeCode;
+  try {
+    const rs: any = await receiveModel.getASNDetail(db, tradeCode);
+    res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     console.log(error);
     res.send({ ok: false, error: error.message });
