@@ -402,7 +402,7 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
               borrow_id: borrowId,
               borrow_generic_id: rsBorrowGeneric[0],
               wm_product_id: g.products.data[0][p].wm_product_id,
-              qty: g.products.data[0][p].product_qty,
+              qty: g.products.data[0][p].product_qty * g.products.data[0][p].conversion_qty,
               create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
               create_by: req.decoded.people_user_id
             }

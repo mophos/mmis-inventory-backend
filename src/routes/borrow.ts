@@ -665,14 +665,14 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
         returnData[idx].products.push({
           generic_id: v.generic_id,
           unit_generic_id: v.unit_generic_id,
-          qty: (v.qty / pack[0].qty),
+          qty: v.qty,
           lot_no: v.lot_no
         })
       } else {
         product.push({
           generic_id: v.generic_id,
           unit_generic_id: v.unit_generic_id,
-          qty: (v.qty / pack[0].qty),
+          qty: v.qty,
           lot_no: v.lot_no
         })
         const obj: any = {
@@ -797,12 +797,11 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       let obj = {
         wm_product_id: v.wm_product_id,
         qty: v.lot_qty > remain_dst[0].balance_lot ? remain_dst[0].balance_lot : v.lot_qty
-
       }
       await borrowModel.updateConfirm(db, obj);
     }
   }
-  await borrowModel.changeApproveStatusIds(db, borrowIds, peopleUserId);
+  // await borrowModel.changeApproveStatusIds(db, borrowIds, peopleUserId);
 
   return returnData;
 });
