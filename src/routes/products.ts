@@ -780,25 +780,24 @@ router.post('/save-repackage', async (req, res, next) => {
     let stockCard = []; // รายการ StockCard
     let wmProduct = await productModel.getLotBalance(db, product.wm_product_id, product.warehouse_id);
     wmProduct = wmProduct[0]
+    let newLotTime = await productModel.getLastLotTime(db, wmProduct.product_id, wmProduct.warehouse_id, wmProduct.lot_no)
+    let wm_productIdNew = await uuid()
     if (wmProduct.qty >= product.qty) {
       newProducts = [{
-        wm_product_id: await uuid(),
+        wm_product_id: wm_productIdNew,
         warehouse_id: wmProduct.warehouse_id,
         product_id: wmProduct.product_id,
         qty: product.qty,
         price: wmProduct.cost,
         cost: wmProduct.cost,
         lot_no: product.lot_no,
-        lot_time: wmProduct.lot_time,
+        lot_time: +newLotTime[0].lot_time + 1,
         expired_date: moment(wmProduct.expired_date, 'YYYY-MM-DD').isValid() ? moment(wmProduct.expired_date).format('YYYY-MM-DD') : null,
         location_id: wmProduct.location_id,
         unit_generic_id: product.unit_generic_id,
         people_user_id: peopleUserId,
         created_at: moment().format('YYYY-MM-DD HH:mm:ss')
       }]
-      console.log('------');
-      console.log(newProducts);
-
 
       // stock card
       let srcBalances = await productModel.getBalance(db, wmProduct.product_id, wmProduct.warehouse_id, wmProduct.lot_no, wmProduct.lot_time);
@@ -814,6 +813,7 @@ router.post('/save-repackage', async (req, res, next) => {
       objStockcardOut.document_ref_id = null;
       objStockcardOut.document_ref = null;
       objStockcardOut.lot_no = wmProduct.lot_no;
+      objStockcardOut.lot_time = wmProduct.lot_time;
       objStockcardOut.expired_date = wmProduct.expired_date;
       objStockcardOut.in_qty = 0;
       objStockcardOut.in_unit_cost = 0;
@@ -824,6 +824,7 @@ router.post('/save-repackage', async (req, res, next) => {
       objStockcardOut.balance_unit_cost = wmProduct.cost;
       objStockcardOut.ref_src = wmProduct.warehouse_id;
       objStockcardOut.ref_dst = wmProduct.warehouse_id;
+      objStockcardOut.wm_product_id_out = product.wm_product_id;
       objStockcardOut.comment = 'ปรับ package';
       stockCard.push(objStockcardOut)
 
@@ -841,6 +842,7 @@ router.post('/save-repackage', async (req, res, next) => {
       objStockcardIn.document_ref_id = null;
       objStockcardIn.document_ref = null;
       objStockcardIn.lot_no = product.lot_no;
+      objStockcardIn.lot_time = newProducts.lot_time;
       objStockcardIn.expired_date = wmProduct.expired_date;
       objStockcardIn.in_qty = product.qty;
       objStockcardIn.in_unit_cost = product.cost;
@@ -852,13 +854,14 @@ router.post('/save-repackage', async (req, res, next) => {
       objStockcardIn.ref_src = wmProduct.warehouse_id;
       objStockcardIn.ref_dst = wmProduct.warehouse_id;
       objStockcardIn.comment = 'ปรับ package';
+      objStockcardIn.wm_product_id_in = wm_productIdNew;
       stockCard.push(objStockcardIn)
 
       // save stock card
-      // await productModel.saveStockCard(db, stockCard);
+      await productModel.saveStockCard(db, stockCard);
       // // // save true data
-      // await productModel.saveProducts(db, newProducts);
-      // await productModel.decreaseQty(db, dstProducts);
+      await productModel.saveProducts(db, newProducts);
+      await productModel.decreaseQty(db, dstProducts);
       res.send({ ok: true })
     } else {
       res.send({ ok: false, error: 'จำนวนคงเหลือต่ำกว่า' })

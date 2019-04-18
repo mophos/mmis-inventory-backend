@@ -1,0 +1,51 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success.btnprint(onclick='window.print()') Print
+    br 
+    | เลขที่ #{data.header.po_number}
+    br 
+    | วันที่ออกใบ ASN #{data.header.asn_date}
+    br 
+    | วันที่ส่ง #{data.header.shipped_date}
+    br
+    table.table
+      thead
+        tr
+          td ลำดับ
+          td รหัสสินค้า
+          td ชื่อสินค้า
+          td จำนวน
+      - for(var l of data.line)
+        tbody
+          tr
+            td #{l.line_number}
+            td #{l.hospitem_code}
+            td #{l.item_name}
+            td #{l.shipped_qty} #{l.shipped_uom}
+          tr
+            td 
+            td(colspan="3")
+              table.table
+                thead
+                  tr
+                    td lot no
+                    td จำนวน
+                    //- td pack_size_desc
+                    td ราคาต่อหน่วย
+                    td วันที่ผลิต
+                    td วันหมดอายุ
+                -for(var i of l.subline)
+                  tr
+                    td #{i.lot_number}
+                    td #{i.pack_qty} #{i.pack_uom} = #{i.lot_qty} #{i.lot_uom}
+                    //- td #{i.pack_size_desc}
+                    td #{i.price_per_unit}
+                    td #{i.mfg_date}
+                    td #{i.expired_date}
+                  tr
+                    td(colspan="6")
