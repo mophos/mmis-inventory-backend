@@ -954,7 +954,7 @@ router.post('/approve', co(async (req, res, next) => {
         }
       }
     }
-    if(sussApp>0){
+    if (sussApp > 0) {
       let pickReturn: any = await pick(req, receiveIds);
 
       if (pickReturn.ok) res.send({ ok: true, errDupApprove: errApp });
@@ -962,7 +962,7 @@ router.post('/approve', co(async (req, res, next) => {
     } else {
       res.send({ ok: false, error: 'ไม่มีรายการที่สามารถยืนยันได้' });
     }
-    
+
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -1007,12 +1007,12 @@ router.post('/other/approve', co(async (req, res, next) => {
       await receiveModel.removeOldApproveOther(db, receiveIds);
       var approveId = []
       for (const json of approveDatas) {
-         var idx = await receiveModel.saveApprove(db, json);
-         approveId.push(idx[0])
+        var idx = await receiveModel.saveApprove(db, json);
+        approveId.push(idx[0])
       }
       if (approveId.length > 0) {
         const _receiveOtherIds = await receiveModel.getApproveOtherStatus(db, approveId);
-        const receiveOtherIds = _.map(_receiveOtherIds,'receive_other_id')
+        const receiveOtherIds = _.map(_receiveOtherIds, 'receive_other_id')
         // get product
         let _rproducts = await receiveModel.getReceiveOtherProductsImport(db, receiveOtherIds);
         let products: any = [];
@@ -1352,8 +1352,9 @@ router.post('/purchases/list/edi', co(async (req, res, nex) => {
       data.po_no = r.purchase_order_number
       const rsASN: any = await receiveModel.getASN(data);
       if (rsASN.asns != undefined) {
-        // r.asn = rsASN.asns[0];
-        r.asn = true;
+        r.asn = rsASN.asns[0];
+        r.ansCheck = true;
+        // r.asn = true;
       } else {
         r.asn = false;
       }
