@@ -1351,7 +1351,7 @@ router.post('/purchases/list/edi', co(async (req, res, nex) => {
       const rsASN: any = await receiveModel.getASN(data);
       if (rsASN.asns != undefined) {
         r.asn = rsASN.asns[0];
-        r.ansCheck = true;
+        r.asnCheck = true;
         // r.asn = true;
       } else {
         r.asn = false;
