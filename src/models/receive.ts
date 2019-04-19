@@ -866,7 +866,7 @@ WHERE
     let sql = `
     select pc.purchase_order_book_number, pc.purchase_order_id,
       IF(pc.purchase_order_book_number is null, pc.purchase_order_number, pc.purchase_order_book_number) as purchase_order_number,
-      pc.order_date, cm.contract_no,
+      pc.order_date, cm.contract_no,pc.is_edi,
       (
         select sum(pci.qty * pci.unit_price)
     from pc_purchasing_order_item as pci
@@ -906,7 +906,6 @@ WHERE
     and pc.warehouse_id = ${warehouseId}
     and pc.purchase_order_status != 'COMPLETED'
     and pc.is_cancel != 'Y'
-    and pc.is_edi = 'N'
     and pc.purchase_order_id in (select poi.purchase_order_id from pc_purchasing_order_item poi join mm_generics mg on mg.generic_id = poi.generic_id where mg.generic_type_id in (${genericTypeId}) group by poi.purchase_order_id)
     `;
 
@@ -1102,7 +1101,7 @@ WHERE
     let _query = `%${query}%`;
     let sql = `
     select pc.purchase_order_book_number, pc.purchase_order_id, pc.purchase_order_number,
-      pc.order_date,
+      pc.order_date,pc.is_edi,
       (
         select sum(pci.qty * pci.unit_price)
     from pc_purchasing_order_item as pci
@@ -1141,7 +1140,6 @@ WHERE
     and pc.purchase_order_status != 'COMPLETED'
     and pc.warehouse_id = ${warehouseId}
     and pc.is_cancel != 'Y'
-    and pc.is_edi = 'N'
     and(
       pc.purchase_order_book_number LIKE '${_query}'
         OR pc.purchase_order_number LIKE '${_query}'
@@ -1290,7 +1288,6 @@ WHERE
     where pc.purchase_order_status = 'APPROVED'
     and pc.purchase_order_status != 'COMPLETED'
     and pc.is_cancel != 'Y'
-    and pc.is_edi = 'N'
     and pc.warehouse_id = ${warehouseId}
     and pc.purchase_order_id in (select poi.purchase_order_id from pc_purchasing_order_item poi join mm_generics mg on mg.generic_id = poi.generic_id where mg.generic_type_id in (${genericTypeId}) group by poi.purchase_order_id)
 
@@ -1331,7 +1328,6 @@ WHERE
     and pc.purchase_order_status != 'COMPLETED'
     and pc.warehouse_id = ${warehouseId}
     and pc.is_cancel != 'Y'
-    and pc.is_edi = 'N'
     and(
       pc.purchase_order_book_number LIKE '${_query}'
         OR pc.purchase_order_number LIKE '${_query}'
