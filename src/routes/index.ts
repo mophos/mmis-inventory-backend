@@ -3641,7 +3641,9 @@ router.get('/report/receive/export', async (req, res, next) => {
         'ประเภท': v.generic_type_name,
         'ชนิด': v.account_name ? v.account_name : '',
         'บริษัทผู้จำหน่าย': v.labeler_name_po,
-        'รูปแบบการจัดซื้อ(Generic)': v.bid_name
+        'รูปแบบการจัดซื้อ(Generic)': v.bid_name,
+        'กลุ่มยา': v.product_group_name,
+        'ประเภทยา': v.generic_hosp_name
       };
       json.push(obj);
     });
