@@ -3395,7 +3395,8 @@ OR sc.ref_src like ?
         mgh.NAME AS generic_hosp_name,
         ml.labeler_name AS labeler_name_po,
         ws.lot_no,
-        lb.bid_name
+        lb.bid_name,
+        pg.product_group_name
     FROM
         ${dateSetting} as ws
         JOIN wm_receives AS wr ON ws.document_ref_id = wr.receive_id
@@ -3405,6 +3406,7 @@ OR sc.ref_src like ?
         JOIN mm_unit_generics AS mug ON mug.unit_generic_id = ws.unit_generic_id
         JOIN mm_units AS mu ON mu.unit_id = mug.to_unit_id
         JOIN mm_units mu2 ON mu2.unit_id = mug.from_unit_id
+	    LEFT JOIN mm_product_groups pg on pg.product_group_id = mp.product_group_id
         LEFT JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
         LEFT JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
         LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
