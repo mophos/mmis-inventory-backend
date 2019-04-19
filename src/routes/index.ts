@@ -3911,6 +3911,7 @@ router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
     const rs: any = await inventoryReportModel.productExpired(db, genericTypeId, warehouseId);
     rs.forEach(element => {
       element.expired_date = (moment(element.expired_date).get('year')) + moment(element.expired_date).format('/D/M');
+      element.cost = inventoryReportModel.comma(element.cost);
     });
     res.render('alert-expired', {
       rs: rs
@@ -3919,6 +3920,45 @@ router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
     res.send({ ok: false, error: error.message })
   }
 }))
+
+router.get('/report/print/alert-expried/excel', async (req, res, next) => {
+  const db = req.db;
+  const genericTypeId = req.query.genericTypeId;
+  const warehouseId = req.query.warehouseId;
+
+  try {
+    const rs: any = await inventoryReportModel.productExpired(db, genericTypeId, warehouseId);
+    rs.forEach(element => {
+      element.expired_date = (moment(element.expired_date).get('year')) + moment(element.expired_date).format('/D/M');
+      element.cost = inventoryReportModel.comma(element.cost);
+    });
+    let json = [];
+
+    rs.forEach(v => {
+      let obj: any = {};
+      obj.working_code = v.working_code;
+      obj.product_name = v.product_name;
+      obj.generic_name = v.generic_name;
+      obj.qty = v.qty;
+      obj.lot_no = v.lot_no;
+      obj.cost = v.cost;
+      obj.expired_date = v.expired_date;
+      obj.warehouse_name = v.warehouse_name;
+      json.push(obj);
+    });
+
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'รายการแจ้งเตือนวันหมดอายุ.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'รายการแจ้งเตือนวันหมดอายุ.xlsx');
+  } catch (error) {
+    res.send({ ok: false, message: error.message })
+  }
+});
 
 router.get('/report/inventoryStatus/generic/excel', wrap(async (req, res, next) => {
   let db = req.db;
