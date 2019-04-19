@@ -1934,19 +1934,17 @@ router.get('/report/list/receiveOther', wrap(async (req, res, next) => {
   }
 
   array2.forEach(value => {
+    value.cost = 0
     value.forEach(value2 => {
-      value2.costs = _.sumBy(value, function (o: any) { if (value2.generic_id == o.generic_id && value2.receive_other_id == o.receive_other_id) return +o.costs | 0; });
-      value2.costs = inventoryReportModel.comma(value2.costs)
+      value.cost += +value2.cost;
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
       if (value2.receive_id == '') {
         value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty / +value2.small_qty)
       }
-      // value.small_qty=inventoryReportModel.comma(value.small_qty*value.cost);
-      // value.cost=inventoryReportModel.comma(value.cost);
     })
+    value.cost = inventoryReportModel.comma(value.cost)
   })
-  // res.send({receiveID:receiveID,list_receive3:list_receive3,receiveId:receiveId,productId:productId})
   res.render('list_receive2', { hospitalName: hospitalName, printDate: printDate(req.decoded.SYS_PRINT_DATE), list_receive2: list_receive2, array2: array2 });
 }));//ตรวจสอบแล้ว 14-9-60
 
