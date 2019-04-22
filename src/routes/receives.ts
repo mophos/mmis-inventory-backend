@@ -800,8 +800,6 @@ router.post('/approve', co(async (req, res, next) => {
   let db = req.db;
   let receiveIds = Array.isArray(req.body.receiveIds) ? req.body.receiveIds : [req.body.receiveIds];
   let comment = req.body.comment;
-  // let approveDate = req.body.approveDate;
-  let warehouseId = req.decoded.warehouseId;
   try {
     const insertDB = [];
     const updateDB = [];
@@ -954,7 +952,7 @@ router.post('/approve', co(async (req, res, next) => {
         }
       }
     }
-    if(sussApp>0){
+    if (sussApp > 0) {
       let pickReturn: any = await pick(req, receiveIds);
 
       if (pickReturn.ok) res.send({ ok: true, errDupApprove: errApp });
@@ -962,7 +960,7 @@ router.post('/approve', co(async (req, res, next) => {
     } else {
       res.send({ ok: false, error: 'ไม่มีรายการที่สามารถยืนยันได้' });
     }
-    
+
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -1007,12 +1005,12 @@ router.post('/other/approve', co(async (req, res, next) => {
       await receiveModel.removeOldApproveOther(db, receiveIds);
       var approveId = []
       for (const json of approveDatas) {
-         var idx = await receiveModel.saveApprove(db, json);
-         approveId.push(idx[0])
+        var idx = await receiveModel.saveApprove(db, json);
+        approveId.push(idx[0])
       }
       if (approveId.length > 0) {
         const _receiveOtherIds = await receiveModel.getApproveOtherStatus(db, approveId);
-        const receiveOtherIds = _.map(_receiveOtherIds,'receive_other_id')
+        const receiveOtherIds = _.map(_receiveOtherIds, 'receive_other_id')
         // get product
         let _rproducts = await receiveModel.getReceiveOtherProductsImport(db, receiveOtherIds);
         let products: any = [];
@@ -1314,6 +1312,33 @@ router.post('/purchases/list', co(async (req, res, nex) => {
     });
     const rows = await receiveModel.getPurchaseList(db, limit, offset, sort, _pgs, warehouseId);
     const rstotal = await receiveModel.getPurchaseListTotal(db, _pgs, warehouseId);
+
+    // setting edi
+    let sys_hospital = req.decoded.SYS_HOSPITAL;
+    const hospcode = JSON.parse(sys_hospital).hospcode
+
+    const settings: any = await receiveModel.getSettingEDI(db, 'TOKEN');
+    let data: any = {
+      token: settings[0].value,
+      hosp_code: hospcode
+    }
+    // --------------------
+
+    for (const r of rows[0]) {
+      if (r.is_edi == 'Y') {
+        data.po_no = r.purchase_order_number
+        const rsASN: any = await receiveModel.getASN(data);
+        if (rsASN.asns != undefined) {
+          r.asn = rsASN.asns[0];
+          r.asnCheck = true;
+          // r.asn = true;
+        } else {
+          r.asnCheck = false;
+        }
+      }
+    }
+
+
     let total = +rstotal[0][0].total
     res.send({ ok: true, rows: rows[0], total: total });
   } catch (error) {
@@ -1323,6 +1348,7 @@ router.post('/purchases/list', co(async (req, res, nex) => {
   }
 
 }));
+
 
 router.post('/s-purchases/list', co(async (req, res, nex) => {
   let query = req.body.query;
@@ -1357,6 +1383,31 @@ router.post('/purchases/list/search', co(async (req, res, nex) => {
   try {
     const rows = await receiveModel.getPurchaseListSearch(db, limit, offset, query, sort, warehouseId);
     const rstotal = await receiveModel.getPurchaseListTotalSearch(db, query, warehouseId);
+
+    // setting edi
+    let sys_hospital = req.decoded.SYS_HOSPITAL;
+    const hospcode = JSON.parse(sys_hospital).hospcode
+
+    const settings: any = await receiveModel.getSettingEDI(db, 'TOKEN');
+    let data: any = {
+      token: settings[0].value,
+      hosp_code: hospcode
+    }
+    // --------------------
+
+    for (const r of rows[0]) {
+      if (r.is_edi == 'Y') {
+        data.po_no = r.purchase_order_number
+        const rsASN: any = await receiveModel.getASN(data);
+        if (rsASN.asns != undefined) {
+          r.asn = rsASN.asns[0];
+          r.asnCheck = true;
+          // r.asn = true;
+        } else {
+          r.asnCheck = false;
+        }
+      }
+    }
     let total = +rstotal[0][0].total
     res.send({ ok: true, rows: rows[0], total: total });
   } catch (error) {
@@ -1660,6 +1711,51 @@ router.get('/getUnitGeneric', co(async (req, res, nex) => {
   try {
     let results = await receiveModel.getunitGeneric(db, unitGenericId);
     res.send({ ok: true, rows: results });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/asn', co(async (req, res, nex) => {
+  let db = req.db;
+  let purchaseOrderId = req.query.purchaseOrderId;
+  try {
+    let sys_hospital = req.decoded.SYS_HOSPITAL;
+    const hospcode = JSON.parse(sys_hospital).hospcode
+    const settings: any = await receiveModel.getSettingEDI(db, 'TOKEN');
+    const data: any = {
+      token: settings[0].value,
+      hosp_code: hospcode,
+      po_no: purchaseOrderId
+    }
+
+    const rs: any = await receiveModel.getASN(data);
+    console.log(data, rs);
+
+    if (rs.asns == undefined) {
+      res.send({ ok: false })
+    } else {
+      res.send({ ok: true, rows: rs.asns[0] });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/asn-detail', co(async (req, res, nex) => {
+  let db = req.db;
+  let tradeCode = req.query.tradeCode;
+  try {
+    const rs: any = await receiveModel.getASNDetail(db, tradeCode);
+    res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     console.log(error);
     res.send({ ok: false, error: error.message });

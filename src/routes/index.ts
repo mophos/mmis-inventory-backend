@@ -7,10 +7,12 @@ import * as wrap from 'co-express';
 import * as _ from 'lodash';
 import { IssueModel } from '../models/issue'
 import { StockCard } from '../models/stockcard';
+import { ReceiveModel } from '../models/receive';
 import { listenerCount } from 'cluster';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const issueModel = new IssueModel();
+const receiveModel = new ReceiveModel();
 
 const signale = require('signale');
 const path = require('path')
@@ -1100,7 +1102,7 @@ router.get('/report/staff/UnPaid/requis', wrap(async (req, res, next) => {
     let warehouseId = req.decoded.warehouseId;
     let requisId = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
-    let rs: any = await inventoryReportModel.getUnPaidOrders(db, warehouseId, null);
+    let rs: any = await inventoryReportModel.getUnPaidOrders(db, null, warehouseId);
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
     _.forEach(requisId, object => {
@@ -1932,19 +1934,17 @@ router.get('/report/list/receiveOther', wrap(async (req, res, next) => {
   }
 
   array2.forEach(value => {
+    value.cost = 0
     value.forEach(value2 => {
-      value2.costs = _.sumBy(value, function (o: any) { if (value2.generic_id == o.generic_id && value2.receive_other_id == o.receive_other_id) return +o.costs | 0; });
-      value2.costs = inventoryReportModel.comma(value2.costs)
+      value.cost += +value2.cost;
       value2.expired_date = moment(value2.expired_date).isValid() ? moment(value2.expired_date).format('DD/MM/') + (moment(value2.expired_date).get('year')) : '-';
       value2.receive_date = moment(value2.receive_date).isValid() ? moment(value2.receive_date).format('DD-MM-YYYY') : '-';
       if (value2.receive_id == '') {
         value2.receive_qty = inventoryReportModel.commaQty(+value2.receive_qty / +value2.small_qty)
       }
-      // value.small_qty=inventoryReportModel.comma(value.small_qty*value.cost);
-      // value.cost=inventoryReportModel.comma(value.cost);
     })
+    value.cost = inventoryReportModel.comma(value.cost)
   })
-  // res.send({receiveID:receiveID,list_receive3:list_receive3,receiveId:receiveId,productId:productId})
   res.render('list_receive2', { hospitalName: hospitalName, printDate: printDate(req.decoded.SYS_PRINT_DATE), list_receive2: list_receive2, array2: array2 });
 }));//ตรวจสอบแล้ว 14-9-60
 
@@ -3639,7 +3639,9 @@ router.get('/report/receive/export', async (req, res, next) => {
         'ประเภท': v.generic_type_name,
         'ชนิด': v.account_name ? v.account_name : '',
         'บริษัทผู้จำหน่าย': v.labeler_name_po,
-        'รูปแบบการจัดซื้อ(Generic)': v.bid_name
+        'รูปแบบการจัดซื้อ(Generic)': v.bid_name,
+        'กลุ่มยา': v.product_group_name,
+        'ประเภทยา': v.generic_hosp_name
       };
       json.push(obj);
     });
@@ -3909,6 +3911,7 @@ router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
     const rs: any = await inventoryReportModel.productExpired(db, genericTypeId, warehouseId);
     rs.forEach(element => {
       element.expired_date = (moment(element.expired_date).get('year')) + moment(element.expired_date).format('/D/M');
+      element.cost = inventoryReportModel.comma(element.cost);
     });
     res.render('alert-expired', {
       rs: rs
@@ -3917,6 +3920,45 @@ router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
     res.send({ ok: false, error: error.message })
   }
 }))
+
+router.get('/report/print/alert-expried/excel', async (req, res, next) => {
+  const db = req.db;
+  const genericTypeId = req.query.genericTypeId;
+  const warehouseId = req.query.warehouseId;
+
+  try {
+    const rs: any = await inventoryReportModel.productExpired(db, genericTypeId, warehouseId);
+    rs.forEach(element => {
+      element.expired_date = (moment(element.expired_date).get('year')) + moment(element.expired_date).format('/D/M');
+      element.cost = inventoryReportModel.comma(element.cost);
+    });
+    let json = [];
+
+    rs.forEach(v => {
+      let obj: any = {};
+      obj.working_code = v.working_code;
+      obj.product_name = v.product_name;
+      obj.generic_name = v.generic_name;
+      obj.qty = v.qty;
+      obj.lot_no = v.lot_no;
+      obj.cost = v.cost;
+      obj.expired_date = v.expired_date;
+      obj.warehouse_name = v.warehouse_name;
+      json.push(obj);
+    });
+
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'รายการแจ้งเตือนวันหมดอายุ.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'รายการแจ้งเตือนวันหมดอายุ.xlsx');
+  } catch (error) {
+    res.send({ ok: false, message: error.message })
+  }
+});
 
 router.get('/report/inventoryStatus/generic/excel', wrap(async (req, res, next) => {
   let db = req.db;
@@ -5243,6 +5285,38 @@ router.get('/report/inventoryStatus/product/excel', wrap(async (req, res, next) 
   res.download(filePath, 'รายงานสถานะเวชภัณฑ์คงคลัง ' + warehouseName + 'ณ วันที่' + statusDate_text + '(Product).xlsx');
 }));
 
+router.get('/report/asn', wrap(async (req, res, next) => {
+  let db = req.db;
+  let purchaseorderId = req.query.purchaseorderId
+
+  let sys_hospital = req.decoded.SYS_HOSPITAL;
+  const hospcode = JSON.parse(sys_hospital).hospcode
+  const settings: any = await receiveModel.getSettingEDI(db, 'TOKEN');
+  const data: any = {
+    token: settings[0].value,
+    hosp_code: hospcode,
+    po_no: purchaseorderId
+  }
+
+  const rs: any = await receiveModel.getASN(data);
+
+  if (rs.asns == undefined) { res.render('error404'); }
+  rs.asns[0].header.asn_date = moment(rs.asns[0].header.asn_date).format('DD MMMM ') + (+moment(rs.asns[0].header.asn_date).format('YYYY') + 543);
+  rs.asns[0].header.shipped_date = moment(rs.asns[0].header.shipped_date).format('DD MMMM ') + (+moment(rs.asns[0].header.shipped_date).format('YYYY') + 543);
+  for (const l of rs.asns[0].line) {
+    for (const i of l.subline) {
+      console.log(i);
+      i.price_per_unit = await inventoryReportModel.comma(i.price_per_unit);
+      i.mfg_date = moment(i.mfg_date).format('DD/MM/YYYY');
+      i.expired_date = moment(i.expired_date).format('DD/MM/YYYY');
+    }
+
+  }
+  res.render('asn', {
+    data: rs.asns[0]
+  });
+
+}));
 router.get('/report/his-history', wrap(async (req, res, next) => {
   let db = req.db;
   let warehouseId = req.query.warehouseId

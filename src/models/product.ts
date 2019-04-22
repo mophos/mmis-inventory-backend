@@ -191,6 +191,17 @@ export class ProductModel {
       .andWhere('lot_time', lotTime);
   }
 
+  getLastLotTime(knex: Knex, productId: any, warehouseId: any, lotNo: any) {
+    return knex('wm_products')
+      .select(knex.raw('count(product_id) as lot_time'))
+      .where('product_id', productId)
+      .andWhere('warehouse_id', warehouseId)
+      .andWhere('lot_no', lotNo)
+      .groupBy('product_id')
+
+
+  }
+
   saveProducts(knex: Knex, data: any[]) {
     let sqls = [];
     data.forEach(v => {
@@ -198,9 +209,9 @@ export class ProductModel {
       let sql = `
           INSERT INTO wm_products
           (wm_product_id, warehouse_id, product_id, qty,
-          cost, price, lot_no, location_id,expired_date, unit_generic_id,people_user_id, created_at)
+          cost, price, lot_no, lot_time, location_id,expired_date, unit_generic_id,people_user_id, created_at)
           VALUES('${v.wm_product_id}', '${v.warehouse_id}', '${v.product_id}',
-          ${v.qty}, ${v.cost}, ${v.price}, '${v.lot_no}',${v.location_id},`;
+          ${v.qty}, ${v.cost}, ${v.price}, '${v.lot_no}', '${v.lot_time}',${v.location_id},`;
       if (v.expired_date == null) {
         sql += `null,`;
       } else {
@@ -210,7 +221,7 @@ export class ProductModel {
       ON DUPLICATE KEY UPDATE
       qty=qty+${+v.qty},cost = (
         select(sum(qty * cost) + ${ totalCost}) / (sum(qty) + ${v.qty})from wm_products as w
-        where w.product_id = '${v.product_id}' and w.lot_no = '${v.lot_no}' and w.warehouse_id = '${v.warehouse_id}'
+        where w.product_id = '${v.product_id}' and w.lot_no = '${v.lot_no}' and w.lot_time = '${v.lot_time}' and w.warehouse_id = '${v.warehouse_id}'
         group by w.product_id)`;
       sqls.push(sql);
 
