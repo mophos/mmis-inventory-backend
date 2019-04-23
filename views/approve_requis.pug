@@ -20,7 +20,7 @@ html
               td.center.bold(colspan='9')(style="font-size: 15pt;") ใบอนุมัติเบิก
             tr 
               td.left(colspan='4')(style="font-size: 15pt;") เลขที่ใบเบิก #{c[0].requisition_code}
-              td.right(colspan='5')(style="font-size: 15pt;") วันที่อนุมัติ #{c[0].approve_date}
+              td.right(colspan='5')(style="font-size: 15pt;") วันที่อนุมัติเบิก #{c[0].approve_date}
             tr 
               td.left(colspan='9')(style="font-size: 15pt;") หน่วยงานที่เบิก #{c[0].warehouse_name}
               //- td.right(colspan='5')(style="font-size: 15pt;") วันที่เบิก #{c[0].requisition_date}
@@ -131,7 +131,7 @@ html
               tr
                 td.right ลงชื่อ
                 td.center(style="border-bottom:1px dashed black;width:25%;")
-                td.left (ผู้อนุมัติ)  
+                td.left (ผู้อนุมัติจ่าย)  
                 td
                 td.right ลงชื่อ
                 td.center(style="border-bottom:1px dashed black;width:25%;")
