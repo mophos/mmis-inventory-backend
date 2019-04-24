@@ -747,6 +747,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
   let db = req.db;
   let approve_requis: any = []
   let sum: any = []
+  let allcost = [];
   const line = await inventoryReportModel.getLine(db, 'AR');
   const signature = await inventoryReportModel.getSignature(db, 'AR')
   let page_re: any = line[0].line;
@@ -765,6 +766,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
       approve_requis.push(_approve_requis[0])
       approve_requis[i] = _.chunk(approve_requis[i], page_re)
       let page = 0;
+      all_cost = 0;
       for (const values of approve_requis[i]) {
         sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
         all_cost += _.sumBy(values, 'total_cost')
@@ -795,10 +797,10 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
         }
         // })
       }
+      allcost.push(inventoryReportModel.comma(all_cost));
     }
-    all_cost = inventoryReportModel.comma(all_cost);
     res.render('approve_requis', {
-      all_cost: all_cost,
+      all_cost: allcost,
       hospitalName: hospitalName,
       approve_requis: approve_requis,
       sum: sum
