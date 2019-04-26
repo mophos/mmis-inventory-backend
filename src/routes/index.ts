@@ -2742,6 +2742,66 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   });
 }));
 
+router.get('/report/check/receive/2', wrap(async (req, res, next) => {
+  let db = req.db;
+  let receiveID = req.query.receiveID
+  receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let master = hosdetail[0].managerName;
+  let hospitalName = hosdetail[0].hospname;
+  let province = hosdetail[0].province;
+  let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
+
+  let bahtText: any = []
+  let committee: any = []
+  let invenChief: any = []
+  check_receive = check_receive[0];
+
+  for (const v of check_receive) {
+    v.receive_date = moment(v.receive_date).format('D MMMM ') + (moment(v.receive_date).get('year') + 543);
+    v.delivery_date = moment(v.delivery_date).format('D MMMM ') + (moment(v.delivery_date).get('year') + 543);
+    v.podate = moment(v.podate).format('D MMMM ') + (moment(v.podate).get('year') + 543);
+    v.approve_date = moment(v.approve_date).format('D MMMM ') + (moment(v.approve_date).get('year') + 543);
+    let _bahtText = inventoryReportModel.bahtText(v.total_price);
+    v.bahtText = _bahtText;
+    v.total_price = inventoryReportModel.comma(v.total_price);
+    let _committee = await inventoryReportModel.invenCommittee(db, v.receive_id);
+    v.committee = _committee[0];
+    let _invenChief = await inventoryReportModel.inven2Chief(db, v.receive_id)
+    invenChief.push(_invenChief[0]);
+
+    let chief = await inventoryReportModel.peopleFullName(db, v.chief_id);
+    v.chief = chief[0];
+    let buyer = await inventoryReportModel.peopleFullName(db, v.supply_id);
+    let _staffReceive: any;
+
+    if (buyer[0] === undefined) {
+      _staffReceive = await inventoryReportModel.staffReceive(db);
+      v.staffReceive = _staffReceive[0];
+    } else {
+      v.staffReceive = buyer[0];
+    }
+  }
+
+  let serialYear = moment().get('year') + 543;
+  let monthRo = moment().get('month') + 1;
+  if (monthRo >= 10) {
+    serialYear += 1;
+  }
+
+  res.render('check_receive_2', {
+    master: master,
+    hospitalName: hospitalName,
+    serialYear: serialYear,
+    check_receive: check_receive,
+    province: province,
+    bahtText: bahtText,
+    committee: committee,
+    invenChief: invenChief,
+    receiveID: receiveID
+  });
+}));
+
 router.get('/report/check/receive2', wrap(async (req, res, next) => {
   let db = req.db;
   let hosdetail = await inventoryReportModel.hospital(db);

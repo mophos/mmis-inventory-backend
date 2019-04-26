@@ -665,14 +665,14 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
         returnData[idx].products.push({
           generic_id: v.generic_id,
           unit_generic_id: v.unit_generic_id,
-          qty: v.qty,
+          qty: v.qty / v.conversion_qty,
           lot_no: v.lot_no
         })
       } else {
         product.push({
           generic_id: v.generic_id,
           unit_generic_id: v.unit_generic_id,
-          qty: v.qty,
+          qty: v.qty / v.conversion_qty,
           lot_no: v.lot_no
         })
         const obj: any = {
