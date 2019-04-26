@@ -1,0 +1,31 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    span.page
+    p(style="text-align: center;").bold รายการคงเหลือ MIN/MAX
+    table.table
+        tr
+            td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").center #
+            td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").center รหัสสินค้า
+            td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").center ชื่อสามัญ
+            td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").center MIN
+            td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").center MAX
+            td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").center คงเหลือ
+            td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").center คงเหลือ(หักยอดจอง)
+        - var b = 0
+            for a in rs
+                - ++b
+                    tr
+                        td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").center #{b} 
+                        td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;") #{a.generic_code} 
+                        td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;") #{a.generic_name}
+                        td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").right #{a.min_qty}
+                        td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").right #{a.max_qty}
+                        td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").right #{a.qty}
+                        td(style="border-left: 1px solid black; border-right: 1px solid black;border-bottom: 1px solid black; border-top: 1px solid black;").right #{a.reserve_qty}
+    .pagebreak

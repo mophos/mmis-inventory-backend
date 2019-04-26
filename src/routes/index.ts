@@ -9,10 +9,12 @@ import { IssueModel } from '../models/issue'
 import { StockCard } from '../models/stockcard';
 import { ReceiveModel } from '../models/receive';
 import { listenerCount } from 'cluster';
+import { WarehouseModel } from '../models/warehouse';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const issueModel = new IssueModel();
 const receiveModel = new ReceiveModel();
+const warehouseModel = new WarehouseModel();
 
 const signale = require('signale');
 const path = require('path')
@@ -5402,4 +5404,80 @@ router.get('/report/his-history', wrap(async (req, res, next) => {
 }
 ));
 
+router.get('/report/print/staff-remain', wrap(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let db = req.db;
+
+  let productGroups = req.decoded.generic_type_id;
+  let _pgs = [];
+
+  if (productGroups) {
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+    try {
+      let rs = await warehouseModel.getGenericsWarehouseStaff(db, warehouseId, _pgs, undefined);
+      res.render('reportRemainStaff', {
+        rs: rs
+      });
+    } catch (error) {
+      console.log(error);
+    } finally {
+      db.destroy();
+    }
+  } else {
+    console.log('ไม่พบการกำหนดเงื่อนไขประเภทสินค้า');
+  }
+}
+));
+
+router.get('/report/export/staff-remain', wrap(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let db = req.db;
+
+  let productGroups = req.decoded.generic_type_id;
+  let _pgs = [];
+  let json = [];
+
+  if (productGroups) {
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+    try {
+      let rs = await warehouseModel.getGenericsWarehouseStaff(db, warehouseId, _pgs, undefined);
+
+      rs.forEach(v => {
+        let obj: any = {
+          'รหัสสินค้า': v.generic_code,
+          'ชื่อสามัญ': v.generic_name,
+          'MIN': v.min_qty,
+          'MAX': v.max_qty,
+          'คงเหลือ': v.qty,
+          'คงเหลือ(หักยอดจอง)': v.reserve_qty,
+        };
+
+        json.push(obj);
+      });
+
+      const xls = json2xls(json);
+      const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+      // create directory
+      fse.ensureDirSync(exportDirectory);
+      const filePath = path.join(exportDirectory, 'remain_staff.xlsx');
+      fs.writeFileSync(filePath, xls, 'binary');
+      // force download
+      res.download(filePath, 'remain_staff.xlsx');
+    } catch (error) {
+      res.send({ ok: false, message: error.message })
+    }
+    finally {
+      db.destroy();
+    }
+  } else {
+    console.log('ไม่พบการกำหนดเงื่อนไขประเภทสินค้า');
+  }
+}
+));
 export default router;
