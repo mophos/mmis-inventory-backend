@@ -193,17 +193,85 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
   let db = req.db;
   let borrowId = req.params.borrowId;
   let srcWarehouseId = req.decoded.warehouseId;
+  let rsProducts: any = [];
 
   try {
     const rsGenerics = await borrowModel.getGenericInfo(db, borrowId, srcWarehouseId);
     let _generics = rsGenerics[0];
     for (const g of _generics) {
-      const rsProducts = await borrowModel.getProductsInfo(db, borrowId, g.borrow_generic_id);
-      let _products = rsProducts[0];
-      g.products = _products;
-      // g.transfer_qty = _.sumBy(_products, function (e: any) {
-      //   return e.product_qty * e.conversion_qty;
-      // });
+      g.products = [];
+      const detail = await borrowModel.getProductsInfo(db, borrowId, g.borrow_generic_id);
+      if (detail[0].length) {
+        for (const v of detail[0]) {
+          g.products.push({
+            wm_product_id: v.wm_product_id,
+            product_qty: v.product_qty,
+            generic_id: v.generic_id,
+            conversion_qty: v.conversion_qty,
+            product_name: v.product_name,
+            pack_remain_qty: v.pack_remain_qty,
+            small_remain_qty: v.small_remain_qty,
+            lot_no: v.lot_no,
+            lot_time: v.lot_time,
+            expired_date: v.expired_date,
+            from_unit_name: v.from_unit_name,
+            to_unit_name: v.to_unit_name
+          });
+        }
+      } else {
+        let idx: number = 0;
+        rsProducts = await borrowModel.getGenericQty(db, g.generic_id, srcWarehouseId);
+        if (rsProducts[0].length) {
+          for (const p of rsProducts[0]) {
+            if (g.generic_id === p.generic_id) {
+              const remainQty = p.remain_qty;
+              let qty = g.qty;
+              if (qty > remainQty) {
+                qty = remainQty
+              }
+
+              p.remain_qty -= qty;
+              g.qty -= qty;
+              const obj = {
+                wm_product_id: p.wm_product_id,
+                product_qty: qty / p.conversion_qty,
+                generic_id: p.generic_id,
+                conversion_qty: p.conversion_qty,
+                product_name: p.product_name,
+                pack_remain_qty: p.pack_remain_qty,
+                small_remain_qty: p.small_remain_qty,
+                lot_no: p.lot_no,
+                lot_time: p.lot_time,
+                expired_date: p.expired_date,
+                from_unit_name: p.from_unit_name,
+                to_unit_name: p.to_unit_name
+              }
+              if (qty > 0) {
+                g.products.push(obj);
+                idx++;
+              } else if (idx === 0 && qty === 0) {
+                g.products.push({
+                  wm_product_id: p.wm_product_id,
+                  product_qty: g.qty / p.conversion_qty,
+                  generic_id: g.generic_id,
+                  conversion_qty: p.conversion_qty,
+                  product_name: p.product_name,
+                  pack_remain_qty: p.pack_remain_qty,
+                  small_remain_qty: p.small_remain_qty,
+                  lot_no: p.lot_no,
+                  lot_time: p.lot_time,
+                  expired_date: p.expired_date,
+                  from_unit_name: p.from_unit_name,
+                  to_unit_name: p.to_unit_name
+                });
+                idx++;
+              }
+            }
+          }
+        }
+      }
+      // const rsProducts = await borrowModel.getProductsInfo(db, borrowId, g.borrow_generic_id);
+      // let _products = rsProducts[0];
     }
     res.send({ ok: true, rows: _generics });
   } catch (error) {
@@ -298,6 +366,7 @@ router.post('/save', co(async (req, res, next) => {
         dst_warehouse_id: _summary.dstWarehouseId,
         people_id: _summary.peopleId,
         remark: _summary.remark,
+        confirmed: 'Y',
         people_user_id: req.decoded.people_user_id,
         created_at: moment().format('YYYY-MM-DD HH:mm:ss')
       }
@@ -422,7 +491,7 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
   if (_generics.length && _summary) {
     const rs = await borrowModel.checkStatus(db, [borrowId]);
     const status = rs[0];
-    if (status.confirmed === 'Y' || status.approved === 'Y' || status.mark_deleted === 'Y') {
+    if (status.approved === 'Y' || status.mark_deleted === 'Y') {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
     } else {
       try {
@@ -432,7 +501,8 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
           people_id: _summary.peopleId,
           remark: _summary.remark,
           borrow_date: _summary.borrowDate,
-          people_user_id: req.decoded.people_user_id
+          people_user_id: req.decoded.people_user_id,
+          confirmed: 'Y'
         }
 
         await borrowModel.deleteBorrowGeneric(db, borrowId);
@@ -684,6 +754,16 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       }
     } else v.qty = +v.qty;
   };
+
+  const rsgbp = await borrowModel.getReturn(db, borrowIds);
+  for (const v of rsgbp) {
+    returnData[0].products.push({
+      generic_id: v.generic_id,
+      unit_generic_id: v.unit_generic_id,
+      qty: v.qty / v.conversion_qty,
+      lot_no: null
+    })
+  }
 
   for (let v of results) {
     if (+v.lot_qty != 0) {

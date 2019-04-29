@@ -577,6 +577,16 @@ export class BorrowModel {
       .where('b.borrow_id', borrowId);
   }
 
+  getReturn(knex: Knex, borrowId: any) {
+    return knex('wm_borrow as b')
+      .select('bg.generic_id', 'mug.qty as conversion_qty', 'bg.qty', 'mug.unit_generic_id')
+      .innerJoin('wm_borrow_generic as bg', 'bg.borrow_id', 'b.borrow_id')
+      .leftJoin('wm_borrow_product as bp', 'bp.borrow_generic_id', 'bg.borrow_generic_id')
+      .join('mm_unit_generics as mug', 'mug.unit_generic_id', 'bg.unit_generic_id')
+      .where('b.borrow_id', borrowId)
+      .andWhere('bp.borrow_product_id', null)
+  }
+
   getProductsInfo(knex: Knex, borrowId: any, borrowGenericId: any) {
     let sql = `SELECT
     bp.*,
@@ -668,6 +678,7 @@ export class BorrowModel {
       wp.lot_time,
       wp.expired_date,
       mp.product_name,
+      wp.qty as remain_qty,
       fu.unit_name AS from_unit_name,
       mug.qty AS conversion_qty,
       tu.unit_name AS to_unit_name 
@@ -683,7 +694,7 @@ export class BorrowModel {
       AND mp.generic_id = ${genericId}
       AND vr.remain_qty > 0
     ORDER BY
-      wp.qty DESC`)
+      wp.expired_date ASC`)
   }
 
   getProductRemainByBorrowIds(knex: Knex, productId: any, warehouseId: any) {

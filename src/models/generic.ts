@@ -567,7 +567,7 @@ export class GenericModel {
       .where('wp.warehouse_id', warehouseId)
       .andWhere('mp.generic_id', generics)
       .orderBy('wp.qty', 'DESC')
-    // .andWhereRaw('wp.qty>0')
+    .andWhereRaw('wp.qty>0')
   }
 
   getProductInWarehousesByGenericsBase(knex: Knex, generics: any[], warehouseId: any) {
