@@ -4966,6 +4966,45 @@ router.get('/report/list-waiting', wrap(async (req, res, next) => {
 
 }))
 
+router.get('/report/requisition-sum-product', wrap(async (req, res, next) => {
+  let db = req.db;
+  try {
+    let test;
+    let requisId = req.query.requisId;
+    requisId = Array.isArray(requisId) ? requisId : [requisId];
+
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+
+    const rs = await inventoryReportModel.getRequisitionSumProduct(db, requisId);
+    console.log('rs', rs[0]);
+    for (const i of rs[0]) {
+      if (i.count_unit > 1) {
+        let units = i.group_unit_generic_id.split(',');
+        let unit = units[0];
+        for (const u of units) {
+          if (unit != u) {
+            i.unit_name = i.primary_unit_name
+          }
+        }
+      } else {
+        i.unit_name = ` ${i.from_unit_name} (${i.conversion} ${i.to_unit_name}) = ${i.qty * i.conversion} ${i.primary_unit_name}`;
+      }
+    }
+    res.render('requisition_sum_product', {
+      hospitalName: hospitalName,
+      printDate: printDate(req.decoded.SYS_PRINT_DATE),
+      list: rs[0],
+    });
+  } catch (error) {
+    // console.log(error);
+    res.send({ ok: false, error: error.message })
+  } finally {
+    db.destroy();
+  }
+
+}))
+
 router.get('/report/approve/borrow', wrap(async (req, res, next) => {
   let db = req.db;
   let approve_borrow: any = []
