@@ -755,16 +755,6 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
     } else v.qty = +v.qty;
   };
 
-  const rsgbp = await borrowModel.getReturn(db, borrowIds);
-  for (const v of rsgbp) {
-    returnData[0].products.push({
-      generic_id: v.generic_id,
-      unit_generic_id: v.unit_generic_id,
-      qty: v.qty / v.conversion_qty,
-      lot_no: null
-    })
-  }
-
   for (let v of results) {
     if (+v.lot_qty != 0) {
       let id = uuid();
