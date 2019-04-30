@@ -318,6 +318,7 @@ export class GenericModel {
     DISTINCT a.generic_id,
       a.generic_name,
       a.working_code,
+      a.issue_unit_id,
       (
         SELECT
           sum(wp.qty)
@@ -395,6 +396,7 @@ export class GenericModel {
     DISTINCT a.generic_id,
       a.generic_name,
       a.working_code,
+      a.issue_unit_id,
       (
         SELECT
           sum(wp.qty)
@@ -565,7 +567,7 @@ export class GenericModel {
       .where('wp.warehouse_id', warehouseId)
       .andWhere('mp.generic_id', generics)
       .orderBy('wp.qty', 'DESC')
-    // .andWhereRaw('wp.qty>0')
+    .andWhereRaw('wp.qty>0')
   }
 
   getProductInWarehousesByGenericsBase(knex: Knex, generics: any[], warehouseId: any) {

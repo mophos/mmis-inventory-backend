@@ -438,7 +438,7 @@ export class RequisitionOrderModel {
       sql += ` and (ro.requisition_code like '${q}' or
       w1.warehouse_name like '${q}') `
     }
-    sql += ` order by ro.requisition_code desc
+    sql += ` order by rc.approve_date desc, ro.requisition_order_id desc
     limit ${limit} offset ${offset}`;
 
     return db.raw(sql);

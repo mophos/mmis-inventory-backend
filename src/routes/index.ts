@@ -9,10 +9,12 @@ import { IssueModel } from '../models/issue'
 import { StockCard } from '../models/stockcard';
 import { ReceiveModel } from '../models/receive';
 import { listenerCount } from 'cluster';
+import { WarehouseModel } from '../models/warehouse';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const issueModel = new IssueModel();
 const receiveModel = new ReceiveModel();
+const warehouseModel = new WarehouseModel();
 
 const signale = require('signale');
 const path = require('path')
@@ -747,6 +749,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
   let db = req.db;
   let approve_requis: any = []
   let sum: any = []
+  let allcost = [];
   const line = await inventoryReportModel.getLine(db, 'AR');
   const signature = await inventoryReportModel.getSignature(db, 'AR')
   let page_re: any = line[0].line;
@@ -765,6 +768,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
       approve_requis.push(_approve_requis[0])
       approve_requis[i] = _.chunk(approve_requis[i], page_re)
       let page = 0;
+      all_cost = 0;
       for (const values of approve_requis[i]) {
         sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
         all_cost += _.sumBy(values, 'total_cost')
@@ -795,10 +799,10 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
         }
         // })
       }
+      allcost.push(inventoryReportModel.comma(all_cost));
     }
-    all_cost = inventoryReportModel.comma(all_cost);
     res.render('approve_requis', {
-      all_cost: all_cost,
+      all_cost: allcost,
       hospitalName: hospitalName,
       approve_requis: approve_requis,
       sum: sum
@@ -1102,7 +1106,7 @@ router.get('/report/staff/UnPaid/requis', wrap(async (req, res, next) => {
     let warehouseId = req.decoded.warehouseId;
     let requisId = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
-    let rs: any = await inventoryReportModel.getUnPaidOrders(db, warehouseId, null);
+    let rs: any = await inventoryReportModel.getUnPaidOrders(db, null, warehouseId);
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
     _.forEach(requisId, object => {
@@ -2740,6 +2744,66 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   });
 }));
 
+router.get('/report/check/receive/2', wrap(async (req, res, next) => {
+  let db = req.db;
+  let receiveID = req.query.receiveID
+  receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let master = hosdetail[0].managerName;
+  let hospitalName = hosdetail[0].hospname;
+  let province = hosdetail[0].province;
+  let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
+
+  let bahtText: any = []
+  let committee: any = []
+  let invenChief: any = []
+  check_receive = check_receive[0];
+
+  for (const v of check_receive) {
+    v.receive_date = moment(v.receive_date).format('D MMMM ') + (moment(v.receive_date).get('year') + 543);
+    v.delivery_date = moment(v.delivery_date).format('D MMMM ') + (moment(v.delivery_date).get('year') + 543);
+    v.podate = moment(v.podate).format('D MMMM ') + (moment(v.podate).get('year') + 543);
+    v.approve_date = moment(v.approve_date).format('D MMMM ') + (moment(v.approve_date).get('year') + 543);
+    let _bahtText = inventoryReportModel.bahtText(v.total_price);
+    v.bahtText = _bahtText;
+    v.total_price = inventoryReportModel.comma(v.total_price);
+    let _committee = await inventoryReportModel.invenCommittee(db, v.receive_id);
+    v.committee = _committee[0];
+    let _invenChief = await inventoryReportModel.inven2Chief(db, v.receive_id)
+    invenChief.push(_invenChief[0]);
+
+    let chief = await inventoryReportModel.peopleFullName(db, v.chief_id);
+    v.chief = chief[0];
+    let buyer = await inventoryReportModel.peopleFullName(db, v.supply_id);
+    let _staffReceive: any;
+
+    if (buyer[0] === undefined) {
+      _staffReceive = await inventoryReportModel.staffReceive(db);
+      v.staffReceive = _staffReceive[0];
+    } else {
+      v.staffReceive = buyer[0];
+    }
+  }
+
+  let serialYear = moment().get('year') + 543;
+  let monthRo = moment().get('month') + 1;
+  if (monthRo >= 10) {
+    serialYear += 1;
+  }
+
+  res.render('check_receive_2', {
+    master: master,
+    hospitalName: hospitalName,
+    serialYear: serialYear,
+    check_receive: check_receive,
+    province: province,
+    bahtText: bahtText,
+    committee: committee,
+    invenChief: invenChief,
+    receiveID: receiveID
+  });
+}));
+
 router.get('/report/check/receive2', wrap(async (req, res, next) => {
   let db = req.db;
   let hosdetail = await inventoryReportModel.hospital(db);
@@ -3911,6 +3975,7 @@ router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
     const rs: any = await inventoryReportModel.productExpired(db, genericTypeId, warehouseId);
     rs.forEach(element => {
       element.expired_date = (moment(element.expired_date).get('year')) + moment(element.expired_date).format('/D/M');
+      element.cost = inventoryReportModel.comma(element.cost);
     });
     res.render('alert-expired', {
       rs: rs
@@ -3919,6 +3984,45 @@ router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
     res.send({ ok: false, error: error.message })
   }
 }))
+
+router.get('/report/print/alert-expried/excel', async (req, res, next) => {
+  const db = req.db;
+  const genericTypeId = req.query.genericTypeId;
+  const warehouseId = req.query.warehouseId;
+
+  try {
+    const rs: any = await inventoryReportModel.productExpired(db, genericTypeId, warehouseId);
+    rs.forEach(element => {
+      element.expired_date = (moment(element.expired_date).get('year')) + moment(element.expired_date).format('/D/M');
+      element.cost = inventoryReportModel.comma(element.cost);
+    });
+    let json = [];
+
+    rs.forEach(v => {
+      let obj: any = {};
+      obj.working_code = v.working_code;
+      obj.product_name = v.product_name;
+      obj.generic_name = v.generic_name;
+      obj.qty = v.qty;
+      obj.lot_no = v.lot_no;
+      obj.cost = v.cost;
+      obj.expired_date = v.expired_date;
+      obj.warehouse_name = v.warehouse_name;
+      json.push(obj);
+    });
+
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'รายการแจ้งเตือนวันหมดอายุ.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'รายการแจ้งเตือนวันหมดอายุ.xlsx');
+  } catch (error) {
+    res.send({ ok: false, message: error.message })
+  }
+});
 
 router.get('/report/inventoryStatus/generic/excel', wrap(async (req, res, next) => {
   let db = req.db;
@@ -5339,4 +5443,80 @@ router.get('/report/his-history', wrap(async (req, res, next) => {
 }
 ));
 
+router.get('/report/print/staff-remain', wrap(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let db = req.db;
+
+  let productGroups = req.decoded.generic_type_id;
+  let _pgs = [];
+
+  if (productGroups) {
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+    try {
+      let rs = await warehouseModel.getGenericsWarehouseStaff(db, warehouseId, _pgs, undefined);
+      res.render('reportRemainStaff', {
+        rs: rs
+      });
+    } catch (error) {
+      console.log(error);
+    } finally {
+      db.destroy();
+    }
+  } else {
+    console.log('ไม่พบการกำหนดเงื่อนไขประเภทสินค้า');
+  }
+}
+));
+
+router.get('/report/export/staff-remain', wrap(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let db = req.db;
+
+  let productGroups = req.decoded.generic_type_id;
+  let _pgs = [];
+  let json = [];
+
+  if (productGroups) {
+    let pgs = productGroups.split(',');
+    pgs.forEach(v => {
+      _pgs.push(v);
+    });
+    try {
+      let rs = await warehouseModel.getGenericsWarehouseStaff(db, warehouseId, _pgs, undefined);
+
+      rs.forEach(v => {
+        let obj: any = {
+          'รหัสสินค้า': v.generic_code,
+          'ชื่อสามัญ': v.generic_name,
+          'MIN': v.min_qty,
+          'MAX': v.max_qty,
+          'คงเหลือ': v.qty,
+          'คงเหลือ(หักยอดจอง)': v.reserve_qty,
+        };
+
+        json.push(obj);
+      });
+
+      const xls = json2xls(json);
+      const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+      // create directory
+      fse.ensureDirSync(exportDirectory);
+      const filePath = path.join(exportDirectory, 'remain_staff.xlsx');
+      fs.writeFileSync(filePath, xls, 'binary');
+      // force download
+      res.download(filePath, 'remain_staff.xlsx');
+    } catch (error) {
+      res.send({ ok: false, message: error.message })
+    }
+    finally {
+      db.destroy();
+    }
+  } else {
+    console.log('ไม่พบการกำหนดเงื่อนไขประเภทสินค้า');
+  }
+}
+));
 export default router;

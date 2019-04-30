@@ -459,6 +459,32 @@ export class BorrowModel {
       .groupByRaw('d.wm_product_id, d.lot_no, d.expired_date');
   }
 
+  getBalanceWarehouse(knex: Knex, borrowId: any) {
+    return knex.raw(`SELECT
+    b.people_id,
+    bg.generic_id,
+    b.src_warehouse_id,
+    b.dst_warehouse_id,
+    bp.borrow_product_id,
+    bp.wm_product_id,
+    mug.unit_generic_id,
+    mug.qty AS conversion_qty,
+    wp.lot_no,
+    wp.expired_date,
+    wp.cost,
+    wp.price,
+    wp.product_id,
+    wp.lot_time,
+    bp.qty AS lot_qty,
+    wp.qty AS balance_src
+    FROM wm_borrow b
+    JOIN wm_borrow_generic bg ON bg.borrow_id = b.borrow_id
+    LEFT JOIN wm_borrow_product bp ON bp.borrow_generic_id = bg.borrow_generic_id
+    JOIN mm_unit_generics mug ON mug.unit_generic_id = bg.unit_generic_id
+    LEFT JOIN wm_products wp ON wp.wm_product_id = bp.wm_product_id
+    WHERE b.borrow_id = ${borrowId}`)
+  }
+
   getProductListIds(knex: Knex, borrowIds: any[]) {
     let subBalanceSrc = knex('wm_products as wp')
       .sum('wp.qty')
@@ -668,6 +694,7 @@ export class BorrowModel {
       wp.lot_time,
       wp.expired_date,
       mp.product_name,
+      wp.qty as remain_qty,
       fu.unit_name AS from_unit_name,
       mug.qty AS conversion_qty,
       tu.unit_name AS to_unit_name 
@@ -683,7 +710,7 @@ export class BorrowModel {
       AND mp.generic_id = ${genericId}
       AND vr.remain_qty > 0
     ORDER BY
-      wp.qty DESC`)
+      wp.expired_date ASC`)
   }
 
   getProductRemainByBorrowIds(knex: Knex, productId: any, warehouseId: any) {
