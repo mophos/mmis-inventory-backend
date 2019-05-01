@@ -3527,6 +3527,7 @@ OR sc.ref_src like ?
             .select(knex.raw('bg_year + 543 as bg_year'));
     }
     monthlyReport(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting: any) {
+        month = month < 10 ? '0' + month : month;
         let sql = `
         SELECT
 	sum( ifnull( blb.bl, 0 ) ) AS balance,
@@ -3559,9 +3560,9 @@ FROM
 	FROM
 		${dateSetting} AS sc 
 	WHERE
-		sc.warehouse_id = ${wareHouseId} 
-        AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${(+month) % 12 == 0 ? +year + 1 : year}-${(+month % 12) + 1}-01 00:00:00'
-	GROUP BY
+        sc.warehouse_id = ${wareHouseId}  
+        AND substr(sc.stock_date,1,7)= '${year}-${month}'
+        GROUP BY
 		sc.generic_id 
 	) AS io ON io.generic_id = q1.generic_id
 	LEFT JOIN (
@@ -3577,17 +3578,17 @@ FROM
 		sc.generic_id 
 	) AS blb ON blb.generic_id = q1.generic_id
 	LEFT JOIN mm_generics AS mg ON mg.generic_id = q1.generic_id
-	JOIN mm_generic_types AS gt ON gt.generic_type_id = mg.generic_type_id
+	LEFT JOIN mm_generic_types AS gt ON gt.generic_type_id = mg.generic_type_id
 WHERE
 		mg.generic_type_id in (${genericType})
-    and NOT gt.generic_type_code = 'MEDICINE'
-    and NOT gt.generic_type_code is null
+    and  gt.generic_type_code <> 'MEDICINE'
 GROUP BY
 	mg.generic_type_id
     `
         return knex.raw(sql)
     }
     monthlyReportM(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting: any) {
+        month = month < 10 ? '0' + month : month;
         let sql = `
         SELECT
 	sum( ifnull( blb.bl, 0 ) ) AS balance,
@@ -3621,7 +3622,7 @@ FROM
 		${dateSetting} AS sc 
 	WHERE
 		sc.warehouse_id = ${wareHouseId}  
-        AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${(+month) % 12 == 0 ? +year + 1 : year}-${(+month % 12) + 1}-01 00:00:00'
+        AND substr(sc.stock_date,1,7)= '${year}-${month}'
 	GROUP BY
 		sc.generic_id 
 	) AS io ON io.generic_id = q1.generic_id
@@ -3638,11 +3639,10 @@ FROM
 		sc.generic_id 
 	) AS blb ON blb.generic_id = q1.generic_id
 	LEFT JOIN mm_generics AS mg ON mg.generic_id = q1.generic_id
-	JOIN mm_generic_types AS gt ON gt.generic_type_id = mg.generic_type_id
-	JOIN mm_generic_accounts AS ga ON ga.account_id = mg.account_id 
+	LEFT JOIN mm_generic_types AS gt ON gt.generic_type_id = mg.generic_type_id
+	LEFT JOIN mm_generic_accounts AS ga ON ga.account_id = mg.account_id 
 WHERE
 	gt.generic_type_code = 'MEDICINE' 
-	AND ga.account_code is not null
 GROUP BY
 	mg.generic_type_id,
 	mg.account_id
