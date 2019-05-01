@@ -2807,8 +2807,8 @@ router.get('/report/check/receive/2', wrap(async (req, res, next) => {
 router.get('/report/check/receive2', wrap(async (req, res, next) => {
   let db = req.db;
   let hosdetail = await inventoryReportModel.hospital(db);
-  let prefix = await inventoryReportModel.boox_prefix(db);
-  let book_prefix = prefix[0].value;
+  let book_prefix = `${req.decoded.BOOK_PREFIX}${req.decoded.warehouseBook ? req.decoded.warehouseBook : ''}`;
+
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
   let managerName = hosdetail[0].managerName;
