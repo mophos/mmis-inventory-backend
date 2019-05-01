@@ -731,7 +731,7 @@ mgt.generic_type_id `
         wp.expired_date,
         ml.labeler_name,
         ml.labeler_name_po,
-        sum(wp.qty) AS qty,
+        wp.qty,
         mu.unit_name as small_unit,
         wh.warehouse_name,
         wl.location_name,
@@ -740,7 +740,7 @@ mgt.generic_type_id `
             wm_products wp
         join mm_products mp  on wp.product_id=mp.product_id
         join mm_generics mg on mp.generic_id=mg.generic_id
-        left join mm_generic_dosages mgd on mgd.dosage_id-mg.dosage_id
+        left join mm_generic_dosages mgd on mgd.dosage_id=mg.dosage_id
         left JOIN mm_labelers ml ON mp.v_labeler_id = ml.labeler_id
         left join mm_units mu on mg.primary_unit_id = mu.unit_id
         left JOIN wm_warehouses wh ON wh.warehouse_id = wp.warehouse_id
@@ -752,8 +752,6 @@ mgt.generic_type_id `
         AND wp.warehouse_id LIKE ?
         AND mg.generic_id LIKE ?
         AND mg.generic_type_id in (${genericTypeId})
-        GROUP BY
-            wp.product_id
         ORDER BY
         wp.expired_date ASC`
         return (knex.raw(sql, [startDate, endDate, wareHouse, genericId]))
