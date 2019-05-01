@@ -459,6 +459,32 @@ export class BorrowModel {
       .groupByRaw('d.wm_product_id, d.lot_no, d.expired_date');
   }
 
+  getBalanceWarehouse(knex: Knex, borrowId: any) {
+    return knex.raw(`SELECT
+    b.people_id,
+    bg.generic_id,
+    b.src_warehouse_id,
+    b.dst_warehouse_id,
+    bp.borrow_product_id,
+    bp.wm_product_id,
+    mug.unit_generic_id,
+    mug.qty AS conversion_qty,
+    wp.lot_no,
+    wp.expired_date,
+    wp.cost,
+    wp.price,
+    wp.product_id,
+    wp.lot_time,
+    bp.qty AS lot_qty,
+    wp.qty AS balance_src
+    FROM wm_borrow b
+    JOIN wm_borrow_generic bg ON bg.borrow_id = b.borrow_id
+    LEFT JOIN wm_borrow_product bp ON bp.borrow_generic_id = bg.borrow_generic_id
+    JOIN mm_unit_generics mug ON mug.unit_generic_id = bg.unit_generic_id
+    LEFT JOIN wm_products wp ON wp.wm_product_id = bp.wm_product_id
+    WHERE b.borrow_id = ${borrowId}`)
+  }
+
   getProductListIds(knex: Knex, borrowIds: any[]) {
     let subBalanceSrc = knex('wm_products as wp')
       .sum('wp.qty')
@@ -575,16 +601,6 @@ export class BorrowModel {
       .leftJoin('um_people as up', 'up.people_id', 'b.people_id')
       .leftJoin('um_titles as t', 't.title_id', 'up.title_id')
       .where('b.borrow_id', borrowId);
-  }
-
-  getReturn(knex: Knex, borrowId: any) {
-    return knex('wm_borrow as b')
-      .select('bg.generic_id', 'mug.qty as conversion_qty', 'bg.qty', 'mug.unit_generic_id')
-      .innerJoin('wm_borrow_generic as bg', 'bg.borrow_id', 'b.borrow_id')
-      .leftJoin('wm_borrow_product as bp', 'bp.borrow_generic_id', 'bg.borrow_generic_id')
-      .join('mm_unit_generics as mug', 'mug.unit_generic_id', 'bg.unit_generic_id')
-      .where('b.borrow_id', borrowId)
-      .andWhere('bp.borrow_product_id', null)
   }
 
   getProductsInfo(knex: Knex, borrowId: any, borrowGenericId: any) {

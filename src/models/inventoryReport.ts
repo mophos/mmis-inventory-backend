@@ -4213,5 +4213,38 @@ GROUP BY
         tt.transaction_id ASC`
         return (knex.raw(sql))
     }
+    getRequisitionSumProduct(knex: Knex, requisitionIds) {
+        // return knex('wm_requisition_orders as ro')
+        //     .select('mg.generic_id', 'mg.working_code as generic_code', 'mg.generic_name')
+        //     .sum('roi.requisition_qty as qty')
+        //     .join('wm_requisition_order_items as roi', 'ro.requisition_order_id', 'roi.requisition_order_id')
+        //     .join('mm_generics as mg', 'mg.generic_id', 'roi.generic_id')
+        //     .groupBy('roi.generic_id')
+        //     .whereIn('ro.requisition_order_id', requisitionIds)
+        return knex.raw(`
+        SELECT
+        mg.generic_id,
+        mg.working_code AS generic_code,
+        mg.generic_name,
+        sum( roi.requisition_qty ) AS qty ,
+        count(mg.generic_id) as count_unit,
+        GROUP_CONCAT(roi.unit_generic_id) as group_unit_generic_id,
+        mu.unit_name as primary_unit_name,
+        mug.qty as conversion,
+        mu1.unit_name as from_unit_name,
+        mu2.unit_name as to_unit_name
+        FROM
+        wm_requisition_orders AS ro
+        INNER JOIN wm_requisition_order_items AS roi ON ro.requisition_order_id = roi.requisition_order_id
+        INNER JOIN mm_generics AS mg ON mg.generic_id = roi.generic_id 
+        join mm_units mu on mu.unit_id = mg.primary_unit_id
+        join mm_unit_generics mug on mug.unit_generic_id = roi.unit_generic_id
+        join mm_units mu1 on mu1.unit_id = mug.from_unit_id
+        join mm_units mu2 on mu2.unit_id = mug.to_unit_id
+        where ro.requisition_order_id in (${requisitionIds})
+        GROUP BY
+        roi.generic_id
+        order by mg.generic_name`);
 
+    }
 }
