@@ -42,7 +42,7 @@ html
                     if(i.generic_type_code == "MEDICINE"  && i.account_code == "ned")
                         td.left(style="font-size: 15pt;") ยานอกบัญชียาหลัก
                     else
-                        if(i.account_name != null)
+                        if(i.account_name)
                             td.left(style="font-size: 15pt;")  #{i.generic_type_name} - #{i.account_name}
                         else
                             td.left(style="font-size: 15pt;")  #{i.generic_type_name}
