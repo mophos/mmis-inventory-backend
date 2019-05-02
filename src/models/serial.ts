@@ -5,11 +5,13 @@ export class SerialModel {
 
   getSerialInfo(knex: Knex, srType: string, year, warehouseId) {
     return knex('sys_serials as sr')
+      .select('sr.*', 'sf.*', 'w.short_code')
       .where('sr.sr_type', srType)
       .where('sr.sr_year', year)
       .where('sr.warehouse_id', warehouseId)
       .select('sr.sr_no', 'sr.sr_prefix', 'sr.digit_length', 'sf.serial_code')
       .leftJoin('sys_serial_format as sf', 'sf.serial_format_id', 'sr.serial_format_id')
+      .leftJoin('wm_warehouses as w', 'w.warehouse_id', 'sr.warehouse_id')
       .limit(1);
   }
 
@@ -32,13 +34,14 @@ export class SerialModel {
       let serialCode = serialInfo[0].serial_code;
       let serialLength = serialInfo[0].digit_length;
       let serialPrefix = serialInfo[0].sr_prefix;
+      let warehouseCode = serialInfo[0].short_code;
       let serialYear = +year + 543;
       let _serialYear = serialYear.toString().substring(2);
       let newSerialNo = this.paddingNumber(currentNo, serialLength);
       let _warehouseNo = this.paddingNumber(warehouseId, 2);
 
       let sr: any = null;
-      sr = serialCode.replace('PREFIX', serialPrefix).replace('YY', _serialYear).replace('WW', _warehouseNo).replace('##', newSerialNo);
+      sr = serialCode.replace('PREFIX', serialPrefix).replace('YY', _serialYear).replace('WW', _warehouseNo).replace('WC', warehouseCode).replace('##', newSerialNo);
 
 
       // update serial
@@ -65,13 +68,14 @@ export class SerialModel {
       let serialCode = serialInfo[0].serial_code;
       let serialLength = serialInfo[0].digit_length;
       let serialPrefix = serialInfo[0].sr_prefix;
+      let warehouseCode = serialInfo[0].short_code;
       let serialYear = +year + 543;
       let _serialYear = serialYear.toString().substring(2);
       let newSerialNo = this.paddingNumber(currentNo, serialLength);
       let _warehouseNo = this.paddingNumber(warehouseId, 2);
       let sr: any = null;
 
-      sr = serialCode.replace('PREFIX', serialPrefix).replace('YY', _serialYear).replace('WW', _warehouseNo).replace('##', newSerialNo);
+      sr = serialCode.replace('PREFIX', serialPrefix).replace('YY', _serialYear).replace('WW', _warehouseNo).replace('WC', warehouseCode).replace('##', newSerialNo);
 
 
       // update serial
