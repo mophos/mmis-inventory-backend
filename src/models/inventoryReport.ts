@@ -3525,6 +3525,7 @@ OR sc.ref_src like ?
             .select(knex.raw('bg_year + 543 as bg_year'));
     }
     monthlyReport(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting: any) {
+        month = month < 10 ? '0' + month : month;
         let sql = `
         SELECT
 	sum( ifnull( blb.bl, 0 ) ) AS balance,
@@ -3557,9 +3558,9 @@ FROM
 	FROM
 		${dateSetting} AS sc 
 	WHERE
-		sc.warehouse_id = ${wareHouseId} 
-        AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${(+month) % 12 == 0 ? +year + 1 : year}-${(+month % 12) + 1}-01 00:00:00'
-	GROUP BY
+        sc.warehouse_id = ${wareHouseId}  
+        AND substr(sc.stock_date,1,7)= '${year}-${month}'
+        GROUP BY
 		sc.generic_id 
 	) AS io ON io.generic_id = q1.generic_id
 	LEFT JOIN (
@@ -3575,17 +3576,17 @@ FROM
 		sc.generic_id 
 	) AS blb ON blb.generic_id = q1.generic_id
 	LEFT JOIN mm_generics AS mg ON mg.generic_id = q1.generic_id
-	JOIN mm_generic_types AS gt ON gt.generic_type_id = mg.generic_type_id
+	LEFT JOIN mm_generic_types AS gt ON gt.generic_type_id = mg.generic_type_id
 WHERE
 		mg.generic_type_id in (${genericType})
-    and NOT gt.generic_type_code = 'MEDICINE'
-    and NOT gt.generic_type_code is null
+    and  gt.generic_type_code <> 'MEDICINE'
 GROUP BY
 	mg.generic_type_id
     `
         return knex.raw(sql)
     }
     monthlyReportM(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting: any) {
+        month = month < 10 ? '0' + month : month;
         let sql = `
         SELECT
 	sum( ifnull( blb.bl, 0 ) ) AS balance,
@@ -3619,7 +3620,7 @@ FROM
 		${dateSetting} AS sc 
 	WHERE
 		sc.warehouse_id = ${wareHouseId}  
-        AND sc.stock_date BETWEEN '${year}-${month}-01 00:00:00' and '${(+month) % 12 == 0 ? +year + 1 : year}-${(+month % 12) + 1}-01 00:00:00'
+        AND substr(sc.stock_date,1,7)= '${year}-${month}'
 	GROUP BY
 		sc.generic_id 
 	) AS io ON io.generic_id = q1.generic_id
@@ -3636,17 +3637,55 @@ FROM
 		sc.generic_id 
 	) AS blb ON blb.generic_id = q1.generic_id
 	LEFT JOIN mm_generics AS mg ON mg.generic_id = q1.generic_id
-	JOIN mm_generic_types AS gt ON gt.generic_type_id = mg.generic_type_id
-	JOIN mm_generic_accounts AS ga ON ga.account_id = mg.account_id 
+	LEFT JOIN mm_generic_types AS gt ON gt.generic_type_id = mg.generic_type_id
+	LEFT JOIN mm_generic_accounts AS ga ON ga.account_id = mg.account_id 
 WHERE
 	gt.generic_type_code = 'MEDICINE' 
-	AND ga.account_code is not null
 GROUP BY
 	mg.generic_type_id,
 	mg.account_id
     `
         return knex.raw(sql)
     }
+
+    lBitType(knex:Knex){
+        return knex('l_bid_type')
+        .where('isactive',1)
+        .orderBy('bid_name');
+    }
+
+    purchaseBitType(knex:Knex,startdate: any, enddate: any, wareHouseId: any,genericTypeId:any){
+       let sql =  `SELECT
+            bt.bid_id,
+            bt.bid_name,
+            g.account_id,
+            ga.account_name,
+            ga.account_code,
+            g.generic_type_id,
+            gt.generic_type_name,
+            gt.generic_type_code,
+            sum( po.total_price ) total_price 
+            FROM
+            view_pc_purchasing_order_item po
+            JOIN mm_generics g ON g.generic_id = po.generic_id
+            left JOIN l_bid_type bt ON bt.bid_id = g.purchasing_method
+            LEFT JOIN mm_generic_accounts ga ON ga.account_id = g.account_id
+            LEFT JOIN mm_generic_types gt ON gt.generic_type_id = g.generic_type_id 
+            WHERE
+            po.purchase_order_status = 'completed' `
+            if (wareHouseId != 0) {
+                sql += ` AND po.warehouse_id = '${wareHouseId}' `
+            }
+            sql +=`
+            AND g.generic_type_id IN ( ${genericTypeId} )
+            AND  po.approved_date between '${startdate} 00:00:00' and '${enddate} 23:59:59'
+            GROUP BY
+            g.purchasing_method,
+            g.generic_type_id,
+            g.account_id`
+            return knex.raw(sql)
+    }
+    
     issueYear(knex: Knex, year: any, wareHouseId: any, genericType: any) {
         return knex.raw(`
         SELECT
@@ -3708,7 +3747,8 @@ FROM
 		( sum( in_qty ) - sum( out_qty ) ) AS summit 
 	FROM
 		view_stock_card_warehouse 
-	WHERE
+    WHERE
+    
 	warehouse_id = ${wareHouseId}
 		AND stock_date < '${year - 1}-10-01 00:00:00' 
 	GROUP BY

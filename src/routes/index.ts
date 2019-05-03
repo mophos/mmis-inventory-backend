@@ -291,6 +291,84 @@ router.get('/report/monthlyReport', wrap(async (req, res, next) => {
   }
 }))
 
+router.get('/report/purchase-bit-type', wrap(async (req, res, next) => {
+  const db = req.db;
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let startdate = req.query.startDate
+  let enddate = req.query.endDate
+  let genericTypeId = req.query.genericType
+  genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
+  let warehouseId: any = req.query.warehouseId;
+  if (!warehouseId) {
+    warehouseId = req.decoded.warehouseId;
+  }
+  try {
+    const rs: any = await inventoryReportModel.purchaseBitType(db, startdate, enddate, warehouseId, genericTypeId)
+    const rst: any = await inventoryReportModel.lBitType(db)
+    startdate = moment(startdate).isValid() ? moment(startdate).format('DD MMM ') + (+moment(startdate).get('year') + 543) : '-'
+    enddate = moment(enddate).isValid() ? moment(enddate).format('DD MMM ') + (+moment(enddate).get('year') + 543) : '-'
+    let _data = []
+    let data = []
+    let ed = _.filter(rs[0], (v: any) => {
+      return v.account_code == 'ed'
+    })
+    let ned = _.filter(rs[0], (v: any) => {
+      return v.account_code == 'ned'
+    })
+    let _other = _.filter(rs[0], (v: any) => {
+      return v.account_code != 'ned' && v.account_code != 'ed'
+    })
+    let other = _.map(_.groupBy(_other, 'generic_type_id'), (obj: any) => {
+      return obj
+    })
+    if(ed.length>0)data.push( _.map(ed))
+    if(ned.length>0)data.push( _.map(ned))
+    for (const t of other) {
+      data.push(_.cloneDeep(t))
+    }
+    var _ot = []
+    for (var obj of data) {
+      _ot.push(_.cloneDeep(_(obj)
+        .groupBy('bid_id')
+        .map((objs: any, key) => {
+          return {
+            bid_id: key,
+            bid_name: objs[0].bid_name,
+            account_id: objs[0].account_code == 'ed' || objs[0].account_code == 'ned' ? objs[0].account_id : null,
+            account_name: objs[0].account_code == 'ed' || objs[0].account_code == 'ned' ? objs[0].account_name : null,
+            account_code: objs[0].account_code == 'ed' || objs[0].account_code == 'ned' ? objs[0].account_code : null,
+            generic_type_id: objs[0].generic_type_id,
+            generic_type_name: objs[0].generic_type_name,
+            generic_type_code: objs[0].generic_type_code,
+            total_price: inventoryReportModel.comma(_.sumBy(objs, 'total_price'))
+          }
+        })
+        .value()))
+    }
+
+    if (rs[0]) {
+      // res.send({ rst:rst ,ot:_ot})
+      res.render('purchase_bit_type', {
+        today: this.today,
+        hospitalName:hospitalName,
+        // warehouseName:warehouseName,
+        startdate: startdate,
+        enddate: enddate,
+        lBitType:rst,
+        data:_ot
+      })
+    } else {
+      res.render('error404')
+    }
+
+    // res.render('monthly-report', {}
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  }
+}))
+
+
 router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
   const db = req.db;
   const year = req.params.year - 543
