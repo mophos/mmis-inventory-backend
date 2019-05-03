@@ -747,6 +747,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
         const obj: any = {
           src_warehouse_id: v.src_warehouse_id,
           dst_warehouse_id: v.dst_warehouse_id,
+          borrow_id: v.borrow_id,
           people_id: v.people_id,
           products: product
         }
