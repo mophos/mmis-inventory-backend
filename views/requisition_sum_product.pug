@@ -1,0 +1,35 @@
+include css.pug
+doctype html
+style(type='text/css' media='print').
+   @page{
+   margin-top: 1cm;
+  }
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    .center.bold  #{hospitalName}
+    .center.bold  สรุปรายการตามใบเบิก
+    .left.bold #{printDate}
+    table.table
+      thead
+        tr
+          th ลำดับ
+          th รหัสสินค้า
+          th ชื่อสินค้า
+          th จำนวน
+      tbody
+        - i=0
+        - for(var l of list)
+          - i++
+          tr
+            td.center #{i}
+            td.center #{l.generic_code}
+            td.left #{l.generic_name}
+            td.right #{l.qty} #{l.unit_name}
+                
+          tr.dash-bottom
+            td(colspan='10')
+    .pagebreak

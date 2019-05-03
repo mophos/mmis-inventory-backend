@@ -210,7 +210,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
       }
     },
     debug: true,
-    acquireConnectionTimeout: 3000000
+    acquireConnectionTimeout: 300000
   });
 
   next();
