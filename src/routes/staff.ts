@@ -240,10 +240,10 @@ router.get('/warehouse/generics/requisition/search', co(async (req, res, next) =
   }
 }));
 
-router.get('/warehouse/generics', co(async (req, res, next) => {
+router.post('/warehouse/generics', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let db = req.db;
-  let genericType = req.query.genericType;
+  let genericType = req.body.genericType;
 
   let productGroups = req.decoded.generic_type_id;
   let _pgs = [];
@@ -267,11 +267,11 @@ router.get('/warehouse/generics', co(async (req, res, next) => {
   }
 }));
 
-router.get('/warehouse/generics/search', co(async (req, res, next) => {
+router.post('/warehouse/generics/search', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let db = req.db;
-  let genericType = req.query.genericType;
-  let query = req.query.query;
+  let genericType = req.body.genericType;
+  let query = req.body.query;
 
   let productGroups = req.decoded.generic_type_id;
   let _pgs = [];

@@ -362,7 +362,16 @@ export class WarehouseModel {
       .where('p.is_actived', 'Y')
       .whereIn('g.generic_type_id', productGroups)
     if (genericType) {
-      query.andWhere('g.generic_type_id', genericType);
+
+      if (genericType.generic_type_lv1_id.length) {
+        query.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
+      }
+      if (genericType.generic_type_lv2_id.length) {
+        query.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+      }
+      if (genericType.generic_type_lv3_id.length) {
+        query.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+      }
     }
     query.groupBy('g.generic_id')
       .orderBy('g.generic_name')
@@ -384,7 +393,7 @@ export class WarehouseModel {
       .where('p.warehouse_id', warehouseId)
       // .whereRaw('p.qty > 0')
       .where('p.is_actived', 'Y')
-      .whereIn('g.generic_type_id', productGroups)
+      // .whereIn('g.generic_type_id', productGroups)
       .where(w => {
         w.where('mp.product_name', 'like', _q)
           .orWhere('g.generic_name', 'like', _q)
@@ -394,7 +403,15 @@ export class WarehouseModel {
           .orWhere('g.keywords', 'like', _q)
       })
     if (genericType) {
-      query.andWhere('g.generic_type_id', genericType);
+      if (genericType.generic_type_lv1_id.length) {
+        query.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
+      }
+      if (genericType.generic_type_lv2_id.length) {
+        query.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+      }
+      if (genericType.generic_type_lv3_id.length) {
+        query.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+      }
     }
     query.groupBy('g.generic_id')
       .orderBy('g.generic_name')
