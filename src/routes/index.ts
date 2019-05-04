@@ -322,8 +322,8 @@ router.get('/report/purchase-bit-type', wrap(async (req, res, next) => {
     let other = _.map(_.groupBy(_other, 'generic_type_id'), (obj: any) => {
       return obj
     })
-    if(ed.length>0)data.push( _.map(ed))
-    if(ned.length>0)data.push( _.map(ned))
+    if (ed.length > 0) data.push(_.map(ed))
+    if (ned.length > 0) data.push(_.map(ned))
     for (const t of other) {
       data.push(_.cloneDeep(t))
     }
@@ -351,12 +351,12 @@ router.get('/report/purchase-bit-type', wrap(async (req, res, next) => {
       // res.send({ rst:rst ,ot:_ot})
       res.render('purchase_bit_type', {
         today: this.today,
-        hospitalName:hospitalName,
+        hospitalName: hospitalName,
         // warehouseName:warehouseName,
         startdate: startdate,
         enddate: enddate,
-        lBitType:rst,
-        data:_ot
+        lBitType: rst,
+        data: _ot
       })
     } else {
       res.render('error404')
@@ -5167,6 +5167,7 @@ router.get('/report/requisition-sum-product', wrap(async (req, res, next) => {
         let units = i.group_unit_generic_id.split(',');
         let unit = units[0];
         for (const u of units) {
+          i.unit_name = ` ${i.from_unit_name} (${i.conversion} ${i.to_unit_name}) = ${i.qty * i.conversion} ${i.primary_unit_name}`;
           if (unit != u) {
             i.unit_name = i.primary_unit_name
           }
