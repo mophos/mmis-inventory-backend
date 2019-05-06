@@ -2822,6 +2822,84 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   });
 }));
 
+router.get('/report/check/receive3', wrap(async (req, res, next) => {
+  let db = req.db;
+  let receiveID = req.query.receiveID
+  receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let master = hosdetail[0].managerName;
+  let hospitalName = hosdetail[0].hospname;
+  let province = hosdetail[0].province;
+  let telephone = hosdetail[0].telephone;
+  let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
+  let productReceive = await inventoryReportModel.productReceive2(db, receiveID);
+
+  productReceive = productReceive[0];
+  productReceive.forEach(value => {
+    value.receive_date = moment(value.receive_date).format('D/MM/YYYY');
+    value.expired_date = moment(value.expired_date, 'YYYY-MM-DD').isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : '-';
+    value.total_cost = inventoryReportModel.comma(value.total_cost);
+    value.cost = inventoryReportModel.comma(value.cost);
+    if (value.discount_percent == null) value.discount_percent = '0.00%';
+    else { value.discount_percent = (value.discount_percent.toFixed(2)) + '%' }
+    if (value.discount_cash == null) value.discount_cash = '0.00';
+    else { value.discount_cash = (value.discount_cash.toFixed(2)) + 'บาท' }
+  });
+  let bahtText: any = []
+  let committee: any = []
+  let invenChief: any = []
+  check_receive = check_receive[0];
+
+  for (const v of check_receive) {
+    v.receive_date = moment(v.receive_date).format('D MMMM ') + (moment(v.receive_date).get('year') + 543);
+    v.delivery_date = moment(v.delivery_date).format('D MMMM ') + (moment(v.delivery_date).get('year') + 543);
+    v.podate = moment(v.podate).format('D MMMM ') + (moment(v.podate).get('year') + 543);
+    v.approve_date = moment(v.approve_date).format('D MMMM ') + (moment(v.approve_date).get('year') + 543);
+    let _bahtText = inventoryReportModel.bahtText(v.total_price);
+    v.bahtText = _bahtText;
+    v.total_price = inventoryReportModel.comma(v.total_price);
+    let _committee = await inventoryReportModel.invenCommittee(db, v.receive_id);
+    v.committee = _committee[0];
+    let _invenChief = await inventoryReportModel.inven2Chief(db, v.receive_id)
+    invenChief.push(_invenChief[0]);
+
+    let chief = await inventoryReportModel.peopleFullName(db, v.chief_id);
+    v.chief = chief[0];
+    let buyer = await inventoryReportModel.peopleFullName(db, v.supply_id);
+    let _staffReceive: any;
+
+    if (buyer[0] === undefined) {
+      _staffReceive = await inventoryReportModel.staffReceive(db);
+      v.staffReceive = _staffReceive[0];
+    } else {
+      v.staffReceive = buyer[0];
+    }
+    v.productReceive = _.filter(productReceive,(_v:any)=>{
+      return v.receive_id == _v.receive_id
+    })
+   
+  }
+
+  let serialYear = moment().get('year') + 543;
+  let monthRo = moment().get('month') + 1;
+  if (monthRo >= 10) {
+    serialYear += 1;
+  }
+  // res.send(({check_receive:check_receive}))
+  res.render('check_receive3', {
+    master: master,
+    hospitalName: hospitalName,
+    serialYear: serialYear,
+    check_receive: check_receive,
+    province: province,
+    telephone: telephone,
+    bahtText: bahtText,
+    committee: committee,
+    invenChief: invenChief,
+    receiveID: receiveID
+  });
+}));
+
 router.get('/report/check/receive/2', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID = req.query.receiveID

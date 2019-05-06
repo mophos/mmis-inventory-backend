@@ -1483,7 +1483,7 @@ FROM
         wp.expired_date,
         wp.lot_no,
         wl.location_name,
-        ml2.labeler_name AS labeler_name_m
+        ml2.labeler_name AS labeler_name_m,
         ml2.labeler_name_po AS labeler_name_po_m
         FROM
             wm_receives wr
@@ -2445,7 +2445,8 @@ OR sc.ref_src like ?
         LEFT JOIN mm_generics mg ON mg.generic_id = mp.generic_id
         LEFt JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
         WHERE wr.receive_id IN (${receiveID})
-        GROUP BY wr.receive_id`
+        GROUP BY wr.receive_id
+        order by wr.receive_id`
         return (knex.raw(sql))
     }
 
@@ -2646,7 +2647,8 @@ OR sc.ref_src like ?
         LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
     WHERE
         r.receive_id IN ( ${receiveID} )
-    GROUP BY wrd.receive_detail_id`
+    GROUP BY wrd.receive_detail_id
+    order by r.receive_id`
         return knex.raw(sql);
     }
     productReceiveOther(knex: Knex, receiveID) {
