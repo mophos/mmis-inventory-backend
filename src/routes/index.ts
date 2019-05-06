@@ -5597,4 +5597,39 @@ router.get('/report/export/staff-remain', wrap(async (req, res, next) => {
   }
 }
 ));
+
+router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
+  const db = req.db;
+  let warehouseId: any = req.query.warehouseId;
+  if (!warehouseId) {
+    warehouseId = req.decoded.warehouseId;
+  }
+  const month = moment(req.query.month, 'M').format('MM');
+  const year = req.query.year
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let genericType = req.query.genericTypes
+  genericType = Array.isArray(genericType) ? genericType : [genericType];
+
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    let monthName = moment((+year) + '-' + (+month) + '-1').format('MMMM');
+    let monthbeforName = moment(((+month) % 12 == 1 ? +year - 1 : +year) + '-' + ((+month) % 12 == 1 ? 12 : +month - 1) + '-1').format('MMMM');
+    let dateMonth = `${year}-${month}`;
+    let startDate = `${dateMonth}-01`;
+    let endDate = `${dateMonth}-${moment(dateMonth, 'YYYY-MM').daysInMonth()}`;
+    let rsBalance = await inventoryReportModel.monthlyReportBalance(db, warehouseId, genericType, startDate);
+    rsBalance = rsBalance[0];
+
+
+    res.render('monthly-report-all', {
+      monthName: monthName,
+      monthbeforName: monthbeforName,
+      year: +year + 543,
+      hospitalName: hospitalName
+    });
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  }
+}));
 export default router;
