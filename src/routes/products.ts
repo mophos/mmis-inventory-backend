@@ -382,9 +382,11 @@ router.post('/stock/products/all', async (req, res, next) => {
   let genericType = req.body.genericType;
   let warehouseId = req.body.warehouseId;
   let sort = req.body.sort;
-  if (typeof genericType === 'string') {
-    genericType = [genericType];
-  }
+  // if (typeof genericType === 'string') {
+  //   genericType = [genericType];
+  // }
+  console.log('genericType==========', genericType);
+
   if (genericType) {
     try {
       let rsTotal = await productModel.adminGetAllProductTotal(db, genericType, warehouseId);

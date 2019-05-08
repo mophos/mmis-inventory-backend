@@ -115,7 +115,7 @@ export class HisTransactionModel {
 
     // get his transaction staff
     getHisTransactionStaff(db: Knex, hospcode: any, genericType: any, warehouseId: any) {
-        return db('wm_his_transaction as tt')
+        let sql = db('wm_his_transaction as tt')
             .select('tt.*', 'hm.mmis', 'hm.conversion', 'w.warehouse_name', 'w.warehouse_id',
                 'mg.generic_name', 'mg.working_code', 'mu.unit_name')
             .joinRaw('inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode')
@@ -125,13 +125,25 @@ export class HisTransactionModel {
             .where('tt.is_cut_stock', 'N')
             .andWhere('tt.hospcode', hospcode)
             .andWhere('tt.mmis_warehouse', warehouseId)
-            .whereIn('mg.generic_type_id', genericType)
-            .groupBy('tt.transaction_id')
+        //// .whereIn('mg.generic_type_id', genericType)
+        if (genericType) {
+            if (genericType.generic_type_lv1_id.length) {
+                sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id);
+            }
+            if (genericType.generic_type_lv2_id.length) {
+                sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
+            }
+            if (genericType.generic_type_lv3_id.length) {
+                sql.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
+            }
+        }
+        sql.groupBy('tt.transaction_id')
             .orderBy('tt.transaction_id');
+        return sql;
     }
 
     getHisHistoryTransactionStaff(db: Knex, hospcode: any, genericType: any, warehouseId: any, date: any) {
-        return db('wm_his_transaction as tt')
+        let sql = db('wm_his_transaction as tt')
             .select('tt.*', 'hm.mmis', 'hm.conversion', 'w.warehouse_name', 'w.warehouse_id',
                 'mg.generic_name', 'mg.working_code', 'mu.unit_name')
             .joinRaw('inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode')
@@ -142,9 +154,22 @@ export class HisTransactionModel {
             .andWhere('tt.hospcode', hospcode)
             .andWhere('tt.mmis_warehouse', warehouseId)
             .andWhere('tt.date_serv', date)
-            .whereIn('mg.generic_type_id', genericType)
-            .groupBy('tt.transaction_id')
+        //// .whereIn('mg.generic_type_id', genericType)
+        if (genericType) {
+
+            if (genericType.generic_type_lv1_id.length) {
+                sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id);
+            }
+            if (genericType.generic_type_lv2_id.length) {
+                sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
+            }
+            if (genericType.generic_type_lv3_id.length) {
+                sql.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
+            }
+        }
+        sql.groupBy('tt.transaction_id')
             .orderBy('tt.transaction_id');
+        return sql;
     }
 
     // get his transaction for issue

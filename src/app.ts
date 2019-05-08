@@ -226,7 +226,7 @@ app.use('/types', checkAuth, adminAuth, typeRoute);
 app.use('/drug-dosages', checkAuth, adminAuth, dosageRoute);
 app.use('/drug-types', checkAuth, adminAuth, drugTypeRoute);
 app.use('/drug-groups', checkAuth, adminAuth, drugGroupRoute);
-app.use('/std', checkAuth, adminAuth, stdRoute);
+app.use('/std', checkAuth, stdRoute);
 app.use('/basic', checkAuth, basicRoute);
 
 // WM

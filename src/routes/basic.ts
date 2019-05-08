@@ -274,7 +274,6 @@ router.get('/search-donator', co(async (req, res, next) => {
 
 router.get('/generic-types', co(async (req, res, next) => {
   let db = req.db;
-
   try {
     let productGroups = req.decoded.generic_type_id;
     let _pgs = [];
@@ -285,7 +284,6 @@ router.get('/generic-types', co(async (req, res, next) => {
         _pgs.push(v);
       });
     }
-
     let rs = await genericModel.getGenericTypes(db, _pgs);
     res.send({ ok: true, rows: rs });
   } catch (error) {
@@ -294,7 +292,100 @@ router.get('/generic-types', co(async (req, res, next) => {
   } finally {
     db.destroy();
   }
+}));
 
+router.get('/generic-types/lv1', co(async (req, res, next) => {
+  let db = req.db;
+  try {
+    let productGroups = req.decoded.generic_type_id;
+    let _pgs = [];
+
+    if (productGroups) {
+      let pgs = productGroups.split(',');
+      pgs.forEach(v => {
+        _pgs.push(v);
+      });
+    }
+    let rs = await basicModel.getGenericTypesLV1(db, _pgs);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+router.get('/generic-types/lv2', co(async (req, res, next) => {
+  let db = req.db;
+  const genericTypeLV1Id = req.query.genericTypeLV1Id == 'null' ? null : req.query.genericTypeLV1Id;
+  try {
+    let _genericTypeLV1Id = req.decoded.generic_type_id;
+    let _genericTypeLV2Id = req.decoded.generic_type_lv2_id;
+    let v1: any = [];
+    let v2: any = [];
+
+    if (_genericTypeLV1Id) {
+      v1 = _genericTypeLV1Id.split(',');
+    } else {
+      v1 = [];
+    }
+
+    if (_genericTypeLV2Id) {
+      v2 = _genericTypeLV2Id.split(',');
+    } else {
+      v2 = [];
+    }
+    console.log('v2--', genericTypeLV1Id, v1, v2);
+
+
+    let rs = await basicModel.getGenericTypesLV2(db, genericTypeLV1Id, v1, v2);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+router.get('/generic-types/lv3', co(async (req, res, next) => {
+  let db = req.db;
+  const genericTypeLV1Id = req.query.genericTypeLV1Id == 'null' ? null : req.query.genericTypeLV1Id;
+  const genericTypeLV2Id = req.query.genericTypeLV2Id == 'null' ? null : req.query.genericTypeLV2Id;
+  try {
+    let _genericTypeLV1Id = req.decoded.generic_type_id;
+    let _genericTypeLV2Id = req.decoded.generic_type_lv2_id;
+    let _genericTypeLV3Id = req.decoded.generic_type_lv3_id;
+    let v1: any = [];
+    let v2: any = [];
+    let v3: any = [];
+
+    if (_genericTypeLV1Id) {
+      v1 = _genericTypeLV1Id.split(',');
+    } else {
+      v1 = [];
+    }
+
+    if (_genericTypeLV2Id) {
+      v2 = _genericTypeLV2Id.split(',');
+    } else {
+      v2 = [];
+    }
+
+    if (_genericTypeLV3Id) {
+      v3 = _genericTypeLV3Id.split(',');
+    } else {
+      v3 = [];
+    }
+
+    console.log('v3--', genericTypeLV1Id, v1, v2, v3);
+    let rs = await basicModel.getGenericTypesLV3(db, genericTypeLV1Id, genericTypeLV2Id, v1, v2, v3);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
 }));
 
 router.get('/generic-group-list', co(async (req, res, next) => {
