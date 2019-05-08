@@ -11,18 +11,19 @@ html
     title report
   body
     button.btn.btn-sm.btn-success.btnprint(onclick='window.print()') Print
+    table.table
+      tr
+        td.left.bold.h1(colspan=4) สรุปยอดรับวัสดุประจำวันที่ #{startDate} ถึง #{endDate}
+        td.right(colspan=4)  #{genericTypeName}
     table.table2
       thead
-        //- tr
-        //-   td.left.bold.h1(colspan=4) สรุปยอดรับวัสดุประจำวันที่ #{startDate} ถึง #{endDate}
-        //-   td.right(colspan=4)  #{genericTypeName}
         tr 
           th(style='width:2%;')
-          th(style='width:33%;') ชื่อวัสดุ
+          th(style='width:35%;') ชื่อวัสดุ
           th(style='width:10%;') วัน/เดือน/ปี
           th(style='width:15%;') เลขที่เอกสาร
-          th(style='width:10%;') หน่วยนับ
-          th(style='width:10%;') จำนวนรับ
+          th(style='width:8%;') หน่วยนับ
+          th(style='width:8%;') จำนวนรับ
           th(style='width:10%;') ราคา/หน่วย
           th(style='width:10%;') รวมราคาวัสดุ
       tbody
@@ -55,8 +56,8 @@ html
             td.right(colspan=2) #{v.total_price} บาท
           tr.tbfooter
             td(colspan=8 )
-        .pagebreak
-      table.table2
-        td.left(style='width:60%;') 
-        td.left(style='width:15%;border-bottom: 3px double black;') รวมยอดคงคลัง
-        td.right(style='width:25%;border-bottom: 3px double black;') #{total_price} บาท
+        //- .pagebreak
+    table.table2
+      td.left(style='width:60%;') 
+      td.left(style='width:15%;border-bottom: 3px double black;') รวมยอดคงคลัง
+      td.right(style='width:25%;border-bottom: 3px double black;') #{total_price} บาท
