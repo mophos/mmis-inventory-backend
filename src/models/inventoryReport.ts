@@ -1446,7 +1446,7 @@ FROM
             '','','','','','','',
                 mg.working_code generic_id,
                 mg.generic_name,
-                wp.qty,
+                wp.qty / mug.qty as qty,
                 mug.qty as small_qty,
                 mus.unit_name as small_unit,
                 mu.unit_name as large_unit,
