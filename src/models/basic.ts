@@ -185,18 +185,41 @@ export class BasicModel {
       .orderBy('generic_type_name');
   }
 
-  getGenericTypesLV2(knex: Knex, _pgs: any[], genericTypeLV1Id) {
-    return knex('mm_generic_types_lv2')
+  getGenericTypesLV2(knex: Knex, genericTypeLV1Id, v1, v2) {
+    let sql = knex('mm_generic_types_lv2')
       .where('is_deleted', 'N')
-      .where('generic_type_lv1_id', genericTypeLV1Id)
-      .orderBy('generic_type_lv2_name');
+    if (genericTypeLV1Id) {
+      sql.where('generic_type_lv1_id', genericTypeLV1Id)
+    }
+    if (v1.length) {
+      sql.whereIn('generic_type_lv1_id', v1)
+    }
+    if (v2.length) {
+      sql.whereIn('generic_type_lv2_id', v2)
+    }
+    sql.orderBy('generic_type_lv2_name');
+    return sql;
   }
 
-  getGenericTypesLV3(knex: Knex, _pgs: any[], genericTypeLV1Id, genericTypeLV2Id) {
-    return knex('mm_generic_types_lv3')
+  getGenericTypesLV3(knex: Knex, genericTypeLV1Id, genericTypeLV2Id, v1, v2, v3) {
+    let sql = knex('mm_generic_types_lv3')
       .where('is_deleted', 'N')
-      .where('generic_type_lv1_id', genericTypeLV1Id)
-      .where('generic_type_lv2_id', genericTypeLV2Id)
-      .orderBy('generic_type_lv3_name');
+    if (genericTypeLV1Id) {
+      sql.where('generic_type_lv1_id', genericTypeLV1Id)
+    }
+    if (genericTypeLV2Id) {
+      sql.where('generic_type_lv2_id', genericTypeLV2Id)
+    }
+    if (v1.length) {
+      sql.whereIn('generic_type_lv1_id', v1)
+    }
+    if (v2.length) {
+      sql.whereIn('generic_type_lv2_id', v2)
+    }
+    if (v3.length) {
+      sql.whereIn('generic_type_lv3_id', v3)
+    }
+    sql.orderBy('generic_type_lv3_name');
+    return sql;
   }
 }
