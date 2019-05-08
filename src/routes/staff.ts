@@ -2476,8 +2476,8 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
                 expired_date: p.expired_date,
                 wm_product_id_out: p.wm_product_id
               };
-            //คนไข้คืนยา
-            } else if(h.qty < 0 && HIStype == 2) {
+              //คนไข้คืนยา
+            } else if (h.qty < 0 && HIStype == 2) {
               data = {
                 stock_date: moment(h.date_serv).format('YYYY-MM-DD HH:mm:ss'),
                 product_id: p.product_id,
@@ -3937,8 +3937,12 @@ router.delete('/issue/remove-template/:templateId', co(async (req, res, next) =>
 
     let templateId = req.params.templateId;
 
-    await warehouseModel.deleteTemplateIssue(db, templateId);
-    await warehouseModel.deleteTemplateItemsIssue(db, templateId);
+    const data = {
+      mark_deleted: 'Y',
+      people_user_id_deleted: req.decoded.people_user_id
+    };
+
+    await warehouseModel.markDeleteTemplateIssue(db, templateId, data);
     res.send({ ok: true });
   } catch (error) {
     console.log(error);
@@ -3947,6 +3951,29 @@ router.delete('/issue/remove-template/:templateId', co(async (req, res, next) =>
     db.destroy();
   }
 }));
+
+router.delete('/requisition/remove-template/:templateId', co(async (req, res, next) => {
+  let db = req.db;
+  try {
+
+    let templateId = req.params.templateId;
+
+    const data = {
+      mark_deleted: 'Y',
+      people_user_id_deleted: req.decoded.people_user_id
+    };
+
+    await warehouseModel.markDeleteTemplate(db, templateId, data);
+
+    res.send({ ok: true });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.messge });
+  } finally {
+    db.destroy();
+  }
+}));
+
 router.post('/warehouses/savewarehouseproducttemplate-issue', co(async (req, res, next) => {
   let templateSummary = req.body.templateSummary;
   let products = req.body.products;

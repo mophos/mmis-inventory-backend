@@ -789,8 +789,13 @@ router.delete('/requisition/remove-template/:templateId', wrap(async (req, res, 
 
     let templateId = req.params.templateId;
 
-    await warehouseModel.deleteTemplate(db, templateId);
-    await warehouseModel.deleteTemplateItems(db, templateId);
+    const data = {
+      mark_deleted: 'Y',
+      people_user_id_deleted: req.decoded.people_user_id
+    };
+
+    await warehouseModel.markDeleteTemplate(db, templateId, data);
+
     res.send({ ok: true });
   } catch (error) {
     console.log(error);
@@ -805,8 +810,13 @@ router.delete('/issue/remove-template/:templateId', wrap(async (req, res, next) 
 
     let templateId = req.params.templateId;
 
-    await warehouseModel.deleteTemplateIssue(db, templateId);
-    await warehouseModel.deleteTemplateItemsIssue(db, templateId);
+    const data = {
+      mark_deleted: 'Y',
+      people_user_id_deleted: req.decoded.people_user_id
+    };
+
+    await warehouseModel.markDeleteTemplateIssue(db, templateId, data);
+
     res.send({ ok: true });
   } catch (error) {
     console.log(error);
