@@ -16,6 +16,7 @@ const issueModel = new IssueModel();
 const receiveModel = new ReceiveModel();
 const warehouseModel = new WarehouseModel();
 
+const excel4node = require('excel4node');
 const signale = require('signale');
 const path = require('path')
 const fse = require('fs-extra');
@@ -52,7 +53,13 @@ function dateToDMMYYYY(date) {
 }
 
 function dateToDDMMMYY(date) {
-  return moment(date).isValid() ? moment(date).format('DD MMM ') + (''+(+moment(date).get('year') + 543)).substr(2,2) : '-';
+  return moment(date).isValid() ? moment(date).format('DD MMM ') + ('' + (+moment(date).get('year') + 543)).substr(2, 2) : '-';
+}
+function dateToDD_MMM_YY(date) {
+  return moment(date).isValid() ? moment(date).format('DD-MMM-') + ('' + (+moment(date).get('year') + 543)).substr(2, 2) : '-';
+}
+function dateToDD_MM_YYYY(date) {
+  return moment(date).isValid() ? moment(date).format('DD-MM-') + ('' + (+moment(date).get('year') + 543)) : '-';
 }
 
 function comma(num) {
@@ -2826,15 +2833,132 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   });
 }));
 
+router.get('/report/receive-where-vender/excel', wrap(async (req, res, next) => {
+  let db = req.db
+  let startDate = req.query.startDate
+  let endDate = req.query.endDate
+  let genericTypeId = req.query.genericTypeId
+  let genericTypeName = req.query.genericTypeName
+  let wareHouseId = req.query.wareHouseId
+  var wb = new excel4node.Workbook();
+  // Add Worksheets to the workbook
+  var ws = wb.addWorksheet('Sheet 1');
+  try {
+    genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
+    var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId, wareHouseId)
+    if (rs) {
+      var total_price_all: any = 0
+      rs = _(rs).groupBy('vendor_labeler_id').map((v: any) => { return v })
+
+      var textBold = wb.createStyle({
+        font: {
+          // color: '#FF0800',
+          bold: true
+        },
+        numberFormat: '#,##0.00; (#,##0.00); -',
+      });
+      var styleQty = wb.createStyle({
+        numberFormat: '#,##0; (#,##0); -',
+      });
+      var styleCost = wb.createStyle({
+        numberFormat: '#,##0.00; (#,##0.00); -',
+      });
+      var lastSet = wb.createStyle({
+        border: {
+          bottom: {
+            style: 'medium'
+          }
+        }
+      });
+      var lastList = wb.createStyle({
+        border: {
+          bottom: {
+            style: 'double'
+          }
+        }
+      });
+
+      ws.cell(2, 2, 2, 4, true).string('ชื่อวัสดุ');
+      ws.cell(2, 5).string('วัน/เดือน/ปี');
+      ws.cell(2, 6).string('เลขที่เอกสาร');
+      ws.cell(2, 7).string('หน่วยนับ');
+      ws.cell(2, 8).string('จำนวนรับ');
+      ws.cell(2, 9).string('ราคา/หน่วย');
+      ws.cell(2, 10).string('รวมราคาวัสดุ');
+
+      var startCell = 2;
+
+      for (const _rs of rs) {
+        var totalPrice = 0;
+        var number = 1
+        startCell += 2
+        ws.cell(startCell, 2, startCell, 3, true).string('รับจาก');
+        ws.cell(startCell, 4, startCell, 6, true).string(_rs[0].labeler_name);
+        for (const v of _rs) {
+          v.total_price = v.receive_qty * v.cost;
+          totalPrice += v.total_price
+          // v.approve_date = dateToDD_MM_YYYY(v.approve_date)
+
+          ws.cell(++startCell, 1).number(number++);
+          ws.cell(startCell, 2, startCell, 4, true).string(v.generic_name);
+          ws.cell(startCell, 5).date(moment(v.approve_date).format('YYYY-MM-DD'));
+          ws.cell(startCell, 6).string(v.delivery_code);
+          ws.cell(startCell, 7).string(v.unit_name);
+          ws.cell(startCell, 8).number(v.receive_qty).style(styleQty);
+          ws.cell(startCell, 9).number(v.cost).style(styleCost);
+          ws.cell(startCell, 10).number(v.total_price).style(styleCost);
+
+        }
+        total_price_all += totalPrice;
+        ws.cell(++startCell, 7).string('ยอดรวม').style(lastSet);
+        ws.cell(startCell, 1, startCell, 6, true).style(lastSet)
+        ws.cell(startCell, 8, startCell, 9, true).number(totalPrice).style(lastSet).style(styleCost);
+        ws.cell(startCell, 10).string('บาท').style(lastSet);
+      }
+
+      startDate = dateToDDMMMYY(startDate)
+      endDate = dateToDDMMMYY(endDate)
+      ws.cell(1, 1, 1, 7, true).string('สรุปยอดรับวัสดุประจำวันที่ ' + startDate + ' ถึง ' + endDate).style(textBold);
+      ws.cell(1, 8, 1, 10, true).string(genericTypeName);
+
+      ++startCell
+      ws.cell(++startCell, 7).string('ยอดรวมคงคลัง').style(lastList);
+      ws.cell(startCell, 8, startCell, 9, true).number(total_price_all).style(lastList).style(styleCost);
+      ws.cell(startCell, 10).string('บาท').style(lastList);
+
+      wb.write('สรุปยอดรับวัสดุ.xlsx', function (err, stats) {
+        if (err) {
+          console.error(err);
+          res.send({ ok: false, error: err })
+        } else {
+          res.download('สรุปยอดรับวัสดุ.xlsx', (err) => {
+            if (err) {
+              res.send({ ok: false, message: err })
+            } else {
+              fse.removeSync('สรุปยอดรับวัสดุ.xlsx');
+            }
+          });
+        }
+      });
+
+    } else {
+      res.send({ ok: false, error: 'data error!!' })
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  }
+}))
+
 router.get('/report/receive-where-vender', wrap(async (req, res, next) => {
   let db = req.db
   let startDate = req.query.startDate
   let endDate = req.query.endDate
   let genericTypeId = req.query.genericTypeId
   let genericTypeName = req.query.genericTypeName
+  let wareHouseId = req.query.wareHouseId
   try {
     genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
-    var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId)
+    var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId, wareHouseId)
     if (rs) {
       var data = []
       var total_price_all: any = 0
@@ -2856,20 +2980,20 @@ router.get('/report/receive-where-vender', wrap(async (req, res, next) => {
       startDate = dateToDDMMMYY(startDate)
       endDate = dateToDDMMMYY(endDate)
       // res.send({ data: data })
-      res.render('receive_where_vender',{
+      res.render('receive_where_vender', {
         startDate: startDate,
         endDate: endDate,
         data: data,
         genericTypeName: genericTypeName,
-        total_price:total_price_all
+        total_price: total_price_all
       })
     } else {
       res.render('error404')
       // res.send({ ok: false, error: 'error.message' })
     }
   } catch (error) {
-    res.send({ ok: false, error: error.message })
-    // res.render('error404')
+    // res.send({ ok: false, error: error.message })
+    res.render('error404')
   }
 }))
 

@@ -2409,25 +2409,29 @@ OR sc.ref_src like ?
 
     }
 
-    receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any) {
-        console.log(startDate + ' 00:00:00------');
+    receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any,wareHouseId:any) {
         
-        return knex('wm_receive_approve as ra')
-            .select('r.receive_id','r.receive_code','r.delivery_code','g.generic_id','g.working_code','g.generic_name',
-        'rd.receive_qty','rd.cost','uf.unit_name','ug.qty','ra.approve_date','rd.unit_generic_id','r.vendor_labeler_id','l.labeler_name')
-            .join('wm_receives as r ', ' r.receive_id', 'ra.receive_id')
-            .join(' wm_receive_detail as rd ', ' rd.receive_id ', ' ra.receive_id')
-            .join(' mm_unit_generics as ug ', ' ug.unit_generic_id ', ' rd.unit_generic_id')
-            .join(' mm_generics as g ', ' g.generic_id ', ' ug.generic_id')
-            .join(' mm_units as uf ', ' uf.unit_id ', ' ug.from_unit_id ')
-            .join('mm_labelers as l','l.labeler_id','rd.vendor_labeler_id')
-            .whereBetween('ra.approve_date', [startDate + ' 00:00:00', endDate + ' 23:59:59'])
-            .whereIn('g.generic_type_id',genericTypeId)
-            .orderBy('ra.approve_date')
-            .orderBy('ra.approve_id')
-            .orderBy('r.vendor_labeler_id')
-            .orderBy('g.generic_name');
-            
+        let query = knex('wm_receive_approve as ra')
+        .select('r.receive_id','r.receive_code','r.delivery_code','g.generic_id','g.working_code','g.generic_name',
+    'rd.receive_qty','rd.cost','uf.unit_name','ug.qty','ra.approve_date','rd.unit_generic_id','r.vendor_labeler_id','l.labeler_name')
+        .join('wm_receives as r ', ' r.receive_id', 'ra.receive_id')
+        .join(' wm_receive_detail as rd ', ' rd.receive_id ', ' ra.receive_id')
+        .join(' mm_unit_generics as ug ', ' ug.unit_generic_id ', ' rd.unit_generic_id')
+        .join(' mm_generics as g ', ' g.generic_id ', ' ug.generic_id')
+        .join(' mm_units as uf ', ' uf.unit_id ', ' ug.from_unit_id ')
+        .join('mm_labelers as l','l.labeler_id','rd.vendor_labeler_id')
+        .whereBetween('ra.approve_date', [startDate + ' 00:00:00', endDate + ' 23:59:59'])
+        .whereIn('g.generic_type_id',genericTypeId)
+        .orderBy('ra.approve_date')
+        .orderBy('ra.approve_id')
+        .orderBy('r.vendor_labeler_id')
+        .orderBy('g.generic_name');
+
+        if (wareHouseId != 0) {
+            query.andWhere('r.warehouse_id', wareHouseId)
+        }
+
+        return query
     }
 
     checkReceive(knex: Knex, receiveID) {

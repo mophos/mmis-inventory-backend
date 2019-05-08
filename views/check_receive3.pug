@@ -20,37 +20,26 @@ html
         table.table
           tr
             td.left(colspan='2') ส่วนราชการ กลุ่มงานเภสัชกรรม #{hospitalName} จังหวัด#{province} โทร #{telephone}
-            //- #{v.receive_code}
-            //- td.center(style="margin-left:42%;") เขียนที่ #{hospitalName}
           tr
             if(v.purchase_order_book_number !== null)
               td.left #{v.purchase_order_book_number}
             else
               td.left #{v.purchase_order_number}
-            //- #{v.receive_code}
             td.center(style="margin-left:42%;") วันที่ #{v.receive_date}
           tr
             td.left(colspan='2') เรื่อง รายงานผลการตรวจรับยา และรับมอบเข้าคลังเวชภัณฑ์ยา
           tr.tbfooter
             td(colspan='2')
-        //- div(style='margin-left:42%;') วันที่ #{v.receive_date}
         table.table
           tr  
             td.left(colspan='5') เรียน ผู้ว่าราชการจังหวัด#{province}
-          //- tr  
-          //-   th(style="width:25%; border:0px")
-          //-   th(style="width:25%; border:0px")
-          //-   th(style="width:25%; border:0px")
-          //-   th(style="width:25%; border:0px")
           tr
             if(v.purchase_order_book_number !== null)
               td.left(style="padding-left: 75px;" colspan='5') ตามใบสั่งซื้อเลขที่ #{v.purchase_order_book_number} ลงวันที่ #{v.podate} ผู้ตรวจรับพัสดุ /กรรมการตรวจรับ
             else
               td.left(style="padding-left: 75px;" colspan='5') ตามใบสั่งซื้อเลขที่ #{v.purchase_order_number} ลงวันที่ #{v.podate} ผู้ตรวจรับพัสดุ /กรรมการตรวจรับ
-            //- td.left(colspan='1') ลงวันที่ #{v.podate} ผู้ตรวจรับพัสดุ /กรรมการตรวจรับ
-            //- td.right(colspan='1') ผู้ตรวจรับพัสดุ /กรรมการตรวจรับ
           tr
-            td.left(colspan='3') ได้ร่วมกันตรวจรับพัสดุจากผู้ชาย &nbsp;&nbsp; บริษัท/ห.จ.ก &nbsp;&nbsp; #{v.labeler_name_po} &nbsp;&nbsp; จำกัด
+            td.left(colspan='3') ได้ร่วมกันตรวจรับพัสดุจากผู้ขาย &nbsp;&nbsp; #{v.labeler_name_po} &nbsp;&nbsp;
             td.right(colspan='2') เมื่อวันที่ #{v.receive_date}
               
           tr
@@ -78,14 +67,10 @@ html
           tr  
             td.left(style="padding-left: 75px;" colspan='1')
               span จำนวน #{v.amount_qty} รายการ
-            //- td.center(colspan='2')
-            //-   span(style="padding-right:3em") ตามใบส่งของเลขที่ #{v.delivery_code}
             td.center(colspan='1') เป็นเงินทั้งสิน 
             td.center #{v.total_price} 
             td.center บาท 
-            //-   span จำนวน #{v.amount_qty} รายการ
           tr
-            //- td.left(colspan='1') เป็นเงินทั้งสิน
             td.left(style="padding-left: 75px;" colspan='3' ) (..................#{v.bahtText}..................)
           tr
               td
@@ -97,26 +82,6 @@ html
           tr
             td.left(colspan='4') เพื่อเข้าระบบการควบคุมทางบัญชีและเก็บรักษาในคลังเรียบร้อยแล้ว
         br
-        //- table(style="width: 90%; margin-left: 5%;")
-        //-   - for(var i of v.committee)
-        //-     tr
-        //-       td
-        //-       td(style="height:20px;")
-        //-       td 
-        //-       td
-        //-     tr
-        //-       td.right(width="5%") (ลงชื่อ)
-        //-       td.center(width="50%") ........................................................... 
-        //-       td.left ตำแหน่ง #{i.pname}
-        //-       td.left ผู้ตรวจรับพัสดุ
-        //-     tr
-        //-       td
-        //-       td.center (#{i.title_name}#{i.fname} #{i.lname})
-        //-       td.center 
-        //-       td
-        //- | ได้รับมอบพัสดุรายการข้างต้นจากผู้ตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
-        //- br
-        //- br
         table
           tr
             td(style="padding-left: 300px;")
@@ -140,7 +105,7 @@ html
             td
         br
         .fontspace
-        | ตามที่ ผู้ขาย บริษัท/ห.จ.ก &nbsp;&nbsp; #{v.labeler_name_po} &nbsp;&nbsp; จำกัด ได้ส่งมอบเวชภัณฑ์ยา ซึ่งผู้ตรวจรับ /คณะกรรมการตรวจรับ ได้ตรวจรับและส่งมอบเข้าระบบควบคุมทางบัญชีและเก็บรักษาไว้แล้ว จึงเห็นควรเบิกจ่ายงินจำนวน #{v.total_price} บาท
+        | ตามที่ ผู้ขาย #{v.labeler_name_po} &nbsp;&nbsp; ได้ส่งมอบเวชภัณฑ์ยา ซึ่งผู้ตรวจรับ /คณะกรรมการตรวจรับ ได้ตรวจรับและส่งมอบเข้าระบบควบคุมทางบัญชีและเก็บรักษาไว้แล้ว จึงเห็นควรเบิกจ่ายงินจำนวน #{v.total_price} บาท
         br
         | (..#{v.bahtText}....) ให้ผู้ขายต่อไป
         br
@@ -212,26 +177,5 @@ html
               td 
               td.center  ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{province}
               td
-          //- tr
-          //-   td
-          //-   td(style="height:20px;")
-          //-   td
-          //- tr
-          //-   td
-          //-   td(style="height:70px;").center ทราบ
-          //-   td
-          //- tr
-          //-   td.right(width="5%")
-          //-   td.center(width="50%") ...........................................................
-          //-   td.left 
-          //- tr
-          //-   td.center 
-          //-   td.center  
-          //-     | (#{master})
-          //-     br
-          //-     | ผู้อำนวยการ#{hospitalName}
-          //-     br
-          //-     | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{province}
-          //-   td
         - c++ 
         .pagebreak
