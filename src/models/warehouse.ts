@@ -390,7 +390,7 @@ export class WarehouseModel {
   getGenericsWarehouseStaff(knex: Knex, warehouseId: string, productGroups: any[], genericType: any) {
     let sql = knex('wm_products as p')
       .select('mp.generic_id', knex.raw('sum(p.qty) as qty'), knex.raw('ifnull(sum(v.reserve_qty),0) as reserve_qty'), knex.raw('sum(p.qty * p.cost) as total_cost'),
-        'g.generic_name', 'g.working_code as generic_code', 'u.unit_name as small_unit', 'mgp.min_qty', 'mgp.max_qty')
+        'g.generic_name', 'g.working_code as generic_code', 'u.unit_name as small_unit', 'g.min_qty', 'g.max_qty')
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
       .leftJoin('mm_generics as g', 'g.generic_id', 'mp.generic_id')
       .leftJoin('mm_units as u', 'u.unit_id', 'mp.primary_unit_id')
@@ -700,12 +700,24 @@ export class WarehouseModel {
       .where('template_id', templateId)
       .del();
   }
+
   deleteTemplateItemsIssue(knex: Knex, templateId: string) {
     return knex('wm_issue_template_detail')
       .where('template_id', templateId)
       .del();
   }
 
+  markDeleteTemplate(knex: Knex, templateId: string, data: any) {
+    return knex('wm_requisition_template')
+      .where('template_id', templateId)
+      .update(data);
+  }
+
+  markDeleteTemplateIssue(knex: Knex, templateId: string, data: any) {
+    return knex('wm_issue_template')
+      .where('template_id', templateId)
+      .update(data);
+  }
 
   deleteTemplateIssue(knex: Knex, templateId: string) {
     return knex('wm_issue_template')
@@ -723,6 +735,7 @@ export class WarehouseModel {
     from wm_requisition_template as wrt
     inner join wm_warehouses as ws on wrt.src_warehouse_id = ws.warehouse_id
     inner join wm_warehouses as wd on wrt.dst_warehouse_id = wd.warehouse_id
+    where wrt.mark_deleted = 'N'
     order by wrt.template_subject
       `;
 
@@ -744,7 +757,7 @@ export class WarehouseModel {
       wrt.template_subject, wrt.created_date
       from wm_issue_template as wrt
       inner join wm_warehouses as ws on wrt.warehouse_id = ws.warehouse_id
-      
+      where wrt.mark_deleted = 'N'
       order by wrt.template_subject
         `;
     return knex.raw(sql);
@@ -757,6 +770,7 @@ export class WarehouseModel {
     from wm_issue_template as wrt
     inner join wm_warehouses as ws on wrt.warehouse_id = ws.warehouse_id
     where wrt.warehouse_id = ${warehouse_id}
+    and wrt.mark_deleted = 'N'
     order by wrt.template_subject
       `;
     // let sql = `
@@ -781,7 +795,7 @@ export class WarehouseModel {
     from wm_requisition_template as wrt
     inner join wm_warehouses as ws on wrt.src_warehouse_id = ws.warehouse_id
     inner join wm_warehouses as wd on wrt.dst_warehouse_id = wd.warehouse_id
-    where wrt.template_subject like '${_q}' or ws.warehouse_name like '${_q}' or wd.warehouse_name like '${_q}'
+    where wrt.template_subject like '${_q}' or ws.warehouse_name like '${_q}' or wd.warehouse_name like '${_q}' and wrt.mark_deleted = 'N'
     order by wrt.template_subject`;
 
     return knex.raw(sql);
@@ -795,7 +809,7 @@ export class WarehouseModel {
       from wm_issue_template as wrt
       inner join wm_warehouses as ws on wrt.warehouse_id = ws.warehouse_id
 
-    where (wrt.template_subject like '${_q}' or ws.warehouse_name like '${_q}') and wrt.warehouse_id=${warehouse_id}
+    where (wrt.template_subject like '${_q}' or ws.warehouse_name like '${_q}') and wrt.warehouse_id=${warehouse_id} and wrt.mark_deleted='N'
     order by wrt.template_subject`;
 
     return knex.raw(sql);
@@ -808,7 +822,7 @@ export class WarehouseModel {
       wrt.template_subject, wrt.created_date
       from wm_issue_template as wrt
       inner join wm_warehouses as ws on wrt.warehouse_id = ws.warehouse_id
-    where wrt.template_subject like '${_q}' or ws.warehouse_name like '${_q}'
+    where wrt.template_subject like '${_q}' or ws.warehouse_name like '${_q}' and wrt.mark_deleted='N'
     order by wrt.template_subject`;
 
     return knex.raw(sql);
@@ -825,6 +839,7 @@ export class WarehouseModel {
   inner join wm_warehouses as ws on wrt.src_warehouse_id = ws.warehouse_id
   inner join wm_warehouses as wd on wrt.dst_warehouse_id = wd.warehouse_id
   where wrt.src_warehouse_id=?
+  and wrt.mark_deleted = 'N'
   order by wrt.template_subject
     `;
 
@@ -841,7 +856,7 @@ export class WarehouseModel {
   from wm_requisition_template as wrt
   inner join wm_warehouses as ws on wrt.src_warehouse_id = ws.warehouse_id
   inner join wm_warehouses as wd on wrt.dst_warehouse_id = wd.warehouse_id
-  where wrt.src_warehouse_id='${warehouseId}' and 
+  where wrt.src_warehouse_id='${warehouseId}' and wrt.mark_deleted = 'N' and 
   (wrt.template_subject like '${_q}' or ws.warehouse_name like '${_q}' or wd.warehouse_name like '${_q}')
   order by wrt.template_subject
     `;
@@ -853,7 +868,7 @@ export class WarehouseModel {
     let sql = `
     select wrt.template_id, wrt.dst_warehouse_id, wrt.src_warehouse_id, wrt.template_subject, wrt.created_date
     from wm_requisition_template as wrt
-    where wrt.src_warehouse_id = ? and wrt.dst_warehouse_id = ? 
+    where wrt.src_warehouse_id = ? and wrt.dst_warehouse_id = ?  and wrt.mark_deleted = 'N'
       `;
 
     return knex.raw(sql, [srcWarehouseId, dstWarehouseId]);
@@ -872,6 +887,7 @@ export class WarehouseModel {
       inner join wm_warehouses as ws on wrt.src_warehouse_id = ws.warehouse_id
       inner join wm_warehouses as wd on wrt.dst_warehouse_id = wd.warehouse_id
       where wrt.template_id = ?
+      and wrt.mark_deleted = 'N'
       `;
     return knex.raw(sql, [templateId]);
   }
@@ -887,7 +903,7 @@ export class WarehouseModel {
       wrt.template_subject, wrt.created_date
       from wm_issue_template as wrt
       inner join wm_warehouses as ws on wrt.warehouse_id = ws.warehouse_id
-      where wrt.template_id = ?
+      where wrt.template_id = ? and wrt.mark_deleted = 'N'
       `;
     return knex.raw(sql, [templateId]);
   }

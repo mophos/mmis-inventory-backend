@@ -108,7 +108,7 @@ router.post('/upload', upload.single('file'), co(async (req, res, next) => {
 
     if (_data.length) {
       try {
-        await hisTransactionModel.removeHisTransaction(db, hospcode);
+        // await hisTransactionModel.removeHisTransaction(db, hospcode);
         await hisTransactionModel.saveHisTransactionTemp(db, _data);
 
         res.send({ ok: true });
