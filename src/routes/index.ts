@@ -51,6 +51,10 @@ function dateToDMMYYYY(date) {
   return moment(date).isValid() ? moment(date).format('D/MM/') + (moment(date).get('year')) : '-';
 }
 
+function dateToDDMMMYY(date) {
+  return moment(date).isValid() ? moment(date).format('DD MMM ') + (''+(+moment(date).get('year') + 543)).substr(2,2) : '-';
+}
+
 function comma(num) {
   if (num === null) { return ('0.00'); }
   let minus = false;
@@ -322,8 +326,8 @@ router.get('/report/purchase-bit-type', wrap(async (req, res, next) => {
     let other = _.map(_.groupBy(_other, 'generic_type_id'), (obj: any) => {
       return obj
     })
-    if(ed.length>0)data.push( _.map(ed))
-    if(ned.length>0)data.push( _.map(ned))
+    if (ed.length > 0) data.push(_.map(ed))
+    if (ned.length > 0) data.push(_.map(ned))
     for (const t of other) {
       data.push(_.cloneDeep(t))
     }
@@ -351,12 +355,12 @@ router.get('/report/purchase-bit-type', wrap(async (req, res, next) => {
       // res.send({ rst:rst ,ot:_ot})
       res.render('purchase_bit_type', {
         today: this.today,
-        hospitalName:hospitalName,
+        hospitalName: hospitalName,
         // warehouseName:warehouseName,
         startdate: startdate,
         enddate: enddate,
-        lBitType:rst,
-        data:_ot
+        lBitType: rst,
+        data: _ot
       })
     } else {
       res.render('error404')
@@ -2822,6 +2826,53 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   });
 }));
 
+router.get('/report/receive-where-vender', wrap(async (req, res, next) => {
+  let db = req.db
+  let startDate = req.query.startDate
+  let endDate = req.query.endDate
+  let genericTypeId = req.query.genericTypeId
+  let genericTypeName = req.query.genericTypeName
+  try {
+    genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
+    var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId)
+    if (rs) {
+      var data = []
+      var total_price_all: any = 0
+      rs = _(rs).groupBy('vendor_labeler_id').map((v: any) => { return v })
+      for (const _rs of rs) {
+        var totalPrice = 0;
+        for (const v of _rs) {
+          v.total_price = v.receive_qty * v.cost;
+          totalPrice += v.total_price
+          v.cost = inventoryReportModel.comma(v.cost);
+          v.total_price = inventoryReportModel.comma(v.total_price);
+          v.receive_qty = inventoryReportModel.commaQty(v.receive_qty);
+          v.approve_date = dateToDDMMMYY(v.approve_date)
+        }
+        total_price_all += totalPrice;
+        data.push({ labeler_name: _rs[0].labeler_name, total_price: inventoryReportModel.comma(totalPrice), detail: _rs })
+      }
+      total_price_all = inventoryReportModel.comma(total_price_all)
+      startDate = dateToDDMMMYY(startDate)
+      endDate = dateToDDMMMYY(endDate)
+      // res.send({ data: data })
+      res.render('receive_where_vender',{
+        startDate: startDate,
+        endDate: endDate,
+        data: data,
+        genericTypeName: genericTypeName,
+        total_price:total_price_all
+      })
+    } else {
+      res.render('error404')
+      // res.send({ ok: false, error: 'error.message' })
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+    // res.render('error404')
+  }
+}))
+
 router.get('/report/check/receive3', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID = req.query.receiveID
@@ -2874,10 +2925,10 @@ router.get('/report/check/receive3', wrap(async (req, res, next) => {
     } else {
       v.staffReceive = buyer[0];
     }
-    v.productReceive = _.filter(productReceive,(_v:any)=>{
+    v.productReceive = _.filter(productReceive, (_v: any) => {
       return v.receive_id == _v.receive_id
     })
-   
+
   }
 
   let serialYear = moment().get('year') + 543;
