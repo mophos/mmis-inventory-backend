@@ -274,7 +274,6 @@ router.get('/search-donator', co(async (req, res, next) => {
 
 router.get('/generic-types', co(async (req, res, next) => {
   let db = req.db;
-
   try {
     let productGroups = req.decoded.generic_type_id;
     let _pgs = [];
@@ -285,7 +284,6 @@ router.get('/generic-types', co(async (req, res, next) => {
         _pgs.push(v);
       });
     }
-
     let rs = await genericModel.getGenericTypes(db, _pgs);
     res.send({ ok: true, rows: rs });
   } catch (error) {
@@ -294,7 +292,73 @@ router.get('/generic-types', co(async (req, res, next) => {
   } finally {
     db.destroy();
   }
+}));
 
+router.get('/generic-types/lv1', co(async (req, res, next) => {
+  let db = req.db;
+  try {
+    let productGroups = req.decoded.generic_type_id;
+    let _pgs = [];
+
+    if (productGroups) {
+      let pgs = productGroups.split(',');
+      pgs.forEach(v => {
+        _pgs.push(v);
+      });
+    }
+    let rs = await basicModel.getGenericTypesLV1(db, _pgs);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+router.get('/generic-types/lv2', co(async (req, res, next) => {
+  let db = req.db;
+  const genericTypeLV1Id = req.query.genericTypeLV1Id;
+  try {
+    let productGroups = req.decoded.generic_type_id;
+    let _pgs = [];
+
+    if (productGroups) {
+      let pgs = productGroups.split(',');
+      pgs.forEach(v => {
+        _pgs.push(v);
+      });
+    }
+    let rs = await basicModel.getGenericTypesLV2(db, _pgs, genericTypeLV1Id);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+router.get('/generic-types/lv3', co(async (req, res, next) => {
+  let db = req.db;
+  const genericTypeLV1Id = req.query.genericTypeLV1Id;
+  const genericTypeLV2Id = req.query.genericTypeLV2Id;
+  try {
+    let productGroups = req.decoded.generic_type_id;
+    let _pgs = [];
+
+    if (productGroups) {
+      let pgs = productGroups.split(',');
+      pgs.forEach(v => {
+        _pgs.push(v);
+      });
+    }
+    let rs = await basicModel.getGenericTypesLV3(db, _pgs, genericTypeLV1Id, genericTypeLV2Id);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
 }));
 
 router.get('/generic-group-list', co(async (req, res, next) => {

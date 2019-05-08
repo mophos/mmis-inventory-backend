@@ -178,5 +178,25 @@ export class BasicModel {
     return knex.raw(sql, [groupId]);
   }
 
+  getGenericTypesLV1(knex: Knex, _pgs: any[]) {
+    return knex('mm_generic_types')
+      .where('is_deleted', 'N')
+      .whereIn('generic_type_id', _pgs)
+      .orderBy('generic_type_name');
+  }
 
+  getGenericTypesLV2(knex: Knex, _pgs: any[], genericTypeLV1Id) {
+    return knex('mm_generic_types_lv2')
+      .where('is_deleted', 'N')
+      .where('generic_type_lv1_id', genericTypeLV1Id)
+      .orderBy('generic_type_lv2_name');
+  }
+
+  getGenericTypesLV3(knex: Knex, _pgs: any[], genericTypeLV1Id, genericTypeLV2Id) {
+    return knex('mm_generic_types_lv3')
+      .where('is_deleted', 'N')
+      .where('generic_type_lv1_id', genericTypeLV1Id)
+      .where('generic_type_lv2_id', genericTypeLV2Id)
+      .orderBy('generic_type_lv3_name');
+  }
 }
