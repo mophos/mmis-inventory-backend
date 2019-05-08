@@ -349,7 +349,7 @@ export class WarehouseModel {
   getGenericsWarehouseStaff(knex: Knex, warehouseId: string, productGroups: any[], genericType: any) {
     let query = knex('wm_products as p')
       .select('mp.generic_id', knex.raw('sum(p.qty) as qty'), knex.raw('ifnull(sum(v.reserve_qty),0) as reserve_qty'), knex.raw('sum(p.qty * p.cost) as total_cost'),
-        'g.generic_name', 'g.working_code as generic_code', 'u.unit_name as small_unit', 'mgp.min_qty', 'mgp.max_qty')
+        'g.generic_name', 'g.working_code as generic_code', 'u.unit_name as small_unit', 'g.min_qty', 'g.max_qty')
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
       .leftJoin('mm_generics as g', 'g.generic_id', 'mp.generic_id')
       .leftJoin('mm_units as u', 'u.unit_id', 'mp.primary_unit_id')

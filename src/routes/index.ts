@@ -5572,7 +5572,7 @@ router.get('/report/export/staff-remain', wrap(async (req, res, next) => {
           'MIN': v.min_qty,
           'MAX': v.max_qty,
           'คงเหลือ': v.qty,
-          'คงเหลือ(หักยอดจอง)': v.reserve_qty,
+          'คงเหลือ(หักยอดจอง)': v.qty - v.reserve_qty,
         };
 
         json.push(obj);
