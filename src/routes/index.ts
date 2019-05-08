@@ -3399,9 +3399,9 @@ router.get('/report/product/all', wrap(async (req, res, next) => {
 }));
 
 router.get('/report/product/all/excel', wrap(async (req, res, next) => {
-  const genericTypeLV1Id = checkNull(req.query.genericTypeLV1Id);
-  const genericTypeLV2Id = checkNull(req.query.genericTypeLV2Id);
-  const genericTypeLV3Id = checkNull(req.query.genericTypeLV3Id);
+  const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
+  const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
+  const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
   let query = req.query.query;
   let db = req.db;
 
@@ -3982,9 +3982,9 @@ router.get('/report/remain-trade/qty/export', async (req, res, next) => {
 
 router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
   const db = req.db;
-  const genericTypeLV1Id = checkNull(req.query.genericTypeLV1Id) ? null : req.query.genericTypeLV1Id.split(',');
-  const genericTypeLV2Id = checkNull(req.query.genericTypeLV2Id) ? null : req.query.genericTypeLV2Id.split(',');
-  const genericTypeLV3Id = checkNull(req.query.genericTypeLV3Id) ? null : req.query.genericTypeLV3Id.split(',');
+  const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
+  const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
+  const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
   const warehouseId = typeof req.query.warehouseId === 'number' || typeof req.query.warehouseId === 'string' ? [req.query.warehouseId] : req.query.warehouseId;
   try {
     const rs: any = await inventoryReportModel.productExpired(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, warehouseId);
@@ -4002,9 +4002,9 @@ router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
 
 router.get('/report/print/alert-expried/excel', async (req, res, next) => {
   const db = req.db;
-  const genericTypeLV1Id = checkNull(req.query.genericTypeLV1Id) ? null : req.query.genericTypeLV1Id.split(',');
-  const genericTypeLV2Id = checkNull(req.query.genericTypeLV2Id) ? null : req.query.genericTypeLV2Id.split(',');
-  const genericTypeLV3Id = checkNull(req.query.genericTypeLV3Id) ? null : req.query.genericTypeLV3Id.split(',');
+  const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
+  const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
+  const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
   const warehouseId = typeof req.query.warehouseId == 'number' || typeof req.query.warehouseId === 'string' ? [req.query.warehouseId] : req.query.warehouseId;
 
   try {
@@ -5441,9 +5441,9 @@ router.get('/report/his-history', wrap(async (req, res, next) => {
   const db = req.db;
   const warehouseId = req.query.warehouseId
   const date = req.query.date
-  const genericTypeLV1Id = checkNull(req.query.genericTypeLV1Id) ? null : req.query.genericTypeLV1Id.split(',');
-  const genericTypeLV2Id = checkNull(req.query.genericTypeLV2Id) ? null : req.query.genericTypeLV2Id.split(',');
-  const genericTypeLV3Id = checkNull(req.query.genericTypeLV3Id) ? null : req.query.genericTypeLV3Id.split(',');
+  const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
+  const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
+  const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
   const warehouseName = req.query.warehouseName
   const hospcode = req.decoded.his_hospcode;
   const hosdetail = await inventoryReportModel.hospital(db);

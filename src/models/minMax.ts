@@ -7,7 +7,7 @@ export class MinMaxModel {
     return knex('mm_minmax_groups')
   }
 
-  getMinMaxGroupDetail(knex: Knex, groupId: any, warehouseId: string, genericGroups: any[], genericType: any, query: any) {
+  getMinMaxGroupDetail(knex: Knex, groupId: any, warehouseId: string, genericType: any, query: any) {
     let _query = '%' + query + '%';
     let sql = knex('mm_generics as g')
       .select('wp.warehouse_id', 'g.generic_id', 'g.generic_name', 'g.working_code', 'g.primary_unit_id'
@@ -34,9 +34,15 @@ export class MinMaxModel {
       });
 
     if (genericType) {
-      sql.where('g.generic_type_id', genericType);
-    } else {
-      sql.whereIn('g.generic_type_id', genericGroups)
+      if (genericType.generic_type_lv1_id.length) {
+        sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
+      }
+      if (genericType.generic_type_lv2_id.length) {
+        sql.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+      }
+      if (genericType.generic_type_lv3_id.length) {
+        sql.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+      }
     }
 
     sql.groupBy('g.generic_id')
@@ -68,7 +74,7 @@ export class MinMaxModel {
     return knex.raw(sql, [warehouseId]);
   }
 
-  getMinMax(knex: Knex, warehouseId: string, genericGroups: any[], genericType: any, query: any) {
+  getMinMax(knex: Knex, warehouseId: string, genericType: any, query: any) {
     let _query = '%' + query + '%';
     let sql = knex('mm_generics as g')
       .select('wp.warehouse_id', 'g.generic_id', 'g.generic_name', 'g.working_code', 'g.primary_unit_id'
@@ -93,10 +99,17 @@ export class MinMaxModel {
           .orWhere('mp.keywords', 'like', _query)
       });
 
+
     if (genericType) {
-      sql.where('g.generic_type_id', genericType);
-    } else {
-      sql.whereIn('g.generic_type_id', genericGroups)
+      if (genericType.generic_type_lv1_id.length) {
+        sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
+      }
+      if (genericType.generic_type_lv2_id.length) {
+        sql.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+      }
+      if (genericType.generic_type_lv3_id.length) {
+        sql.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+      }
     }
 
     sql.groupBy('g.generic_id')
@@ -104,10 +117,10 @@ export class MinMaxModel {
 
     return sql;
   }
-  updateDate(knex: Knex, groupId: any, date: any){
+  updateDate(knex: Knex, groupId: any, date: any) {
     return knex('mm_minmax_groups')
-    .update('calculate_date', date)
-    .where('group_id', groupId)
+      .update('calculate_date', date)
+      .where('group_id', groupId)
 
   }
   calculateMinMax(knex: Knex, warehouseId: any, fromDate: any, toDate: any, genericGroups: any[]) {
@@ -145,7 +158,7 @@ export class MinMaxModel {
     `;
     return knex.raw(sql, [toDate, fromDate, warehouseId, fromDate, toDate, warehouseId, genericGroups]);
   }
-  calculateMinMaxGroup(knex: Knex,groupId: any, warehouseId: any, fromDate: any, toDate: any, genericGroups: any[]) {
+  calculateMinMaxGroup(knex: Knex, groupId: any, warehouseId: any, fromDate: any, toDate: any, genericGroups: any[]) {
     let sql = `
       select mp.generic_id, mg.working_code, mg.generic_name, sum(wp.qty) qty, mu.unit_name 
       , IFNULL(sc.use_total, 0) use_total, IFNULL(sc.use_per_day, 0) use_per_day
@@ -179,7 +192,7 @@ export class MinMaxModel {
       group by mp.generic_id
       order by mg.generic_name
     `;
-    return knex.raw(sql, [groupId, groupId ,toDate, fromDate, warehouseId, fromDate, toDate, warehouseId, genericGroups, groupId]);
+    return knex.raw(sql, [groupId, groupId, toDate, fromDate, warehouseId, fromDate, toDate, warehouseId, genericGroups, groupId]);
   }
 
   saveGenericPlanning(knex: Knex, generics: any, warehouseId: any, fromDate: any, toDate: any) {

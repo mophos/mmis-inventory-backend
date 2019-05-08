@@ -533,7 +533,7 @@ export class WarehouseModel {
 
     return sql;
   }
-  searchGenericWarehouse(knex: Knex, warehouseId: string, productGroups: any[], query: string, genericType: any) {
+  searchGenericWarehouse(knex: Knex, warehouseId: string, query: string, genericType: any) {
     let _query = '%' + query + '%';
     let sql = knex('mm_generics as g')
       .select('wp.warehouse_id', 'g.generic_id', 'g.generic_name', 'g.working_code', 'g.primary_unit_id'
@@ -564,16 +564,23 @@ export class WarehouseModel {
           .orWhere('mp.keywords', 'like', _query)
       })
     if (genericType) {
-      sql.where('g.generic_type_id', genericType);
-    } else {
-      sql.whereIn('g.generic_type_id', productGroups)
+      if (genericType.generic_type_lv1_id.length) {
+        sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
+      }
+      if (genericType.generic_type_lv2_id.length) {
+        sql.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+      }
+      if (genericType.generic_type_lv3_id.length) {
+        sql.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+      }
     }
     sql.groupBy('g.generic_id')
       .orderBy('g.generic_name');
 
     return sql;
   }
-  searchGenericGroupWarehouse(knex: Knex, warehouseId: string, productGroups: any[], query: string, genericType: any, groupId: any) {
+
+  searchGenericGroupWarehouse(knex: Knex, warehouseId: string, query: string, genericType: any, groupId: any) {
     let _query = '%' + query + '%';
     let sql = knex('mm_generics as g')
       .select('wp.warehouse_id', 'g.generic_id', 'g.generic_name', 'g.working_code', 'g.primary_unit_id'
@@ -605,9 +612,15 @@ export class WarehouseModel {
           .orWhere('mp.keywords', 'like', _query)
       })
     if (genericType) {
-      sql.where('g.generic_type_id', genericType);
-    } else {
-      sql.whereIn('g.generic_type_id', productGroups)
+      if (genericType.generic_type_lv1_id.length) {
+        sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
+      }
+      if (genericType.generic_type_lv2_id.length) {
+        sql.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+      }
+      if (genericType.generic_type_lv3_id.length) {
+        sql.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+      }
     }
     sql.groupBy('g.generic_id')
       .orderBy('g.generic_name');
@@ -945,46 +958,46 @@ export class WarehouseModel {
     return knex.raw(sql, [hospcode]);
   }
 
-  getMappingsGenericsSearchType(knex: Knex, hospcode: any, keywords: any, genericType: any) {
-    let sql = `
-    SELECT
-    g.generic_id,
-    g.generic_name,
-    g.working_code,
-    g.generic_id AS mmis,
-    group_concat( h.his ) AS his,
-    ifnull( h.conversion, 1 ) AS conversion,
-    u.unit_name AS base_unit_name,
-    g.generic_type_id
-  FROM
-    mm_generics AS g
-    LEFT JOIN wm_his_mappings AS h ON h.mmis = g.generic_id 
-    AND h.hospcode = '${hospcode}'
-    INNER JOIN mm_units AS u ON u.unit_id = g.primary_unit_id
-  WHERE
-    g.mark_deleted = 'N' 
-    AND g.is_active = 'Y'
-  AND (
-      g.generic_name LIKE '%${keywords}%'
-      OR g.working_code = '${keywords}'
-      OR g.keywords LIKE '%${keywords}%'
-      OR g.generic_id IN ( 
-        SELECT generic_id FROM mm_products 
-        WHERE ( 
-          product_name LIKE '%${keywords}%' OR 
-          working_code = '${keywords}' OR 
-          keywords LIKE '%${keywords}%' ) ) 
-      OR h.his = '${keywords}'
-    )`
-    if (genericType !== 'all') {
-      sql += `AND g.generic_type_id = '${genericType}'`
+  getMappingsGenericsSearchType(knex: Knex, hospcode: any, query: any, genericType: any) {
+    const _query = `%${query}%`;
+
+    const genericId = knex('mm_products')
+      .select('generic_id')
+      .where('product_name', 'like', _query)
+      .orWhere('working_code', 'like', _query)
+      .orWhere('keywords', 'like', _query)
+
+
+    let sql = knex('mm_generics as g')
+      .select('g.generic_id', 'g.generic_name', 'g.working_code', 'g.generic_id AS mmis', knex.raw('group_concat( h.his ) AS his'),
+        knex.raw(`ifnull( h.conversion, 1 ) AS conversion`), 'u.unit_name AS base_unit_name', 'g.generic_type_id')
+      .joinRaw(` LEFT JOIN wm_his_mappings AS h ON h.mmis = g.generic_id 
+    AND h.hospcode = '${hospcode}'`)
+      .join('mm_units as u', 'u.unit_id', 'g.primary_unit_id')
+      .where('g.mark_deleted', 'N')
+      .where('g.is_active', 'Y')
+      .where((w) => {
+        w.orWhere('g.generic_name', 'like', _query)
+        w.orWhere('g.working_code', 'like', query)
+        w.orWhere('g.keywords', 'like', _query)
+        w.orWhere('h.his', 'like', query)
+        w.orWhereIn('g.generic_id', genericId)
+      })
+
+    if (genericType) {
+      if (genericType.generic_type_lv1_id.length) {
+        sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
+      }
+      if (genericType.generic_type_lv2_id.length) {
+        sql.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+      }
+      if (genericType.generic_type_lv3_id.length) {
+        sql.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+      }
     }
-    sql += `GROUP BY
-      g.generic_id 
-    ORDER BY
-      g.generic_name
-    `;
-    return knex.raw(sql);
+    sql.groupBy('g.generic_id')
+      .orderBy('g.generic_name');
+    return sql;
   }
 
   getMappingsGenericsType(knex: Knex, hospcode: any, genericType: any) {

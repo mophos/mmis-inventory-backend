@@ -15,19 +15,12 @@ const alertModel = new AlertExpiredModel();
 const settingModel = new SettingModel();
 const receiveModel = new ReceiveModel();
 
-router.get('/generics', async (req, res, next) => {
-  let db = req.db;
-  let gid = req.decoded.generic_type_id;
-  let query = req.query.query || ''
-  let _data: any = [];
-  if (gid) {
-    let pgs = gid.split(',');
-    pgs.forEach(v => {
-      _data.push(v);
-    });
-  }
+router.post('/generics', async (req, res, next) => {
+  const db = req.db;
+  let genericType = req.body.genericType;
+  let query = req.body.query || ''
   try {
-    let rs: any = await alertModel.getAllSearchGenerics(db, _data, query);
+    let rs: any = await alertModel.getAllSearchGenerics(db, genericType, query);
     res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -114,9 +107,11 @@ router.get('/genericSelec', async (req, res, next) => {
 
 // }));
 
-router.get('/products/unset', (req, res, next) => {
+router.post('/products/unset', (req, res, next) => {
   let db = req.db;
-  alertModel.listUnSet(db)
+  const genericType = req.body.genericType;
+  const query = req.body.query;
+  alertModel.listUnSet(db, genericType, query)
     .then((results: any) => {
       res.send({ ok: true, rows: results });
     })
@@ -147,18 +142,12 @@ router.post('/', wrap(async (req, res, next) => {
 }));
 
 router.post('/all', async (req, res, next) => {
-  let numDays: any = req.body.numDays;
-  let db = req.db;
-  let gid = req.decoded.generic_type_id;
-  let _data: any = [];
-  if (gid) {
-    let pgs = gid.split(',');
-    pgs.forEach(v => {
-      _data.push(v);
-    });
-  }
+  const numDays: any = req.body.numDays;
+  const genericType: any = req.body.genericType;
+  const db = req.db;
+
   try {
-    let rs: any = await alertModel.saveNumdaysAll(db, _data, numDays);
+    let rs: any = await alertModel.saveNumdaysAll(db, genericType, numDays);
     res.send({ ok: true });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -167,19 +156,12 @@ router.post('/all', async (req, res, next) => {
   }
 });
 
-router.get('/products/expired', (req, res, next) => {
-  let db = req.db;
-  let genericTypeId = req.query.genericTypeId;
-  let wId = req.query.warehouseId;
-
-  if (typeof genericTypeId === 'string') {
-    genericTypeId = [genericTypeId];
-  }
-  if (typeof wId === 'string') {
-    wId = [wId];
-  }
-
-  alertModel.productExpired(db, genericTypeId, wId)
+router.post('/products/expired', (req, res, next) => {
+  const genericType = req.body.genericType;
+  const warehouseId = typeof req.body.warehouseId === "number" || typeof req.body.warehouseId === "string" ? [req.body.warehouseId] : req.body.warehouseId;
+  const query = req.body.query;
+  const db = req.db;
+  alertModel.productExpired(db, genericType, warehouseId, query)
     .then((results: any) => {
       res.send({ ok: true, rows: results });
     })
