@@ -2786,40 +2786,43 @@ OR sc.ref_src like ?
 
         return knex.raw(sql, [issueId]);
     }
-    productAll(knex: Knex, genericTypeId: any) {
-        let sql = `SELECT
-        mp.product_id,
-        mp.product_name,
-        mp.working_code AS trade_code,
-        mg.generic_id,
-        mg.generic_name,
-        mg.working_code AS generic_code,
-        mp.v_labeler_id,
-        ml.labeler_name AS v_labeler_name,
-        ml.labeler_name_po AS v_labeler_name_po,
-        ml2.labeler_name AS m_labeler_name,
-        ml2.labeler_name_po AS m_labeler_name_po,
-        mp.primary_unit_id AS base_unit_id,
-        u.unit_name AS base_unit_name,
-        mgt.generic_type_id,
-        mgt.generic_type_name
-      FROM
-        mm_generics mg
-      JOIN mm_products mp ON mg.generic_id = mp.generic_id
-      JOIN mm_labelers ml ON mp.v_labeler_id = ml.labeler_id
-      JOIN mm_labelers ml2 ON mp.m_labeler_id = ml2.labeler_id
-      JOIN mm_units u ON u.unit_id = mp.primary_unit_id
-      JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
-      WHERE
-        mg.is_active = 'Y'
-      AND mg.is_active = 'Y'
-      AND mp.mark_deleted = 'N'
-      AND mg.mark_deleted = 'N'
-      and mg.generic_type_id in (${genericTypeId})
-      ORDER BY mg.generic_id`
-        return knex.raw(sql);
+    productAll(knex: Knex, genericTypeLV1Id: any, genericTypeLV2Id: any, genericTypeLV3Id: any, query) {
+        let _query = '%' + query + '%';
+        let sql = knex('mm_generics as mg')
+            .select('mp.product_id', 'mp.product_name', 'mp.working_code AS trade_code', 'mg.generic_id',
+                'mg.generic_name', 'mg.working_code AS generic_code', 'mp.v_labeler_id', 'ml.labeler_name AS v_labeler_name',
+                'ml2.labeler_name AS m_labeler_name', 'mp.primary_unit_id AS base_unit_id',
+                'u.unit_name AS base_unit_name', 'mgt.generic_type_id', 'mgt.generic_type_name')
+            .join('mm_products as mp', 'mg.generic_id', 'mp.generic_id')
+            .join('mm_labelers as ml', 'mp.v_labeler_id', 'ml.labeler_id')
+            .join('mm_labelers as ml2', 'mp.m_labeler_id', 'ml2.labeler_id')
+            .join('mm_units as u', 'u.unit_id', 'mp.primary_unit_id')
+            .join('mm_generic_types as mgt', 'mgt.generic_type_id', 'mg.generic_type_id')
+            .where('mg.is_active', 'Y')
+            .where('mg.is_active', 'Y')
+            .where('mg.mark_deleted', 'N')
+            .where('mp.mark_deleted', 'N')
+            .where(w => {
+                w.where('mg.working_code', 'like', _query)
+                    .orWhere('mg.generic_name', 'like', _query)
+                    .orWhere('mg.short_code', 'like', _query)
+                    .orWhere('mp.working_code', 'like', _query)
+                    .orWhere('mp.product_name', 'like', _query)
+                    .orWhere('mp.keywords', 'like', _query)
+            })
+        if (genericTypeLV1Id.length) {
+            sql.whereIn('mg.generic_type_id', genericTypeLV1Id);
+        }
+        if (genericTypeLV2Id.length) {
+            sql.whereIn('mg.generic_type_lv2_id', genericTypeLV2Id);
+        }
+        if (genericTypeLV3Id.length) {
+            sql.whereIn('mg.generic_type_lv3_id', genericTypeLV3Id);
+        }
+        sql.orderBy('mg.generic_id')
+        return sql;
     }
-    getDetailListPick(knex: Knex, requisId, warehouseId, genericId) { }
+
     getDetailListRequis(knex: Knex, requisId, warehouseId, genericId) {
         let sql = `select * from (SELECT
           mg.working_code AS generic_code,
@@ -3935,17 +3938,28 @@ GROUP BY
             .orderBy('mg.generic_name')
     }
 
-    productExpired(knex: Knex, genericTypeId, warehouseId) {
-        return knex('wm_generic_expired_alert as xp')
+    productExpired(knex: Knex, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, warehouseId) {
+        let sql = knex('wm_generic_expired_alert as xp')
             .select(knex.raw('sum(wp.qty*wp.cost) as cost,sum(wp.qty) as qty'), 'xp.generic_id', 'mg.working_code', 'mg.generic_name', 'mp.working_code as product_code', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', knex.raw('DATEDIFF(wp.expired_date, CURDATE()) AS diff'), 'xp.num_days', 'wp.warehouse_id', 'ww.warehouse_name')
             .join('mm_generics as mg', 'xp.generic_id', 'mg.generic_id')
             .join('mm_products as mp', 'mp.generic_id', 'mg.generic_id')
             .join('wm_products as wp', 'wp.product_id', 'mp.product_id')
             .join('wm_warehouses as ww', 'ww.warehouse_id', 'wp.warehouse_id')
-            .whereRaw(`DATEDIFF(wp.expired_date, CURDATE()) < xp.num_days and mg.generic_type_id in (${genericTypeId}) and ww.warehouse_id in (${warehouseId})`)
-            .groupBy('wp.product_id', 'wp.lot_no', 'wp.expired_date', 'wp.warehouse_id')
+            .whereRaw(`DATEDIFF(wp.expired_date, CURDATE()) < xp.num_days `)
+            .whereIn('ww.warehouse_id', warehouseId)
+        if (genericTypeLV1Id.length) {
+            sql.whereIn('mg.generic_type_id', genericTypeLV1Id);
+        }
+        if (genericTypeLV2Id.length) {
+            sql.whereIn('mg.generic_type_lv2_id', genericTypeLV2Id);
+        }
+        if (genericTypeLV3Id.length) {
+            sql.whereIn('mg.generic_type_lv3_id', genericTypeLV3Id);
+        }
+        sql.groupBy('wp.product_id', 'wp.lot_no', 'wp.expired_date', 'wp.warehouse_id')
             .orderByRaw('DATEDIFF(wp.expired_date, CURDATE()) ASC')
             .havingRaw('sum(wp.qty) > 0')
+        return sql;
     }
 
     getLine(knex: Knex, reportType) {
@@ -3972,35 +3986,35 @@ GROUP BY
     getreturnBudgetList(knex: Knex) {
         let sql = `SELECT
         pc.purchase_order_number,
-        pc.purchase_order_id,
-        pc.order_date,
-        po_price.purchase_price,
-        ml.labeler_name,
-        concat( bs.bgtype_name, ' - ', bs.bgtypesub_name ) AS budget_name,
-        rc_price.receive_price,
-        po_price.purchase_price - IFNULL( rc_price.receive_price, 0 ) differ_price,
-        pc.return_price,
-        pc.is_return 
-    FROM
+            pc.purchase_order_id,
+            pc.order_date,
+            po_price.purchase_price,
+            ml.labeler_name,
+            concat(bs.bgtype_name, ' - ', bs.bgtypesub_name) AS budget_name,
+                rc_price.receive_price,
+                po_price.purchase_price - IFNULL(rc_price.receive_price, 0) differ_price,
+                    pc.return_price,
+                    pc.is_return
+        FROM
         pc_purchasing_order AS pc
-        JOIN (
-    SELECT
-        cast( sum( pci.qty * pci.unit_price ) AS DECIMAL ( 32, 4 ) ) purchase_price,
-        pci.purchase_order_id 
+        JOIN(
+            SELECT
+        cast(sum(pci.qty * pci.unit_price) AS DECIMAL(32, 4)) purchase_price,
+            pci.purchase_order_id 
     FROM
         pc_purchasing_order_item AS pci 
     WHERE
         pci.giveaway = 'N' 
     GROUP BY
-        pci.purchase_order_id 
-        ) AS po_price ON po_price.purchase_order_id = pc.purchase_order_id 
+        pci.purchase_order_id
+        ) AS po_price ON po_price.purchase_order_id = pc.purchase_order_id
         AND pc.is_cancel = 'N'
         JOIN mm_labelers AS ml ON ml.labeler_id = pc.labeler_id
         JOIN view_budget_subtype bs ON bs.bgdetail_id = pc.budget_detail_id
-        LEFT JOIN (
-    SELECT
-        cast( sum( rd.receive_qty * rd.cost ) AS DECIMAL ( 32, 4 ) ) receive_price,
-        r.purchase_order_id 
+        LEFT JOIN(
+            SELECT
+        cast(sum(rd.receive_qty * rd.cost) AS DECIMAL(32, 4)) receive_price,
+            r.purchase_order_id 
     FROM
         wm_receive_detail AS rd
         INNER JOIN wm_receives AS r ON r.receive_id = rd.receive_id 
@@ -4008,34 +4022,34 @@ GROUP BY
         rd.is_free = 'N' 
         AND r.is_cancel = 'N' 
     GROUP BY
-        r.purchase_order_id 
-        ) AS rc_price ON rc_price.purchase_order_id = pc.purchase_order_id 
-    WHERE
-        pc.purchase_order_status = 'COMPLETED' 
-        AND po_price.purchase_price > IFNULL( rc_price.receive_price, 0 ) 
+        r.purchase_order_id
+        ) AS rc_price ON rc_price.purchase_order_id = pc.purchase_order_id
+        WHERE
+        pc.purchase_order_status = 'COMPLETED'
+        AND po_price.purchase_price > IFNULL(rc_price.receive_price, 0)
         AND pc.is_return IS NOT NULL`
         return knex.raw(sql)
     }
 
     getGenericInStockcrad(knex: Knex, warehouseId: string, startDate: any, endDate: any, dateSetting = 'view_stock_card_warehouse', offset: any, genericTypes: any) {
         let sql = `SELECT
-            vscw.generic_id,
+        vscw.generic_id,
             mp.generic_name
         FROM
-            ${dateSetting} AS vscw
-            join mm_generics as mp ON mp.generic_id = vscw.generic_id
+        ${ dateSetting} AS vscw
+        join mm_generics as mp ON mp.generic_id = vscw.generic_id
         WHERE
-            vscw.stock_date BETWEEN '${startDate} 00:00:00' 
-            AND '${endDate} 23:59:59'
-            AND vscw.warehouse_id = '${warehouseId}'
-            AND mp.generic_type_id IN ( ${genericTypes} )
-            AND vscw.transaction_type != 'SUMMIT' 
-            GROUP BY
-                vscw.generic_id
-            ORDER BY
-                mp.generic_name`
+        vscw.stock_date BETWEEN '${startDate} 00:00:00'
+        AND '${endDate} 23:59:59'
+        AND vscw.warehouse_id = '${warehouseId}'
+        AND mp.generic_type_id IN(${ genericTypes})
+        AND vscw.transaction_type != 'SUMMIT'
+        GROUP BY
+        vscw.generic_id
+        ORDER BY
+        mp.generic_name`
         if (offset !== '') {
-            sql += ` LIMIT 150 OFFSET ${offset}`
+            sql += ` LIMIT 150 OFFSET ${offset} `
         }
         // LIMIT 200 OFFSET 0
         return knex.raw(sql)
@@ -4044,20 +4058,20 @@ GROUP BY
     getGenericWarehouse(knex: Knex, warehouseId: string, offset: any) {
         let sql = `SELECT
         mg.generic_id,
-        mg.generic_name
-    FROM
+            mg.generic_name
+        FROM
         wm_products AS wp
         JOIN mm_products as mp ON mp.product_id = wp.product_id
         JOIN mm_generics as mg ON mg.generic_id = mp.generic_id
-    WHERE
+        WHERE
         wp.warehouse_id = '${warehouseId}'
         AND wp.qty > 0
         GROUP BY
-            mp.generic_id
+        mp.generic_id
         ORDER BY
-            mg.generic_name`
+        mg.generic_name`
         if (offset !== '') {
-            sql += ` LIMIT 150 OFFSET ${offset}`
+            sql += ` LIMIT 150 OFFSET ${offset} `
         }
         // LIMIT 200 OFFSET 0
         return knex.raw(sql)
@@ -4065,37 +4079,37 @@ GROUP BY
 
     inventoryStatusGeneric(knex: Knex, warehouseId: any, genericTypeId: any, statusDate: any) {
         let sql = `SELECT
-            q.generic_id,
+        q.generic_id,
             q.generic_name,
             q.generic_code,
             q.lot_no,
             q.in_qty,
             q.out_qty,
             sum(q.qty) AS qty,
-            q.conversion_qty,
-            q.large_unit,
-            q.small_unit,
-            avg( q.unit_cost ) AS unit_cost,
-            sum(total_cost) AS total_cost,
-            q.min_qty,
-	        q.max_qty
+                q.conversion_qty,
+                q.large_unit,
+                q.small_unit,
+                avg(q.unit_cost) AS unit_cost,
+                    sum(total_cost) AS total_cost,
+                        q.min_qty,
+                        q.max_qty
         FROM
             (
-        SELECT
+                SELECT
             vscw.generic_id,
-            vscw.generic_name,
-            mg.working_code AS generic_code,
-            vscw.lot_no,
-            sum( vscw.in_qty ) AS in_qty,
-            sum( vscw.out_qty ) AS out_qty,
-            sum( vscw.in_qty ) - sum( vscw.out_qty ) AS qty,
-            vscw.conversion_qty,
-            vscw.large_unit,
-            vscw.small_unit,
-            sum((vscw.in_qty * in_unit_cost) - (vscw.out_qty * vscw.out_unit_cost)) / sum( vscw.in_qty - vscw.out_qty ) AS unit_cost,
-            sum(vscw.in_qty * in_unit_cost) - sum(vscw.out_qty * vscw.out_unit_cost) AS total_cost,
-            mgp.min_qty,
-	        mgp.max_qty
+                vscw.generic_name,
+                mg.working_code AS generic_code,
+                vscw.lot_no,
+                sum(vscw.in_qty) AS in_qty,
+                sum(vscw.out_qty) AS out_qty,
+                sum(vscw.in_qty) - sum(vscw.out_qty) AS qty,
+                vscw.conversion_qty,
+                vscw.large_unit,
+                vscw.small_unit,
+                sum((vscw.in_qty * in_unit_cost) - (vscw.out_qty * vscw.out_unit_cost)) / sum(vscw.in_qty - vscw.out_qty) AS unit_cost,
+                sum(vscw.in_qty * in_unit_cost) - sum(vscw.out_qty * vscw.out_unit_cost) AS total_cost,
+                mgp.min_qty,
+                mgp.max_qty
         FROM
             view_stock_card_warehouse AS vscw
             JOIN mm_products AS mp ON mp.product_id = vscw.product_id
@@ -4103,113 +4117,119 @@ GROUP BY
             LEFT JOIN mm_generic_planning AS mgp ON mgp.warehouse_id = '${warehouseId}' AND mgp.generic_id = mg.generic_id
         WHERE
             vscw.stock_date <= '${statusDate} 23:59:59' 
-            AND mg.generic_type_id IN ( ${ genericTypeId} ) `
+            AND mg.generic_type_id IN(${ genericTypeId})`
         if (warehouseId != '0') {
             sql += `AND vscw.warehouse_id = '${warehouseId}'`
         }
         sql += ` GROUP BY
             vscw.product_id,
-            vscw.lot_no 
+                vscw.lot_no 
         HAVING
             qty > 0 
         ORDER BY
-            mg.generic_name 
-            ) AS q 
+            mg.generic_name
+            ) AS q
         GROUP BY
-            q.generic_id
-        `
+        q.generic_id
+            `
         return knex.raw(sql);
     }
 
     inventoryStatusProduct(knex: Knex, warehouseId: string, genericTypeId: any, date: any) {
         let sql = `SELECT
-            vscw.product_id,
+        vscw.product_id,
             mp.working_code AS product_code,
-            mp.product_name,
-            vscw.lot_no,
-            sum( vscw.in_qty ) AS in_qty,
-            sum( vscw.out_qty ) AS out_qty,
-            sum( vscw.in_qty ) - sum( vscw.out_qty ) AS qty,
-            vscw.conversion_qty,
-            vscw.large_unit,
-            vscw.small_unit,
-            sum((vscw.in_qty * in_unit_cost) - (vscw.out_qty * vscw.out_unit_cost)) / sum( vscw.in_qty - vscw.out_qty ) AS unit_cost,
-            sum(vscw.in_qty * in_unit_cost) - sum(vscw.out_qty * vscw.out_unit_cost) AS total_cost
+                mp.product_name,
+                vscw.lot_no,
+                sum(vscw.in_qty) AS in_qty,
+                    sum(vscw.out_qty) AS out_qty,
+                        sum(vscw.in_qty) - sum(vscw.out_qty) AS qty,
+                            vscw.conversion_qty,
+                            vscw.large_unit,
+                            vscw.small_unit,
+                            sum((vscw.in_qty * in_unit_cost) - (vscw.out_qty * vscw.out_unit_cost)) / sum(vscw.in_qty - vscw.out_qty) AS unit_cost,
+                                sum(vscw.in_qty * in_unit_cost) - sum(vscw.out_qty * vscw.out_unit_cost) AS total_cost
         FROM
-            view_stock_card_warehouse AS vscw
-            JOIN mm_products AS mp ON mp.product_id = vscw.product_id
-            JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id 
+        view_stock_card_warehouse AS vscw
+        JOIN mm_products AS mp ON mp.product_id = vscw.product_id
+        JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
         WHERE
-            vscw.stock_date <= '${date} 23:59:59' 
-            AND mg.generic_type_id IN ( ${ genericTypeId} )`
+        vscw.stock_date <= '${date} 23:59:59'
+        AND mg.generic_type_id IN(${ genericTypeId})`
         if (warehouseId != '0') {
             sql += `AND vscw.warehouse_id = '${warehouseId}'`
         }
         sql += ` GROUP BY
-            vscw.product_id,
-            vscw.lot_no 
+        vscw.product_id,
+            vscw.lot_no
         HAVING
-            qty > 0
+        qty > 0
         ORDER BY
-            mp.product_name
-        `
+        mp.product_name
+            `
         return knex.raw(sql)
     }
 
     list_costTemporary(knex: Knex, genericTypeId, warehouseId) {
         let sql = `SELECT
         mgt.generic_type_code,
-        mgt.generic_type_name,
-        mga.account_name,
-        sum( wp.qty * wp.cost ) AS total_cost
-    FROM
+            mgt.generic_type_name,
+            mga.account_name,
+            sum(wp.qty * wp.cost) AS total_cost
+        FROM
         wm_products AS wp
         JOIN mm_products AS mp ON mp.product_id = wp.product_id
         JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
         JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wp.unit_generic_id
         JOIN mm_generic_types as mgt ON mgt.generic_type_id = mg.generic_type_id
         LEFT JOIN mm_generic_accounts as mga ON mga.account_id = mg.account_id
-    WHERE
-        wp.warehouse_id = ${warehouseId} 
-        AND mg.generic_type_id IN ( ${genericTypeId} ) 
-        AND wp.qty > 0 
-    GROUP BY
+        WHERE
+        wp.warehouse_id = ${ warehouseId}
+        AND mg.generic_type_id IN(${ genericTypeId})
+        AND wp.qty > 0
+        GROUP BY
         mg.account_id,
-        mg.generic_type_id
-    ORDER BY
+            mg.generic_type_id
+        ORDER BY
         mg.generic_type_id`
 
         return (knex.raw(sql))
     }
 
-    hisHistory(knex: Knex, warehouseId: any, date: any, genericType: any, hospcode: any) {
-        let sql = `SELECT
-        tt.*,
-        hm.mmis,
-        hm.conversion,
-        w.warehouse_name,
-        w.warehouse_id,
-        mg.generic_name,
-        mg.working_code,
-        mu.unit_name 
-    FROM
-        wm_his_transaction AS tt
-        INNER JOIN wm_his_mappings AS hm ON hm.his = tt.drug_code 
-        AND hm.hospcode = tt.hospcode
-        INNER JOIN wm_warehouses AS w ON w.warehouse_id = tt.mmis_warehouse
-        INNER JOIN mm_generics AS mg ON mg.generic_id = hm.mmis
-        LEFT JOIN mm_units AS mu ON mu.unit_id = mg.primary_unit_id 
-    WHERE
-        tt.is_cut_stock = 'Y' 
-        AND tt.hospcode = '${hospcode}' 
-        AND tt.mmis_warehouse = '${warehouseId}' 
-        AND tt.date_serv = '${date}'
-        AND mg.generic_type_id IN (${genericType})
-    GROUP BY
-        tt.transaction_id 
-    ORDER BY
-        tt.transaction_id ASC`
-        return (knex.raw(sql))
+    hisHistory(knex: Knex, warehouseId: any, date: any, genericTypeLV1Id: any, genericTypeLV2Id: any, genericTypeLV3Id: any, hospcode: any) {
+        let sql = knex('wm_his_transaction as tt')
+            .select('tt.*',
+                'hm.mmis',
+                'hm.conversion',
+                'w.warehouse_name',
+                'w.warehouse_id',
+                'mg.generic_name',
+                'mg.working_code',
+                'mu.unit_name')
+            .joinRaw(`INNER JOIN wm_his_mappings AS hm ON hm.his = tt.drug_code
+       AND hm.hospcode = tt.hospcode`)
+            .join('wm_warehouses as w', 'w.warehouse_id', 'tt.mmis_warehouse')
+            .join('mm_generics as mg', 'mg.generic_id', 'hm.mmis')
+            .leftJoin('mm_units as mu', 'mu.unit_id', 'mg.primary_unit_id')
+            .where('tt.is_cut_stock', 'Y')
+            .where('tt.hospcode', hospcode)
+            .where('tt.mmis_warehouse', warehouseId)
+            .where('tt.date_serv', date)
+        if (genericTypeLV1Id.length) {
+            sql.whereIn('mg.generic_type_id', genericTypeLV1Id);
+        }
+        if (genericTypeLV2Id.length) {
+            sql.whereIn('mg.generic_type_lv2_id', genericTypeLV2Id);
+        }
+        if (genericTypeLV3Id.length) {
+            sql.whereIn('mg.generic_type_lv3_id', genericTypeLV3Id);
+        }
+        sql.groupBy('tt.transaction_id')
+            .orderBy('tt.transaction_id', 'ASC')
+
+
+
+        return sql;
     }
     getRequisitionSumProduct(knex: Knex, requisitionIds) {
         // return knex('wm_requisition_orders as ro')
@@ -4222,24 +4242,24 @@ GROUP BY
         return knex.raw(`
         SELECT
         mg.generic_id,
-        mg.working_code AS generic_code,
-        mg.generic_name,
-        sum( roi.requisition_qty ) AS qty ,
-        count(mg.generic_id) as count_unit,
-        GROUP_CONCAT(roi.unit_generic_id) as group_unit_generic_id,
-        mu.unit_name as primary_unit_name,
-        mug.qty as conversion,
-        mu1.unit_name as from_unit_name,
-        mu2.unit_name as to_unit_name
+            mg.working_code AS generic_code,
+                mg.generic_name,
+                sum(roi.requisition_qty) AS qty,
+                    count(mg.generic_id) as count_unit,
+                    GROUP_CONCAT(roi.unit_generic_id) as group_unit_generic_id,
+                    mu.unit_name as primary_unit_name,
+                    mug.qty as conversion,
+                    mu1.unit_name as from_unit_name,
+                    mu2.unit_name as to_unit_name
         FROM
         wm_requisition_orders AS ro
         INNER JOIN wm_requisition_order_items AS roi ON ro.requisition_order_id = roi.requisition_order_id
-        INNER JOIN mm_generics AS mg ON mg.generic_id = roi.generic_id 
+        INNER JOIN mm_generics AS mg ON mg.generic_id = roi.generic_id
         join mm_units mu on mu.unit_id = mg.primary_unit_id
         join mm_unit_generics mug on mug.unit_generic_id = roi.unit_generic_id
         join mm_units mu1 on mu1.unit_id = mug.from_unit_id
         join mm_units mu2 on mu2.unit_id = mug.to_unit_id
-        where ro.requisition_order_id in (${requisitionIds})
+        where ro.requisition_order_id in (${ requisitionIds})
         GROUP BY
         roi.generic_id
         order by mg.generic_name`);

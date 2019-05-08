@@ -1266,45 +1266,44 @@ group by mpp.product_id
       .orderBy('mp.product_name')
       .limit(10);
   }
-  getProductAllStaff(knex: Knex, query, genericTypes) {
+  getProductAllStaff(knex: Knex, query, genericType) {
     let _query = '%' + query + '%';
-    let sql = `SELECT
-      mp.product_id,
-        mp.product_name,
-        mp.working_code AS trade_code,
-          mg.generic_id,
-          mg.generic_name,
-          mg.working_code AS generic_code,
-            mp.v_labeler_id,
-            ml.labeler_name AS v_labeler_name,
-              ml2.labeler_name AS m_labeler_name,
-                mp.primary_unit_id AS base_unit_id,
-                  u.unit_name AS base_unit_name,
-                    mgt.generic_type_id,
-                    mgt.generic_type_name
-      FROM
-      mm_generics mg
-      JOIN mm_products mp ON mg.generic_id = mp.generic_id
-      JOIN mm_labelers ml ON mp.v_labeler_id = ml.labeler_id
-      JOIN mm_labelers ml2 ON mp.m_labeler_id = ml2.labeler_id
-      JOIN mm_units u ON u.unit_id = mp.primary_unit_id
-      JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
-      WHERE
-      mg.is_active = 'Y'
-      AND mg.is_active = 'Y'
-      AND mp.mark_deleted = 'N'
-      AND mg.mark_deleted = 'N'
-      AND(
-        mg.working_code like '${_query}' or
-    mp.working_code like '${_query}' or
-    mg.generic_name like '${_query}' or
-    mp.product_name like '${_query}' or
-    mp.keywords like '${_query}' or
-    mg.short_code like '${_query}'
-      )
-      and mg.generic_type_id in (${ genericTypes})
-      ORDER BY mg.generic_id`
-    return knex.raw(sql)
+    let sql = knex('mm_generics as mg')
+      .select('mp.product_id', 'mp.product_name', 'mp.working_code AS trade_code', 'mg.generic_id',
+        'mg.generic_name', 'mg.working_code AS generic_code', 'mp.v_labeler_id', 'ml.labeler_name AS v_labeler_name',
+        'ml2.labeler_name AS m_labeler_name', 'mp.primary_unit_id AS base_unit_id',
+        'u.unit_name AS base_unit_name', 'mgt.generic_type_id', 'mgt.generic_type_name')
+      .join('mm_products as mp', 'mg.generic_id', 'mp.generic_id')
+      .join('mm_labelers as ml', 'mp.v_labeler_id', 'ml.labeler_id')
+      .join('mm_labelers as ml2', 'mp.m_labeler_id', 'ml2.labeler_id')
+      .join('mm_units as u', 'u.unit_id', 'mp.primary_unit_id')
+      .join('mm_generic_types as mgt', 'mgt.generic_type_id', 'mg.generic_type_id')
+      .where('mg.is_active', 'Y')
+      .where('mg.is_active', 'Y')
+      .where('mg.mark_deleted', 'N')
+      .where('mp.mark_deleted', 'N')
+      .where(w => {
+        w.where('mg.working_code', 'like', _query)
+          .orWhere('mg.generic_name', 'like', _query)
+          .orWhere('mg.short_code', 'like', _query)
+          .orWhere('mp.working_code', 'like', _query)
+          .orWhere('mp.product_name', 'like', _query)
+          .orWhere('mp.keywords', 'like', _query)
+      })
+    if (genericType) {
+      if (genericType.generic_type_lv1_id.length) {
+        sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id);
+      }
+      if (genericType.generic_type_lv2_id.length) {
+        sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
+      }
+      if (genericType.generic_type_lv3_id.length) {
+        sql.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
+      }
+    }
+    sql.orderBy('mg.generic_id')
+
+    return sql;
   }
 
   getAllProduct(db: Knex) {

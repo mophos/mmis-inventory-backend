@@ -124,60 +124,22 @@ router.get('/getproduct/:issue_id', co(async (req, res, next) => {
   }
 }));
 
-router.get('/warehouse/products', co(async (req, res, next) => {
-  let warehouseId = req.decoded.warehouseId;
-  let db = req.db;
-  let genericType = req.query.genericType;
-
-  let productGroups = req.decoded.generic_type_id;
-  let _pgs = [];
-
-  if (productGroups) {
-    let pgs = productGroups.split(',');
-    pgs.forEach(v => {
-      _pgs.push(v);
-    });
-    try {
-      let rows = await warehouseModel.getProductsWarehouseStaff(db, warehouseId, _pgs, genericType);
-      res.send({ ok: true, rows: rows });
-    } catch (error) {
-      console.log(error);
-      res.send({ ok: false, error: error.message });
-    } finally {
-      db.destroy();
-    }
-  } else {
-    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+router.post('/warehouse/products', co(async (req, res, next) => {
+  const warehouseId = req.decoded.warehouseId;
+  const db = req.db;
+  const genericType = req.body.genericType;
+  const query = req.body.query;
+  try {
+    const rows = await warehouseModel.getProductsWarehouseStaff(db, warehouseId, genericType, query);
+    res.send({ ok: true, rows: rows });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
   }
 }));
 
-router.get('/warehouse/products/search', co(async (req, res, next) => {
-  let warehouseId = req.decoded.warehouseId;
-  let db = req.db;
-  let genericType = req.query.genericType;
-  let query = req.query.query;
-
-  let productGroups = req.decoded.generic_type_id;
-  let _pgs = [];
-
-  if (productGroups) {
-    let pgs = productGroups.split(',');
-    pgs.forEach(v => {
-      _pgs.push(v);
-    });
-    try {
-      let rows = await warehouseModel.getProductsWarehouseSearchStaff(db, warehouseId, _pgs, genericType, query);
-      res.send({ ok: true, rows: rows });
-    } catch (error) {
-      console.log(error);
-      res.send({ ok: false, error: error.message });
-    } finally {
-      db.destroy();
-    }
-  } else {
-    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
-  }
-}));
 
 router.get('/products/stock/remain/:productId', co(async (req, res, next) => {
   let db = req.db;
@@ -207,11 +169,11 @@ router.get('/products/stock/remain/generic/:genericId', co(async (req, res, next
   }
 }));
 
-router.get('/warehouse/generics/requisition', co(async (req, res, next) => {
+router.post('/warehouse/generics/requisition', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let db = req.db;
-  let genericType = req.query.genericType;
-  if (typeof genericType === 'string') { genericType = [genericType]; }
+  let genericType = req.body.genericType;
+  // if (typeof genericType === 'string') { genericType = [genericType]; }
   try {
     let rows = await warehouseModel.getGenericsWarehouseRequisitionStaff(db, warehouseId, genericType);
     res.send({ ok: true, rows: rows });
@@ -223,12 +185,12 @@ router.get('/warehouse/generics/requisition', co(async (req, res, next) => {
   }
 }));
 
-router.get('/warehouse/generics/requisition/search', co(async (req, res, next) => {
+router.post('/warehouse/generics/requisition/search', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let db = req.db;
-  let genericType = req.query.genericType;
-  let query = req.query.query;
-  if (typeof genericType === 'string') { genericType = [genericType]; }
+  let genericType = req.body.genericType;
+  let query = req.body.query;
+  // if (typeof genericType === 'string') { genericType = [genericType]; }
   try {
     let rows = await warehouseModel.getGenericsWarehouseRequisitionSearchStaff(db, warehouseId, genericType, query);
     res.send({ ok: true, rows: rows });
@@ -273,25 +235,14 @@ router.post('/warehouse/generics/search', co(async (req, res, next) => {
   let genericType = req.body.genericType;
   let query = req.body.query;
 
-  let productGroups = req.decoded.generic_type_id;
-  let _pgs = [];
-
-  if (productGroups) {
-    let pgs = productGroups.split(',');
-    pgs.forEach(v => {
-      _pgs.push(v);
-    });
-    try {
-      let rows = await warehouseModel.getGenericsWarehouseSearch(db, warehouseId, _pgs, genericType, query);
-      res.send({ ok: true, rows: rows });
-    } catch (error) {
-      console.log(error);
-      res.send({ ok: false, error: error.message });
-    } finally {
-      db.destroy();
-    }
-  } else {
-    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  try {
+    let rows = await warehouseModel.getGenericsWarehouseSearch(db, warehouseId, genericType, query);
+    res.send({ ok: true, rows: rows });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
   }
 }));
 
@@ -299,80 +250,70 @@ router.post('/warehouse/products/search/', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let db = req.db;
   let query = req.body.query;
-  let productGroups = req.decoded.generic_type_id;
-  let _pgs = [];
-
-  if (productGroups) {
-    let pgs = productGroups.split(',');
-    pgs.forEach(v => {
-      _pgs.push(v);
-    });
-    try {
-      let rows = await warehouseModel.getProductsWarehouseSearch(db, warehouseId, _pgs, query);
-      res.send({ ok: true, rows: rows });
-    } catch (error) {
-      console.log(error);
-      res.send({ ok: false, error: error.message });
-    } finally {
-      db.destroy();
-    }
-  } else {
-    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
-  }
-}));
-
-router.post('/warehouse/generics/min-max/search', co(async (req, res, next) => {
-  let warehouseId = req.decoded.warehouseId;
-  let query = req.body.query;
   let genericType = req.body.genericType;
-  let db = req.db;
+  // let productGroups = req.decoded.generic_type_id;
+  // let _pgs = [];
 
-  let productGroups = req.decoded.generic_type_id;
-  let _pgs = [];
-
-  if (productGroups) {
-    let pgs = productGroups.split(',');
-    pgs.forEach(v => {
-      _pgs.push(v);
-    });
-    try {
-      let rows = await warehouseModel.searchGenericWarehouse(db, warehouseId, _pgs, query, genericType);
-      res.send({ ok: true, rows: rows });
-    } catch (error) {
-      console.log(error);
-      res.send({ ok: false, error: error.message });
-    } finally {
-      db.destroy();
-    }
-  } else {
-    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  // if (productGroups) {
+  //   let pgs = productGroups.split(',');
+  //   pgs.forEach(v => {
+  //     _pgs.push(v);
+  //   });
+  try {
+    let rows = await warehouseModel.getProductsWarehouseSearch(db, warehouseId, query, genericType);
+    res.send({ ok: true, rows: rows });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
   }
+  // } else {
+  //   res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  // }
 }));
 
-router.get('/warehouse/generics/min-max', co(async (req, res, next) => {
+//// router.post('/warehouse/generics/min-max/search', co(async (req, res, next) => {
+////   let warehouseId = req.decoded.warehouseId;
+////   let query = req.body.query;
+////   let genericType = req.body.genericType;
+////   let db = req.db;
+
+////   let productGroups = req.decoded.generic_type_id;
+////   let _pgs = [];
+
+////   if (productGroups) {
+////     let pgs = productGroups.split(',');
+////     pgs.forEach(v => {
+////       _pgs.push(v);
+////     });
+////     try {
+////       let rows = await warehouseModel.searchGenericWarehouse(db, warehouseId, _pgs, query, genericType);
+////       res.send({ ok: true, rows: rows });
+////     } catch (error) {
+////       console.log(error);
+////       res.send({ ok: false, error: error.message });
+////     } finally {
+////       db.destroy();
+////     }
+////   } else {
+////     res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+////   }
+//// }));
+
+router.post('/warehouse/generics/min-max', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
-  let genericType = req.query.genericType;
+  let genericType = req.body.genericType;
+  let query = req.body.query;
   let db = req.db;
-
-  let productGroups = req.decoded.generic_type_id;
-  let _pgs = [];
-
-  if (productGroups) {
-    let pgs = productGroups.split(',');
-    pgs.forEach(v => {
-      _pgs.push(v);
-    });
-    try {
-      let rows = await warehouseModel.getGenericWarehouse(db, warehouseId, _pgs, genericType);
-      res.send({ ok: true, rows: rows });
-    } catch (error) {
-      console.log(error);
-      res.send({ ok: false, error: error.message });
-    } finally {
-      db.destroy();
-    }
-  } else {
-    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  try {
+    let rows = await warehouseModel.getGenericWarehouse(db, warehouseId, genericType, query);
+    res.send({ ok: true, rows: rows });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
   }
 }));
 
@@ -2476,8 +2417,8 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
                 expired_date: p.expired_date,
                 wm_product_id_out: p.wm_product_id
               };
-            //คนไข้คืนยา
-            } else if(h.qty < 0 && HIStype == 2) {
+              //คนไข้คืนยา
+            } else if (h.qty < 0 && HIStype == 2) {
               data = {
                 stock_date: moment(h.date_serv).format('YYYY-MM-DD HH:mm:ss'),
                 product_id: p.product_id,
@@ -2687,7 +2628,7 @@ router.post('/products/all', co(async (req, res, next) => {
 
   try {
     const rs: any = await productModel.getProductAllStaff(db, query, genericTypes);
-    res.send({ ok: true, rows: rs[0] });
+    res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -3647,35 +3588,37 @@ router.post('/min-max/calculate', co(async (req, res, next) => {
   let fromDate = req.body.fromDate;
   let toDate = req.body.toDate;
   let warehouseId = req.decoded.warehouseId;
-  let genericGroups = req.decoded.generic_type_id;
+  let genericTypeLv1Id = req.decoded.generic_type_id;
+  let genericTypeLv2Id = req.decoded.generic_type_lv2_id;
+  let genericTypeLv3Id = req.decoded.generic_type_lv3_id;
 
   try {
-    if (genericGroups) {
-      let _ggs = [];
-      let ggs = genericGroups.split(',');
-      ggs.forEach(v => {
-        _ggs.push(v);
-      });
-      if (fromDate && toDate) {
-        let results: any = await staffModel.calculateMinMax(db, warehouseId, fromDate, toDate, _ggs);
-        let rs = results[0];
-        for (let r of rs) {
-          r.min_qty = Math.round(r.use_per_day * r.safety_min_day);
-          r.max_qty = Math.round(r.use_per_day * r.safety_max_day);
-          r.rop_qty = Math.round(r.use_per_day * r.lead_time_day);
-          if (r.carrying_cost) {
-            r.eoq_qty = Math.round(Math.sqrt((2 * r.use_total * r.ordering_cost) / r.carrying_cost));
-          } else {
-            r.eoq_qty = 0;
-          }
+    //// if (genericGroups) {
+    ////   let _ggs = [];
+    ////   let ggs = genericGroups.split(',');
+    ////   ggs.forEach(v => {
+    ////     _ggs.push(v);
+    ////   });
+    if (fromDate && toDate) {
+      let results: any = await staffModel.calculateMinMax(db, warehouseId, fromDate, toDate, genericTypeLv1Id, genericTypeLv2Id, genericTypeLv3Id);
+      let rs = results[0];
+      for (let r of rs) {
+        r.min_qty = Math.round(r.use_per_day * r.safety_min_day);
+        r.max_qty = Math.round(r.use_per_day * r.safety_max_day);
+        r.rop_qty = Math.round(r.use_per_day * r.lead_time_day);
+        if (r.carrying_cost) {
+          r.eoq_qty = Math.round(Math.sqrt((2 * r.use_total * r.ordering_cost) / r.carrying_cost));
+        } else {
+          r.eoq_qty = 0;
         }
-        res.send({ ok: true, rows: rs, process_date: moment().format('YYYY-MM-DD HH:mm:ss') });
-      } else {
-        res.send({ ok: false, error: 'กรุณาระบุช่วงวันที่สำหรับการคำนวณ' });
       }
+      res.send({ ok: true, rows: rs, process_date: moment().format('YYYY-MM-DD HH:mm:ss') });
     } else {
-      res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+      res.send({ ok: false, error: 'กรุณาระบุช่วงวันที่สำหรับการคำนวณ' });
     }
+    //// } else {
+    ////   res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+    //// }
   } catch (error) {
     throw error;
   } finally {

@@ -315,16 +315,16 @@ router.get('/get-staff-mappings', wrap(async (req, res, next) => {
   }
 }));
 
-router.get('/get-staff-mappings/search/:query/:genericType', wrap(async (req, res, next) => {
+router.post('/get-staff-mappings/search', wrap(async (req, res, next) => {
   let db = req.db;
   let hospcode = req.decoded.his_hospcode;
   let warehouseId = req.decoded.warehouseId;
-  let query = req.params.query;
-  let genericType = req.params.genericType;
+  let query = req.body.query;
+  let genericType = req.body.genericType;
 
   try {
     let results = await warehouseModel.getSearchStaffMappingsGenerics(db, hospcode, warehouseId, query, genericType);
-    res.send({ ok: true, rows: results[0] });
+    res.send({ ok: true, rows: results });
   } catch (error) {
     res.send({ ok: false, error: error.message })
   } finally {
@@ -332,21 +332,21 @@ router.get('/get-staff-mappings/search/:query/:genericType', wrap(async (req, re
   }
 }));
 
-router.get('/get-staff-mappings/type/:genericType', wrap(async (req, res, next) => {
-  let db = req.db;
-  let hospcode = req.decoded.his_hospcode;
-  let warehouseId = req.decoded.warehouseId;
-  let genericType = req.params.genericType;
+//// router.get('/get-staff-mappings/type/:genericType', wrap(async (req, res, next) => {
+////   let db = req.db;
+////   let hospcode = req.decoded.his_hospcode;
+////   let warehouseId = req.decoded.warehouseId;
+////   let genericType = req.params.genericType;
 
-  try {
-    let results = await warehouseModel.getStaffMappingsGenericsType(db, hospcode, warehouseId, genericType);
-    res.send({ ok: true, rows: results[0] });
-  } catch (error) {
-    res.send({ ok: false, error: error.message })
-  } finally {
-    db.destroy();
-  }
-}));
+////   try {
+////     let results = await warehouseModel.getStaffMappingsGenericsType(db, hospcode, warehouseId, genericType);
+////     res.send({ ok: true, rows: results[0] });
+////   } catch (error) {
+////     res.send({ ok: false, error: error.message })
+////   } finally {
+////     db.destroy();
+////   }
+//// }));
 
 router.post('/mapping/save', wrap(async (req, res, next) => {
   let db = req.db;

@@ -43,6 +43,18 @@ function checkNull(value) {
   }
 }
 
+function checkGenericType(value) {
+  if (value == '' || value == null || value == 'null' || value == undefined || value == 'undefined') {
+    return [];
+  } else {
+    if (value.length) {
+      return value.split(',');
+    } else {
+      return [];
+    }
+  }
+}
+
 function dateToDDMMYYYY(date) {
   return moment(date).isValid() ? moment(date).format('DD MMMM ') + (+moment(date).get('year') + 543) : '-';
 }
@@ -3373,66 +3385,68 @@ router.get('/test/:n', wrap(async (req, res, next) => {
 }));
 router.get('/report/product/all', wrap(async (req, res, next) => {
   let db = req.db;
-  let genericTypeId = req.query.genericTypeId;
+  const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
+  const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
+  const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
+  let query = req.query.query;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let productAll = await inventoryReportModel.productAll(db, genericTypeId);
-  productAll = productAll[0];
-  console.log(productAll[0]);
-
+  let productAll = await inventoryReportModel.productAll(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, query);
   res.render('product_all', {
     productAll: productAll,
-
     hospitalName: hospitalName
   });
 }));
 
 router.get('/report/product/all/excel', wrap(async (req, res, next) => {
-  let genericTypeId = req.query.genericTypeId;
+  const genericTypeLV1Id = checkNull(req.query.genericTypeLV1Id);
+  const genericTypeLV2Id = checkNull(req.query.genericTypeLV2Id);
+  const genericTypeLV3Id = checkNull(req.query.genericTypeLV3Id);
+  let query = req.query.query;
   let db = req.db;
 
-  fse.ensureDirSync(process.env.TMP_PATH);
+  fse.ensureDirSync(process.env.MMIS_TMP);
 
-  if (genericTypeId) {
-    try {
-      let _tableName = `product`;
+  // if () {
+  try {
+    let _tableName = `product`;
 
-      let result = await inventoryReportModel.productAll(db, genericTypeId);
-      let r = [];
-      let i = 0;
-      result[0].forEach(v => {
-        i++;
-        r.push({
-          'ลำดับ': i,
-          'Trade Code': v.trade_code,
-          'Trade Name': v.product_name,
-          'Generic Code': v.generic_code,
-          'Generic Name': v.generic_name,
-          'Base Unit': v.base_unit_name,
-          'Generic Type': v.generic_type_name
-        })
-      });
-      // console.log(result);
+    let result = await inventoryReportModel.productAll(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, query);
+    let r = [];
+    let i = 0;
+    result.forEach(v => {
+      i++;
+      r.push({
+        'ลำดับ': i,
+        'Trade Code': v.trade_code,
+        'Trade Name': v.product_name,
+        'Generic Code': v.generic_code,
+        'Generic Name': v.generic_name,
+        'Base Unit': v.base_unit_name,
+        'Generic Type': v.generic_type_name
+      })
+    });
+    // console.log(result);
 
-      // create tmp file
-      let tmpFile = `${_tableName}-${moment().format('x')}.xls`;
-      tmpFile = path.join(process.env.TMP_PATH, tmpFile);
-      let excel = json2xls(r);
-      fs.writeFileSync(tmpFile, excel, 'binary');
-      res.download(tmpFile, (err) => {
-        if (err) {
-          res.send({ ok: false, message: err })
-        } else {
-          fse.removeSync(tmpFile);
-        }
-      });
-    } catch (error) {
-      console.log(error);
-      res.send({ ok: false, error: 'ไม่สามารถส่งออกไฟล์ .xls ได้' });
-    }
-  } else {
-    res.send({ ok: false, error: 'ไม่พบตารางข้อมูลที่ต้องการ' });
+    // create tmp file
+    let tmpFile = `${_tableName}-${moment().format('x')}.xls`;
+    tmpFile = path.join(process.env.MMIS_TMP, tmpFile);
+    let excel = json2xls(r);
+    fs.writeFileSync(tmpFile, excel, 'binary');
+    res.download(tmpFile, (err) => {
+      if (err) {
+        res.send({ ok: false, message: err })
+      } else {
+        fse.removeSync(tmpFile);
+      }
+    });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: 'ไม่สามารถส่งออกไฟล์ .xls ได้' });
   }
+  // } else {
+  //   res.send({ ok: false, error: 'ไม่พบตารางข้อมูลที่ต้องการ' });
+  // }
 }));
 
 router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req, res, next) => {
@@ -3968,11 +3982,12 @@ router.get('/report/remain-trade/qty/export', async (req, res, next) => {
 
 router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
   const db = req.db;
-  const genericTypeId = req.query.genericTypeId;
-  const warehouseId = req.query.warehouseId;
-
+  const genericTypeLV1Id = checkNull(req.query.genericTypeLV1Id) ? null : req.query.genericTypeLV1Id.split(',');
+  const genericTypeLV2Id = checkNull(req.query.genericTypeLV2Id) ? null : req.query.genericTypeLV2Id.split(',');
+  const genericTypeLV3Id = checkNull(req.query.genericTypeLV3Id) ? null : req.query.genericTypeLV3Id.split(',');
+  const warehouseId = typeof req.query.warehouseId === 'number' || typeof req.query.warehouseId === 'string' ? [req.query.warehouseId] : req.query.warehouseId;
   try {
-    const rs: any = await inventoryReportModel.productExpired(db, genericTypeId, warehouseId);
+    const rs: any = await inventoryReportModel.productExpired(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, warehouseId);
     rs.forEach(element => {
       element.expired_date = (moment(element.expired_date).get('year')) + moment(element.expired_date).format('/D/M');
       element.cost = inventoryReportModel.comma(element.cost);
@@ -3987,11 +4002,13 @@ router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
 
 router.get('/report/print/alert-expried/excel', async (req, res, next) => {
   const db = req.db;
-  const genericTypeId = req.query.genericTypeId;
-  const warehouseId = req.query.warehouseId;
+  const genericTypeLV1Id = checkNull(req.query.genericTypeLV1Id) ? null : req.query.genericTypeLV1Id.split(',');
+  const genericTypeLV2Id = checkNull(req.query.genericTypeLV2Id) ? null : req.query.genericTypeLV2Id.split(',');
+  const genericTypeLV3Id = checkNull(req.query.genericTypeLV3Id) ? null : req.query.genericTypeLV3Id.split(',');
+  const warehouseId = typeof req.query.warehouseId == 'number' || typeof req.query.warehouseId === 'string' ? [req.query.warehouseId] : req.query.warehouseId;
 
   try {
-    const rs: any = await inventoryReportModel.productExpired(db, genericTypeId, warehouseId);
+    const rs: any = await inventoryReportModel.productExpired(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, warehouseId);
     rs.forEach(element => {
       element.expired_date = (moment(element.expired_date).get('year')) + moment(element.expired_date).format('/D/M');
       element.cost = inventoryReportModel.comma(element.cost);
@@ -5421,21 +5438,22 @@ router.get('/report/asn', wrap(async (req, res, next) => {
 
 }));
 router.get('/report/his-history', wrap(async (req, res, next) => {
-  let db = req.db;
-  let warehouseId = req.query.warehouseId
-  let date = req.query.date
-  let genericType = req.query.genericType
-  let warehouseName = req.query.warehouseName
-  let hospcode = req.decoded.his_hospcode;
-  let hosdetail = await inventoryReportModel.hospital(db);
-  let hospitalName = hosdetail[0].hospname;
-  let dateText = moment(date).format('DD MMMM ') + (moment(date).get('year') + 543);
-  let rs = await inventoryReportModel.hisHistory(db, warehouseId, date, genericType, hospcode);
-  let list = rs[0]
+  const db = req.db;
+  const warehouseId = req.query.warehouseId
+  const date = req.query.date
+  const genericTypeLV1Id = checkNull(req.query.genericTypeLV1Id) ? null : req.query.genericTypeLV1Id.split(',');
+  const genericTypeLV2Id = checkNull(req.query.genericTypeLV2Id) ? null : req.query.genericTypeLV2Id.split(',');
+  const genericTypeLV3Id = checkNull(req.query.genericTypeLV3Id) ? null : req.query.genericTypeLV3Id.split(',');
+  const warehouseName = req.query.warehouseName
+  const hospcode = req.decoded.his_hospcode;
+  const hosdetail = await inventoryReportModel.hospital(db);
+  const hospitalName = hosdetail[0].hospname;
+  const dateText = moment(date).format('DD MMMM ') + (moment(date).get('year') + 543);
+  const rs = await inventoryReportModel.hisHistory(db, warehouseId, date, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, hospcode);
 
   res.render('hisHistory', {
     dateText: dateText,
-    list: list,
+    list: rs,
     printDate: printDate(req.decoded.SYS_PRINT_DATE),
     hospitalName: hospitalName,
     warehouseName: warehouseName,
