@@ -1483,7 +1483,7 @@ FROM
         wp.expired_date,
         wp.lot_no,
         wl.location_name,
-        ml2.labeler_name AS labeler_name_m
+        ml2.labeler_name AS labeler_name_m,
         ml2.labeler_name_po AS labeler_name_po_m
         FROM
             wm_receives wr
@@ -2409,6 +2409,31 @@ OR sc.ref_src like ?
 
     }
 
+    receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any,wareHouseId:any) {
+        
+        let query = knex('wm_receive_approve as ra')
+        .select('r.receive_id','r.receive_code','r.delivery_code','g.generic_id','g.working_code','g.generic_name',
+    'rd.receive_qty','rd.cost','uf.unit_name','ug.qty','ra.approve_date','rd.unit_generic_id','r.vendor_labeler_id','l.labeler_name')
+        .join('wm_receives as r ', ' r.receive_id', 'ra.receive_id')
+        .join(' wm_receive_detail as rd ', ' rd.receive_id ', ' ra.receive_id')
+        .join(' mm_unit_generics as ug ', ' ug.unit_generic_id ', ' rd.unit_generic_id')
+        .join(' mm_generics as g ', ' g.generic_id ', ' ug.generic_id')
+        .join(' mm_units as uf ', ' uf.unit_id ', ' ug.from_unit_id ')
+        .join('mm_labelers as l','l.labeler_id','rd.vendor_labeler_id')
+        .whereBetween('ra.approve_date', [startDate + ' 00:00:00', endDate + ' 23:59:59'])
+        .whereIn('g.generic_type_id',genericTypeId)
+        .orderBy('ra.approve_date')
+        .orderBy('ra.approve_id')
+        .orderBy('r.vendor_labeler_id')
+        .orderBy('g.generic_name');
+
+        if (wareHouseId != 0) {
+            query.andWhere('r.warehouse_id', wareHouseId)
+        }
+
+        return query
+    }
+
     checkReceive(knex: Knex, receiveID) {
         let sql = `SELECT
         v.bgtype_name,
@@ -2445,7 +2470,8 @@ OR sc.ref_src like ?
         LEFT JOIN mm_generics mg ON mg.generic_id = mp.generic_id
         LEFt JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
         WHERE wr.receive_id IN (${receiveID})
-        GROUP BY wr.receive_id`
+        GROUP BY wr.receive_id
+        order by wr.receive_id`
         return (knex.raw(sql))
     }
 
@@ -2646,7 +2672,8 @@ OR sc.ref_src like ?
         LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
     WHERE
         r.receive_id IN ( ${receiveID} )
-    GROUP BY wrd.receive_detail_id`
+    GROUP BY wrd.receive_detail_id
+    order by r.receive_id`
         return knex.raw(sql);
     }
     productReceiveOther(knex: Knex, receiveID) {
@@ -3651,14 +3678,14 @@ GROUP BY
         return knex.raw(sql)
     }
 
-    lBitType(knex:Knex){
+    lBitType(knex: Knex) {
         return knex('l_bid_type')
-        .where('isactive',1)
-        .orderBy('bid_name');
+            .where('isactive', 1)
+            .orderBy('bid_name');
     }
 
-    purchaseBitType(knex:Knex,startdate: any, enddate: any, wareHouseId: any,genericTypeId:any){
-       let sql =  `SELECT
+    purchaseBitType(knex: Knex, startdate: any, enddate: any, wareHouseId: any, genericTypeId: any) {
+        let sql = `SELECT
             bt.bid_id,
             bt.bid_name,
             g.account_id,
@@ -3676,19 +3703,19 @@ GROUP BY
             LEFT JOIN mm_generic_types gt ON gt.generic_type_id = g.generic_type_id 
             WHERE
             po.purchase_order_status = 'completed' `
-            if (wareHouseId != 0) {
-                sql += ` AND po.warehouse_id = '${wareHouseId}' `
-            }
-            sql +=`
+        if (wareHouseId != 0) {
+            sql += ` AND po.warehouse_id = '${wareHouseId}' `
+        }
+        sql += `
             AND g.generic_type_id IN ( ${genericTypeId} )
             AND  po.approved_date between '${startdate} 00:00:00' and '${enddate} 23:59:59'
             GROUP BY
             g.purchasing_method,
             g.generic_type_id,
             g.account_id`
-            return knex.raw(sql)
+        return knex.raw(sql)
     }
-    
+
     issueYear(knex: Knex, year: any, wareHouseId: any, genericType: any) {
         return knex.raw(`
         SELECT

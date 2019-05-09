@@ -1,0 +1,63 @@
+include css.pug
+style(type='text/css').
+  body{
+  margin-left: 25px;
+  margin-right: 5px;
+  }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success.btnprint(onclick='window.print()') Print
+    table.table
+      tr
+        td.left.bold.h1(colspan=4) สรุปยอดรับวัสดุประจำวันที่ #{startDate} ถึง #{endDate}
+        td.right(colspan=4)  #{genericTypeName}
+    table.table2
+      thead
+        tr 
+          th(style='width:2%;')
+          th(style='width:35%;') ชื่อวัสดุ
+          th(style='width:10%;') วัน/เดือน/ปี
+          th(style='width:15%;') เลขที่เอกสาร
+          th(style='width:8%;') หน่วยนับ
+          th(style='width:8%;') จำนวนรับ
+          th(style='width:10%;') ราคา/หน่วย
+          th(style='width:10%;') รวมราคาวัสดุ
+      tbody
+        - for(var v of data)
+          tr
+            td 
+            td.left(colspan=2)
+              table.table
+                tr
+                  td
+                  td.left รับจาก 
+                  td.right #{v.labeler_name} 
+            td(colspan=5)
+          - var i = 1
+          - for(var _v of v.detail)
+            tr
+              td #{i}
+              td &nbsp;#{_v.generic_name}
+              td &nbsp;#{_v.approve_date}
+              td &nbsp;#{_v.delivery_code}
+              td &nbsp;#{_v.unit_name}
+              td.right &nbsp;#{_v.receive_qty}
+              td.right &nbsp;#{_v.cost}
+              td.right &nbsp;#{_v.total_price}
+            - i++
+          tr
+            td(colspan=2)
+            td(colspan=2)
+            td.left(colspan=2) รวมยอด
+            td.right(colspan=2) #{v.total_price} บาท
+          tr.tbfooter
+            td(colspan=8 )
+        //- .pagebreak
+    table.table2
+      td.left(style='width:60%;') 
+      td.left(style='width:15%;border-bottom: 3px double black;') รวมยอดคงคลัง
+      td.right(style='width:25%;border-bottom: 3px double black;') #{total_price} บาท

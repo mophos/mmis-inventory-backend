@@ -41,6 +41,15 @@ html, body {
   width:100%;
   font-size: 14pt;
 }
+.table2 {
+  border-spacing: 0;
+  border-collapse: collapse;
+  width:100%;
+  font-size: 14pt;
+  table-layout:fixed;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
 .table-border{
   border-collapse: collapse;
   width:100%;
