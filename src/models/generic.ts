@@ -9,6 +9,7 @@ export class GenericModel {
       .andWhere('is_actived', 'Y');
   }
 
+
   getGenericInWarehouse(knex: Knex, warehouseId: any) {
     return knex.raw(`SELECT
     mg.generic_id,
@@ -307,7 +308,7 @@ export class GenericModel {
 			a.generic_id in (
 			SELECT mp.generic_id from wm_products as wp join mm_products as mp on mp.product_id = wp.product_id WHERE wp.warehouse_id = ${warehouseId} group by mp.generic_id
       )`
-      console.log('xczxcxzczxcxzczxcxzczxcxzczx', sql)
+    console.log('xczxcxzczxcxzczxcxzczxcxzczx', sql)
     return knex.raw(sql);
   }
 
@@ -567,7 +568,7 @@ export class GenericModel {
       .where('wp.warehouse_id', warehouseId)
       .andWhere('mp.generic_id', generics)
       .orderBy('wp.qty', 'DESC')
-    .andWhereRaw('wp.qty>0')
+      .andWhereRaw('wp.qty>0')
   }
 
   getProductInWarehousesByGenericsBase(knex: Knex, generics: any[], warehouseId: any) {
