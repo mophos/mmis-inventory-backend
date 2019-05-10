@@ -56,7 +56,7 @@ function checkGenericType(value) {
   }
 }
 
-function dateToDDMMYYYY(date) {
+function dateToDDMMMMYYYY(date) {
   return moment(date).isValid() ? moment(date).format('DD MMMM ') + (+moment(date).get('year') + 543) : '-';
 }
 
@@ -1272,9 +1272,9 @@ router.get('/report/list/pick', wrap(async (req, res, next) => {
     //   const objHead: any = {
     //     sPage: sPage,
     //     ePage: ePage,
-    //     pick_date: dateToDDMMYYYY(header[0].pick_date),
+    //     pick_date: dateToDDMMMMYYYY(header[0].pick_date),
     //     pick_code: header[0].pick_code,
-    //     // confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+    //     // confirm_date: dateToDDMMMMYYYY(header[0].confirm_date),
     //     warehouse_name: header[0].warehouse_name,
     //     // withdraw_warehouse_name: header[0].withdraw_warehouse_name,
     //     title: []
@@ -1301,9 +1301,9 @@ router.get('/report/list/pick', wrap(async (req, res, next) => {
     //       const objHead: any = {
     //         sPage: sPage,
     //         ePage: ePage,
-    //         pick_date: dateToDDMMYYYY(header[0].pick_date),
+    //         pick_date: dateToDDMMMMYYYY(header[0].pick_date),
     //         pick_code: header[0].pick_code,
-    //         confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+    //         confirm_date: dateToDDMMMMYYYY(header[0].confirm_date),
     //         warehouse_name: header[0].warehouse_name,
     //         // withdraw_warehouse_name: header[0].withdraw_warehouse_name,
     //         title: []
@@ -1395,9 +1395,9 @@ router.get('/report/staff/list/requis', wrap(async (req, res, next) => {
       const objHead: any = {
         sPage: sPage,
         ePage: ePage,
-        requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+        requisition_date: dateToDDMMMMYYYY(header[0].requisition_date),
         requisition_code: header[0].requisition_code,
-        confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+        confirm_date: dateToDDMMMMYYYY(header[0].confirm_date),
         warehouse_name: header[0].warehouse_name,
         withdraw_warehouse_name: header[0].withdraw_warehouse_name,
         title: []
@@ -1422,9 +1422,9 @@ router.get('/report/staff/list/requis', wrap(async (req, res, next) => {
           const objHead: any = {
             sPage: sPage,
             ePage: ePage,
-            requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+            requisition_date: dateToDDMMMMYYYY(header[0].requisition_date),
             requisition_code: header[0].requisition_code,
-            confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+            confirm_date: dateToDDMMMMYYYY(header[0].confirm_date),
             warehouse_name: header[0].warehouse_name,
             withdraw_warehouse_name: header[0].withdraw_warehouse_name,
             title: []
@@ -1514,9 +1514,9 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
       const objHead: any = {
         sPage: sPage,
         ePage: ePage,
-        requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+        requisition_date: dateToDDMMMMYYYY(header[0].requisition_date),
         requisition_code: header[0].requisition_code,
-        confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+        confirm_date: dateToDDMMMMYYYY(header[0].confirm_date),
         warehouse_name: header[0].warehouse_name,
         withdraw_warehouse_name: header[0].withdraw_warehouse_name,
         title: []
@@ -1542,9 +1542,9 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
           const objHead: any = {
             sPage: sPage,
             ePage: ePage,
-            requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+            requisition_date: dateToDDMMMMYYYY(header[0].requisition_date),
             requisition_code: header[0].requisition_code,
-            confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+            confirm_date: dateToDDMMMMYYYY(header[0].confirm_date),
             warehouse_name: header[0].warehouse_name,
             withdraw_warehouse_name: header[0].withdraw_warehouse_name,
             title: []
@@ -5349,7 +5349,7 @@ router.get('/report/list-waiting', wrap(async (req, res, next) => {
       const objHead: any = {
         sPage: sPage,
         ePage: ePage,
-        requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+        requisition_date: dateToDDMMMMYYYY(header[0].requisition_date),
         requisition_code: header[0].requisition_code,
         warehouse_name: header[0].warehouse_name,
         withdraw_warehouse_name: header[0].withdraw_warehouse_name,
@@ -5374,7 +5374,7 @@ router.get('/report/list-waiting', wrap(async (req, res, next) => {
           const objHead: any = {
             sPage: sPage,
             ePage: ePage,
-            requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+            requisition_date: dateToDDMMMMYYYY(header[0].requisition_date),
             requisition_code: header[0].requisition_code,
             warehouse_name: header[0].warehouse_name,
             withdraw_warehouse_name: header[0].withdraw_warehouse_name,
@@ -5540,9 +5540,9 @@ router.get('/report/list-borrow', wrap(async (req, res, next) => {
       const objHead: any = {
         sPage: sPage,
         ePage: ePage,
-        borrow_date: dateToDDMMYYYY(header[0].borrow_date),
+        borrow_date: dateToDDMMMMYYYY(header[0].borrow_date),
         borrow_code: header[0].borrow_code,
-        confirm_date: dateToDDMMYYYY(header[0].borrow_date),
+        confirm_date: dateToDDMMMMYYYY(header[0].borrow_date),
         warehouse_name: header[0].dst_warehouse,
         withdraw_warehouse_name: header[0].src_warehouse,
         title: []
@@ -5570,9 +5570,9 @@ router.get('/report/list-borrow', wrap(async (req, res, next) => {
           const objHead: any = {
             sPage: sPage,
             ePage: ePage,
-            borrow_date: dateToDDMMYYYY(header[0].borrow_date),
+            borrow_date: dateToDDMMMMYYYY(header[0].borrow_date),
             borrow_code: header[0].borrow_code,
-            confirm_date: dateToDDMMYYYY(header[0].borrow_date),
+            confirm_date: dateToDDMMMMYYYY(header[0].borrow_date),
             warehouse_name: header[0].warehouse_name,
             withdraw_warehouse_name: header[0].withdraw_warehouse_name,
             title: []
@@ -5904,4 +5904,132 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
     res.send({ ok: false, error: error.message })
   }
 }));
+
+router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
+  const db = req.db;
+  const startDate = req.query.startDate;
+  const endDate = req.query.endDate;
+  let genericTypeId = req.query.genericTypeId;
+  const warehouseId = req.query.warehouseId;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
+
+
+  const wb = new excel4node.Workbook();
+  // Add Worksheets to the workbook
+  const ws = wb.addWorksheet('Sheet 1');
+  try {
+    const gn: any = await inventoryReportModel.getGenericType(db, genericTypeId);
+    const rs: any = await inventoryReportModel.payToWarehouse(db, startDate, endDate, genericTypeId, warehouseId, dateSetting)
+    if (rs) {
+
+      var textBold = wb.createStyle({
+        font: {
+          // color: '#FF0800',
+          bold: true
+        },
+        numberFormat: '#,##0.00; (#,##0.00); -',
+      });
+      var styleQty = wb.createStyle({
+        numberFormat: '#,##0; (#,##0); -',
+      });
+      var styleCost = wb.createStyle({
+        numberFormat: '#,##0.00; (#,##0.00); -',
+      });
+      var lastSet = wb.createStyle({
+        border: {
+          bottom: {
+            style: 'medium'
+          }
+        }
+      });
+      var lastList = wb.createStyle({
+        border: {
+          bottom: {
+            style: 'double'
+          }
+        }
+      });
+
+      ws.cell(1, 1, 1, 6, true).string('สรุปยอดจ่ายระหว่างวันที่ ' + dateToDDMMMMYYYY(startDate) + ' ถึง ' + dateToDDMMMMYYYY(endDate)).style(textBold);
+      ws.cell(1, 7, 1, 8, true).string(gn[0].generic_type_name);
+
+      ws.cell(2, 1, 2, 2, true).string('ชื่อวัสดุ');
+      ws.cell(2, 3).string('วัน/เดือน/ปี');
+      ws.cell(2, 4).string('เลขที่ใบเบิก');
+      ws.cell(2, 5).string('ราคา/หน่วย');
+      ws.cell(2, 6).string('หน่วยนับ');
+      ws.cell(2, 7).string('จำนวนจ่าย');
+      ws.cell(2, 8).string('รวม');
+
+
+      let cell = 2;
+
+      let priceAll = 0;
+      for (const h of rs) {
+        let priceWarehouse = 0;
+        let no = 0;
+
+        cell++;
+        ws.cell(cell, 1, cell, 2, true).string('จ่ายให้');
+        ws.cell(cell, 3, cell, 8, true).string(h.warehouse_name);
+
+        const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting)
+        for (const t of type) {
+          cell++;
+          ws.cell(cell, 1, cell, 8, true).string(t.generic_type_name);
+          let priceGenericType = 0;
+          const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting)
+          for (const d of detail) {
+            cell++;
+            ws.cell(cell, 1).number(no++);
+            ws.cell(cell, 2, cell, 4, true).string(d.generic_name);
+            ws.cell(cell, 5).date(dateToDD_MMM_YY(d.approve_date));
+            ws.cell(cell, 6).string(d.requisition_code);
+            ws.cell(cell, 9).number(d.unit_cost).style(styleCost);
+            ws.cell(cell, 7).string(d.unit_name);
+            ws.cell(cell, 8).number(d.qty).style(styleQty);
+            ws.cell(cell, 10).number(d.cost).style(styleCost);
+            priceWarehouse += d.cost;
+            priceAll += d.cost;
+            priceGenericType += d.cost;
+          }
+          cell++;
+          ws.cell(cell, 4).string('รวม').style(lastSet);
+          ws.cell(cell, 5, cell, 7, true).string(t.generic_type_name).style(lastSet);
+          ws.cell(cell, 8).number(priceGenericType).style(lastSet).style(styleCost);
+        }
+        cell++;
+        ws.cell(cell, 7).string('รวม').style(lastList);
+        ws.cell(cell, 8).number(priceWarehouse).style(lastList).style(styleCost);
+      }
+
+
+
+      // ++startCell
+      // ws.cell(++startCell, 7).string('ยอดรวมคงคลัง').style(lastList);
+      // ws.cell(startCell, 8, startCell, 9, true).number(total_price_all).style(lastList).style(styleCost);
+      // ws.cell(startCell, 10).string('บาท').style(lastList);
+      const filename = `สรุปยอดจ่าย${startDate}ถึง${endDate}_${moment().format('x')}.xlsx`;
+      wb.write(filename, function (err, stats) {
+        if (err) {
+          console.error(err);
+          res.send({ ok: false, error: err })
+        } else {
+          res.download(filename, (err) => {
+            if (err) {
+              res.send({ ok: false, message: err })
+            } else {
+              fse.removeSync(filename);
+            }
+          });
+        }
+      });
+
+    } else {
+      res.send({ ok: false, error: 'data error!!' })
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  }
+}))
 export default router;
