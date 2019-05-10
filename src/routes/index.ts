@@ -2849,15 +2849,16 @@ router.get('/report/receive-where-vender/excel', wrap(async (req, res, next) => 
   let db = req.db
   let startDate = req.query.startDate
   let endDate = req.query.endDate
-  let genericTypeId = req.query.genericTypeId
+  let genericTypeId = req.query.genericType
   let genericTypeName = req.query.genericTypeName
-  let wareHouseId = req.query.wareHouseId
+  let wareHouseId = req.query.warehouseId
+  let isFree = req.query.isFree
   var wb = new excel4node.Workbook();
   // Add Worksheets to the workbook
   var ws = wb.addWorksheet('Sheet 1');
   try {
     genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
-    var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId, wareHouseId)
+    var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId, wareHouseId, isFree )
     if (rs) {
       var total_price_all: any = 0
       rs = _(rs).groupBy('vendor_labeler_id').map((v: any) => { return v })
@@ -2965,12 +2966,17 @@ router.get('/report/receive-where-vender', wrap(async (req, res, next) => {
   let db = req.db
   let startDate = req.query.startDate
   let endDate = req.query.endDate
-  let genericTypeId = req.query.genericTypeId
+  let genericTypeId = req.query.genericType
   let genericTypeName = req.query.genericTypeName
-  let wareHouseId = req.query.wareHouseId
+  let wareHouseId = req.query.warehouseId
+  let isFree = req.query.isFree
   try {
     genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
-    var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId, wareHouseId)
+    var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId, wareHouseId, isFree)
+    console.log('----');
+    console.log(rs);
+    
+    
     if (rs) {
       var data = []
       var total_price_all: any = 0
@@ -3004,6 +3010,8 @@ router.get('/report/receive-where-vender', wrap(async (req, res, next) => {
       // res.send({ ok: false, error: 'error.message' })
     }
   } catch (error) {
+    console.log(error.message);
+    
     // res.send({ ok: false, error: error.message })
     res.render('error404')
   }

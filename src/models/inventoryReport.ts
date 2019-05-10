@@ -2409,26 +2409,29 @@ OR sc.ref_src like ?
 
     }
 
-    receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any, wareHouseId: any) {
-
+    receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any,wareHouseId:any,isFree: any) {
+        
         let query = knex('wm_receive_approve as ra')
-            .select('r.receive_id', 'r.receive_code', 'r.delivery_code', 'g.generic_id', 'g.working_code', 'g.generic_name',
-                'rd.receive_qty', 'rd.cost', 'uf.unit_name', 'ug.qty', 'ra.approve_date', 'rd.unit_generic_id', 'r.vendor_labeler_id', 'l.labeler_name')
-            .join('wm_receives as r ', ' r.receive_id', 'ra.receive_id')
-            .join(' wm_receive_detail as rd ', ' rd.receive_id ', ' ra.receive_id')
-            .join(' mm_unit_generics as ug ', ' ug.unit_generic_id ', ' rd.unit_generic_id')
-            .join(' mm_generics as g ', ' g.generic_id ', ' ug.generic_id')
-            .join(' mm_units as uf ', ' uf.unit_id ', ' ug.from_unit_id ')
-            .join('mm_labelers as l', 'l.labeler_id', 'rd.vendor_labeler_id')
-            .whereBetween('ra.approve_date', [startDate + ' 00:00:00', endDate + ' 23:59:59'])
-            .whereIn('g.generic_type_id', genericTypeId)
-            .orderBy('ra.approve_date')
-            .orderBy('ra.approve_id')
-            .orderBy('r.vendor_labeler_id')
-            .orderBy('g.generic_name');
+        .select('r.receive_id','r.receive_code','r.delivery_code','g.generic_id','g.working_code',knex.raw(`if(rd.is_free='Y',CONCAT(g.generic_name,' ','(ของแถม)') ,g.generic_name) generic_name`),
+    'rd.receive_qty','rd.cost','uf.unit_name','ug.qty','ra.approve_date','rd.unit_generic_id','r.vendor_labeler_id','l.labeler_name')
+        .join('wm_receives as r ', ' r.receive_id', 'ra.receive_id')
+        .join(' wm_receive_detail as rd ', ' rd.receive_id ', ' ra.receive_id')
+        .join(' mm_unit_generics as ug ', ' ug.unit_generic_id ', ' rd.unit_generic_id')
+        .join(' mm_generics as g ', ' g.generic_id ', ' ug.generic_id')
+        .join(' mm_units as uf ', ' uf.unit_id ', ' ug.from_unit_id ')
+        .join('mm_labelers as l','l.labeler_id','rd.vendor_labeler_id')
+        .whereBetween('ra.approve_date', [startDate + ' 00:00:00', endDate + ' 23:59:59'])
+        .whereIn('g.generic_type_id',genericTypeId)
+        .orderBy('ra.approve_date')
+        .orderBy('ra.approve_id')
+        .orderBy('r.vendor_labeler_id')
+        .orderBy('g.generic_name');
+        if (isFree === 'false') {
+            query.andWhere('rd.is_free', 'N')
+        }
 
         if (wareHouseId != 0) {
-            query.andWhere('r.warehouse_id', wareHouseId)
+            query.andWhere('rd.warehouse_id', wareHouseId)
         }
 
         return query
@@ -3708,12 +3711,11 @@ GROUP BY
             LEFT JOIN mm_generic_accounts ga ON ga.account_id = g.account_id
             LEFT JOIN mm_generic_types gt ON gt.generic_type_id = g.generic_type_id 
             WHERE
-            po.purchase_order_status = 'completed' `
+            g.generic_type_id IN ( ${genericTypeId} ) `
         if (wareHouseId != 0) {
             sql += ` AND po.warehouse_id = '${wareHouseId}' `
         }
-        sql += `
-            AND g.generic_type_id IN ( ${genericTypeId} )
+        sql += ` 
             AND  po.approved_date between '${startdate} 00:00:00' and '${enddate} 23:59:59'
             GROUP BY
             g.purchasing_method,
