@@ -33,23 +33,17 @@ export class MinMaxModel {
           .orWhere('mp.keywords', 'like', _query)
       });
 
-      if (genericType) {
-        if (genericType.generic_type_lv1_id.length) {
-          sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
-        }
-        if (genericType.generic_type_lv2_id.length) {
-          sql.where(w => {
-            w.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
-            w.orWhereNull('g.generic_type_lv2_id')
-          });
-        }
-        if (genericType.generic_type_lv3_id.length) {
-          sql.where(w => {
-            w.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
-            w.orWhereNull('g.generic_type_lv3_id')
-          });
-        }
+    if (genericType) {
+      if (genericType.generic_type_lv1_id.length) {
+        sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
       }
+      if (genericType.generic_type_lv2_id.length) {
+        sql.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+      }
+      if (genericType.generic_type_lv3_id.length) {
+        sql.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+      }
+    }
 
     sql.groupBy('g.generic_id')
       .orderBy('g.generic_name');
@@ -106,23 +100,17 @@ export class MinMaxModel {
       });
 
 
-      if (genericType) {
-        if (genericType.generic_type_lv1_id.length) {
-          sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
-        }
-        if (genericType.generic_type_lv2_id.length) {
-          sql.where(w => {
-            w.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
-            w.orWhereNull('g.generic_type_lv2_id')
-          });
-        }
-        if (genericType.generic_type_lv3_id.length) {
-          sql.where(w => {
-            w.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
-            w.orWhereNull('g.generic_type_lv3_id')
-          });
-        }
+    if (genericType) {
+      if (genericType.generic_type_lv1_id.length) {
+        sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
       }
+      if (genericType.generic_type_lv2_id.length) {
+        sql.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+      }
+      if (genericType.generic_type_lv3_id.length) {
+        sql.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+      }
+    }
 
     sql.groupBy('g.generic_id')
       .orderBy('g.generic_name');
