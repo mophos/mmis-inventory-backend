@@ -3704,12 +3704,11 @@ GROUP BY
             LEFT JOIN mm_generic_accounts ga ON ga.account_id = g.account_id
             LEFT JOIN mm_generic_types gt ON gt.generic_type_id = g.generic_type_id 
             WHERE
-            po.purchase_order_status = 'completed' `
+            g.generic_type_id IN ( ${genericTypeId} ) `
         if (wareHouseId != 0) {
             sql += ` AND po.warehouse_id = '${wareHouseId}' `
         }
-        sql += `
-            AND g.generic_type_id IN ( ${genericTypeId} )
+        sql += ` 
             AND  po.approved_date between '${startdate} 00:00:00' and '${enddate} 23:59:59'
             GROUP BY
             g.purchasing_method,
