@@ -2844,16 +2844,10 @@ OR sc.ref_src like ?
             sql.whereIn('mg.generic_type_id', genericTypeLV1Id);
         }
         if (genericTypeLV2Id.length) {
-            sql.where(w => {
-                w.whereIn('mg.generic_type_lv2_id', genericTypeLV2Id);
-                w.orWhereNull('mg.generic_type_lv2_id')
-            });
+            sql.whereIn('mg.generic_type_lv2_id', genericTypeLV2Id);
         }
         if (genericTypeLV3Id.length) {
-            sql.where(w => {
-                w.whereIn('mg.generic_type_lv3_id', genericTypeLV3Id);
-                w.orWhereNull('mg.generic_type_lv3_id')
-            });
+            sql.whereIn('mg.generic_type_lv3_id', genericTypeLV3Id);
         }
         sql.orderBy('mg.generic_id')
         return sql;
@@ -4026,16 +4020,10 @@ GROUP BY
             sql.whereIn('mg.generic_type_id', genericTypeLV1Id);
         }
         if (genericTypeLV2Id.length) {
-            sql.where(w => {
-                w.whereIn('mg.generic_type_lv2_id', genericTypeLV2Id);
-                w.orWhereNull('mg.generic_type_lv2_id')
-            });
+            sql.whereIn('mg.generic_type_lv2_id', genericTypeLV2Id);
         }
         if (genericTypeLV3Id.length) {
-            sql.where(w => {
-                w.whereIn('mg.generic_type_lv3_id', genericTypeLV3Id);
-                w.orWhereNull('mg.generic_type_lv3_id')
-            });
+            sql.whereIn('mg.generic_type_lv3_id', genericTypeLV3Id);
         }
         sql.groupBy('wp.product_id', 'wp.lot_no', 'wp.expired_date', 'wp.warehouse_id')
             .orderByRaw('DATEDIFF(wp.expired_date, CURDATE()) ASC')
@@ -4300,16 +4288,10 @@ GROUP BY
             sql.whereIn('mg.generic_type_id', genericTypeLV1Id);
         }
         if (genericTypeLV2Id.length) {
-            sql.where(w => {
-                w.whereIn('mg.generic_type_lv2_id', genericTypeLV2Id);
-                w.orWhereNull('mg.generic_type_lv2_id')
-            });
+            sql.whereIn('mg.generic_type_lv2_id', genericTypeLV2Id);
         }
         if (genericTypeLV3Id.length) {
-            sql.where(w => {
-                w.whereIn('mg.generic_type_lv3_id', genericTypeLV3Id);
-                w.orWhereNull('mg.generic_type_lv3_id')
-            });
+            sql.whereIn('mg.generic_type_lv3_id', genericTypeLV3Id);
         }
         sql.groupBy('tt.transaction_id')
             .orderBy('tt.transaction_id', 'ASC')

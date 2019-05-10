@@ -131,16 +131,10 @@ export class HisTransactionModel {
                 sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id);
             }
             if (genericType.generic_type_lv2_id.length) {
-                sql.where(w => {
-                    w.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
-                    w.orWhereNull('mg.generic_type_lv2_id')
-                });
+                sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
             }
             if (genericType.generic_type_lv3_id.length) {
-                sql.where(w => {
-                    w.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
-                    w.orWhereNull('mg.generic_type_lv3_id')
-                });
+                sql.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
             }
         }
         sql.groupBy('tt.transaction_id')
@@ -162,20 +156,15 @@ export class HisTransactionModel {
             .andWhere('tt.date_serv', date)
         //// .whereIn('mg.generic_type_id', genericType)
         if (genericType) {
+
             if (genericType.generic_type_lv1_id.length) {
                 sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id);
             }
             if (genericType.generic_type_lv2_id.length) {
-                sql.where(w => {
-                    w.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
-                    w.orWhereNull('mg.generic_type_lv2_id')
-                });
+                sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
             }
             if (genericType.generic_type_lv3_id.length) {
-                sql.where(w => {
-                    w.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
-                    w.orWhereNull('mg.generic_type_lv3_id')
-                });
+                sql.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
             }
         }
         sql.groupBy('tt.transaction_id')
