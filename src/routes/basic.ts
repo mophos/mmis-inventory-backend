@@ -335,7 +335,6 @@ router.get('/generic-types/lv2', co(async (req, res, next) => {
     } else {
       v2 = [];
     }
-    console.log('v2--', genericTypeLV1Id, v1, v2);
 
 
     let rs = await basicModel.getGenericTypesLV2(db, genericTypeLV1Id, v1, v2);
@@ -376,8 +375,6 @@ router.get('/generic-types/lv3', co(async (req, res, next) => {
     } else {
       v3 = [];
     }
-
-    console.log('v3--', genericTypeLV1Id, v1, v2, v3);
     let rs = await basicModel.getGenericTypesLV3(db, genericTypeLV1Id, genericTypeLV2Id, v1, v2, v3);
     res.send({ ok: true, rows: rs });
   } catch (error) {

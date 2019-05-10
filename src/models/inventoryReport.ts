@@ -1169,10 +1169,10 @@ mgt.generic_type_id `
         return (knex.raw(sql, [startDate, endDate, startDate, endDate, startDate, startDate]))
     }
 
-    getGenericType(knex: Knex) {
+    getGenericType(knex: Knex, genericTypeId) {
         return knex('mm_generic_types')
-            .select('generic_type_id', 'generic_type_code')
-            .orderBy('generic_type_id')
+            .select('generic_type_id', 'generic_type_name', 'generic_type_code')
+            .where('generic_type_id', genericTypeId)
     }
 
     list_cost(knex: Knex, genericTypeId, startDate, warehouseId) {
@@ -2409,23 +2409,23 @@ OR sc.ref_src like ?
 
     }
 
-    receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any,wareHouseId:any) {
-        
+    receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any, wareHouseId: any) {
+
         let query = knex('wm_receive_approve as ra')
-        .select('r.receive_id','r.receive_code','r.delivery_code','g.generic_id','g.working_code','g.generic_name',
-    'rd.receive_qty','rd.cost','uf.unit_name','ug.qty','ra.approve_date','rd.unit_generic_id','r.vendor_labeler_id','l.labeler_name')
-        .join('wm_receives as r ', ' r.receive_id', 'ra.receive_id')
-        .join(' wm_receive_detail as rd ', ' rd.receive_id ', ' ra.receive_id')
-        .join(' mm_unit_generics as ug ', ' ug.unit_generic_id ', ' rd.unit_generic_id')
-        .join(' mm_generics as g ', ' g.generic_id ', ' ug.generic_id')
-        .join(' mm_units as uf ', ' uf.unit_id ', ' ug.from_unit_id ')
-        .join('mm_labelers as l','l.labeler_id','rd.vendor_labeler_id')
-        .whereBetween('ra.approve_date', [startDate + ' 00:00:00', endDate + ' 23:59:59'])
-        .whereIn('g.generic_type_id',genericTypeId)
-        .orderBy('ra.approve_date')
-        .orderBy('ra.approve_id')
-        .orderBy('r.vendor_labeler_id')
-        .orderBy('g.generic_name');
+            .select('r.receive_id', 'r.receive_code', 'r.delivery_code', 'g.generic_id', 'g.working_code', 'g.generic_name',
+                'rd.receive_qty', 'rd.cost', 'uf.unit_name', 'ug.qty', 'ra.approve_date', 'rd.unit_generic_id', 'r.vendor_labeler_id', 'l.labeler_name')
+            .join('wm_receives as r ', ' r.receive_id', 'ra.receive_id')
+            .join(' wm_receive_detail as rd ', ' rd.receive_id ', ' ra.receive_id')
+            .join(' mm_unit_generics as ug ', ' ug.unit_generic_id ', ' rd.unit_generic_id')
+            .join(' mm_generics as g ', ' g.generic_id ', ' ug.generic_id')
+            .join(' mm_units as uf ', ' uf.unit_id ', ' ug.from_unit_id ')
+            .join('mm_labelers as l', 'l.labeler_id', 'rd.vendor_labeler_id')
+            .whereBetween('ra.approve_date', [startDate + ' 00:00:00', endDate + ' 23:59:59'])
+            .whereIn('g.generic_type_id', genericTypeId)
+            .orderBy('ra.approve_date')
+            .orderBy('ra.approve_id')
+            .orderBy('r.vendor_labeler_id')
+            .orderBy('g.generic_name');
 
         if (wareHouseId != 0) {
             query.andWhere('r.warehouse_id', wareHouseId)
@@ -4353,6 +4353,67 @@ GROUP BY
         mgt.generic_type_id,
         mga.account_id`
         return (knex.raw(sql))
+    }
+
+    payToWarehouse(knex: Knex, startDate, endDate, genericTypeId, warehouseId, dateSetting) {
+        let sql = knex('wm_requisition_orders as ro')
+            .select('ro.wm_requisition as warehouse_id', 'ww.warehouse_name ')
+            .join('wm_requisition_confirms as rc', 'ro.requisition_order_id', 'rc.requisition_order_id')
+            .join('wm_requisition_order_items as roi', 'ro.requisition_order_id', 'roi.requisition_order_id')
+            .join('mm_generics as mg', 'roi.generic_id', 'mg.generic_id')
+            .join('wm_warehouses as ww', 'ww.warehouse_id', 'ro.wm_requisition')
+            .where('rc.is_approve', 'Y')
+            .where('ro.wm_withdraw', warehouseId);
+        if (dateSetting) {
+            sql.whereBetween('ro.approve_date', [startDate, endDate])
+        } else {
+            sql.whereBetween('ro.requisition_date', [startDate, endDate])
+        }
+        sql.whereIn('mg.generic_type_id', genericTypeId)
+            .groupBy('ro.wm_requisition')
+        return sql;
+    }
+
+    payToWarehouseGenericType(knex: Knex, startDate, endDate, genericTypeId, warehouseId, dateSetting) {
+        let sql = knex('wm_requisition_orders as ro')
+            .select('mgt.generic_type_id', 'mgt.generic_type_name')
+            .join('wm_requisition_confirms as rc', 'ro.requisition_order_id', 'rc.requisition_order_id')
+            .join('wm_requisition_order_items as roi', 'ro.requisition_order_id', 'roi.requisition_order_id')
+            .join('mm_generics as mg', 'roi.generic_id', 'mg.generic_id')
+            .join('mm_generic_types as mgt', 'mgt.generic_type_id', 'mg.generic_type_id')
+            .join('wm_warehouses as ww', 'ww.warehouse_id', 'ro.wm_requisition')
+            .where('rc.is_approve', 'Y')
+            .where('ro.wm_requisition', warehouseId);
+        if (dateSetting) {
+            sql.whereBetween('ro.approve_date', [startDate, endDate])
+        } else {
+            sql.whereBetween('ro.requisition_date', [startDate, endDate])
+        }
+        sql.whereIn('mg.generic_type_id', genericTypeId)
+            .groupBy('mgt.generic_type_id')
+        return sql;
+    }
+
+    payToWarehouseGenericTypeDetail(knex: Knex, startDate, endDate, genericTypeId, warehouseId, dateSetting) {
+        //dateSetting = true  = approveDate
+        let sql = knex('wm_requisition_orders as ro')
+            .select('rci.generic_id', 'mg.generic_name', 'ro.requisition_code', 'rc.approve_date', 'mu.unit_name',
+                knex.raw('sum(rci.confirm_qty) as qty'), knex.raw('avg(rci.unit_cost) as unit_cost'), knex.raw('sum(rci.confirm_qty*rci.unit_cost) as cost'))
+            .join('wm_requisition_confirms as rc', 'ro.requisition_order_id', 'rc.requisition_order_id')
+            .join('wm_requisition_confirm_items as rci', 'rc.confirm_id', 'rci.confirm_id')
+            .join('wm_products as wp', 'rci.wm_product_id', 'wp.wm_product_id')
+            .join('mm_generics as mg', 'mg.generic_id', 'rci.generic_id')
+            .join('mm_units as mu', 'mg.primary_unit_id', 'mu.unit_id');
+        if (dateSetting) {
+            sql.whereBetween('ro.approve_date', [startDate, endDate])
+        } else {
+            sql.whereBetween('ro.requisition_date', [startDate, endDate])
+        }
+        sql.where('ro.wm_requisition', warehouseId)
+            .where('rc.is_approve', 'Y')
+            .where('mg.generic_type_id', genericTypeId)
+            .groupBy('rci.generic_id')
+
     }
 
 }
