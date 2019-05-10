@@ -116,13 +116,13 @@ export class StaffModel {
       ) sc on sc.generic_id = mp.generic_id
       where wp.warehouse_id = ?`;
     if (genericTypeLV1Id.length) {
-      sql += ` and mg.generic_type_id in (${genericTypeLV1Id})`;
+      sql += ` and mg.generic_type_id in (${genericTypeLV1Id}) `;
     }
     if (genericTypeLV2Id.length) {
-      sql += ` and mg.generic_type_lv2_id in (${genericTypeLV2Id})`;
+      sql += ` and (mg.generic_type_lv2_id in (${genericTypeLV2Id}) or g.generic_type_lv2_id is null)`;
     }
     if (genericTypeLV3Id.length) {
-      sql += ` and mg.generic_type_lv3_id in (${genericTypeLV3Id})`;
+      sql += ` and (mg.generic_type_lv3_id in (${genericTypeLV3Id}) or g.generic_type_lv3_id is null)`;
     }
 
     sql += ` group by mp.generic_id

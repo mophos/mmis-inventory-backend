@@ -235,7 +235,7 @@ export class ProductModel {
   // admin/products
 
   adminGetAllProducts(knex: Knex, genericType: any, warehouseId: any, limit: number, offset: number, sort: any = {}) {
-    let query = knex('wm_products as p')
+    let sql = knex('wm_products as p')
       .select('p.wm_product_id', 'p.product_id', 'mp.working_code', knex.raw('sum(p.qty) as qty'), knex.raw('ifnull(sum(v.reserve_qty),0) as reserve_qty'), knex.raw('sum(p.qty * p.cost) as total_cost'),
         'mp.product_name', 'g.generic_name', 'g.working_code as generic_working_code', 'mp.primary_unit_id', 'u.unit_name as primary_unit_name',
         'g.min_qty', 'g.max_qty')
@@ -244,54 +244,70 @@ export class ProductModel {
       .leftJoin('mm_units as u', 'u.unit_id', 'mp.primary_unit_id')
       .leftJoin('view_product_reserve as v', 'v.wm_product_id', 'p.wm_product_id')
       .where('mp.mark_deleted', 'N')
-    if (genericType.generic_type_lv1_id.length > 0) {
-      query.whereIn('g.generic_type_id', genericType.generic_type_lv1_id)
-    }
-    if (genericType.generic_type_lv2_id.length > 0) {
-      query.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id)
-    }
-    if (genericType.generic_type_lv3_id.length > 0) {
-      query.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id)
+    if (genericType) {
+      if (genericType.generic_type_lv1_id.length) {
+        sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
+      }
+      if (genericType.generic_type_lv2_id.length) {
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+          w.orWhereNull('g.generic_type_lv2_id')
+        });
+      }
+      if (genericType.generic_type_lv3_id.length) {
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+          w.orWhereNull('g.generic_type_lv3_id')
+        });
+      }
     }
     if (warehouseId != 0) {
-      query.andWhere('p.warehouse_id', warehouseId);
-      query.andWhereRaw('p.qty > 0')
+      sql.andWhere('p.warehouse_id', warehouseId);
+      sql.andWhereRaw('p.qty > 0')
     }
 
     if (sort.by) {
       let reverse = sort.reverse ? 'DESC' : 'ASC';
 
       if (sort.by === 'generic_name') {
-        query.orderBy('g.generic_name', reverse);
+        sql.orderBy('g.generic_name', reverse);
       }
     } else {
-      query.orderBy('g.generic_name')
-      return query.groupBy('p.product_id')
+      sql.orderBy('g.generic_name')
+      return sql.groupBy('p.product_id')
         .limit(limit)
         .offset(offset);
     }
   }
 
   adminGetAllProductTotal(knex: Knex, genericType: any, warehouseId: any) {
-    let query = knex('wm_products as p')
+    let sql = knex('wm_products as p')
       .select(knex.raw('count(distinct p.product_id) as total'))
       .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
-      .innerJoin('mm_generics as mg', 'mp.generic_id', 'mg.generic_id')
-    if (genericType.generic_type_lv1_id.length > 0) {
-      query.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id)
-    }
-    if (genericType.generic_type_lv2_id.length > 0) {
-      query.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id)
-    }
-    if (genericType.generic_type_lv3_id.length > 0) {
-      query.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id)
+      .innerJoin('mm_generics as g', 'mp.generic_id', 'g.generic_id')
+    if (genericType) {
+      if (genericType.generic_type_lv1_id.length) {
+        sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
+      }
+      if (genericType.generic_type_lv2_id.length) {
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+          w.orWhereNull('g.generic_type_lv2_id')
+        });
+      }
+      if (genericType.generic_type_lv3_id.length) {
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+          w.orWhereNull('g.generic_type_lv3_id')
+        });
+      }
     }
 
     if (warehouseId != 0) {
-      query.andWhere('p.warehouse_id', warehouseId);
-      query.andWhereRaw('p.qty > 0')
+      sql.andWhere('p.warehouse_id', warehouseId);
+      sql.andWhereRaw('p.qty > 0')
     }
-    return query;
+    return sql;
   }
 
   adminGetAllProductsDetailList(knex: Knex, productId: any, warehouseId: any) {
@@ -1073,16 +1089,17 @@ group by mpp.product_id
         g.working_code=? or 
         mp.working_code=? or 
         mp.keywords like ?)`;
-      if (genericType.generic_type_lv1_id.length) {
-        sql += ` and g.generic_type_id in (${genericType.generic_type_lv1_id})`;
+      if (genericType) {
+        if (genericType.generic_type_lv1_id.length) {
+          sql += ` and g.generic_type_id in (${genericType.generic_type_lv1_id})`;
+        }
+        if (genericType.generic_type_lv2_id.length) {
+          sql += ` and (g.generic_type_lv2_id in (${genericType.generic_type_lv2_id}) or g.generic_type_lv2_id is null)`;
+        }
+        if (genericType.generic_type_lv3_id.length) {
+          sql += ` and (g.generic_type_lv3_id in (${genericType.generic_type_lv3_id}) or g.generic_type_lv3_id is null)`;
+        }
       }
-      if (genericType.generic_type_lv2_id.length) {
-        sql += ` and g.generic_type_lv2_id in (${genericType.generic_type_lv2_id})`;
-      }
-      if (genericType.generic_type_lv3_id.length) {
-        sql += ` and g.generic_type_lv3_id in (${genericType.generic_type_lv3_id})`;
-      }
-
       if (warehouseId != 0) {
         sql += ` and p.warehouse_id = ${warehouseId} and p.qty > 0 `
       }
@@ -1134,14 +1151,16 @@ group by mpp.product_id
       left join mm_units as u on u.unit_id = mp.primary_unit_id
       where mp.mark_deleted = 'N'
       and(mp.product_name like ? or g.generic_name like ? or mp.working_code =? or g.working_code = ? or mp.keywords =?)`;
-      if (genericType.generic_type_lv1_id.length) {
-        sql += ` and g.generic_type_id in (${genericType.generic_type_lv1_id})`;
-      }
-      if (genericType.generic_type_lv2_id.length) {
-        sql += ` and g.generic_type_lv2_id in (${genericType.generic_type_lv2_id})`;
-      }
-      if (genericType.generic_type_lv3_id.length) {
-        sql += ` and g.generic_type_lv3_id in (${genericType.generic_type_lv3_id})`;
+      if (genericType) {
+        if (genericType.generic_type_lv1_id.length) {
+          sql += ` and g.generic_type_id in (${genericType.generic_type_lv1_id})`;
+        }
+        if (genericType.generic_type_lv2_id.length) {
+          sql += ` and (g.generic_type_lv2_id in (${genericType.generic_type_lv2_id}) or g.generic_type_lv2_id is null)`;
+        }
+        if (genericType.generic_type_lv3_id.length) {
+          sql += ` and (g.generic_type_lv3_id in (${genericType.generic_type_lv3_id}) or g.generic_type_lv3_id is null)`;
+        }
       }
       if (warehouseId != 0) {
         sql += ` and p.warehouse_id = ${warehouseId} and p.qty > 0 `
@@ -1295,10 +1314,16 @@ group by mpp.product_id
         sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id);
       }
       if (genericType.generic_type_lv2_id.length) {
-        sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
+        sql.where(w => {
+          w.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
+          w.orWhereNull('mg.generic_type_lv2_id')
+        });
       }
       if (genericType.generic_type_lv3_id.length) {
-        sql.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
+        sql.where(w => {
+          w.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
+          w.orWhereNull('mg.generic_type_lv3_id')
+        });
       }
     }
     sql.orderBy('mg.generic_id')
