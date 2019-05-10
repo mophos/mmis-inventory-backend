@@ -4415,7 +4415,7 @@ GROUP BY
             .where('rc.is_approve', 'Y')
             .where('mg.generic_type_id', genericTypeId)
             .groupBy('rci.generic_id')
-
+        return sql
     }
 
 }

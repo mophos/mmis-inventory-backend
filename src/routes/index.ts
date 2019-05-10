@@ -2858,7 +2858,7 @@ router.get('/report/receive-where-vender/excel', wrap(async (req, res, next) => 
   var ws = wb.addWorksheet('Sheet 1');
   try {
     genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
-    var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId, wareHouseId, isFree )
+    var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId, wareHouseId, isFree)
     if (rs) {
       var total_price_all: any = 0
       rs = _(rs).groupBy('vendor_labeler_id').map((v: any) => { return v })
@@ -2928,27 +2928,28 @@ router.get('/report/receive-where-vender/excel', wrap(async (req, res, next) => 
         ws.cell(startCell, 8, startCell, 9, true).number(totalPrice).style(lastSet).style(styleCost);
         ws.cell(startCell, 10).string('บาท').style(lastSet);
       }
-
-      startDate = dateToDDMMMYY(startDate)
-      endDate = dateToDDMMMYY(endDate)
-      ws.cell(1, 1, 1, 7, true).string('สรุปยอดรับวัสดุประจำวันที่ ' + startDate + ' ถึง ' + endDate).style(textBold);
+      ws.cell(1, 1, 1, 7, true).string('สรุปยอดรับวัสดุประจำวันที่ ' + dateToDDMMMYY(startDate) + ' ถึง ' + dateToDDMMMYY(endDate)).style(textBold);
       ws.cell(1, 8, 1, 10, true).string(genericTypeName);
 
       ++startCell
       ws.cell(++startCell, 7).string('ยอดรวมคงคลัง').style(lastList);
       ws.cell(startCell, 8, startCell, 9, true).number(total_price_all).style(lastList).style(styleCost);
       ws.cell(startCell, 10).string('บาท').style(lastList);
+      // create directory
+      fse.ensureDirSync(process.env.MMIS_TMP);
 
-      wb.write('สรุปยอดรับวัสดุ.xlsx', function (err, stats) {
+      let tmpFile = `สรุปยอดรับวัสดุ${startDate}ถึง${endDate}.xlsx`;
+      tmpFile = path.join(process.env.MMIS_TMP, tmpFile);
+      wb.write(tmpFile, function (err, stats) {
         if (err) {
           console.error(err);
           res.send({ ok: false, error: err })
         } else {
-          res.download('สรุปยอดรับวัสดุ.xlsx', (err) => {
+          res.download(tmpFile, (err) => {
             if (err) {
               res.send({ ok: false, message: err })
             } else {
-              fse.removeSync('สรุปยอดรับวัสดุ.xlsx');
+              fse.removeSync(tmpFile);
             }
           });
         }
@@ -2973,10 +2974,6 @@ router.get('/report/receive-where-vender', wrap(async (req, res, next) => {
   try {
     genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
     var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId, wareHouseId, isFree)
-    console.log('----');
-    console.log(rs);
-    
-    
     if (rs) {
       var data = []
       var total_price_all: any = 0
@@ -2997,7 +2994,6 @@ router.get('/report/receive-where-vender', wrap(async (req, res, next) => {
       total_price_all = inventoryReportModel.comma(total_price_all)
       startDate = dateToDDMMMYY(startDate)
       endDate = dateToDDMMMYY(endDate)
-      // res.send({ data: data })
       res.render('receive_where_vender', {
         startDate: startDate,
         endDate: endDate,
@@ -3007,12 +3003,9 @@ router.get('/report/receive-where-vender', wrap(async (req, res, next) => {
       })
     } else {
       res.render('error404')
-      // res.send({ ok: false, error: 'error.message' })
     }
   } catch (error) {
     console.log(error.message);
-    
-    // res.send({ ok: false, error: error.message })
     res.render('error404')
   }
 }))
@@ -5918,6 +5911,7 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
   const startDate = req.query.startDate;
   const endDate = req.query.endDate;
   let genericTypeId = req.query.genericTypeId;
+  genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
   const warehouseId = req.query.warehouseId;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
 
@@ -5982,29 +5976,33 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
         ws.cell(cell, 3, cell, 8, true).string(h.warehouse_name);
 
         const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting)
-        for (const t of type) {
-          cell++;
-          ws.cell(cell, 1, cell, 8, true).string(t.generic_type_name);
-          let priceGenericType = 0;
-          const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting)
-          for (const d of detail) {
+        if (type) {
+          for (const t of type) {
             cell++;
-            ws.cell(cell, 1).number(no++);
-            ws.cell(cell, 2, cell, 4, true).string(d.generic_name);
-            ws.cell(cell, 5).date(dateToDD_MMM_YY(d.approve_date));
-            ws.cell(cell, 6).string(d.requisition_code);
-            ws.cell(cell, 9).number(d.unit_cost).style(styleCost);
-            ws.cell(cell, 7).string(d.unit_name);
-            ws.cell(cell, 8).number(d.qty).style(styleQty);
-            ws.cell(cell, 10).number(d.cost).style(styleCost);
-            priceWarehouse += d.cost;
-            priceAll += d.cost;
-            priceGenericType += d.cost;
+            ws.cell(cell, 1, cell, 8, true).string(t.generic_type_name);
+            let priceGenericType = 0;
+            const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting)
+            if (detail) {
+              for (const d of detail) {
+                cell++;
+                ws.cell(cell, 1).number(no++);
+                ws.cell(cell, 2, cell, 4, true).string(d.generic_name);
+                ws.cell(cell, 5).date(moment(d.approve_date).format('YYYY-MM-DD'));
+                ws.cell(cell, 6).string(d.requisition_code);
+                ws.cell(cell, 9).number(d.unit_cost).style(styleCost);
+                ws.cell(cell, 7).string(d.unit_name);
+                ws.cell(cell, 8).number(d.qty).style(styleQty);
+                ws.cell(cell, 10).number(d.cost).style(styleCost);
+                priceWarehouse += d.cost;
+                priceAll += d.cost;
+                priceGenericType += d.cost;
+              }
+            }
+            cell++;
+            ws.cell(cell, 4).string('รวม').style(lastSet);
+            ws.cell(cell, 5, cell, 7, true).string(t.generic_type_name).style(lastSet);
+            ws.cell(cell, 8).number(priceGenericType).style(lastSet).style(styleCost);
           }
-          cell++;
-          ws.cell(cell, 4).string('รวม').style(lastSet);
-          ws.cell(cell, 5, cell, 7, true).string(t.generic_type_name).style(lastSet);
-          ws.cell(cell, 8).number(priceGenericType).style(lastSet).style(styleCost);
         }
         cell++;
         ws.cell(cell, 7).string('รวม').style(lastList);
@@ -6017,12 +6015,17 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
       // ws.cell(++startCell, 7).string('ยอดรวมคงคลัง').style(lastList);
       // ws.cell(startCell, 8, startCell, 9, true).number(total_price_all).style(lastList).style(styleCost);
       // ws.cell(startCell, 10).string('บาท').style(lastList);
-      const filename = `สรุปยอดจ่าย${startDate}ถึง${endDate}_${moment().format('x')}.xlsx`;
+      // create directory
+      fse.ensureDirSync(process.env.MMIS_TMP);
+
+      let filename = `สรุปยอดจ่าย${startDate}ถึง${endDate}.xlsx`;
+      filename = path.join(process.env.MMIS_TMP, filename);
       wb.write(filename, function (err, stats) {
         if (err) {
           console.error(err);
           res.send({ ok: false, error: err })
         } else {
+
           res.download(filename, (err) => {
             if (err) {
               res.send({ ok: false, message: err })
