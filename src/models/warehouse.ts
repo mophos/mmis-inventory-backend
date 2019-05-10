@@ -21,22 +21,30 @@ export class WarehouseModel {
     return knex.raw(sql, []);
   }
   listSearch(knex: Knex, query: any = '') {
-    let sql = `
-      select w.*, t.type_name, 
-        (
-          select group_concat(wm.his_warehouse) 
-          from wm_his_warehouse_mappings as wm 
-          where wm.mmis_warehouse=w.warehouse_id 
-          group by wm.mmis_warehouse
-        ) as his_warehouse
-      from wm_warehouses as w
-      left join wm_types as t on t.type_id=w.type_id
-      where w.is_deleted = 'N'
-      and (w.warehouse_name like '%${query}%' or w.short_code like '%${query}%')
-      order by w.is_actived desc,w.short_code asc
-    `;
+    let _query = `%${query}%`;
+    return knex('wm_warehouses as w')
+      .where('w.is_deleted', 'N')
+      .where(w => {
+        w.where('w.warehouse_name', 'like', _query)
+        w.orWhere('w.short_code', 'like', _query)
+      })
+      .orderBy('w.is_actived', 'DESC')
+      .orderBy('w.short_code', 'ASC');
+    // let sql = `
+    //   select w.*, t.type_name, 
+    //     (
+    //       select group_concat(wm.his_warehouse) 
+    //       from wm_his_warehouse_mappings as wm 
+    //       where wm.mmis_warehouse=w.warehouse_id 
+    //       group by wm.mmis_warehouse
+    //     ) as his_warehouse
+    //   from wm_warehouses as w
+    //   left join wm_types as t on t.type_id=w.type_id
+    //   where w.is_deleted = 'N'
+    //   and (w.warehouse_name like '%${query}%' or w.short_code like '%${query}%')
+    //   order by w.is_actived desc,w.short_code asc
+    // `;
 
-    return knex.raw(sql, []);
   }
 
 
