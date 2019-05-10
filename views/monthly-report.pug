@@ -36,10 +36,10 @@ html
             span.page
             tr 
                 td.left(style="font-size: 15pt;") #{l+1}
-                if(i.generic_type_code == "MEDICINE" && i.account_code == "ed")
+                if(i.account_code == "ed")
                     td.left(style="font-size: 15pt;") ยาในบัญชียาหลัก
                 else
-                    if(i.generic_type_code == "MEDICINE"  && i.account_code == "ned")
+                    if(i.account_code == "ned")
                         td.left(style="font-size: 15pt;") ยานอกบัญชียาหลัก
                     else
                         if(i.account_name)
