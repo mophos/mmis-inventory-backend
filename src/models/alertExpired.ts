@@ -18,10 +18,16 @@ export class AlertExpiredModel {
         sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id);
       }
       if (genericType.generic_type_lv2_id.length) {
-        sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
+        sql.where(w => {
+          w.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
+          w.orWhereNull('mg.generic_type_lv2_id')
+        });
       }
       if (genericType.generic_type_lv3_id.length) {
-        sql.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
+        sql.where(w => {
+          w.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
+          w.orWhereNull('mg.generic_type_lv3_id')
+        });
       }
     }
     sql.where((w) => {
@@ -52,10 +58,16 @@ export class AlertExpiredModel {
         sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id);
       }
       if (genericType.generic_type_lv2_id.length) {
-        sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
+        sql.where(w => {
+          w.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
+          w.orWhereNull('mg.generic_type_lv2_id')
+        });
       }
       if (genericType.generic_type_lv3_id.length) {
-        sql.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
+        sql.where(w => {
+          w.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
+          w.orWhereNull('mg.generic_type_lv3_id')
+        });
       }
     }
     if (query) {
@@ -106,17 +118,23 @@ export class AlertExpiredModel {
     let sql = knex('wm_generic_expired_alert as ge')
       .join('mm_generics as mg', 'ge.generic_id', 'mg.generic_id')
       .update('num_days', numDays)
-    if (genericType) {
-      if (genericType.generic_type_lv1_id.length) {
-        sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id);
+      if (genericType) {
+        if (genericType.generic_type_lv1_id.length) {
+          sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id);
+        }
+        if (genericType.generic_type_lv2_id.length) {
+          sql.where(w => {
+            w.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
+            w.orWhereNull('mg.generic_type_lv2_id')
+          });
+        }
+        if (genericType.generic_type_lv3_id.length) {
+          sql.where(w => {
+            w.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
+            w.orWhereNull('mg.generic_type_lv3_id')
+          });
+        }
       }
-      if (genericType.generic_type_lv2_id.length) {
-        sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
-      }
-      if (genericType.generic_type_lv3_id.length) {
-        sql.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
-      }
-    }
     return sql;
   }
 
@@ -147,10 +165,16 @@ export class AlertExpiredModel {
         sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id);
       }
       if (genericType.generic_type_lv2_id.length) {
-        sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
+        sql.where(w => {
+          w.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
+          w.orWhereNull('mg.generic_type_lv2_id')
+        });
       }
       if (genericType.generic_type_lv3_id.length) {
-        sql.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
+        sql.where(w => {
+          w.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
+          w.orWhereNull('mg.generic_type_lv3_id')
+        });
       }
     }
     sql.groupBy('wp.product_id', 'wp.lot_no', 'wp.expired_date', 'wp.warehouse_id')

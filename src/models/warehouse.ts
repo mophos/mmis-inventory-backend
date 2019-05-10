@@ -234,10 +234,16 @@ export class WarehouseModel {
         sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id);
       }
       if (genericType.generic_type_lv2_id.length) {
-        sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
+        sql.where(w => {
+          w.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
+          w.orWhereNull('mg.generic_type_lv2_id')
+        });
       }
       if (genericType.generic_type_lv3_id.length) {
-        sql.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
+        sql.where(w => {
+          w.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
+          w.orWhereNull('mg.generic_type_lv3_id')
+        });
       }
     }
     sql.groupBy('wp.product_id')
@@ -334,10 +340,16 @@ export class WarehouseModel {
         sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
       }
       if (genericType.generic_type_lv2_id.length) {
-        sql.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+          w.orWhereNull('g.generic_type_lv2_id')
+        });
       }
       if (genericType.generic_type_lv3_id.length) {
-        sql.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+          w.orWhereNull('g.generic_type_lv3_id')
+        });
       }
     }
     sql.groupBy('g.generic_id')
@@ -371,15 +383,20 @@ export class WarehouseModel {
       })
       .havingRaw('sum(p.qty) <= mgp.min_qty')
     if (genericType) {
-
       if (genericType.generic_type_lv1_id.length) {
         sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
       }
       if (genericType.generic_type_lv2_id.length) {
-        sql.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+          w.orWhereNull('g.generic_type_lv2_id')
+        });
       }
       if (genericType.generic_type_lv3_id.length) {
-        sql.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+          w.orWhereNull('g.generic_type_lv3_id')
+        });
       }
     }
     sql.groupBy('g.generic_id')
@@ -403,15 +420,20 @@ export class WarehouseModel {
       .where('p.is_actived', 'Y')
       .whereIn('g.generic_type_id', productGroups)
     if (genericType) {
-
       if (genericType.generic_type_lv1_id.length) {
         sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
       }
       if (genericType.generic_type_lv2_id.length) {
-        sql.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+          w.orWhereNull('g.generic_type_lv2_id')
+        });
       }
       if (genericType.generic_type_lv3_id.length) {
-        sql.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+          w.orWhereNull('g.generic_type_lv3_id')
+        });
       }
     }
     sql.groupBy('g.generic_id')
@@ -448,10 +470,16 @@ export class WarehouseModel {
         sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
       }
       if (genericType.generic_type_lv2_id.length) {
-        sql.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+          w.orWhereNull('g.generic_type_lv2_id')
+        });
       }
       if (genericType.generic_type_lv3_id.length) {
-        sql.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+          w.orWhereNull('g.generic_type_lv3_id')
+        });
       }
     }
     sql.groupBy('g.generic_id')
@@ -483,10 +511,16 @@ export class WarehouseModel {
         sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id);
       }
       if (genericType.generic_type_lv2_id.length) {
-        sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
+        sql.where(w => {
+          w.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id);
+          w.orWhereNull('mg.generic_type_lv2_id')
+        });
       }
       if (genericType.generic_type_lv3_id.length) {
-        sql.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
+        sql.where(w => {
+          w.whereIn('mg.generic_type_lv3_id', genericType.generic_type_lv3_id);
+          w.orWhereNull('mg.generic_type_lv3_id')
+        });
       }
     }
     // .whereIn('mg.generic_type_id', productGroups)
@@ -522,10 +556,16 @@ export class WarehouseModel {
         sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
       }
       if (genericType.generic_type_lv2_id.length) {
-        sql.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+          w.orWhereNull('g.generic_type_lv2_id')
+        });
       }
       if (genericType.generic_type_lv3_id.length) {
-        sql.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+          w.orWhereNull('g.generic_type_lv3_id')
+        });
       }
     }
     sql.groupBy('g.generic_id')
@@ -568,10 +608,16 @@ export class WarehouseModel {
         sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
       }
       if (genericType.generic_type_lv2_id.length) {
-        sql.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+          w.orWhereNull('g.generic_type_lv2_id')
+        });
       }
       if (genericType.generic_type_lv3_id.length) {
-        sql.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+          w.orWhereNull('g.generic_type_lv3_id')
+        });
       }
     }
     sql.groupBy('g.generic_id')
@@ -616,10 +662,16 @@ export class WarehouseModel {
         sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
       }
       if (genericType.generic_type_lv2_id.length) {
-        sql.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+          w.orWhereNull('g.generic_type_lv2_id')
+        });
       }
       if (genericType.generic_type_lv3_id.length) {
-        sql.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+          w.orWhereNull('g.generic_type_lv3_id')
+        });
       }
     }
     sql.groupBy('g.generic_id')
@@ -999,16 +1051,21 @@ export class WarehouseModel {
         w.orWhere('h.his', 'like', query)
         w.orWhereIn('g.generic_id', genericId)
       })
-
     if (genericType) {
       if (genericType.generic_type_lv1_id.length) {
         sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
       }
       if (genericType.generic_type_lv2_id.length) {
-        sql.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+          w.orWhereNull('g.generic_type_lv2_id')
+        });
       }
       if (genericType.generic_type_lv3_id.length) {
-        sql.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+          w.orWhereNull('g.generic_type_lv3_id')
+        });
       }
     }
     sql.groupBy('g.generic_id')
@@ -1085,10 +1142,16 @@ export class WarehouseModel {
         sql.whereIn('g.generic_type_id', genericType.generic_type_lv1_id);
       }
       if (genericType.generic_type_lv2_id.length) {
-        sql.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv2_id', genericType.generic_type_lv2_id);
+          w.orWhereNull('g.generic_type_lv2_id')
+        });
       }
       if (genericType.generic_type_lv3_id.length) {
-        sql.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+        sql.where(w => {
+          w.whereIn('g.generic_type_lv3_id', genericType.generic_type_lv3_id);
+          w.orWhereNull('g.generic_type_lv3_id')
+        });
       }
     }
     sql.groupBy('g.generic_id')
