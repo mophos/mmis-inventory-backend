@@ -2409,10 +2409,10 @@ OR sc.ref_src like ?
 
     }
 
-    receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any,wareHouseId:any) {
+    receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any,wareHouseId:any,isFree: any) {
         
         let query = knex('wm_receive_approve as ra')
-        .select('r.receive_id','r.receive_code','r.delivery_code','g.generic_id','g.working_code','g.generic_name',
+        .select('r.receive_id','r.receive_code','r.delivery_code','g.generic_id','g.working_code',knex.raw(`if(rd.is_free='Y',CONCAT(g.generic_name,' ','(ของแถม)') ,g.generic_name) generic_name`),
     'rd.receive_qty','rd.cost','uf.unit_name','ug.qty','ra.approve_date','rd.unit_generic_id','r.vendor_labeler_id','l.labeler_name')
         .join('wm_receives as r ', ' r.receive_id', 'ra.receive_id')
         .join(' wm_receive_detail as rd ', ' rd.receive_id ', ' ra.receive_id')
@@ -2426,9 +2426,11 @@ OR sc.ref_src like ?
         .orderBy('ra.approve_id')
         .orderBy('r.vendor_labeler_id')
         .orderBy('g.generic_name');
-
+        if (isFree === 'false') {
+            query.andWhere('rd.is_free', 'N')
+        }
         if (wareHouseId != 0) {
-            query.andWhere('r.warehouse_id', wareHouseId)
+            query.andWhere('rd.warehouse_id', wareHouseId)
         }
 
         return query
