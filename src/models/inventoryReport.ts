@@ -3609,10 +3609,12 @@ FROM
 		sc.generic_id 
 	) AS blb ON blb.generic_id = q1.generic_id
 	LEFT JOIN mm_generics AS mg ON mg.generic_id = q1.generic_id
-	LEFT JOIN mm_generic_types AS gt ON gt.generic_type_id = mg.generic_type_id
+    LEFT JOIN mm_generic_types AS gt ON gt.generic_type_id = mg.generic_type_id
+    LEFT JOIN mm_generic_accounts AS ga ON ga.account_id = mg.account_id 
 WHERE
-		mg.generic_type_id in (${genericType})
-    and  gt.generic_type_code <> 'MEDICINE'
+        mg.generic_type_id in (${genericType})
+        and (ga.account_code <> 'ed'
+        and ga.account_code <> 'ned')
 GROUP BY
 	mg.generic_type_id
     `
@@ -3671,11 +3673,11 @@ FROM
 	) AS blb ON blb.generic_id = q1.generic_id
 	LEFT JOIN mm_generics AS mg ON mg.generic_id = q1.generic_id
 	LEFT JOIN mm_generic_types AS gt ON gt.generic_type_id = mg.generic_type_id
-	LEFT JOIN mm_generic_accounts AS ga ON ga.account_id = mg.account_id 
-WHERE
-	gt.generic_type_code = 'MEDICINE' 
-GROUP BY
-	mg.generic_type_id,
+	LEFT JOIN mm_generic_accounts AS ga ON ga.account_id = mg.account_id  
+    WHERE
+        mg.generic_type_id in (${genericType}) and
+    (ga.account_code = 'ed' or ga.account_code = 'ned') 
+    GROUP BY
 	mg.account_id
     `
         return knex.raw(sql)
