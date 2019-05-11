@@ -1629,13 +1629,12 @@ router.get('/report/list/refill/:requisId', wrap(async (req, res, next) => {
       value.total = inventoryReportModel.commaQty(value.total);
     })
 
-    let boox_prefix = await inventoryReportModel.boox_prefix(db);
-    boox_prefix = boox_prefix[0].value
+    let book_prefix = `${req.decoded.BOOK_PREFIX}${req.decoded.warehouseBook ? req.decoded.warehouseBook : ''}`;
     let check_date = moment(list_requis[0].requisition_date).format('D MMMM ') + (moment(list_requis[0].requisition_date).get('year') + 543);
     let requisition_date = moment(list_requis[0].requisition_date).format('D MMMM ') + (moment(list_requis[0].requisition_date).get('year') + 543);
     let requisition_id = list_requis[0].requisition_code;
     res.render('list_requis', {
-      boox_prefix: boox_prefix,
+      book_prefix: book_prefix,
       hospitalName: hospitalName,
       today: today,
       list_requis: list_requis,
@@ -2500,8 +2499,7 @@ router.get('/report/receive', wrap(async (req, res, next) => {
   let receiveId = req.query.receiveId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let boox_prefix = await inventoryReportModel.boox_prefix(db);
-  boox_prefix = boox_prefix[0].value;
+  let book_prefix = `${req.decoded.BOOK_PREFIX}${req.decoded.warehouseBook ? req.decoded.warehouseBook : ''}`;
   let receive = await inventoryReportModel.receive(db, receiveId);
   receive = receive[0];
   let receiveItem = await inventoryReportModel.receiveItem(db, receiveId);
@@ -2526,7 +2524,7 @@ router.get('/report/receive', wrap(async (req, res, next) => {
   receiveUser = receiveUser[0];
 
   res.render('receive', {
-    hospitalName: hospitalName, date: date, boox_prefix: boox_prefix, receive: receive,
+    hospitalName: hospitalName, date: date, book_prefix: book_prefix, receive: receive,
     receiveItem: receiveItem, vat: vat, pricevat: pricevat, receiveCommiittee: receiveCommiittee,
     receiveUser: receiveUser
   });
@@ -3206,8 +3204,7 @@ router.get('/report/check/receives2', wrap(async (req, res, next) => {
   let master = hosdetail[0].managerName;
   let bahtText: any = []
   let generic_name: any = []
-  let prefix = await inventoryReportModel.boox_prefix(db);
-  let book_prefix = prefix[0].value;
+  let book_prefix = `${req.decoded.BOOK_PREFIX}${req.decoded.warehouseBook ? req.decoded.warehouseBook : ''}`;
   let _receive: any = []
   let staffReceive: any = [];
   let check_receive: any = []

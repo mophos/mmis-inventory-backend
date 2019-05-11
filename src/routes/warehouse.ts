@@ -51,7 +51,7 @@ router.get('/search', wrap(async (req, res, next) => {
   let query = req.query.query || '';
   try {
     let rs: any = await warehouseModel.listSearch(db, query);
-    res.send({ ok: true, rows: rs[0] });
+    res.send({ ok: true, rows: rs });
   } catch (error) {
     res.send({ ok: false, error: error });
   } finally {

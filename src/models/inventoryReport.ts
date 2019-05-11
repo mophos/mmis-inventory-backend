@@ -2054,7 +2054,7 @@ FROM
             .join('um_positions as ps', 'ps.position_id', 'p.position_id')
             .where('wr.receive_id', receiveId).where('upu.inuse', 'Y');
     }
-    boox_prefix(knex: Knex) {
+    book_prefix(knex: Knex) {
         return knex.select('value').from('sys_settings').where('action_name', 'BOOK_PREFIX');
     }
     requis(knex: Knex, date) {
@@ -2409,23 +2409,23 @@ OR sc.ref_src like ?
 
     }
 
-    receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any,wareHouseId:any,isFree: any) {
-        
+    receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any, wareHouseId: any, isFree: any) {
+
         let query = knex('wm_receive_approve as ra')
-        .select('r.receive_id','r.receive_code','r.delivery_code','g.generic_id','g.working_code',knex.raw(`if(rd.is_free='Y',CONCAT(g.generic_name,' ','(ของแถม)') ,g.generic_name) generic_name`),
-    'rd.receive_qty','rd.cost','uf.unit_name','ug.qty','ra.approve_date','rd.unit_generic_id','r.vendor_labeler_id','l.labeler_name')
-        .join('wm_receives as r ', ' r.receive_id', 'ra.receive_id')
-        .join(' wm_receive_detail as rd ', ' rd.receive_id ', ' ra.receive_id')
-        .join(' mm_unit_generics as ug ', ' ug.unit_generic_id ', ' rd.unit_generic_id')
-        .join(' mm_generics as g ', ' g.generic_id ', ' ug.generic_id')
-        .join(' mm_units as uf ', ' uf.unit_id ', ' ug.from_unit_id ')
-        .join('mm_labelers as l','l.labeler_id','rd.vendor_labeler_id')
-        .whereBetween('ra.approve_date', [startDate + ' 00:00:00', endDate + ' 23:59:59'])
-        .whereIn('g.generic_type_id',genericTypeId)
-        .orderBy('ra.approve_date')
-        .orderBy('ra.approve_id')
-        .orderBy('r.vendor_labeler_id')
-        .orderBy('g.generic_name');
+            .select('r.receive_id', 'r.receive_code', 'r.delivery_code', 'g.generic_id', 'g.working_code', knex.raw(`if(rd.is_free='Y',CONCAT(g.generic_name,' ','(ของแถม)') ,g.generic_name) generic_name`),
+                'rd.receive_qty', 'rd.cost', 'uf.unit_name', 'ug.qty', 'ra.approve_date', 'rd.unit_generic_id', 'r.vendor_labeler_id', 'l.labeler_name')
+            .join('wm_receives as r ', ' r.receive_id', 'ra.receive_id')
+            .join(' wm_receive_detail as rd ', ' rd.receive_id ', ' ra.receive_id')
+            .join(' mm_unit_generics as ug ', ' ug.unit_generic_id ', ' rd.unit_generic_id')
+            .join(' mm_generics as g ', ' g.generic_id ', ' ug.generic_id')
+            .join(' mm_units as uf ', ' uf.unit_id ', ' ug.from_unit_id ')
+            .join('mm_labelers as l', 'l.labeler_id', 'rd.vendor_labeler_id')
+            .whereBetween('ra.approve_date', [startDate + ' 00:00:00', endDate + ' 23:59:59'])
+            .whereIn('g.generic_type_id', genericTypeId)
+            .orderBy('ra.approve_date')
+            .orderBy('ra.approve_id')
+            .orderBy('r.vendor_labeler_id')
+            .orderBy('g.generic_name');
         if (isFree === 'false') {
             query.andWhere('rd.is_free', 'N')
         }
@@ -3746,7 +3746,7 @@ FROM
 		'  ',
 		IFNULL( mgg4.group_name_4, ' ' ) 
 	) AS group_name,
-	(sum(in_qty*in_unit_cost) - sum(out_qty*out_unit_cost)) / (sum(in_qty) - sum(out_qty) AS cost,
+	(sum(in_qty*in_unit_cost) - sum(out_qty*out_unit_cost)) / (sum(in_qty) - sum(out_qty)) AS cost,
 	(
 	SELECT
 		avg( cost ) 
