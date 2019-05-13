@@ -25,33 +25,15 @@ router.get('/minmax-group', co(async (req, res, next) => {
   }
 }));
 
-router.get('/minmax-group-detail', co(async (req, res, next) => {
+router.post('/minmax-group-detail', co(async (req, res, next) => {
   let db = req.db;
-  let minMaxGroupId = req.query.minMaxGroupId
+  let minMaxGroupId = req.body.minMaxGroupId
   let warehouseId = req.decoded.warehouseId;
-  let genericType = req.query.genericType;
-  let query = req.query.query;
-  let genericGroups = req.decoded.generic_type_id;
+  let genericType = req.body.genericType;
+  let query = req.body.query;
   try {
-    if (genericGroups) {
-      let _ggs = [];
-      try {
-        let ggs = genericGroups.split(',');
-        ggs.forEach(v => {
-          _ggs.push(v);
-        });
-        let _genericType = genericType === 'undefined' || genericType === null ? '' : genericType;
-        let rows: any = await model.getMinMaxGroupDetail(db, minMaxGroupId, warehouseId, _ggs, _genericType, query);
-        res.send({ ok: true, rows: rows });
-      } catch (error) {
-        console.log(error);
-        res.send({ ok: false, error: error.message });
-      } finally {
-        db.destroy();
-      }
-    } else {
-      res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
-    }
+    let rows: any = await model.getMinMaxGroupDetail(db, minMaxGroupId, warehouseId, genericType, query);
+    res.send({ ok: true, rows: rows });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -89,34 +71,17 @@ router.get('/header-group', co(async (req, res, next) => {
   }
 
 }));
-router.get('/detail', co(async (req, res, next) => {
+router.post('/detail', co(async (req, res, next) => {
 
   let db = req.db;
   let warehouseId = req.decoded.warehouseId;
-  let genericType = req.query.genericType;
-  let query = req.query.query;
-  let genericGroups = req.decoded.generic_type_id;
+  let genericType = req.body.genericType;
+  let query = req.body.query;
 
   try {
-    if (genericGroups) {
-      let _ggs = [];
-      try {
-        let ggs = genericGroups.split(',');
-        ggs.forEach(v => {
-          _ggs.push(v);
-        });
-        let _genericType = genericType === 'undefined' || genericType === null ? '' : genericType;
-        let rows: any = await model.getMinMax(db, warehouseId, _ggs, _genericType, query);
-        res.send({ ok: true, rows: rows });
-      } catch (error) {
-        console.log(error);
-        res.send({ ok: false, error: error.message });
-      } finally {
-        db.destroy();
-      }
-    } else {
-      res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
-    }
+    let rows: any = await model.getMinMax(db, warehouseId, genericType, query);
+    res.send({ ok: true, rows: rows });
+
   } catch (error) {
     throw error;
   } finally {
@@ -243,10 +208,8 @@ router.post('/save', co(async (req, res, next) => {
       });
 
       try {
-        if(groupId != 0){
-          console.log('-----------');
-          
-          await model.updateDate(db, groupId ,moment(_processDate).format('YYYY-MM-DD HH:mm:ss'));
+        if (groupId != 0) {
+          await model.updateDate(db, groupId, moment(_processDate).format('YYYY-MM-DD HH:mm:ss'));
         }
         await warehouseModel.removeGenericPlanningMinMax(db, warehouseId);
         await warehouseModel.saveGenericPlanningMinMax(db, generics);
@@ -274,25 +237,14 @@ router.post('/search', co(async (req, res, next) => {
   let genericType = req.body.genericType;
   let db = req.db;
 
-  let genericGroups = req.decoded.generic_type_id;
-  let _ggs = [];
-
-  if (genericGroups) {
-    let pgs = genericGroups.split(',');
-    pgs.forEach(v => {
-      _ggs.push(v);
-    });
-    try {
-      let rows = await warehouseModel.searchGenericWarehouse(db, warehouseId, _ggs, query, genericType);
-      res.send({ ok: true, rows: rows });
-    } catch (error) {
-      console.log(error);
-      res.send({ ok: false, error: error.message });
-    } finally {
-      db.destroy();
-    }
-  } else {
-    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  try {
+    let rows = await warehouseModel.searchGenericWarehouse(db, warehouseId, query, genericType);
+    res.send({ ok: true, rows: rows });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
   }
 }));
 
@@ -303,25 +255,14 @@ router.post('/search-group', co(async (req, res, next) => {
   let groupId = req.body.minMaxGroupId;
   let db = req.db;
 
-  let genericGroups = req.decoded.generic_type_id;
-  let _ggs = [];
-
-  if (genericGroups) {
-    let pgs = genericGroups.split(',');
-    pgs.forEach(v => {
-      _ggs.push(v);
-    });
-    try {
-      let rows = await warehouseModel.searchGenericGroupWarehouse(db, warehouseId, _ggs, query, genericType, groupId);
-      res.send({ ok: true, rows: rows });
-    } catch (error) {
-      console.log(error);
-      res.send({ ok: false, error: error.message });
-    } finally {
-      db.destroy();
-    }
-  } else {
-    res.send({ ok: false, error: 'ไม่พบการกำหนดเงื่อนไขประเภทสินค้า' });
+  try {
+    let rows = await warehouseModel.searchGenericGroupWarehouse(db, warehouseId, query, genericType, groupId);
+    res.send({ ok: true, rows: rows });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
   }
 }));
 

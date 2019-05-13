@@ -16,6 +16,7 @@ const issueModel = new IssueModel();
 const receiveModel = new ReceiveModel();
 const warehouseModel = new WarehouseModel();
 
+const excel4node = require('excel4node');
 const signale = require('signale');
 const path = require('path')
 const fse = require('fs-extra');
@@ -43,12 +44,34 @@ function checkNull(value) {
   }
 }
 
-function dateToDDMMYYYY(date) {
+function checkGenericType(value) {
+  if (value == '' || value == null || value == 'null' || value == undefined || value == 'undefined') {
+    return [];
+  } else {
+    if (value.length) {
+      return value.split(',');
+    } else {
+      return [];
+    }
+  }
+}
+
+function dateToDDMMMMYYYY(date) {
   return moment(date).isValid() ? moment(date).format('DD MMMM ') + (+moment(date).get('year') + 543) : '-';
 }
 
 function dateToDMMYYYY(date) {
   return moment(date).isValid() ? moment(date).format('D/MM/') + (moment(date).get('year')) : '-';
+}
+
+function dateToDDMMMYY(date) {
+  return moment(date).isValid() ? moment(date).format('DD MMM ') + ('' + (+moment(date).get('year') + 543)).substr(2, 2) : '-';
+}
+function dateToDD_MMM_YY(date) {
+  return moment(date).isValid() ? moment(date).format('DD-MMM-') + ('' + (+moment(date).get('year') + 543)).substr(2, 2) : '-';
+}
+function dateToDD_MM_YYYY(date) {
+  return moment(date).isValid() ? moment(date).format('DD-MM-') + ('' + (+moment(date).get('year') + 543)) : '-';
 }
 
 function comma(num) {
@@ -322,8 +345,8 @@ router.get('/report/purchase-bit-type', wrap(async (req, res, next) => {
     let other = _.map(_.groupBy(_other, 'generic_type_id'), (obj: any) => {
       return obj
     })
-    if(ed.length>0)data.push( _.map(ed))
-    if(ned.length>0)data.push( _.map(ned))
+    if (ed.length > 0) data.push(_.map(ed))
+    if (ned.length > 0) data.push(_.map(ned))
     for (const t of other) {
       data.push(_.cloneDeep(t))
     }
@@ -351,12 +374,12 @@ router.get('/report/purchase-bit-type', wrap(async (req, res, next) => {
       // res.send({ rst:rst ,ot:_ot})
       res.render('purchase_bit_type', {
         today: this.today,
-        hospitalName:hospitalName,
+        hospitalName: hospitalName,
         // warehouseName:warehouseName,
         startdate: startdate,
         enddate: enddate,
-        lBitType:rst,
-        data:_ot
+        lBitType: rst,
+        data: _ot
       })
     } else {
       res.render('error404')
@@ -1249,9 +1272,9 @@ router.get('/report/list/pick', wrap(async (req, res, next) => {
     //   const objHead: any = {
     //     sPage: sPage,
     //     ePage: ePage,
-    //     pick_date: dateToDDMMYYYY(header[0].pick_date),
+    //     pick_date: dateToDDMMMMYYYY(header[0].pick_date),
     //     pick_code: header[0].pick_code,
-    //     // confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+    //     // confirm_date: dateToDDMMMMYYYY(header[0].confirm_date),
     //     warehouse_name: header[0].warehouse_name,
     //     // withdraw_warehouse_name: header[0].withdraw_warehouse_name,
     //     title: []
@@ -1278,9 +1301,9 @@ router.get('/report/list/pick', wrap(async (req, res, next) => {
     //       const objHead: any = {
     //         sPage: sPage,
     //         ePage: ePage,
-    //         pick_date: dateToDDMMYYYY(header[0].pick_date),
+    //         pick_date: dateToDDMMMMYYYY(header[0].pick_date),
     //         pick_code: header[0].pick_code,
-    //         confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+    //         confirm_date: dateToDDMMMMYYYY(header[0].confirm_date),
     //         warehouse_name: header[0].warehouse_name,
     //         // withdraw_warehouse_name: header[0].withdraw_warehouse_name,
     //         title: []
@@ -1372,9 +1395,9 @@ router.get('/report/staff/list/requis', wrap(async (req, res, next) => {
       const objHead: any = {
         sPage: sPage,
         ePage: ePage,
-        requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+        requisition_date: dateToDDMMMMYYYY(header[0].requisition_date),
         requisition_code: header[0].requisition_code,
-        confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+        confirm_date: dateToDDMMMMYYYY(header[0].confirm_date),
         warehouse_name: header[0].warehouse_name,
         withdraw_warehouse_name: header[0].withdraw_warehouse_name,
         title: []
@@ -1399,9 +1422,9 @@ router.get('/report/staff/list/requis', wrap(async (req, res, next) => {
           const objHead: any = {
             sPage: sPage,
             ePage: ePage,
-            requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+            requisition_date: dateToDDMMMMYYYY(header[0].requisition_date),
             requisition_code: header[0].requisition_code,
-            confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+            confirm_date: dateToDDMMMMYYYY(header[0].confirm_date),
             warehouse_name: header[0].warehouse_name,
             withdraw_warehouse_name: header[0].withdraw_warehouse_name,
             title: []
@@ -1491,9 +1514,9 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
       const objHead: any = {
         sPage: sPage,
         ePage: ePage,
-        requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+        requisition_date: dateToDDMMMMYYYY(header[0].requisition_date),
         requisition_code: header[0].requisition_code,
-        confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+        confirm_date: dateToDDMMMMYYYY(header[0].confirm_date),
         warehouse_name: header[0].warehouse_name,
         withdraw_warehouse_name: header[0].withdraw_warehouse_name,
         title: []
@@ -1519,9 +1542,9 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
           const objHead: any = {
             sPage: sPage,
             ePage: ePage,
-            requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+            requisition_date: dateToDDMMMMYYYY(header[0].requisition_date),
             requisition_code: header[0].requisition_code,
-            confirm_date: dateToDDMMYYYY(header[0].confirm_date),
+            confirm_date: dateToDDMMMMYYYY(header[0].confirm_date),
             warehouse_name: header[0].warehouse_name,
             withdraw_warehouse_name: header[0].withdraw_warehouse_name,
             title: []
@@ -1606,13 +1629,12 @@ router.get('/report/list/refill/:requisId', wrap(async (req, res, next) => {
       value.total = inventoryReportModel.commaQty(value.total);
     })
 
-    let boox_prefix = await inventoryReportModel.boox_prefix(db);
-    boox_prefix = boox_prefix[0].value
+    let book_prefix = `${req.decoded.BOOK_PREFIX}${req.decoded.warehouseBook ? req.decoded.warehouseBook : ''}`;
     let check_date = moment(list_requis[0].requisition_date).format('D MMMM ') + (moment(list_requis[0].requisition_date).get('year') + 543);
     let requisition_date = moment(list_requis[0].requisition_date).format('D MMMM ') + (moment(list_requis[0].requisition_date).get('year') + 543);
     let requisition_id = list_requis[0].requisition_code;
     res.render('list_requis', {
-      boox_prefix: boox_prefix,
+      book_prefix: book_prefix,
       hospitalName: hospitalName,
       today: today,
       list_requis: list_requis,
@@ -2477,8 +2499,7 @@ router.get('/report/receive', wrap(async (req, res, next) => {
   let receiveId = req.query.receiveId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let boox_prefix = await inventoryReportModel.boox_prefix(db);
-  boox_prefix = boox_prefix[0].value;
+  let book_prefix = `${req.decoded.BOOK_PREFIX}${req.decoded.warehouseBook ? req.decoded.warehouseBook : ''}`;
   let receive = await inventoryReportModel.receive(db, receiveId);
   receive = receive[0];
   let receiveItem = await inventoryReportModel.receiveItem(db, receiveId);
@@ -2503,7 +2524,7 @@ router.get('/report/receive', wrap(async (req, res, next) => {
   receiveUser = receiveUser[0];
 
   res.render('receive', {
-    hospitalName: hospitalName, date: date, boox_prefix: boox_prefix, receive: receive,
+    hospitalName: hospitalName, date: date, book_prefix: book_prefix, receive: receive,
     receiveItem: receiveItem, vat: vat, pricevat: pricevat, receiveCommiittee: receiveCommiittee,
     receiveUser: receiveUser
   });
@@ -2822,6 +2843,249 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   });
 }));
 
+router.get('/report/receive-where-vender/excel', wrap(async (req, res, next) => {
+  let db = req.db
+  let startDate = req.query.startDate
+  let endDate = req.query.endDate
+  let genericTypeId = req.query.genericType
+  let genericTypeName = req.query.genericTypeName
+  let wareHouseId = req.query.warehouseId
+  let isFree = req.query.isFree
+  var wb = new excel4node.Workbook();
+  // Add Worksheets to the workbook
+  var ws = wb.addWorksheet('Sheet 1');
+  try {
+    genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
+    var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId, wareHouseId, isFree)
+    if (rs) {
+      var total_price_all: any = 0
+      rs = _(rs).groupBy('vendor_labeler_id').map((v: any) => { return v })
+
+      var textBold = wb.createStyle({
+        font: {
+          // color: '#FF0800',
+          bold: true
+        },
+        numberFormat: '#,##0.00; (#,##0.00); -',
+      });
+      var styleQty = wb.createStyle({
+        numberFormat: '#,##0; (#,##0); -',
+      });
+      var styleCost = wb.createStyle({
+        numberFormat: '#,##0.00; (#,##0.00); -',
+      });
+      var lastSet = wb.createStyle({
+        border: {
+          bottom: {
+            style: 'medium'
+          }
+        }
+      });
+      var lastList = wb.createStyle({
+        border: {
+          bottom: {
+            style: 'double'
+          }
+        }
+      });
+
+      ws.cell(2, 2, 2, 4, true).string('ชื่อวัสดุ');
+      ws.cell(2, 5).string('วัน/เดือน/ปี');
+      ws.cell(2, 6).string('เลขที่เอกสาร');
+      ws.cell(2, 7).string('หน่วยนับ');
+      ws.cell(2, 8).string('จำนวนรับ');
+      ws.cell(2, 9).string('ราคา/หน่วย');
+      ws.cell(2, 10).string('รวมราคาวัสดุ');
+
+      var startCell = 2;
+
+      for (const _rs of rs) {
+        var totalPrice = 0;
+        var number = 1
+        startCell += 2
+        ws.cell(startCell, 2, startCell, 3, true).string('รับจาก');
+        ws.cell(startCell, 4, startCell, 6, true).string(_rs[0].labeler_name);
+        for (const v of _rs) {
+          v.total_price = v.receive_qty * v.cost;
+          totalPrice += v.total_price
+          // v.approve_date = dateToDD_MM_YYYY(v.approve_date)
+
+          ws.cell(++startCell, 1).number(number++);
+          ws.cell(startCell, 2, startCell, 4, true).string(v.generic_name);
+          ws.cell(startCell, 5).date(moment(v.approve_date).format('YYYY-MM-DD'));
+          ws.cell(startCell, 6).string(v.delivery_code);
+          ws.cell(startCell, 7).string(v.unit_name);
+          ws.cell(startCell, 8).number(v.receive_qty).style(styleQty);
+          ws.cell(startCell, 9).number(v.cost).style(styleCost);
+          ws.cell(startCell, 10).number(v.total_price).style(styleCost);
+
+        }
+        total_price_all += totalPrice;
+        ws.cell(++startCell, 7).string('ยอดรวม').style(lastSet);
+        ws.cell(startCell, 1, startCell, 6, true).style(lastSet)
+        ws.cell(startCell, 8, startCell, 9, true).number(totalPrice).style(lastSet).style(styleCost);
+        ws.cell(startCell, 10).string('บาท').style(lastSet);
+      }
+      ws.cell(1, 1, 1, 7, true).string('สรุปยอดรับวัสดุประจำวันที่ ' + dateToDDMMMYY(startDate) + ' ถึง ' + dateToDDMMMYY(endDate)).style(textBold);
+      ws.cell(1, 8, 1, 10, true).string(genericTypeName);
+
+      ++startCell
+      ws.cell(++startCell, 7).string('ยอดรวมคงคลัง').style(lastList);
+      ws.cell(startCell, 8, startCell, 9, true).number(total_price_all).style(lastList).style(styleCost);
+      ws.cell(startCell, 10).string('บาท').style(lastList);
+      // create directory
+      fse.ensureDirSync(process.env.MMIS_TMP);
+
+      let tmpFile = `สรุปยอดรับวัสดุ${startDate}ถึง${endDate}.xlsx`;
+      tmpFile = path.join(process.env.MMIS_TMP, tmpFile);
+      wb.write(tmpFile, function (err, stats) {
+        if (err) {
+          console.error(err);
+          res.send({ ok: false, error: err })
+        } else {
+          res.download(tmpFile, (err) => {
+            if (err) {
+              res.send({ ok: false, message: err })
+            } else {
+              fse.removeSync(tmpFile);
+            }
+          });
+        }
+      });
+
+    } else {
+      res.send({ ok: false, error: 'data error!!' })
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  }
+}))
+
+router.get('/report/receive-where-vender', wrap(async (req, res, next) => {
+  let db = req.db
+  let startDate = req.query.startDate
+  let endDate = req.query.endDate
+  let genericTypeId = req.query.genericType
+  let genericTypeName = req.query.genericTypeName
+  let wareHouseId = req.query.warehouseId
+  let isFree = req.query.isFree
+  try {
+    genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
+    var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId, wareHouseId, isFree)
+    if (rs) {
+      var data = []
+      var total_price_all: any = 0
+      rs = _(rs).groupBy('vendor_labeler_id').map((v: any) => { return v })
+      for (const _rs of rs) {
+        var totalPrice = 0;
+        for (const v of _rs) {
+          v.total_price = v.receive_qty * v.cost;
+          totalPrice += v.total_price
+          v.cost = inventoryReportModel.comma(v.cost);
+          v.total_price = inventoryReportModel.comma(v.total_price);
+          v.receive_qty = inventoryReportModel.commaQty(v.receive_qty);
+          v.approve_date = dateToDDMMMYY(v.approve_date)
+        }
+        total_price_all += totalPrice;
+        data.push({ labeler_name: _rs[0].labeler_name, total_price: inventoryReportModel.comma(totalPrice), detail: _rs })
+      }
+      total_price_all = inventoryReportModel.comma(total_price_all)
+      startDate = dateToDDMMMYY(startDate)
+      endDate = dateToDDMMMYY(endDate)
+      res.render('receive_where_vender', {
+        startDate: startDate,
+        endDate: endDate,
+        data: data,
+        genericTypeName: genericTypeName,
+        total_price: total_price_all
+      })
+    } else {
+      res.render('error404')
+    }
+  } catch (error) {
+    console.log(error.message);
+    res.render('error404')
+  }
+}))
+
+router.get('/report/check/receive3', wrap(async (req, res, next) => {
+  let db = req.db;
+  let receiveID = req.query.receiveID
+  receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let master = hosdetail[0].managerName;
+  let hospitalName = hosdetail[0].hospname;
+  let province = hosdetail[0].province;
+  let telephone = hosdetail[0].telephone;
+  let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
+  let productReceive = await inventoryReportModel.productReceive2(db, receiveID);
+
+  productReceive = productReceive[0];
+  productReceive.forEach(value => {
+    value.receive_date = moment(value.receive_date).format('D/MM/YYYY');
+    value.expired_date = moment(value.expired_date, 'YYYY-MM-DD').isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : '-';
+    value.total_cost = inventoryReportModel.comma(value.total_cost);
+    value.cost = inventoryReportModel.comma(value.cost);
+    if (value.discount_percent == null) value.discount_percent = '0.00%';
+    else { value.discount_percent = (value.discount_percent.toFixed(2)) + '%' }
+    if (value.discount_cash == null) value.discount_cash = '0.00';
+    else { value.discount_cash = (value.discount_cash.toFixed(2)) + 'บาท' }
+  });
+  let bahtText: any = []
+  let committee: any = []
+  let invenChief: any = []
+  check_receive = check_receive[0];
+
+  for (const v of check_receive) {
+    v.receive_date = moment(v.receive_date).format('D MMMM ') + (moment(v.receive_date).get('year') + 543);
+    v.delivery_date = moment(v.delivery_date).format('D MMMM ') + (moment(v.delivery_date).get('year') + 543);
+    v.podate = moment(v.podate).format('D MMMM ') + (moment(v.podate).get('year') + 543);
+    v.approve_date = moment(v.approve_date).format('D MMMM ') + (moment(v.approve_date).get('year') + 543);
+    let _bahtText = inventoryReportModel.bahtText(v.total_price);
+    v.bahtText = _bahtText;
+    v.total_price = inventoryReportModel.comma(v.total_price);
+    let _committee = await inventoryReportModel.invenCommittee(db, v.receive_id);
+    v.committee = _committee[0];
+    let _invenChief = await inventoryReportModel.inven2Chief(db, v.receive_id)
+    invenChief.push(_invenChief[0]);
+
+    let chief = await inventoryReportModel.peopleFullName(db, v.chief_id);
+    v.chief = chief[0];
+    let buyer = await inventoryReportModel.peopleFullName(db, v.supply_id);
+    let _staffReceive: any;
+
+    if (buyer[0] === undefined) {
+      _staffReceive = await inventoryReportModel.staffReceive(db);
+      v.staffReceive = _staffReceive[0];
+    } else {
+      v.staffReceive = buyer[0];
+    }
+    v.productReceive = _.filter(productReceive, (_v: any) => {
+      return v.receive_id == _v.receive_id
+    })
+
+  }
+
+  let serialYear = moment().get('year') + 543;
+  let monthRo = moment().get('month') + 1;
+  if (monthRo >= 10) {
+    serialYear += 1;
+  }
+  // res.send(({check_receive:check_receive}))
+  res.render('check_receive3', {
+    master: master,
+    hospitalName: hospitalName,
+    serialYear: serialYear,
+    check_receive: check_receive,
+    province: province,
+    telephone: telephone,
+    bahtText: bahtText,
+    committee: committee,
+    invenChief: invenChief,
+    receiveID: receiveID
+  });
+}));
+
 router.get('/report/check/receive/2', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID = req.query.receiveID
@@ -2940,8 +3204,7 @@ router.get('/report/check/receives2', wrap(async (req, res, next) => {
   let master = hosdetail[0].managerName;
   let bahtText: any = []
   let generic_name: any = []
-  let prefix = await inventoryReportModel.boox_prefix(db);
-  let book_prefix = prefix[0].value;
+  let book_prefix = `${req.decoded.BOOK_PREFIX}${req.decoded.warehouseBook ? req.decoded.warehouseBook : ''}`;
   let _receive: any = []
   let staffReceive: any = [];
   let check_receive: any = []
@@ -3451,66 +3714,68 @@ router.get('/test/:n', wrap(async (req, res, next) => {
 }));
 router.get('/report/product/all', wrap(async (req, res, next) => {
   let db = req.db;
-  let genericTypeId = req.query.genericTypeId;
+  const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
+  const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
+  const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
+  let query = req.query.query;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let productAll = await inventoryReportModel.productAll(db, genericTypeId);
-  productAll = productAll[0];
-  console.log(productAll[0]);
-
+  let productAll = await inventoryReportModel.productAll(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, query);
   res.render('product_all', {
     productAll: productAll,
-
     hospitalName: hospitalName
   });
 }));
 
 router.get('/report/product/all/excel', wrap(async (req, res, next) => {
-  let genericTypeId = req.query.genericTypeId;
+  const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
+  const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
+  const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
+  let query = req.query.query;
   let db = req.db;
 
-  fse.ensureDirSync(process.env.TMP_PATH);
+  fse.ensureDirSync(process.env.MMIS_TMP);
 
-  if (genericTypeId) {
-    try {
-      let _tableName = `product`;
+  // if () {
+  try {
+    let _tableName = `product`;
 
-      let result = await inventoryReportModel.productAll(db, genericTypeId);
-      let r = [];
-      let i = 0;
-      result[0].forEach(v => {
-        i++;
-        r.push({
-          'ลำดับ': i,
-          'Trade Code': v.trade_code,
-          'Trade Name': v.product_name,
-          'Generic Code': v.generic_code,
-          'Generic Name': v.generic_name,
-          'Base Unit': v.base_unit_name,
-          'Generic Type': v.generic_type_name
-        })
-      });
-      // console.log(result);
+    let result = await inventoryReportModel.productAll(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, query);
+    let r = [];
+    let i = 0;
+    result.forEach(v => {
+      i++;
+      r.push({
+        'ลำดับ': i,
+        'Trade Code': v.trade_code,
+        'Trade Name': v.product_name,
+        'Generic Code': v.generic_code,
+        'Generic Name': v.generic_name,
+        'Base Unit': v.base_unit_name,
+        'Generic Type': v.generic_type_name
+      })
+    });
+    // console.log(result);
 
-      // create tmp file
-      let tmpFile = `${_tableName}-${moment().format('x')}.xls`;
-      tmpFile = path.join(process.env.TMP_PATH, tmpFile);
-      let excel = json2xls(r);
-      fs.writeFileSync(tmpFile, excel, 'binary');
-      res.download(tmpFile, (err) => {
-        if (err) {
-          res.send({ ok: false, message: err })
-        } else {
-          fse.removeSync(tmpFile);
-        }
-      });
-    } catch (error) {
-      console.log(error);
-      res.send({ ok: false, error: 'ไม่สามารถส่งออกไฟล์ .xls ได้' });
-    }
-  } else {
-    res.send({ ok: false, error: 'ไม่พบตารางข้อมูลที่ต้องการ' });
+    // create tmp file
+    let tmpFile = `${_tableName}-${moment().format('x')}.xls`;
+    tmpFile = path.join(process.env.MMIS_TMP, tmpFile);
+    let excel = json2xls(r);
+    fs.writeFileSync(tmpFile, excel, 'binary');
+    res.download(tmpFile, (err) => {
+      if (err) {
+        res.send({ ok: false, message: err })
+      } else {
+        fse.removeSync(tmpFile);
+      }
+    });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: 'ไม่สามารถส่งออกไฟล์ .xls ได้' });
   }
+  // } else {
+  //   res.send({ ok: false, error: 'ไม่พบตารางข้อมูลที่ต้องการ' });
+  // }
 }));
 
 router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req, res, next) => {
@@ -4046,11 +4311,12 @@ router.get('/report/remain-trade/qty/export', async (req, res, next) => {
 
 router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
   const db = req.db;
-  const genericTypeId = req.query.genericTypeId;
-  const warehouseId = req.query.warehouseId;
-
+  const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
+  const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
+  const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
+  const warehouseId = typeof req.query.warehouseId === 'number' || typeof req.query.warehouseId === 'string' ? [req.query.warehouseId] : req.query.warehouseId;
   try {
-    const rs: any = await inventoryReportModel.productExpired(db, genericTypeId, warehouseId);
+    const rs: any = await inventoryReportModel.productExpired(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, warehouseId);
     rs.forEach(element => {
       element.expired_date = (moment(element.expired_date).get('year')) + moment(element.expired_date).format('/D/M');
       element.cost = inventoryReportModel.comma(element.cost);
@@ -4065,11 +4331,13 @@ router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
 
 router.get('/report/print/alert-expried/excel', async (req, res, next) => {
   const db = req.db;
-  const genericTypeId = req.query.genericTypeId;
-  const warehouseId = req.query.warehouseId;
+  const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
+  const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
+  const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
+  const warehouseId = typeof req.query.warehouseId == 'number' || typeof req.query.warehouseId === 'string' ? [req.query.warehouseId] : req.query.warehouseId;
 
   try {
-    const rs: any = await inventoryReportModel.productExpired(db, genericTypeId, warehouseId);
+    const rs: any = await inventoryReportModel.productExpired(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, warehouseId);
     rs.forEach(element => {
       element.expired_date = (moment(element.expired_date).get('year')) + moment(element.expired_date).format('/D/M');
       element.cost = inventoryReportModel.comma(element.cost);
@@ -5079,7 +5347,7 @@ router.get('/report/list-waiting', wrap(async (req, res, next) => {
       const objHead: any = {
         sPage: sPage,
         ePage: ePage,
-        requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+        requisition_date: dateToDDMMMMYYYY(header[0].requisition_date),
         requisition_code: header[0].requisition_code,
         warehouse_name: header[0].warehouse_name,
         withdraw_warehouse_name: header[0].withdraw_warehouse_name,
@@ -5104,7 +5372,7 @@ router.get('/report/list-waiting', wrap(async (req, res, next) => {
           const objHead: any = {
             sPage: sPage,
             ePage: ePage,
-            requisition_date: dateToDDMMYYYY(header[0].requisition_date),
+            requisition_date: dateToDDMMMMYYYY(header[0].requisition_date),
             requisition_code: header[0].requisition_code,
             warehouse_name: header[0].warehouse_name,
             withdraw_warehouse_name: header[0].withdraw_warehouse_name,
@@ -5167,6 +5435,7 @@ router.get('/report/requisition-sum-product', wrap(async (req, res, next) => {
         let units = i.group_unit_generic_id.split(',');
         let unit = units[0];
         for (const u of units) {
+          i.unit_name = ` ${i.from_unit_name} (${i.conversion} ${i.to_unit_name}) = ${i.qty * i.conversion} ${i.primary_unit_name}`;
           if (unit != u) {
             i.unit_name = i.primary_unit_name
           }
@@ -5269,9 +5538,9 @@ router.get('/report/list-borrow', wrap(async (req, res, next) => {
       const objHead: any = {
         sPage: sPage,
         ePage: ePage,
-        borrow_date: dateToDDMMYYYY(header[0].borrow_date),
+        borrow_date: dateToDDMMMMYYYY(header[0].borrow_date),
         borrow_code: header[0].borrow_code,
-        confirm_date: dateToDDMMYYYY(header[0].borrow_date),
+        confirm_date: dateToDDMMMMYYYY(header[0].borrow_date),
         warehouse_name: header[0].dst_warehouse,
         withdraw_warehouse_name: header[0].src_warehouse,
         title: []
@@ -5299,9 +5568,9 @@ router.get('/report/list-borrow', wrap(async (req, res, next) => {
           const objHead: any = {
             sPage: sPage,
             ePage: ePage,
-            borrow_date: dateToDDMMYYYY(header[0].borrow_date),
+            borrow_date: dateToDDMMMMYYYY(header[0].borrow_date),
             borrow_code: header[0].borrow_code,
-            confirm_date: dateToDDMMYYYY(header[0].borrow_date),
+            confirm_date: dateToDDMMMMYYYY(header[0].borrow_date),
             warehouse_name: header[0].warehouse_name,
             withdraw_warehouse_name: header[0].withdraw_warehouse_name,
             title: []
@@ -5499,21 +5768,22 @@ router.get('/report/asn', wrap(async (req, res, next) => {
 
 }));
 router.get('/report/his-history', wrap(async (req, res, next) => {
-  let db = req.db;
-  let warehouseId = req.query.warehouseId
-  let date = req.query.date
-  let genericType = req.query.genericType
-  let warehouseName = req.query.warehouseName
-  let hospcode = req.decoded.his_hospcode;
-  let hosdetail = await inventoryReportModel.hospital(db);
-  let hospitalName = hosdetail[0].hospname;
-  let dateText = moment(date).format('DD MMMM ') + (moment(date).get('year') + 543);
-  let rs = await inventoryReportModel.hisHistory(db, warehouseId, date, genericType, hospcode);
-  let list = rs[0]
+  const db = req.db;
+  const warehouseId = req.query.warehouseId
+  const date = req.query.date
+  const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
+  const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
+  const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
+  const warehouseName = req.query.warehouseName
+  const hospcode = req.decoded.his_hospcode;
+  const hosdetail = await inventoryReportModel.hospital(db);
+  const hospitalName = hosdetail[0].hospname;
+  const dateText = moment(date).format('DD MMMM ') + (moment(date).get('year') + 543);
+  const rs = await inventoryReportModel.hisHistory(db, warehouseId, date, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, hospcode);
 
   res.render('hisHistory', {
     dateText: dateText,
-    list: list,
+    list: rs,
     printDate: printDate(req.decoded.SYS_PRINT_DATE),
     hospitalName: hospitalName,
     warehouseName: warehouseName,
@@ -5632,4 +5902,142 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
     res.send({ ok: false, error: error.message })
   }
 }));
+
+router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
+  const db = req.db;
+  const startDate = req.query.startDate;
+  const endDate = req.query.endDate;
+  let genericTypeId = req.query.genericTypeId;
+  genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
+  const warehouseId = req.query.warehouseId;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
+
+
+  const wb = new excel4node.Workbook();
+  // Add Worksheets to the workbook
+  const ws = wb.addWorksheet('Sheet 1');
+  try {
+    const gn: any = await inventoryReportModel.getGenericType(db, genericTypeId);
+    const rs: any = await inventoryReportModel.payToWarehouse(db, startDate, endDate, genericTypeId, warehouseId, dateSetting)
+    if (rs) {
+
+      var textBold = wb.createStyle({
+        font: {
+          // color: '#FF0800',
+          bold: true
+        },
+        numberFormat: '#,##0.00; (#,##0.00); -',
+      });
+      var styleQty = wb.createStyle({
+        numberFormat: '#,##0; (#,##0); -',
+      });
+      var styleCost = wb.createStyle({
+        numberFormat: '#,##0.00; (#,##0.00); -',
+      });
+      var lastSet = wb.createStyle({
+        border: {
+          bottom: {
+            style: 'medium'
+          }
+        }
+      });
+      var lastList = wb.createStyle({
+        border: {
+          bottom: {
+            style: 'double'
+          }
+        }
+      });
+
+      ws.cell(1, 1, 1, 6, true).string('สรุปยอดจ่ายระหว่างวันที่ ' + dateToDDMMMMYYYY(startDate) + ' ถึง ' + dateToDDMMMMYYYY(endDate)).style(textBold);
+      ws.cell(1, 7, 1, 8, true).string(gn[0].generic_type_name);
+
+      ws.cell(2, 1, 2, 2, true).string('ชื่อวัสดุ');
+      ws.cell(2, 3).string('วัน/เดือน/ปี');
+      ws.cell(2, 4).string('เลขที่ใบเบิก');
+      ws.cell(2, 5).string('ราคา/หน่วย');
+      ws.cell(2, 6).string('หน่วยนับ');
+      ws.cell(2, 7).string('จำนวนจ่าย');
+      ws.cell(2, 8).string('รวม');
+
+
+      let cell = 2;
+
+      let priceAll = 0;
+      for (const h of rs) {
+        let priceWarehouse = 0;
+        let no = 0;
+
+        cell++;
+        ws.cell(cell, 1, cell, 2, true).string('จ่ายให้');
+        ws.cell(cell, 3, cell, 8, true).string(h.warehouse_name);
+
+        const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting)
+        if (type) {
+          for (const t of type) {
+            cell++;
+            ws.cell(cell, 1, cell, 8, true).string(t.generic_type_name);
+            let priceGenericType = 0;
+            const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting)
+            if (detail) {
+              for (const d of detail) {
+                cell++;
+                ws.cell(cell, 1).number(no++);
+                ws.cell(cell, 2, cell, 4, true).string(d.generic_name);
+                ws.cell(cell, 5).date(moment(d.approve_date).format('YYYY-MM-DD'));
+                ws.cell(cell, 6).string(d.requisition_code);
+                ws.cell(cell, 9).number(d.unit_cost).style(styleCost);
+                ws.cell(cell, 7).string(d.unit_name);
+                ws.cell(cell, 8).number(d.qty).style(styleQty);
+                ws.cell(cell, 10).number(d.cost).style(styleCost);
+                priceWarehouse += d.cost;
+                priceAll += d.cost;
+                priceGenericType += d.cost;
+              }
+            }
+            cell++;
+            ws.cell(cell, 4).string('รวม').style(lastSet);
+            ws.cell(cell, 5, cell, 7, true).string(t.generic_type_name).style(lastSet);
+            ws.cell(cell, 8).number(priceGenericType).style(lastSet).style(styleCost);
+          }
+        }
+        cell++;
+        ws.cell(cell, 7).string('รวม').style(lastList);
+        ws.cell(cell, 8).number(priceWarehouse).style(lastList).style(styleCost);
+      }
+
+
+
+      // ++startCell
+      // ws.cell(++startCell, 7).string('ยอดรวมคงคลัง').style(lastList);
+      // ws.cell(startCell, 8, startCell, 9, true).number(total_price_all).style(lastList).style(styleCost);
+      // ws.cell(startCell, 10).string('บาท').style(lastList);
+      // create directory
+      fse.ensureDirSync(process.env.MMIS_TMP);
+
+      let filename = `สรุปยอดจ่าย${startDate}ถึง${endDate}.xlsx`;
+      filename = path.join(process.env.MMIS_TMP, filename);
+      wb.write(filename, function (err, stats) {
+        if (err) {
+          console.error(err);
+          res.send({ ok: false, error: err })
+        } else {
+
+          res.download(filename, (err) => {
+            if (err) {
+              res.send({ ok: false, message: err })
+            } else {
+              fse.removeSync(filename);
+            }
+          });
+        }
+      });
+
+    } else {
+      res.send({ ok: false, error: 'data error!!' })
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  }
+}))
 export default router;

@@ -86,7 +86,7 @@ export class StaffModel {
     return knex.raw(sql, [templateId]);
   }
 
-  calculateMinMax(knex: Knex, warehouseId: any, fromDate: any, toDate: any, genericGroups: any[]) {
+  calculateMinMax(knex: Knex, warehouseId: any, fromDate: any, toDate: any, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id) {
     let sql = `
       select mp.generic_id, mg.working_code, mg.generic_name, sum(wp.qty) qty, mu.unit_name 
       , IFNULL(sc.use_total, 0) use_total, IFNULL(sc.use_per_day, 0) use_per_day
@@ -114,14 +114,23 @@ export class StaffModel {
         and (date(ws.stock_date) between ? and ?)
         group by ws.generic_id
       ) sc on sc.generic_id = mp.generic_id
-      where wp.warehouse_id = ?
-      and mg.generic_type_id in (?)
-      group by mp.generic_id
+      where wp.warehouse_id = ?`;
+    if (genericTypeLV1Id.length) {
+      sql += ` and mg.generic_type_id in (${genericTypeLV1Id})`;
+    }
+    if (genericTypeLV2Id.length) {
+      sql += ` and mg.generic_type_lv2_id in (${genericTypeLV2Id})`;
+    }
+    if (genericTypeLV3Id.length) {
+      sql += ` and mg.generic_type_lv3_id in (${genericTypeLV3Id})`;
+    }
+
+    sql += ` group by mp.generic_id
       order by mg.generic_name
     `;
-    return knex.raw(sql, [toDate, fromDate, warehouseId, fromDate, toDate, warehouseId, genericGroups]);
+    return knex.raw(sql, [toDate, fromDate, warehouseId, fromDate, toDate, warehouseId]);
   }
-  
+
   getBorrowRequest(knex: Knex, warehouseId) {
     let subQuery = knex('wm_borrow_check').select('borrow_id');
     let queryTotal = knex('wm_borrow_detail as d')
@@ -482,12 +491,12 @@ export class StaffModel {
       .where('transfer_id', transferId);
   }
 
-  saveDefaultMinMax(knex: Knex,warehouseId, minF, maxF) {
+  saveDefaultMinMax(knex: Knex, warehouseId, minF, maxF) {
     return knex('wm_warehouses')
-      .update({ 
+      .update({
         safety_max_day: maxF,
         safety_min_day: minF
-       })
+      })
       .where('warehouse_id', warehouseId);
   }
 
