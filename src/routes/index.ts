@@ -3805,8 +3805,8 @@ router.get('/report/inventoryStatus/generic', wrap(async (req, res, next) => {
         sum = _.sumBy(list[i], 'total_cost')
         sumlist.push(sum)
         for (let ii in list[i]) {
+          list[i][ii].unit_cost = inventoryReportModel.comma(list[i][ii].total_cost / list[i][ii].qty);
           list[i][ii].total_cost = inventoryReportModel.comma(list[i][ii].total_cost);
-          list[i][ii].unit_cost = inventoryReportModel.comma(list[i][ii].unit_cost);
           list[i][ii].qty = inventoryReportModel.commaQty(list[i][ii].qty);
         }
       }
