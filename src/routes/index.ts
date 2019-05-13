@@ -5891,7 +5891,7 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
   const db = req.db;
   const startDate = req.query.startDate;
   const endDate = req.query.endDate;
-  let genericTypeId = req.query.genericTypeId;
+  let genericTypeId = req.query.genericType;
   genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
   const warehouseId = req.query.warehouseId;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
@@ -6006,7 +6006,6 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
           console.error(err);
           res.send({ ok: false, error: err })
         } else {
-
           res.download(filename, (err) => {
             if (err) {
               res.send({ ok: false, message: err })
