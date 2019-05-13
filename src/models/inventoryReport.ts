@@ -1175,9 +1175,8 @@ mgt.generic_type_id `
             .where('generic_type_id', genericTypeId)
     }
 
-    list_cost(knex: Knex, genericTypeId, startDate, warehouseId) {
-        let sql = `
-        SELECT
+    list_cost(knex: Knex, genericTypeId, startDate, warehouseId, dateSetting = 'stock_date') {
+        let sql = `SELECT
             a.generic_type_name,
             a.account_name,
             sum( a.total_cost ) AS total_cost,
@@ -1185,59 +1184,39 @@ mgt.generic_type_id `
         FROM
             (
         SELECT
-            q.generic_code,
-            q.generic_name,
-            sum( q.qty ) AS qty,
-            avg( q.unit_cost ) AS unit_cost,
-            sum( total_cost ) AS total_cost,
-            q.account_name,
-            q.generic_type_id,
-            q.account_id,
-            q.generic_type_name,
-            q.generic_type_code 
-        FROM
-            (
-        SELECT
             vscw.generic_id,
             vscw.generic_name,
             mg.working_code AS generic_code,
             sum( vscw.in_qty ) - sum( vscw.out_qty ) AS qty,
-            sum( vscw.balance_unit_cost * vscw.in_qty ) / sum( vscw.in_qty ) AS unit_cost,
-            ( sum( vscw.in_qty ) - sum( vscw.out_qty ) ) * ( sum( vscw.balance_unit_cost * vscw.in_qty ) / sum( vscw.in_qty ) ) AS total_cost,
+            sum( vscw.in_cost - vscw.out_cost ) AS total_cost,
             mga.account_name,
             mg.generic_type_id,
             mga.account_id,
             mgt.generic_type_name,
-            mgt.generic_type_code
+            mgt.generic_type_code 
         FROM
-            view_stock_card_warehouse AS vscw
+            view_stock_card_new AS vscw
             JOIN mm_products AS mp ON mp.product_id = vscw.product_id
             JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
             LEFT JOIN mm_generic_accounts AS mga ON mg.account_id = mga.account_id
             LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id 
         WHERE
-            vscw.stock_date <= '${startDate} 23:59:59' 
-            AND mg.generic_type_id IN ( ${genericTypeId} )`
+            vscw.${dateSetting} <= '${startDate} 23:59:59' 
+            AND mg.generic_type_id IN ( ${genericTypeId} ) `
         if (warehouseId != 0) {
-            sql += `AND vscw.warehouse_id = '${warehouseId}' `
+            sql += `AND vscw.src_warehouse_id = '${warehouseId}' `
         }
-        sql += `GROUP BY
-            vscw.product_id,
-            vscw.lot_no 
-        HAVING
-            qty > 0 
-        ORDER BY
-            mg.generic_name 
-            ) AS q 
-        GROUP BY
-            q.generic_id 
-            ) AS a 
+        sql += ` GROUP BY
+                vscw.product_id,
+                vscw.lot_no 
+            HAVING
+                qty > 0 
+                ) AS a 
         GROUP BY
             a.account_id,
             a.generic_type_id 
         ORDER BY
-            a.generic_type_id
-        `
+            a.generic_type_id`
 
         return (knex.raw(sql))
     }
@@ -3461,7 +3440,6 @@ OR sc.ref_src like ?
 
     productReceiveAccount(knex: Knex, startdate: any, enddate: any, genericTypeId: any, dateSetting = 'view_stock_card_warehouse', warehouseId) {
         let sql = `SELECT
-        ws.in_qty / mug.qty AS receive_qty,
         ws.in_unit_cost AS cost,
         ws.in_qty AS total_qty,
         sum(ws.in_qty * ws.in_unit_cost) AS total_cost,
@@ -3472,7 +3450,6 @@ OR sc.ref_src like ?
         ${dateSetting} AS ws
         JOIN mm_products AS mp ON mp.product_id = ws.product_id
         JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
-        JOIN mm_unit_generics AS mug ON mug.unit_generic_id = ws.unit_generic_id
         JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
         JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
     WHERE
@@ -4148,7 +4125,7 @@ GROUP BY
         return knex.raw(sql)
     }
 
-    inventoryStatusGeneric(knex: Knex, warehouseId: any, genericTypeId: any, statusDate: any) {
+    inventoryStatusGeneric(knex: Knex, warehouseId: any, genericTypeId: any, statusDate: any, dateSetting = 'stock_date') {
         let sql = `SELECT
         q.generic_id,
             q.generic_name,
@@ -4157,17 +4134,17 @@ GROUP BY
             q.in_qty,
             q.out_qty,
             sum(q.qty) AS qty,
-                q.conversion_qty,
-                q.large_unit,
-                q.small_unit,
-                avg(q.unit_cost) AS unit_cost,
-                    sum(total_cost) AS total_cost,
-                        q.min_qty,
-                        q.max_qty
+            q.conversion_qty,
+            q.large_unit,
+            q.small_unit,
+            avg(q.unit_cost) AS unit_cost,
+            sum(total_cost) AS total_cost,
+            q.min_qty,
+            q.max_qty
         FROM
             (
-                SELECT
-            vscw.generic_id,
+            SELECT
+                vscw.generic_id,
                 vscw.generic_name,
                 mg.working_code AS generic_code,
                 vscw.lot_no,
@@ -4177,94 +4154,68 @@ GROUP BY
                 vscw.conversion_qty,
                 vscw.large_unit,
                 vscw.small_unit,
-                sum((vscw.in_qty * in_unit_cost) - (vscw.out_qty * vscw.out_unit_cost)) / sum(vscw.in_qty - vscw.out_qty) AS unit_cost,
-                sum(vscw.in_qty * in_unit_cost) - sum(vscw.out_qty * vscw.out_unit_cost) AS total_cost,
+                sum(vscw.in_cost - vscw.out_cost) / sum(vscw.in_qty - vscw.out_qty) AS unit_cost,
+                sum(vscw.in_cost - vscw.out_cost) AS total_cost,
                 mgp.min_qty,
                 mgp.max_qty
-        FROM
-            view_stock_card_warehouse AS vscw
-            JOIN mm_products AS mp ON mp.product_id = vscw.product_id
-            JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
-            LEFT JOIN mm_generic_planning AS mgp ON mgp.warehouse_id = '${warehouseId}' AND mgp.generic_id = mg.generic_id
-        WHERE
-            vscw.stock_date <= '${statusDate} 23:59:59' 
-            AND mg.generic_type_id IN(${ genericTypeId})`
+            FROM
+                view_stock_card_new AS vscw
+                JOIN mm_products AS mp ON mp.product_id = vscw.product_id
+                JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
+                LEFT JOIN mm_generic_planning AS mgp ON mgp.warehouse_id = '${warehouseId}' AND mgp.generic_id = mg.generic_id
+            WHERE
+                vscw.${dateSetting} <= '${statusDate} 23:59:59' 
+                AND mg.generic_type_id IN(${ genericTypeId})`
         if (warehouseId != '0') {
-            sql += `AND vscw.warehouse_id = '${warehouseId}'`
+            sql += `AND vscw.src_warehouse_id = '${warehouseId}'`
         }
         sql += ` GROUP BY
             vscw.product_id,
                 vscw.lot_no 
-        HAVING
-            qty > 0 
-        ORDER BY
-            mg.generic_name
-            ) AS q
-        GROUP BY
-        q.generic_id
+            HAVING
+                qty > 0 
+            ORDER BY
+                mg.generic_name
+                ) AS q
+            GROUP BY
+            q.generic_id
             `
         return knex.raw(sql);
     }
 
-    inventoryStatusProduct(knex: Knex, warehouseId: string, genericTypeId: any, date: any) {
+    inventoryStatusProduct(knex: Knex, warehouseId: string, genericTypeId: any, date: any, dateSetting = 'stock_date') {
         let sql = `SELECT
-        vscw.product_id,
+            vscw.product_id,
             mp.working_code AS product_code,
-                mp.product_name,
-                vscw.lot_no,
-                sum(vscw.in_qty) AS in_qty,
-                    sum(vscw.out_qty) AS out_qty,
-                        sum(vscw.in_qty) - sum(vscw.out_qty) AS qty,
-                            vscw.conversion_qty,
-                            vscw.large_unit,
-                            vscw.small_unit,
-                            sum((vscw.in_qty * in_unit_cost) - (vscw.out_qty * vscw.out_unit_cost)) / sum(vscw.in_qty - vscw.out_qty) AS unit_cost,
-                                sum(vscw.in_qty * in_unit_cost) - sum(vscw.out_qty * vscw.out_unit_cost) AS total_cost
+            mp.product_name,
+            vscw.lot_no,
+            sum(vscw.in_qty) AS in_qty,
+            sum(vscw.out_qty) AS out_qty,
+            sum(vscw.in_qty) - sum(vscw.out_qty) AS qty,
+            vscw.conversion_qty,
+            vscw.large_unit,
+            vscw.small_unit,
+            sum(vscw.in_cost - vscw.out_cost) / sum(vscw.in_qty - vscw.out_qty) AS unit_cost,
+            sum(vscw.in_cost - vscw.out_cost) AS total_cost
         FROM
-        view_stock_card_warehouse AS vscw
-        JOIN mm_products AS mp ON mp.product_id = vscw.product_id
-        JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
+            view_stock_card_new AS vscw
+            JOIN mm_products AS mp ON mp.product_id = vscw.product_id
+            JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
         WHERE
-        vscw.stock_date <= '${date} 23:59:59'
+        vscw.${dateSetting} <= '${date} 23:59:59'
         AND mg.generic_type_id IN(${ genericTypeId})`
         if (warehouseId != '0') {
-            sql += `AND vscw.warehouse_id = '${warehouseId}'`
+            sql += `AND vscw.src_warehouse_id = '${warehouseId}'`
         }
         sql += ` GROUP BY
         vscw.product_id,
             vscw.lot_no
         HAVING
-        qty > 0
+            qty > 0
         ORDER BY
-        mp.product_name
+            mp.product_name
             `
         return knex.raw(sql)
-    }
-
-    list_costTemporary(knex: Knex, genericTypeId, warehouseId) {
-        let sql = `SELECT
-        mgt.generic_type_code,
-            mgt.generic_type_name,
-            mga.account_name,
-            sum(wp.qty * wp.cost) AS total_cost
-        FROM
-        wm_products AS wp
-        JOIN mm_products AS mp ON mp.product_id = wp.product_id
-        JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
-        JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wp.unit_generic_id
-        JOIN mm_generic_types as mgt ON mgt.generic_type_id = mg.generic_type_id
-        LEFT JOIN mm_generic_accounts as mga ON mga.account_id = mg.account_id
-        WHERE
-        wp.warehouse_id = ${ warehouseId}
-        AND mg.generic_type_id IN(${ genericTypeId})
-        AND wp.qty > 0
-        GROUP BY
-        mg.account_id,
-            mg.generic_type_id
-        ORDER BY
-        mg.generic_type_id`
-
-        return (knex.raw(sql))
     }
 
     hisHistory(knex: Knex, warehouseId: any, date: any, genericTypeLV1Id: any, genericTypeLV2Id: any, genericTypeLV3Id: any, hospcode: any) {
