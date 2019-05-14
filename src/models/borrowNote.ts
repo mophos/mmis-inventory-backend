@@ -78,7 +78,7 @@ export class BorrowNoteModel {
     FROM
       wm_borrow_note_detail d
       JOIN wm_borrow_notes n ON n.borrow_note_id = d.borrow_note_id AND n.is_cancel = 'N'
-      JOIN wm_borrow b ON b.borrow_id = n.document_ref_id AND b.approved = 'N'
+      JOIN wm_borrow b ON b.borrow_id = n.document_ref_id AND n.is_approve = 'N'
       JOIN mm_generics mg ON mg.generic_id = d.generic_id
       JOIN mm_unit_generics mug ON mug.unit_generic_id = d.unit_generic_id
       JOIN mm_units lu ON lu.unit_id = mug.from_unit_id
