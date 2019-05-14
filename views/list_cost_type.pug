@@ -23,34 +23,22 @@ html
           td.left(colspan='6') #{printDate}
         tr
           th.center ลำดับที่
-          th.left รายการ
+          th.left  ประเภทสินค้า
+          th.left  บัญชี
           th.right มูลค่าคงคลัง
           th.right หมายเหตุ
       tbody
       - y=0
       - s=1
-      for a in list_haed
+      for a in list_cost
         - y++
-          if (a.generic_type_code == 'MEDICINE')
-            tr
-              td.center #{y}
-              td #{a.generic_type_name}
-              td.right
-              td.right
-              for b in list_cost
-                tr
-                  td
-                  td - #{b.account_name}
-                  td.right #{b.total_cost}
-                  td.right (#{s})
-                - s++
-          else  
-            tr
-              td.center #{y}
-              td #{a.generic_type_name}
-              td.right #{a.total_cost}
-              td.right (#{s})
-            - s++
+          tr
+            td.center #{y}
+            td #{a.generic_type_name}
+            td #{a.account_name}
+            td.right #{a.total_cost}
+            td.right (#{s})
+          - s++
       tfooter 
         tr
           td.dash-top.right(colspan=6) รวมมูลค่าทั้งสิ้น #{sum} บาท
