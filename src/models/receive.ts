@@ -818,17 +818,17 @@ WHERE
 
   async updateProduct(knex: Knex, v: any) {
     let totalCost = +v.cost * v.qty;
-    const cost = await this.getSumCost(knex, totalCost, v.qty, v.product_id, v.lot_no, v.warehouse_id);
+    const cost = await this.getSumCost(knex, totalCost, v.qty, v.product_id, v.lot_no, v.warehouse_id, v.lot_time);
     return knex.raw(`UPDATE wm_products set qty = qty + ?, unit_generic_id = ?,cost = ? where wm_product_id = ?`,
       [v.qty, v.unit_generic_id, cost[0][0].cost, v.wm_product_id])
 
   }
 
-  async getSumCost(knex: Knex, totalCost, qty, productId, lotNo, warehouseId) {
+  async getSumCost(knex: Knex, totalCost, qty, productId, lotNo, warehouseId, lotTime) {
     return await knex.raw(`select((sum(w.qty * w.cost) + ?) / (sum(w.qty) + ?)) as cost
     from wm_products as w
-    where w.product_id = ? and w.lot_no = ? and w.warehouse_id = ?
-    group by w.product_id`, [totalCost, qty, productId, lotNo, warehouseId])
+    where w.product_id = ? and w.lot_no = ? and w.warehouse_id = ? and w.lot_time = ?
+    group by w.product_id`, [totalCost, qty, productId, lotNo, warehouseId, lotTime])
   }
 
 

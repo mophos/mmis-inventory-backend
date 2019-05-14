@@ -1777,7 +1777,7 @@ function getLotTime(lotTimes, productId, lotNo, lotTime, warehouseId, isFree) {
       let lotObj = {
         product_id: productId,
         lot_no: lotNo,
-        lot_time: 1,
+        lot_time: +lotTime + 1,
         warehouse_id: warehouseId
       };
       _lotTime = +lotTime + 1
