@@ -4286,21 +4286,52 @@ GROUP BY
         order by mg.generic_name`);
     }
 
-    monthlyReportBalance(knex: Knex, warehouseId: any, genericType: any, startDate: any) {
+    monthlyReportBalance(knex: Knex, warehouseId: any, genericType: any, date: any, dateSetting: any) {
         let sql = `SELECT
         mgt.generic_type_name,
         mga.account_name,
-        sum( vscw.in_cost - vscw.out_cost ) AS balance 
+        sum( vscw.in_cost - vscw.out_cost ) AS balance
     FROM
-        view_stock_card_warehouse AS vscw
+        view_stock_card_new AS vscw
         JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
         JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
         JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
     WHERE
-        vscw.warehouse_id = '${warehouseId}' 
-        AND vscw.stock_date < '${startDate} 00:00:00' 
-        AND mg.generic_type_id IN ( ${genericType} ) 
-    GROUP BY
+         vscw.${dateSetting} < '${date} 00:00:00' 
+        AND mg.generic_type_id IN ( ${genericType} ) `
+        if (warehouseId != 'all') {
+            sql += `AND vscw.src_warehouse_id = '${warehouseId}'`
+        }
+        sql += ` GROUP BY
+        mg.generic_type_id,
+        mg.account_id 
+    ORDER BY
+        mgt.generic_type_id,
+        mga.account_id`
+        return (knex.raw(sql))
+    }
+
+    monthlyReportCost(knex: Knex, warehouseId: any, genericType: any, startDate: any, endDate: any, dateSetting: any, transactionIn: any) {
+        let sql = `SELECT
+        ws.transaction_type,
+	    mgt.generic_type_name,
+	    mga.account_name,
+        sum( ws.in_cost ) AS in_cost,
+        sum( ws.out_cost ) AS out_cost
+    FROM
+        view_stock_card_new AS ws
+	    JOIN mm_generics AS mg ON mg.generic_id = ws.generic_id
+	    JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+	    JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
+    WHERE
+        ws.${dateSetting} BETWEEN '${startDate} 00:00:00' 
+        AND '${endDate} 23:59:59' 
+        AND ws.transaction_type = '${transactionIn}' 
+        AND mg.generic_type_id IN ( ${genericType} ) `
+        if (warehouseId != 'all') {
+            sql += `AND ws.src_warehouse_id = '${warehouseId}'`
+        }
+        sql += ` GROUP BY
         mg.generic_type_id,
         mg.account_id 
     ORDER BY
