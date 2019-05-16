@@ -264,7 +264,7 @@ router.get('/report/monthlyReport', wrap(async (req, res, next) => {
   }
   const month = req.query.month
   const year = req.query.year
-  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
   let genericType = req.query.genericTypes
   genericType = Array.isArray(genericType) ? genericType : [genericType];
 
