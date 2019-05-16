@@ -3534,7 +3534,7 @@ OR sc.ref_src like ?
             .distinct('bg_year')
             .select(knex.raw('bg_year + 543 as bg_year'));
     }
-    monthlyReport(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting: any) {
+    monthlyReport(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting = 'stock_date') {
         month = month < 10 ? '0' + month : month;
         let sql = `
         SELECT
@@ -3563,25 +3563,25 @@ FROM
 	LEFT JOIN (
 	SELECT
 		sc.generic_id,
-		sum( IF ( sc.in_qty > 0, sc.cost, 0 ) ) AS in_cost,
-		sum( IF ( sc.out_qty > 0, sc.cost, 0 ) ) AS out_cost 
+		sum(sc.in_cost) AS in_cost,
+		sum(sc.out_cost) AS out_cost 
 	FROM
-		${dateSetting} AS sc 
+        view_stock_card_new AS sc 
 	WHERE
-        sc.warehouse_id = ${wareHouseId}  
-        AND substr(sc.stock_date,1,7)= '${year}-${month}'
+        sc.src_warehouse_id = ${wareHouseId}  
+        AND substr(sc.${dateSetting},1,7)= '${year}-${month}'
         GROUP BY
 		sc.generic_id 
 	) AS io ON io.generic_id = q1.generic_id
 	LEFT JOIN (
 	SELECT
 		sc.generic_id,
-		sum( IF ( sc.in_qty > 0, sc.cost, 0 ) ) - sum( IF ( sc.out_qty > 0, sc.cost, 0 ) ) AS bl 
+		sum(sc.in_cost - sc.out_cost) AS bl 
 	FROM
-		${dateSetting} AS sc 
+        view_stock_card_new AS sc 
 	WHERE
-		sc.warehouse_id = ${wareHouseId} 
-		AND sc.stock_date < '${year}-${month}-01 00:00:00'
+		sc.src_warehouse_id = ${wareHouseId} 
+		AND sc.${dateSetting} < '${year}-${month}-01 00:00:00'
 	GROUP BY
 		sc.generic_id 
 	) AS blb ON blb.generic_id = q1.generic_id
@@ -3590,14 +3590,13 @@ FROM
     LEFT JOIN mm_generic_accounts AS ga ON ga.account_id = mg.account_id 
 WHERE
         mg.generic_type_id in (${genericType})
-        and (ga.account_code <> 'ed'
-        and ga.account_code <> 'ned')
+        and ( (ga.account_code <> 'ed' AND ga.account_code <> 'ned') or ga.account_code is null )
 GROUP BY
 	mg.generic_type_id
     `
         return knex.raw(sql)
     }
-    monthlyReportM(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting: any) {
+    monthlyReportM(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting = 'stock_date') {
         month = month < 10 ? '0' + month : month;
         let sql = `
         SELECT
@@ -3626,25 +3625,25 @@ FROM
 	LEFT JOIN (
 	SELECT
 		sc.generic_id,
-		sum( IF ( sc.in_qty > 0, sc.cost, 0 ) ) AS in_cost,
-		sum( IF ( sc.out_qty > 0, sc.cost, 0 ) ) AS out_cost 
+		sum(sc.in_cost) AS in_cost,
+		sum(sc.out_cost) AS out_cost 
 	FROM
-		${dateSetting} AS sc 
+        view_stock_card_new AS sc 
 	WHERE
-		sc.warehouse_id = ${wareHouseId}  
-        AND substr(sc.stock_date,1,7)= '${year}-${month}'
+		sc.src_warehouse_id = ${wareHouseId}  
+        AND substr(sc.${dateSetting},1,7)= '${year}-${month}'
 	GROUP BY
 		sc.generic_id 
 	) AS io ON io.generic_id = q1.generic_id
 	LEFT JOIN (
 	SELECT
 		sc.generic_id,
-		sum( IF ( sc.in_qty > 0, sc.cost, 0 ) ) - sum( IF ( sc.out_qty > 0, sc.cost, 0 ) ) AS bl 
+		sum(sc.in_cost - sc.out_cost) AS bl 
 	FROM
-		${dateSetting} AS sc 
+        view_stock_card_new AS sc 
 	WHERE
-		sc.warehouse_id = ${wareHouseId}  
-		AND sc.stock_date < '${year}-${month}-01 00:00:00'
+		sc.src_warehouse_id = ${wareHouseId}  
+		AND sc.${dateSetting} < '${year}-${month}-01 00:00:00'
 	GROUP BY
 		sc.generic_id 
 	) AS blb ON blb.generic_id = q1.generic_id
