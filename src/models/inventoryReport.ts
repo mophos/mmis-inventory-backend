@@ -1655,8 +1655,7 @@ FROM
         }
         sql += `GROUP BY
             vscw.generic_id,
-            wis.transaction_issue_id,
-            mug.from_unit_id
+            wis.transaction_issue_id
         ORDER BY
             mg.generic_name,
             wis.transaction_issue_id`
@@ -1675,8 +1674,8 @@ FROM
             JOIN wm_issue_summary AS wis ON wis.issue_id = vscw.document_ref_id
 	        JOIN wm_transaction_issues AS wts ON wts.transaction_id = wis.transaction_issue_id
 	        JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
-	        JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
-	        JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
+	        LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+	        LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
         WHERE 
             wis.transaction_issue_id = '${reqTypeId}' 
             AND vscw.stock_date BETWEEN '${startDate} 00:00:00' 
@@ -1711,9 +1710,9 @@ FROM
             JOIN wm_requisition_orders AS wro ON wro.requisition_order_id = vscw.document_ref_id
             JOIN wm_requisition_type AS wrt ON wrt.requisition_type_id = wro.requisition_type_id
             JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
-            JOIN mm_unit_generics AS mug ON mug.unit_generic_id = vscw.unit_generic_id
-            JOIN mm_units AS mut ON mut.unit_id = mug.to_unit_id
-            JOIN mm_units AS muf ON muf.unit_id = mug.from_unit_id 
+            LEFT JOIN mm_unit_generics AS mug ON mug.unit_generic_id = vscw.unit_generic_id
+            LEFT JOIN mm_units AS mut ON mut.unit_id = mug.to_unit_id
+            LEFT JOIN mm_units AS muf ON muf.unit_id = mug.from_unit_id 
         WHERE 
             wro.requisition_type_id in (${reqTypeId})
             AND vscw.stock_date BETWEEN '${startDate} 00:00:00' 
@@ -1724,8 +1723,7 @@ FROM
         }
         sql += ` GROUP BY
             vscw.generic_id,
-            wro.requisition_type_id,
-            mug.from_unit_id 
+            wro.requisition_type_id
         ORDER BY
             mg.generic_name,
             wrt.requisition_type_id`
@@ -1744,8 +1742,8 @@ FROM
             JOIN wm_requisition_orders AS wro ON wro.requisition_order_id = vscw.document_ref_id
 	        JOIN wm_requisition_type AS wrt ON wrt.requisition_type_id = wro.requisition_type_id
 	        JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
-	        JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
-	        JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
+	        LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+	        LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
         WHERE 
             wro.requisition_type_id = '${reqTypeId}' 
             AND vscw.stock_date BETWEEN '${startDate} 00:00:00' 
@@ -1816,9 +1814,9 @@ FROM
         ${dateSetting} AS vscw
         JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
         JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
-        JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id
-        JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
-        JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id 
+        LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id
+        LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+        LEFT JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id 
     WHERE
         vscw.transaction_type = 'REV_OTHER' 
         AND vscw.stock_date BETWEEN '${startDate} 00:00:00' 
@@ -3450,8 +3448,8 @@ OR sc.ref_src like ?
         ${dateSetting} AS ws
         JOIN mm_products AS mp ON mp.product_id = ws.product_id
         JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
-        JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
-        JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
+        LEFT JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
+        LEFT JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
     WHERE
         ws.transaction_type = 'REV' 
         AND ws.stock_date BETWEEN '${startdate} 00:00:00' 
@@ -4294,8 +4292,8 @@ GROUP BY
     FROM
         view_stock_card_new AS vscw
         JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
-        JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
-        JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
+        LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+        LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
     WHERE
          vscw.${dateSetting} < '${date} 00:00:00' 
         AND mg.generic_type_id IN ( ${genericType} ) `
@@ -4321,8 +4319,8 @@ GROUP BY
     FROM
         view_stock_card_new AS ws
 	    JOIN mm_generics AS mg ON mg.generic_id = ws.generic_id
-	    JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
-	    JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
+	    LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+	    LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
     WHERE
         ws.${dateSetting} BETWEEN '${startDate} 00:00:00' 
         AND '${endDate} 23:59:59' 
