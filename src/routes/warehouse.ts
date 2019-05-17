@@ -631,14 +631,12 @@ router.get('/warehousetemplate/:templateId', wrap(async (req, res, next) => {
   }
 }));
 
-router.get('/warehousetemplate/detail', wrap(async (req, res, next) => {
+router.get('/warehousetemplate/detail/:templateId', wrap(async (req, res, next) => {
   let db = req.db;
   try {
-
-    let templateId = req.query.templateId;
+    let templateId = req.params.templateId;
 
     let rs = await warehouseModel.getRequisitionTemplate(db, templateId);
-    console.log(rs, 'asdfasdmglkarhlfhawehfah')
     res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     console.log(error);
