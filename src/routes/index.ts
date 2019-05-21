@@ -6010,9 +6010,10 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
   const db = req.db;
   const startDate = req.query.startDate;
   const endDate = req.query.endDate;
-  let genericTypeId = req.query.genericType;
+  let genericTypeId = req.query.genericTypes;
   genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
   const warehouseId = req.query.warehouseId;
+  const warehouseName = req.query.warehouseName;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
 
 
@@ -6020,7 +6021,7 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
   // Add Worksheets to the workbook
   const ws = wb.addWorksheet('Sheet 1');
   try {
-    const gn: any = await inventoryReportModel.getGenericType(db, genericTypeId);
+    // const gn: any = await inventoryReportModel.getGenericType(db, genericTypeId);
     const rs: any = await inventoryReportModel.payToWarehouse(db, startDate, endDate, genericTypeId, warehouseId, dateSetting)
     if (rs) {
 
@@ -6053,7 +6054,7 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
       });
 
       ws.cell(1, 1, 1, 6, true).string('สรุปยอดจ่ายระหว่างวันที่ ' + dateToDDMMMMYYYY(startDate) + ' ถึง ' + dateToDDMMMMYYYY(endDate)).style(textBold);
-      ws.cell(1, 7, 1, 8, true).string(gn[0].generic_type_name);
+      ws.cell(1, 7, 1, 8, true).string(warehouseName);
 
       ws.cell(2, 1, 2, 2, true).string('ชื่อวัสดุ');
       ws.cell(2, 3).string('วัน/เดือน/ปี');
@@ -6133,6 +6134,92 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
             }
           });
         }
+      });
+
+    } else {
+      res.send({ ok: false, error: 'data error!!' })
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  }
+}))
+
+router.get('/report/requisition/generic', wrap(async (req, res, next) => {
+  const db = req.db;
+  const startDate = req.query.startDate;
+  const endDate = req.query.endDate;
+  let genericTypeId = req.query.genericTypes;
+  const warehouseName = req.query.warehouseName;
+  genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
+  const warehouseId = req.query.warehouseId;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
+  let total_price = 0
+  try {
+    // const gn: any = await inventoryReportModel.getGenericType(db, genericTypeId);
+    const rs: any = await inventoryReportModel.payToWarehouse(db, startDate, endDate, genericTypeId, warehouseId, dateSetting)
+
+    if (rs) {
+
+      // ws.cell(1, 1, 1, 6, true).string('สรุปยอดจ่ายระหว่างวันที่ ' + dateToDDMMMMYYYY(startDate) + ' ถึง ' + dateToDDMMMMYYYY(endDate)).style(textBold);
+      // ws.cell(1, 7, 1, 8, true).string(gn[0].generic_type_name);
+
+      // data.generic_type_name = gn[0].generic_type_name || '-'
+
+      let data: any = []
+      let priceAll = 0;
+
+      for (const h of rs) {
+        let _data: any = []
+        let _rs: any = {}
+
+        let priceWarehouse = 0;
+        let no = 0;
+
+        const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting)
+        if (type) {
+          for (const t of type) {
+            let _detail: any = []
+            let priceGenericType = 0;
+            const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting)
+            if (detail) {
+              for (const d of detail) {
+                priceWarehouse += d.cost;
+                priceAll += d.cost;
+                priceGenericType += d.cost;
+                _detail.push({
+                  no: inventoryReportModel.commaQty(no++) || '-',
+                  generic_name: d.generic_name || '-',
+                  date: moment(d.approve_date).format('YYYY-MM-DD') || '-',
+                  requisition_code: d.requisition_code || '-',
+                  unit_cost: inventoryReportModel.comma(d.unit_cost) || '-',
+                  unit_name: d.unit_name || '-',
+                  qty: inventoryReportModel.commaQty(d.qty) || '-',
+                  cost: inventoryReportModel.comma(d.cost) || '-'
+                })
+              }
+            }
+            _data.push({
+              detail: _detail,
+              generic_type_name: t.generic_type_name || '-',
+              generic_type_id: t.generic_type_id || '',
+              priceGenericType: inventoryReportModel.comma(priceGenericType) || '-'
+            })
+          }
+        }
+        data.push({
+          data: _.orderBy(_data,'generic_type_id'),
+          payWith: h.warehouse_name || '-',
+          priceWarehouse: inventoryReportModel.comma(priceWarehouse) || '-'
+        })
+        total_price += priceWarehouse
+      }
+      // res.send(_.orderBy(data,'warehouse_name'))
+      res.render('pay_product', {
+        warehouseName:warehouseName,
+        startdate: dateToDDMMMMYYYY(startDate),
+        enddate: dateToDDMMMMYYYY(endDate),
+        data: _.orderBy(data,'warehouse_name'),
+        total_price:inventoryReportModel.comma( total_price)
       });
 
     } else {
