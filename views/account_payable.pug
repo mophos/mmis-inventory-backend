@@ -27,15 +27,15 @@ html
           th(style='width:10%').center รับเช็ค
       tbody
       - no = 0
-      - for(let i of details)
-        tr
-          td.center #{++no}
-          td #{i.purchase_order_book_number ? i.purchase_order_book_number:i.purchase_order_number}
-          td #{i.delivery_code}
-          td #{i.labeler_name}
-          td.right #{i.cost}
-          td 
-          td
+        - for(let i of details)
+          tr
+            td.center #{++no}
+            td #{i.purchase_order_book_number ? i.purchase_order_book_number:i.purchase_order_number}
+            td #{i.delivery_code}
+            td #{i.labeler_name}
+            td.right #{i.cost}
+            td 
+            td
       tfoot
         tr
           td.bold.right(colspan="4")  รวม
