@@ -35,7 +35,7 @@ router.get('/account/payable', wrap(async (req, res, next) => {
       for (const i of rs) {
         i.cost = inventoryReportModel.comma(i.cost);
       }
-      const sum = _.sumBy(rs, 'cost');
+      const sum = _.sumBy(rs, function (o: any) { return o.cost; });
       res.render('account_payable', {
         hospname: hospname,
         details: rs,
