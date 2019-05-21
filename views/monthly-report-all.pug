@@ -1,0 +1,109 @@
+include css.pug
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table(style="font-size: 13pt;")
+        thead
+        tr 
+            td.center.bold(colspan='6')(style="font-size: 15pt;") #{hospitalName} 
+        tr 
+            td.center.bold(colspan='6')(style="font-size: 15pt;") สรุป งานคลังเวชภัณฑ์
+        tr 
+            td.center.bold(colspan='6')(style="font-size: 15pt;") ประจำเดือน#{monthName} พ.ศ.#{year}
+                br
+                br
+        tr
+            th.center(style="font-size: 15pt;",colspan='6') ยอดมูลค่าคงคลังยกมาจาก
+                br
+                | เดือน#{monthbeforName}
+        tbody
+        - var y=0
+        for a in  rsBalance
+          - y++
+          tr
+            td(style='padding-top: 5px;width:10%') #{a.generic_type_name} &nbsp;
+            td.left(style='width:15%') #{a.account_name} &nbsp;
+            td(colspan='4') : #{a.balance} บาท &nbsp;
+        tfooter 
+            tr
+                td.dash-top.right(colspan=6 style='padding-top: 5px') รวมมูลค่าทั้งสิ้น #{sumBalance} บาท
+    br
+
+    table.table(style="font-size: 13pt;")
+        thead
+        tr
+            th.center(style="font-size: 15pt;",colspan='6') ยอดรับทั้งหมดของ
+                br
+                | เดือน#{monthName}
+        tbody
+        - var i = 1
+        - for(var v of dataIn)
+          tr
+            td.left(colspan=2)
+              table.table
+                tr
+                  td(style='padding-top: 5px;width:10%') #{i}
+                  td.left #{v.transactionIn}  
+            td(colspan=5)
+          - for(var a of v.detail)
+            tr
+                td(style='padding-top: 5px;width:10%') #{a.generic_type_name} &nbsp;
+                td.left(style='width:15%') #{a.account_name} &nbsp;
+                td(colspan='4') : #{a.in_cost} บาท &nbsp;
+          tr
+            td.right(colspan=4) รวมยอด #{v.totalIn} บาท
+            - i++
+        tr.tbfooter
+            td.dash-top.right(colspan=6 style='padding-top: 5px') รวมมูลค่าทั้งสิ้น #{sumInCost} บาท
+    br
+
+    table.table(style="font-size: 13pt;")
+        thead
+        tr
+            th.center(style="font-size: 15pt;",colspan='6') ยอดจ่ายทั้งหมดของ
+                br
+                | เดือน#{monthName}
+        tbody
+        - var i = 1
+        - for(var v of dataOut)
+          tr
+            td.left(colspan=2)
+              table.table
+                tr
+                  td(style='padding-top: 5px;width:10%') #{i}
+                  td.left #{v.transactionOut}
+            td(colspan=5)
+          - for(var a of v.detail)
+            tr
+                td(style='padding-top: 5px;width:10%') #{a.generic_type_name} &nbsp;
+                td.left(style='width:15%') #{a.account_name} &nbsp;
+                td(colspan='4') : #{a.out_cost} บาท &nbsp;
+          tr
+            td.right(colspan=4) รวมยอด #{v.totalOut} บาท
+            - i++
+        tr.tbfooter
+            td.dash-top.right(colspan=6 style='padding-top: 5px') รวมมูลค่าทั้งสิ้น #{sumOutCost} บาท
+    br
+
+    table.table(style="font-size: 13pt;")
+        thead
+        tr
+            th.center(style="font-size: 15pt;",colspan='6') ยอดมูลค่าคงคลังของ
+                br
+                | เดือน#{monthName}
+        tbody
+        - var y=0
+        for a in  rsBalanceAfter
+          - y++
+          tr
+            td(style='padding-top: 5px;width:10%') #{a.generic_type_name} &nbsp;
+            td.left(style='width:15%') #{a.account_name} &nbsp;
+            td(colspan='4') : #{a.balance} บาท &nbsp;
+        tfooter 
+            tr
+                td.dash-top.right(colspan=6 style='padding-top: 5px') รวมมูลค่าทั้งสิ้น #{sumBalanceAfter} บาท
+        

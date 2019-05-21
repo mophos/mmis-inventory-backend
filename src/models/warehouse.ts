@@ -885,20 +885,30 @@ export class WarehouseModel {
 
   getRequisitionTemplate(knex: Knex, templateId: any) {
     let sql = `
-      select wrt.template_id, wrt.src_warehouse_id, wrt.dst_warehouse_id,
-      ws.warehouse_name as src_warehouse_name,
-      ws.short_code as src_warehouse_code, 
-      wd.warehouse_name as dst_warehouse_name, 
-      wd.short_code as dst_warehouse_code, 
-      wrt.template_subject, wrt.created_date
-      from wm_requisition_template as wrt
-      inner join wm_warehouses as ws on wrt.src_warehouse_id = ws.warehouse_id
-      inner join wm_warehouses as wd on wrt.dst_warehouse_id = wd.warehouse_id
-      where wrt.template_id = ?
-      and wrt.mark_deleted = 'N'
+    SELECT
+      wrt.template_id,
+      wrt.src_warehouse_id,
+      wrt.dst_warehouse_id,
+      wrtd.generic_id,
+      wrtd.unit_generic_id,
+      ws.warehouse_name AS src_warehouse_name,
+      ws.short_code AS src_warehouse_code,
+      wd.warehouse_name AS dst_warehouse_name,
+      wd.short_code AS dst_warehouse_code,
+      wrt.template_subject,
+      wrt.created_date 
+    FROM
+      wm_requisition_template AS wrt
+      inner join wm_requisition_template_detail wrtd on wrtd.template_id = wrt.template_id
+      INNER JOIN wm_warehouses AS ws ON wrt.src_warehouse_id = ws.warehouse_id
+      INNER JOIN wm_warehouses AS wd ON wrt.dst_warehouse_id = wd.warehouse_id 
+    WHERE
+      wrt.template_id = ${templateId}
+      AND wrt.mark_deleted = 'N'
       `;
-    return knex.raw(sql, [templateId]);
+    return knex.raw(sql);
   }
+  
   getTemplateDetail(knex: Knex, templateId: any) {
     return knex(`wm_issue_template_detail`)
       .where('template_id', templateId)

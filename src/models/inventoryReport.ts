@@ -1655,8 +1655,7 @@ FROM
         }
         sql += `GROUP BY
             vscw.generic_id,
-            wis.transaction_issue_id,
-            mug.from_unit_id
+            wis.transaction_issue_id
         ORDER BY
             mg.generic_name,
             wis.transaction_issue_id`
@@ -1675,8 +1674,8 @@ FROM
             JOIN wm_issue_summary AS wis ON wis.issue_id = vscw.document_ref_id
 	        JOIN wm_transaction_issues AS wts ON wts.transaction_id = wis.transaction_issue_id
 	        JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
-	        JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
-	        JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
+	        LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+	        LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
         WHERE 
             wis.transaction_issue_id = '${reqTypeId}' 
             AND vscw.stock_date BETWEEN '${startDate} 00:00:00' 
@@ -1711,9 +1710,9 @@ FROM
             JOIN wm_requisition_orders AS wro ON wro.requisition_order_id = vscw.document_ref_id
             JOIN wm_requisition_type AS wrt ON wrt.requisition_type_id = wro.requisition_type_id
             JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
-            JOIN mm_unit_generics AS mug ON mug.unit_generic_id = vscw.unit_generic_id
-            JOIN mm_units AS mut ON mut.unit_id = mug.to_unit_id
-            JOIN mm_units AS muf ON muf.unit_id = mug.from_unit_id 
+            LEFT JOIN mm_unit_generics AS mug ON mug.unit_generic_id = vscw.unit_generic_id
+            LEFT JOIN mm_units AS mut ON mut.unit_id = mug.to_unit_id
+            LEFT JOIN mm_units AS muf ON muf.unit_id = mug.from_unit_id 
         WHERE 
             wro.requisition_type_id in (${reqTypeId})
             AND vscw.stock_date BETWEEN '${startDate} 00:00:00' 
@@ -1724,8 +1723,7 @@ FROM
         }
         sql += ` GROUP BY
             vscw.generic_id,
-            wro.requisition_type_id,
-            mug.from_unit_id 
+            wro.requisition_type_id
         ORDER BY
             mg.generic_name,
             wrt.requisition_type_id`
@@ -1744,8 +1742,8 @@ FROM
             JOIN wm_requisition_orders AS wro ON wro.requisition_order_id = vscw.document_ref_id
 	        JOIN wm_requisition_type AS wrt ON wrt.requisition_type_id = wro.requisition_type_id
 	        JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
-	        JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
-	        JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
+	        LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+	        LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
         WHERE 
             wro.requisition_type_id = '${reqTypeId}' 
             AND vscw.stock_date BETWEEN '${startDate} 00:00:00' 
@@ -1816,9 +1814,9 @@ FROM
         ${dateSetting} AS vscw
         JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
         JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
-        JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id
-        JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
-        JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id 
+        LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id
+        LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+        LEFT JOIN wm_receive_types AS wrt ON wrt.receive_type_id = wro.receive_type_id 
     WHERE
         vscw.transaction_type = 'REV_OTHER' 
         AND vscw.stock_date BETWEEN '${startDate} 00:00:00' 
@@ -3450,8 +3448,8 @@ OR sc.ref_src like ?
         ${dateSetting} AS ws
         JOIN mm_products AS mp ON mp.product_id = ws.product_id
         JOIN mm_generics AS mg ON mg.generic_id = mp.generic_id
-        JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
-        JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
+        LEFT JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
+        LEFT JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
     WHERE
         ws.transaction_type = 'REV' 
         AND ws.stock_date BETWEEN '${startdate} 00:00:00' 
@@ -3534,7 +3532,7 @@ OR sc.ref_src like ?
             .distinct('bg_year')
             .select(knex.raw('bg_year + 543 as bg_year'));
     }
-    monthlyReport(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting: any) {
+    monthlyReport(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting = 'stock_date') {
         month = month < 10 ? '0' + month : month;
         let sql = `
         SELECT
@@ -3563,25 +3561,25 @@ FROM
 	LEFT JOIN (
 	SELECT
 		sc.generic_id,
-		sum( IF ( sc.in_qty > 0, sc.cost, 0 ) ) AS in_cost,
-		sum( IF ( sc.out_qty > 0, sc.cost, 0 ) ) AS out_cost 
+		sum(sc.in_cost) AS in_cost,
+		sum(sc.out_cost) AS out_cost 
 	FROM
-		${dateSetting} AS sc 
+        view_stock_card_new AS sc 
 	WHERE
-        sc.warehouse_id = ${wareHouseId}  
-        AND substr(sc.stock_date,1,7)= '${year}-${month}'
+        sc.src_warehouse_id = ${wareHouseId}  
+        AND substr(sc.${dateSetting},1,7)= '${year}-${month}'
         GROUP BY
 		sc.generic_id 
 	) AS io ON io.generic_id = q1.generic_id
 	LEFT JOIN (
 	SELECT
 		sc.generic_id,
-		sum( IF ( sc.in_qty > 0, sc.cost, 0 ) ) - sum( IF ( sc.out_qty > 0, sc.cost, 0 ) ) AS bl 
+		sum(sc.in_cost - sc.out_cost) AS bl 
 	FROM
-		${dateSetting} AS sc 
+        view_stock_card_new AS sc 
 	WHERE
-		sc.warehouse_id = ${wareHouseId} 
-		AND sc.stock_date < '${year}-${month}-01 00:00:00'
+		sc.src_warehouse_id = ${wareHouseId} 
+		AND sc.${dateSetting} < '${year}-${month}-01 00:00:00'
 	GROUP BY
 		sc.generic_id 
 	) AS blb ON blb.generic_id = q1.generic_id
@@ -3590,14 +3588,13 @@ FROM
     LEFT JOIN mm_generic_accounts AS ga ON ga.account_id = mg.account_id 
 WHERE
         mg.generic_type_id in (${genericType})
-        and (ga.account_code <> 'ed'
-        and ga.account_code <> 'ned')
+        and ( (ga.account_code <> 'ed' AND ga.account_code <> 'ned') or ga.account_code is null )
 GROUP BY
 	mg.generic_type_id
     `
         return knex.raw(sql)
     }
-    monthlyReportM(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting: any) {
+    monthlyReportM(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting = 'stock_date') {
         month = month < 10 ? '0' + month : month;
         let sql = `
         SELECT
@@ -3626,25 +3623,25 @@ FROM
 	LEFT JOIN (
 	SELECT
 		sc.generic_id,
-		sum( IF ( sc.in_qty > 0, sc.cost, 0 ) ) AS in_cost,
-		sum( IF ( sc.out_qty > 0, sc.cost, 0 ) ) AS out_cost 
+		sum(sc.in_cost) AS in_cost,
+		sum(sc.out_cost) AS out_cost 
 	FROM
-		${dateSetting} AS sc 
+        view_stock_card_new AS sc 
 	WHERE
-		sc.warehouse_id = ${wareHouseId}  
-        AND substr(sc.stock_date,1,7)= '${year}-${month}'
+		sc.src_warehouse_id = ${wareHouseId}  
+        AND substr(sc.${dateSetting},1,7)= '${year}-${month}'
 	GROUP BY
 		sc.generic_id 
 	) AS io ON io.generic_id = q1.generic_id
 	LEFT JOIN (
 	SELECT
 		sc.generic_id,
-		sum( IF ( sc.in_qty > 0, sc.cost, 0 ) ) - sum( IF ( sc.out_qty > 0, sc.cost, 0 ) ) AS bl 
+		sum(sc.in_cost - sc.out_cost) AS bl 
 	FROM
-		${dateSetting} AS sc 
+        view_stock_card_new AS sc 
 	WHERE
-		sc.warehouse_id = ${wareHouseId}  
-		AND sc.stock_date < '${year}-${month}-01 00:00:00'
+		sc.src_warehouse_id = ${wareHouseId}  
+		AND sc.${dateSetting} < '${year}-${month}-01 00:00:00'
 	GROUP BY
 		sc.generic_id 
 	) AS blb ON blb.generic_id = q1.generic_id
@@ -4287,21 +4284,52 @@ GROUP BY
         order by mg.generic_name`);
     }
 
-    monthlyReportBalance(knex: Knex, warehouseId: any, genericType: any, startDate: any) {
+    monthlyReportBalance(knex: Knex, warehouseId: any, genericType: any, date: any, dateSetting: any) {
         let sql = `SELECT
         mgt.generic_type_name,
         mga.account_name,
-        sum( vscw.in_cost - vscw.out_cost ) AS balance 
+        sum( vscw.in_cost - vscw.out_cost ) AS balance
     FROM
-        view_stock_card_warehouse AS vscw
+        view_stock_card_new AS vscw
         JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
-        JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
-        JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
+        LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+        LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
     WHERE
-        vscw.warehouse_id = '${warehouseId}' 
-        AND vscw.stock_date < '${startDate} 00:00:00' 
-        AND mg.generic_type_id IN ( ${genericType} ) 
-    GROUP BY
+         vscw.${dateSetting} < '${date} 00:00:00' 
+        AND mg.generic_type_id IN ( ${genericType} ) `
+        if (warehouseId != 'all') {
+            sql += `AND vscw.src_warehouse_id = '${warehouseId}'`
+        }
+        sql += ` GROUP BY
+        mg.generic_type_id,
+        mg.account_id 
+    ORDER BY
+        mgt.generic_type_id,
+        mga.account_id`
+        return (knex.raw(sql))
+    }
+
+    monthlyReportCost(knex: Knex, warehouseId: any, genericType: any, startDate: any, endDate: any, dateSetting: any, transactionIn: any) {
+        let sql = `SELECT
+        ws.transaction_type,
+	    mgt.generic_type_name,
+	    mga.account_name,
+        sum( ws.in_cost ) AS in_cost,
+        sum( ws.out_cost ) AS out_cost
+    FROM
+        view_stock_card_new AS ws
+	    JOIN mm_generics AS mg ON mg.generic_id = ws.generic_id
+	    LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+	    LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
+    WHERE
+        ws.${dateSetting} BETWEEN '${startDate} 00:00:00' 
+        AND '${endDate} 23:59:59' 
+        AND ws.transaction_type = '${transactionIn}' 
+        AND mg.generic_type_id IN ( ${genericType} ) `
+        if (warehouseId != 'all') {
+            sql += `AND ws.src_warehouse_id = '${warehouseId}'`
+        }
+        sql += ` GROUP BY
         mg.generic_type_id,
         mg.account_id 
     ORDER BY

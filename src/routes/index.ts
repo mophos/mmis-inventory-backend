@@ -264,7 +264,7 @@ router.get('/report/monthlyReport', wrap(async (req, res, next) => {
   }
   const month = req.query.month
   const year = req.query.year
-  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
   let genericType = req.query.genericTypes
   genericType = Array.isArray(genericType) ? genericType : [genericType];
 
@@ -5860,9 +5860,13 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
   }
   const month = moment(req.query.month, 'M').format('MM');
   const year = req.query.year
-  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
   let genericType = req.query.genericTypes
   genericType = Array.isArray(genericType) ? genericType : [genericType];
+  let transactionIn = ['SUMMIT', 'REV', 'REV_OTHER', 'REQ_IN', 'TRN_IN', 'ADD_IN', 'BORROW_IN', 'BORROW_OTHER_IN', 'RETURNED_IN', 'REP_IN', 'ADJUST', 'HIS']
+  let transactionOut = ['REQ_OUT', 'TRN_OUT', 'ADD_OUT', 'BORROW_OUT', 'BORROW_OTHER_OUT', 'RETURNED_OUT', 'REP_OUT', 'IST', 'ADJUST', 'HIS']
+  let dataIn = []
+  let dataOut = []
 
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
@@ -5872,15 +5876,130 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
     let dateMonth = `${year}-${month}`;
     let startDate = `${dateMonth}-01`;
     let endDate = `${dateMonth}-${moment(dateMonth, 'YYYY-MM').daysInMonth()}`;
-    let rsBalance = await inventoryReportModel.monthlyReportBalance(db, warehouseId, genericType, startDate);
-    rsBalance = rsBalance[0];
 
+    // มูลค่ายกยอดมา -----------------------------------
+    let rsBalance = await inventoryReportModel.monthlyReportBalance(db, warehouseId, genericType, startDate, dateSetting);
+    rsBalance = rsBalance[0];
+    let sumBalance: any = 0;
+
+    for (const e of rsBalance) {
+      sumBalance += e.balance
+      e.balance = inventoryReportModel.comma(e.balance)
+    }
+    sumBalance = inventoryReportModel.comma(sumBalance)
+    // ------------------------------------------------
+
+    // มูลค่ารับเข้า --------------------------------------
+    let sumInCost: any = 0;
+    for (let In in transactionIn) {
+      var totalIn: any = 0;
+      let comment = ''
+      let rs = await inventoryReportModel.monthlyReportCost(db, warehouseId, genericType, startDate, endDate, dateSetting, transactionIn[In])
+      rs = rs[0];
+      if (rs.length) {
+        for (const v of rs) {
+          totalIn += v.in_cost
+          v.in_cost = inventoryReportModel.comma(v.in_cost)
+        }
+        if (transactionIn[In] === 'SUMMIT') {
+          comment = 'ยอดยกมา'
+        } else if (transactionIn[In] === 'REV') {
+          comment = 'รับจากการซื้อ'
+        } else if (transactionIn[In] === 'REV_OTHER') {
+          comment = 'รับอื่นๆ'
+        } else if (transactionIn[In] === 'REQ_IN') {
+          comment = 'เบิก'
+        } else if (transactionIn[In] === 'TRN_IN') {
+          comment = 'รับโอน'
+        } else if (transactionIn[In] === 'ADD_IN') {
+          comment = 'รับเติม'
+        } else if (transactionIn[In] === 'BORROW_IN') {
+          comment = 'ยืม'
+        } else if (transactionIn[In] === 'BORROW_OTHER_IN') {
+          comment = 'รับคืนนอกหน่วยงาน'
+        } else if (transactionIn[In] === 'RETURNED_IN') {
+          comment = 'รับคืน'
+        } else if (transactionIn[In] === 'REP_IN') {
+          comment = 'ปรับ package'
+        } else if (transactionIn[In] === 'ADJUST') {
+          comment = 'ปรับยอด'
+        } else if (transactionIn[In] === 'HIS') {
+          comment = 'ตัดจ่าย HIS(คนไข้คืนยา)'
+        }
+        sumInCost += totalIn
+        totalIn = inventoryReportModel.comma(totalIn)
+        dataIn.push({ transactionIn: comment, totalIn: totalIn, detail: rs })
+      }
+    }
+    sumInCost = inventoryReportModel.comma(sumInCost)
+    // ------------------------------------------------
+
+    // มูลค่ารับจ่ายออก -----------------------------------
+    let sumOutCost: any = 0;
+    for (let out in transactionOut) {
+      var totalOut: any = 0;
+      let comment = ''
+      let rs = await inventoryReportModel.monthlyReportCost(db, warehouseId, genericType, startDate, endDate, dateSetting, transactionOut[out])
+      rs = rs[0];
+      if (rs.length) {
+        for (const v of rs) {
+          totalOut += v.out_cost
+          v.out_cost = inventoryReportModel.comma(v.out_cost)
+        }
+        if (transactionOut[out] === 'REQ_OUT') {
+          comment = 'ให้เบิก'
+        } else if (transactionOut[out] === 'TRN_OUT') {
+          comment = 'โอน'
+        } else if (transactionOut[out] === 'ADD_OUT') {
+          comment = 'เติม'
+        } else if (transactionOut[out] === 'BORROW_OUT') {
+          comment = 'ให้ยืม'
+        } else if (transactionOut[out] === 'BORROW_OTHER_OUT') {
+          comment = 'ให้ยืมนอกหน่วยงาน'
+        } else if (transactionOut[out] === 'RETURNED_OUT') {
+          comment = 'คืน'
+        } else if (transactionOut[out] === 'REP_OUT') {
+          comment = 'ปรับ package'
+        } else if (transactionOut[out] === 'IST') {
+          comment = 'ตัดจ่าย'
+        } else if (transactionOut[out] === 'ADJUST') {
+          comment = 'ปรับยอด'
+        } else if (transactionOut[out] === 'HIS') {
+          comment = 'ตัดจ่าย HIS'
+        }
+        sumOutCost += totalOut
+        totalOut = inventoryReportModel.comma(totalOut)
+        dataOut.push({ transactionOut: comment, totalOut: totalOut, detail: rs })
+      }
+    }
+    sumOutCost = inventoryReportModel.comma(sumOutCost)
+    // ------------------------------------------------
+
+    // มูลค่าคงเหลือ -------------------------------------
+    let rsBalanceAfter = await inventoryReportModel.monthlyReportBalance(db, warehouseId, genericType, endDate, dateSetting);
+    rsBalanceAfter = rsBalanceAfter[0];
+    let sumBalanceAfter: any = 0;
+
+    for (const e of rsBalanceAfter) {
+      sumBalanceAfter += e.balance
+      e.balance = inventoryReportModel.comma(e.balance)
+    }
+    sumBalanceAfter = inventoryReportModel.comma(sumBalanceAfter)
+    // ------------------------------------------------
 
     res.render('monthly-report-all', {
       monthName: monthName,
       monthbeforName: monthbeforName,
       year: +year + 543,
-      hospitalName: hospitalName
+      hospitalName: hospitalName,
+      rsBalance: rsBalance,
+      sumBalance: sumBalance,
+      dataIn: dataIn,
+      sumInCost: sumInCost,
+      dataOut: dataOut,
+      sumOutCost: sumOutCost,
+      rsBalanceAfter: rsBalanceAfter,
+      sumBalanceAfter: sumBalanceAfter
     });
   } catch (error) {
     res.send({ ok: false, error: error.message })
