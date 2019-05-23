@@ -71,6 +71,7 @@ import userRoute from './routes/users';
 
 // reports
 import reportProductRoute from './routes/reports/products';
+import reportRoute from './routes/reports';
 import reportInventoryRoute from './routes/reports/inventory';
 import reportRequisitionRoute from './routes/reports/requisition';
 import reportInternalissueRoute from './routes/reports/internalissue';
@@ -263,6 +264,8 @@ app.use('/return-budget', checkAuth, adminAuth, returnBudgetRoute);
 app.use('/requisition', checkAuth, adminAuth, requisitionRoute);
 
 // reports
+
+app.use('/reports', checkAuth, reportRoute);
 app.use('/reports/products', checkAuth, reportProductRoute);
 app.use('/reports/requisition', reportRequisitionRoute);
 app.use('/reports/inventory', reportInventoryRoute);

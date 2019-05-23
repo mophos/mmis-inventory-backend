@@ -4376,6 +4376,7 @@ GROUP BY
         }
         sql.whereIn('mg.generic_type_id', genericTypeId)
             .groupBy('mgt.generic_type_id')
+            .orderBy('mgt.generic_type_id')
         return sql;
     }
 

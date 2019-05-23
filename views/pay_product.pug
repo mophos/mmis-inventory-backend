@@ -1,0 +1,77 @@
+include css.pug
+style(type='text/css').
+  body{
+  margin-left: 25px;
+  margin-right: 5px;
+  }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success.btnprint(onclick='window.print()') Print
+    table.table
+      tr
+        td.left.bold.h1(colspan=4) สรุปยอดจ่ายระหว่างวันที่ #{startdate} ถึง #{enddate}
+        td.right(colspan=4)  #{warehouseName}
+    table.table2
+      thead
+        tr 
+          th(style='width:3%;')
+          th(style='width:34%;') ชื่อวัสดุ
+          th(style='width:10%;') วัน/เดือน/ปี
+          th(style='width:15%;') เลขที่ใบเบิก
+          th(style='width:10%;') ราคา/หน่วย
+          th(style='width:8%;') หน่วยนับ
+          th(style='width:8%;') จำนวนจ่าย
+          th(style='width:10%;') รวม
+      tbody
+        - for(var v of data)
+          tr
+            td(colspan=8 style="height:20px;")
+          tr
+            td 
+            td.left(colspan=2)
+              table.table
+                tr
+                  td
+                  td.left จ่ายให้ 
+                  td.right #{v.payWith} 
+            td(colspan=5)
+          - for(var _v of v.data)
+            - var i = 1
+            tr
+              td.left(colspan=8 ) #{_v.generic_type_name}
+            - for(var _d of _v.detail)
+              tr
+                td #{i}
+                td &nbsp;#{_d.generic_name}
+                td &nbsp;#{_d.date}
+                td &nbsp;#{_d.requisition_code}
+                td &nbsp;#{_d.unit_cost}
+                td.right &nbsp;#{_d.unit_name}
+                td.right &nbsp;#{_d.qty}
+                td.right &nbsp;#{_d.cost}
+              - i++
+            tr
+              td(colspan=2)
+              td.right(colspan=2) รวม
+              td.right(colspan=2) #{_v.generic_type_name}
+              td.right(colspan=2) #{_v.priceGenericType} บาท
+            tr.tbfooter
+              td(colspan=8 )
+          tr
+            td(colspan=2)
+            td(colspan=2) 
+            td.left(colspan=2) รวม
+            td.right(colspan=2) #{v.priceWarehouse} บาท
+          tr
+            td(colspan=2)
+            td(colspan=2) 
+            td(colspan=4 style='width:25%;border-bottom: 3px double black;')
+        //- .pagebreak
+    table.table2
+      td.left(style='width:60%;') 
+      td.left(style='width:15%;border-bottom: 3px double black;') รวมทั้งสิ้น
+      td.right(style='width:25%;border-bottom: 3px double black;') #{total_price} บาท
