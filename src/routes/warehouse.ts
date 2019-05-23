@@ -9,6 +9,7 @@ import * as wrap from 'co-express';
 import { WarehouseModel } from '../models/warehouse';
 import { ProductModel } from '../models/product';
 import { StockCard } from '../models/stockcard';
+import { isatty } from 'tty';
 
 const path = require('path')
 const fse = require('fs-extra');
@@ -98,7 +99,7 @@ router.post('/', wrap(async (req, res, next) => {
       warehouse_book: book,
       created_at: moment().format('YYYY-MM-DD HH:mm:ss')
     };
-
+    
     try {
       let rs: any = await warehouseModel.save(db, datas);
       let warehouseId = rs[0];
@@ -121,6 +122,7 @@ router.post('/', wrap(async (req, res, next) => {
 
       res.send({ ok: true });
     } catch (error) {
+      console.log(error)
       res.send({ ok: false, error: error });
       // throw error;
     }

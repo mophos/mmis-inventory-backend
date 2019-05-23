@@ -748,13 +748,15 @@ mgt.generic_type_id `
         WHERE
         (wp.expired_date BETWEEN ?
         AND ? or wp.expired_date is null or wp.expired_date = '0000-00-00')
-        AND wp.qty != 0
-        AND wp.warehouse_id LIKE ?
-        AND mg.generic_id LIKE ?
-        AND mg.generic_type_id in (${genericTypeId})
+        AND wp.qty != 0 
+        AND mg.generic_id LIKE ? `
+        if (wareHouse !== 'all') {
+            sql += `AND wp.warehouse_id = ${wareHouse}`
+        }
+        sql += ` AND mg.generic_type_id in (${genericTypeId})
         ORDER BY
         wp.expired_date ASC`
-        return (knex.raw(sql, [startDate, endDate, wareHouse, genericId]))
+        return (knex.raw(sql, [startDate, endDate, genericId]))
     }
 
     getOrderUnpaidItems(db: Knex, unpaidId: any) {
