@@ -1890,8 +1890,7 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  if (wareHouse == 0) { wareHouse = '%%'; }
-  else { wareHouse = '%' + wareHouse + '%'; }
+  if (wareHouse == 0) { wareHouse = 'all'; }
   if (genericId == 0) { genericId = '%%'; }
   else { genericId = '%' + genericId + '%'; }
   if (typeof genericTypeId === 'string') genericTypeId = [genericTypeId];
