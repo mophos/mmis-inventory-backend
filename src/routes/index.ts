@@ -2808,7 +2808,6 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     } else {
       v.staffReceive = buyer[0];
     }
-    console.log(v.committee, 'xczlxkcvjzlkxcvn.zkcjnvkz.cjnvzklcxvn.klxzc')
   }
 
   let serialYear = moment().get('year') + 543;
@@ -3373,7 +3372,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
   }
 
   // res.send(check_receive)
-  res.render('check_receive_2', {
+  res.render('check_receives', {
     totalPrice: totalPrice,
     _bahtText: _bahtText,
     master: master,
