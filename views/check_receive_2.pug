@@ -34,9 +34,9 @@ html
               td.center(colspan='2') ตามบันทึกที่ #{v.purchase_order_number}
             td.center(colspan='2') ลงวันที่ #{v.podate}
           tr
-            td.left(colspan='2') ได้แต่งตั้ง#{word}ตรวจรับพัสดุนั้น
+            td.left(colspan='2') ได้แต่งตั้ง#{v.words}ตรวจรับพัสดุนั้น
             td.right(colspan='2') 
-              span บัดนี้#{word}ตรวจรับพัสดุได้
+              span บัดนี้#{v.words}ตรวจรับพัสดุได้
                 if(v.committee.length > 1)
                   | ร่วมกัน
                 | ตรวจพัสดุซึ่ง
@@ -76,14 +76,14 @@ html
               td.left &nbsp; 
                 if(v.committee.length > 1) 
                   | #{i.position_name}
-                if(v.committee.length = 1)
+                else if(v.committee.length = 1)
                   | ผู้ตรวจรับพัสดุ
             tr
               td
               td.center (#{i.title_name}#{i.fname} #{i.lname})
               td.center 
               td
-        | ได้รับมอบพัสดุรายการข้างต้นจาก#{word}ตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
+        | ได้รับมอบพัสดุรายการข้างต้นจาก#{v.words}ตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
         br
         br
         table(style="width: 90%;")
@@ -101,7 +101,7 @@ html
         | เรียน  ผู้ว่าราชการจังหวัด#{province}
         br
         .fontspace
-        | #{word}ตรวจรับพัสดุได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่าย#{v.bgtype_name}ประจำปีงบประมาน #{serialYear} แก่ผู้ขายต่อไป
+        | #{v.words}ตรวจรับพัสดุได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่าย#{v.bgtype_name}ประจำปีงบประมาน #{serialYear} แก่ผู้ขายต่อไป
         br
         br
         br

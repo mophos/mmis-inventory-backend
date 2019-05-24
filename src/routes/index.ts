@@ -8,7 +8,7 @@ import * as _ from 'lodash';
 import { IssueModel } from '../models/issue'
 import { StockCard } from '../models/stockcard';
 import { ReceiveModel } from '../models/receive';
-import { listenerCount } from 'cluster';
+import { listenerCount, worker } from 'cluster';
 import { WarehouseModel } from '../models/warehouse';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
@@ -2788,6 +2788,12 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     v.total_price = inventoryReportModel.comma(v.total_price);
     let _committee = await inventoryReportModel.invenCommittee(db, v.receive_id);
     v.committee = _committee[0];
+    if (v.committee === undefined) { res.render('no_commitee'); }
+    let word: any = 'ผู้';
+    if (v.committee.length > 1) {
+      word = 'คณะกรรมการ';
+    }
+    v.words = word;
     let _invenChief = await inventoryReportModel.inven2Chief(db, v.receive_id)
     invenChief.push(_invenChief[0]);
 
@@ -2802,6 +2808,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     } else {
       v.staffReceive = buyer[0];
     }
+    console.log(v.committee, 'xczlxkcvjzlkxcvn.zkcjnvkz.cjnvzklcxvn.klxzc')
   }
 
   let serialYear = moment().get('year') + 543;
@@ -2810,7 +2817,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     serialYear += 1;
   }
 
-  res.render('check_receive', {
+  res.render('check_receive_2', {
     master: master,
     hospitalName: hospitalName,
     serialYear: serialYear,
