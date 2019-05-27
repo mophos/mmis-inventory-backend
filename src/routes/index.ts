@@ -323,16 +323,23 @@ router.get('/report/purchase-bit-type', wrap(async (req, res, next) => {
   let genericTypeId = req.query.genericType
   genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
   let warehouseId: any = req.query.warehouseId;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
   if (!warehouseId) {
     warehouseId = req.decoded.warehouseId;
   }
   try {
-    const rs: any = await inventoryReportModel.purchaseBitType(db, startdate, enddate, warehouseId, genericTypeId)
+    const rs: any = await inventoryReportModel.purchaseBitType(db, startdate, enddate, warehouseId, genericTypeId, dateSetting)
     const rst: any = await inventoryReportModel.lBitType(db)
     startdate = moment(startdate).isValid() ? moment(startdate).format('DD MMM ') + (+moment(startdate).get('year') + 543) : '-'
     enddate = moment(enddate).isValid() ? moment(enddate).format('DD MMM ') + (+moment(enddate).get('year') + 543) : '-'
     let _data = []
     let data = []
+    let sum: any = 0;
+    rs[0].forEach(e => {
+      sum += e.total_price
+    });
+    sum = inventoryReportModel.comma(sum)
+
     let ed = _.filter(rs[0], (v: any) => {
       return v.account_code == 'ed'
     })
@@ -379,7 +386,8 @@ router.get('/report/purchase-bit-type', wrap(async (req, res, next) => {
         startdate: startdate,
         enddate: enddate,
         lBitType: rst,
-        data: _ot
+        data: _ot,
+        sum: sum
       })
     } else {
       res.render('error404')
@@ -2836,13 +2844,14 @@ router.get('/report/receive-where-vender/excel', wrap(async (req, res, next) => 
   let genericTypeId = req.query.genericType
   let genericTypeName = req.query.genericTypeName
   let wareHouseId = req.query.warehouseId
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
   let isFree = req.query.isFree
   var wb = new excel4node.Workbook();
   // Add Worksheets to the workbook
   var ws = wb.addWorksheet('Sheet 1');
   try {
     genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
-    var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId, wareHouseId, isFree)
+    var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId, wareHouseId, isFree, dateSetting)
     if (rs) {
       var total_price_all: any = 0
       rs = _(rs).groupBy('vendor_labeler_id').map((v: any) => { return v })

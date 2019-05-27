@@ -2388,7 +2388,7 @@ OR sc.ref_src like ?
 
     }
 
-    receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any, wareHouseId: any, isFree: any) {
+    receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any, wareHouseId: any, isFree: any, dateSetting = 'stock_date') {
 
         let query = knex('wm_receive_approve as ra')
             .select('r.receive_id', 'r.receive_code', 'r.delivery_code', 'g.generic_id', 'g.working_code', knex.raw(`if(rd.is_free='Y',CONCAT(g.generic_name,' ','(ของแถม)') ,g.generic_name) generic_name`),
@@ -3665,34 +3665,38 @@ FROM
             .orderBy('bid_name');
     }
 
-    purchaseBitType(knex: Knex, startdate: any, enddate: any, wareHouseId: any, genericTypeId: any) {
+    purchaseBitType(knex: Knex, startdate: any, enddate: any, wareHouseId: any, genericTypeId: any, dateSetting = 'stock_date') {
         let sql = `SELECT
-            bt.bid_id,
-            bt.bid_name,
-            g.account_id,
-            ga.account_name,
-            ga.account_code,
-            g.generic_type_id,
-            gt.generic_type_name,
-            gt.generic_type_code,
-            sum( po.total_price ) total_price 
-            FROM
-            view_pc_purchasing_order_item po
-            JOIN mm_generics g ON g.generic_id = po.generic_id
-            left JOIN l_bid_type bt ON bt.bid_id = g.purchasing_method
-            LEFT JOIN mm_generic_accounts ga ON ga.account_id = g.account_id
-            LEFT JOIN mm_generic_types gt ON gt.generic_type_id = g.generic_type_id 
-            WHERE
-            g.generic_type_id IN ( ${genericTypeId} ) `
+        lb.bid_id,
+        lb.bid_name,
+        mga.account_id,
+        mga.account_name,
+        mga.account_code,
+        mgt.generic_type_id,
+        mgt.generic_type_name,
+        mgt.generic_type_code,
+        sum(ws.in_cost) AS total_price
+    FROM
+        view_stock_card_new AS ws
+        JOIN wm_receives AS wr ON ws.document_ref_id = wr.receive_id
+        JOIN pc_purchasing_order AS ppo ON ppo.purchase_order_id = wr.purchase_order_id
+        JOIN mm_generics AS mg ON mg.generic_id = ws.generic_id
+        LEFT JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
+        LEFT JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
+        LEFT JOIN l_bid_type AS lb ON lb.bid_id = mg.purchasing_method
+        WHERE
+        ws.transaction_type = 'REV' 
+        AND ws.${dateSetting} BETWEEN '${startdate} 00:00:00' 
+        AND '${enddate} 23:59:59' 
+        AND mg.generic_type_id IN ( ${genericTypeId} ) `
         if (wareHouseId != 0) {
-            sql += ` AND po.warehouse_id = '${wareHouseId}' `
+            sql += ` AND ws.src_warehouse_id = '${wareHouseId}' `
         }
         sql += ` 
-            AND  po.approved_date between '${startdate} 00:00:00' and '${enddate} 23:59:59'
-            GROUP BY
-            g.purchasing_method,
-            g.generic_type_id,
-            g.account_id`
+    GROUP BY
+        lb.bid_id,
+        mgt.generic_type_id,
+        mga.account_id `
         return knex.raw(sql)
     }
 
