@@ -2390,27 +2390,31 @@ OR sc.ref_src like ?
 
     receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any, wareHouseId: any, isFree: any, dateSetting = 'stock_date') {
 
-        let query = knex('wm_receive_approve as ra')
-            .select('r.receive_id', 'r.receive_code', 'r.delivery_code', 'g.generic_id', 'g.working_code', knex.raw(`if(rd.is_free='Y',CONCAT(g.generic_name,' ','(ของแถม)') ,g.generic_name) generic_name`),
-                'rd.receive_qty', 'rd.cost', 'uf.unit_name', 'ug.qty', 'ra.approve_date', 'rd.unit_generic_id', 'r.vendor_labeler_id', 'l.labeler_name')
-            .join('wm_receives as r ', ' r.receive_id', 'ra.receive_id')
-            .join(' wm_receive_detail as rd ', ' rd.receive_id ', ' ra.receive_id')
-            .join(' mm_unit_generics as ug ', ' ug.unit_generic_id ', ' rd.unit_generic_id')
-            .join(' mm_generics as g ', ' g.generic_id ', ' ug.generic_id')
-            .join(' mm_units as uf ', ' uf.unit_id ', ' ug.from_unit_id ')
-            .join('mm_labelers as l', 'l.labeler_id', 'rd.vendor_labeler_id')
-            .whereBetween('ra.approve_date', [startDate + ' 00:00:00', endDate + ' 23:59:59'])
+        let query = knex('view_stock_card_new as ws')
+            .select('wr.receive_id', 'wr.receive_code', 'wr.delivery_code', 'g.generic_id', 'g.working_code',
+                knex.raw(`IF( ws.in_cost <= 0, CONCAT( g.generic_name, ' ', '(ของแถม)' ), g.generic_name ) generic_name`),
+                knex.raw('ws.in_qty / ws.conversion_qty AS receive_qty'), knex.raw('ws.in_unit_cost * ws.conversion_qty AS cost')
+                , 'ws.large_unit AS unit_name',
+                'ws.conversion_qty AS qty', 'ra.approve_date', 'ws.unit_generic_id', 'ws.dst_warehouse_id AS vendor_labeler_id',
+                'ws.dst_warehouse_name AS labeler_name')
+            .join('wm_receives AS wr', 'wr.receive_id', 'ws.document_ref_id')
+            .join('mm_generics AS g', 'g.generic_id', 'ws.generic_id')
+            .join('wm_receive_approve AS ra', 'ra.receive_id', 'ws.document_ref_id')
+            .where('ws.transaction_type', 'REV')
             .whereIn('g.generic_type_id', genericTypeId)
-            .orderBy('ra.approve_date')
-            .orderBy('ra.approve_id')
-            .orderBy('r.vendor_labeler_id')
-            .orderBy('g.generic_name');
+
         if (isFree === 'false') {
-            query.andWhere('rd.is_free', 'N')
+            query.andWhereRaw('ws.in_cost > 0')
+        }
+
+        if (dateSetting === 'stock_date') {
+            query.whereBetween('ws.stock_date', [startDate + ' 00:00:00', endDate + ' 23:59:59'])
+        } else if (dateSetting === 'create_date') {
+            query.whereBetween('ws.create_date', [startDate + ' 00:00:00', endDate + ' 23:59:59'])
         }
 
         if (wareHouseId != 0) {
-            query.andWhere('rd.warehouse_id', wareHouseId)
+            query.andWhere('ws.src_warehouse_id', wareHouseId)
         }
 
         return query

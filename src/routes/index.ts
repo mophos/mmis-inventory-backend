@@ -2850,6 +2850,7 @@ router.get('/report/receive-where-vender/excel', wrap(async (req, res, next) => 
   // Add Worksheets to the workbook
   var ws = wb.addWorksheet('Sheet 1');
   try {
+    console.log(dateSetting);
     genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
     var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId, wareHouseId, isFree, dateSetting)
     if (rs) {
@@ -2963,10 +2964,11 @@ router.get('/report/receive-where-vender', wrap(async (req, res, next) => {
   let genericTypeId = req.query.genericType
   let genericTypeName = req.query.genericTypeName
   let wareHouseId = req.query.warehouseId
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
   let isFree = req.query.isFree
   try {
     genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
-    var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId, wareHouseId, isFree)
+    var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId, wareHouseId, isFree, dateSetting)
     if (rs) {
       var data = []
       var total_price_all: any = 0
