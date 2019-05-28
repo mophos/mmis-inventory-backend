@@ -308,7 +308,6 @@ export class GenericModel {
 			a.generic_id in (
 			SELECT mp.generic_id from wm_products as wp join mm_products as mp on mp.product_id = wp.product_id WHERE wp.warehouse_id = ${warehouseId} group by mp.generic_id
       )`
-    console.log('xczxcxzczxcxzczxcxzczxcxzczx', sql)
     return knex.raw(sql);
   }
 

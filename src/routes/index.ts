@@ -8,7 +8,7 @@ import * as _ from 'lodash';
 import { IssueModel } from '../models/issue'
 import { StockCard } from '../models/stockcard';
 import { ReceiveModel } from '../models/receive';
-import { listenerCount } from 'cluster';
+import { listenerCount, worker } from 'cluster';
 import { WarehouseModel } from '../models/warehouse';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
@@ -1890,8 +1890,7 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
-  if (wareHouse == 0) { wareHouse = '%%'; }
-  else { wareHouse = '%' + wareHouse + '%'; }
+  if (wareHouse == 0) { wareHouse = 'all'; }
   if (genericId == 0) { genericId = '%%'; }
   else { genericId = '%' + genericId + '%'; }
   if (typeof genericTypeId === 'string') genericTypeId = [genericTypeId];
@@ -2789,6 +2788,12 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     v.total_price = inventoryReportModel.comma(v.total_price);
     let _committee = await inventoryReportModel.invenCommittee(db, v.receive_id);
     v.committee = _committee[0];
+    if (v.committee === undefined) { res.render('no_commitee'); }
+    let word: any = 'ผู้';
+    if (v.committee.length > 1) {
+      word = 'คณะกรรมการ';
+    }
+    v.words = word;
     let _invenChief = await inventoryReportModel.inven2Chief(db, v.receive_id)
     invenChief.push(_invenChief[0]);
 
@@ -2811,7 +2816,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     serialYear += 1;
   }
 
-  res.render('check_receive', {
+  res.render('check_receive_2', {
     master: master,
     hospitalName: hospitalName,
     serialYear: serialYear,
@@ -3114,7 +3119,14 @@ router.get('/report/check/receive/2', wrap(async (req, res, next) => {
     serialYear += 1;
   }
 
+  if (committee === undefined) { res.render('no_commitee'); }
+  let word: any = 'ผู้';
+  if (committee.length > 1) {
+    word = 'คณะกรรมการ';
+  }
+
   res.render('check_receive_2', {
+    word: word,
     master: master,
     hospitalName: hospitalName,
     serialYear: serialYear,
@@ -3352,8 +3364,6 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
       objects[0].staffReceive = buyer[0];
     }
   }
-
-  if (committees === undefined) { res.render('no_commitee'); }
 
   let serialYear = moment().get('year') + 543;
   let monthRo = moment().get('month') + 1;
@@ -6207,7 +6217,7 @@ router.get('/report/requisition/generic', wrap(async (req, res, next) => {
           }
         }
         data.push({
-          data: _.orderBy(_data,'generic_type_id'),
+          data: _.orderBy(_data, 'generic_type_id'),
           payWith: h.warehouse_name || '-',
           priceWarehouse: inventoryReportModel.comma(priceWarehouse) || '-'
         })
@@ -6215,11 +6225,11 @@ router.get('/report/requisition/generic', wrap(async (req, res, next) => {
       }
       // res.send(_.orderBy(data,'warehouse_name'))
       res.render('pay_product', {
-        warehouseName:warehouseName,
+        warehouseName: warehouseName,
         startdate: dateToDDMMMMYYYY(startDate),
         enddate: dateToDDMMMMYYYY(endDate),
-        data: _.orderBy(data,'warehouse_name'),
-        total_price:inventoryReportModel.comma( total_price)
+        data: _.orderBy(data, 'warehouse_name'),
+        total_price: inventoryReportModel.comma(total_price)
       });
 
     } else {
