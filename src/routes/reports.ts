@@ -32,10 +32,12 @@ router.get('/account/payable', wrap(async (req, res, next) => {
     const gt: any = await inventoryReportModel.getGenericType(db, genericTypeId);
     const rs: any = await mainReportModel.accountPayable(db, warehouseId, startDate, endDate, genericTypeId);
     if (rs.length > 0) {
+      let sum: any = 0;
       for (const i of rs) {
+        sum += i.cost;
         i.cost = inventoryReportModel.comma(i.cost);
       }
-      const sum = _.sumBy(rs, function (o: any) { return o.cost; });
+      sum = inventoryReportModel.comma(sum);
       res.render('account_payable', {
         hospname: hospname,
         details: rs,

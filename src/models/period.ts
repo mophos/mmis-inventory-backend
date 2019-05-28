@@ -39,11 +39,11 @@ export class PeriodModel {
   }
   getRequisition(knex: Knex, startdate, enddate) {
     return knex('wm_requisition_orders as ro')
-      .leftJoin('wm_requisition_confirm as rc', 'ro.requisition_id', 'rc.requisition_id')
+      .leftJoin('wm_requisition_confirms as rc', 'ro.requisition_order_id', 'rc.requisition_order_id')
       .whereBetween('ro.requisition_date', [startdate, enddate])
       .orWhere(w => {
-        w.orWhere('rc.is_approved', 'N')
-          .whereNull('rc.is_approved')
+        w.orWhere('rc.is_approve', 'N')
+          .whereNull('rc.is_approve')
       })
       .where('ro.is_cancel', 'N');
   }
