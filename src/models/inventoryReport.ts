@@ -2388,29 +2388,33 @@ OR sc.ref_src like ?
 
     }
 
-    receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any, wareHouseId: any, isFree: any) {
+    receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any, wareHouseId: any, isFree: any, dateSetting = 'stock_date') {
 
-        let query = knex('wm_receive_approve as ra')
-            .select('r.receive_id', 'r.receive_code', 'r.delivery_code', 'g.generic_id', 'g.working_code', knex.raw(`if(rd.is_free='Y',CONCAT(g.generic_name,' ','(ของแถม)') ,g.generic_name) generic_name`),
-                'rd.receive_qty', 'rd.cost', 'uf.unit_name', 'ug.qty', 'ra.approve_date', 'rd.unit_generic_id', 'r.vendor_labeler_id', 'l.labeler_name')
-            .join('wm_receives as r ', ' r.receive_id', 'ra.receive_id')
-            .join(' wm_receive_detail as rd ', ' rd.receive_id ', ' ra.receive_id')
-            .join(' mm_unit_generics as ug ', ' ug.unit_generic_id ', ' rd.unit_generic_id')
-            .join(' mm_generics as g ', ' g.generic_id ', ' ug.generic_id')
-            .join(' mm_units as uf ', ' uf.unit_id ', ' ug.from_unit_id ')
-            .join('mm_labelers as l', 'l.labeler_id', 'rd.vendor_labeler_id')
-            .whereBetween('ra.approve_date', [startDate + ' 00:00:00', endDate + ' 23:59:59'])
+        let query = knex('view_stock_card_new as ws')
+            .select('wr.receive_id', 'wr.receive_code', 'wr.delivery_code', 'g.generic_id', 'g.working_code',
+                knex.raw(`IF( ws.in_cost <= 0, CONCAT( g.generic_name, ' ', '(ของแถม)' ), g.generic_name ) generic_name`),
+                knex.raw('ws.in_qty / ws.conversion_qty AS receive_qty'), knex.raw('ws.in_unit_cost * ws.conversion_qty AS cost')
+                , 'ws.large_unit AS unit_name',
+                'ws.conversion_qty AS qty', 'ra.approve_date', 'ws.unit_generic_id', 'ws.dst_warehouse_id AS vendor_labeler_id',
+                'ws.dst_warehouse_name AS labeler_name')
+            .join('wm_receives AS wr', 'wr.receive_id', 'ws.document_ref_id')
+            .join('mm_generics AS g', 'g.generic_id', 'ws.generic_id')
+            .join('wm_receive_approve AS ra', 'ra.receive_id', 'ws.document_ref_id')
+            .where('ws.transaction_type', 'REV')
             .whereIn('g.generic_type_id', genericTypeId)
-            .orderBy('ra.approve_date')
-            .orderBy('ra.approve_id')
-            .orderBy('r.vendor_labeler_id')
-            .orderBy('g.generic_name');
+
         if (isFree === 'false') {
-            query.andWhere('rd.is_free', 'N')
+            query.andWhereRaw('ws.in_cost > 0')
+        }
+
+        if (dateSetting === 'stock_date') {
+            query.whereBetween('ws.stock_date', [startDate + ' 00:00:00', endDate + ' 23:59:59'])
+        } else if (dateSetting === 'create_date') {
+            query.whereBetween('ws.create_date', [startDate + ' 00:00:00', endDate + ' 23:59:59'])
         }
 
         if (wareHouseId != 0) {
-            query.andWhere('rd.warehouse_id', wareHouseId)
+            query.andWhere('ws.src_warehouse_id', wareHouseId)
         }
 
         return query
@@ -3665,34 +3669,38 @@ FROM
             .orderBy('bid_name');
     }
 
-    purchaseBitType(knex: Knex, startdate: any, enddate: any, wareHouseId: any, genericTypeId: any) {
+    purchaseBitType(knex: Knex, startdate: any, enddate: any, wareHouseId: any, genericTypeId: any, dateSetting = 'stock_date') {
         let sql = `SELECT
-            bt.bid_id,
-            bt.bid_name,
-            g.account_id,
-            ga.account_name,
-            ga.account_code,
-            g.generic_type_id,
-            gt.generic_type_name,
-            gt.generic_type_code,
-            sum( po.total_price ) total_price 
-            FROM
-            view_pc_purchasing_order_item po
-            JOIN mm_generics g ON g.generic_id = po.generic_id
-            left JOIN l_bid_type bt ON bt.bid_id = g.purchasing_method
-            LEFT JOIN mm_generic_accounts ga ON ga.account_id = g.account_id
-            LEFT JOIN mm_generic_types gt ON gt.generic_type_id = g.generic_type_id 
-            WHERE
-            g.generic_type_id IN ( ${genericTypeId} ) `
+        lb.bid_id,
+        lb.bid_name,
+        mga.account_id,
+        mga.account_name,
+        mga.account_code,
+        mgt.generic_type_id,
+        mgt.generic_type_name,
+        mgt.generic_type_code,
+        sum(ws.in_cost) AS total_price
+    FROM
+        view_stock_card_new AS ws
+        JOIN wm_receives AS wr ON ws.document_ref_id = wr.receive_id
+        JOIN pc_purchasing_order AS ppo ON ppo.purchase_order_id = wr.purchase_order_id
+        JOIN mm_generics AS mg ON mg.generic_id = ws.generic_id
+        LEFT JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
+        LEFT JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
+        LEFT JOIN l_bid_type AS lb ON lb.bid_id = mg.purchasing_method
+        WHERE
+        ws.transaction_type = 'REV' 
+        AND ws.${dateSetting} BETWEEN '${startdate} 00:00:00' 
+        AND '${enddate} 23:59:59' 
+        AND mg.generic_type_id IN ( ${genericTypeId} ) `
         if (wareHouseId != 0) {
-            sql += ` AND po.warehouse_id = '${wareHouseId}' `
+            sql += ` AND ws.src_warehouse_id = '${wareHouseId}' `
         }
         sql += ` 
-            AND  po.approved_date between '${startdate} 00:00:00' and '${enddate} 23:59:59'
-            GROUP BY
-            g.purchasing_method,
-            g.generic_type_id,
-            g.account_id`
+    GROUP BY
+        lb.bid_id,
+        mgt.generic_type_id,
+        mga.account_id `
         return knex.raw(sql)
     }
 
