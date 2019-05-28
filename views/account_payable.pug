@@ -19,8 +19,9 @@ html
       thead
         tr
           th(style='width:5%').center ที่
-          th(style='width:15%').center เลขที่ใบสั่งซื้อ
-          th(style='width:15%').center เลขที่ใบส่งของ
+          th(style='width:15%').left เลขที่ใบสั่งซื้อ
+          th(style='width:15%').left เลขที่ใบส่งของ
+          th(style='width:15%').left วันที่ส่งของ
           th(style='width:35%').center เจ้าหนี้
           th(style='width:10%').right มูลค่า
           th(style='width:10%').center ส่งเขียนเช็ค
@@ -32,6 +33,7 @@ html
             td.center #{++no}
             td #{i.purchase_order_book_number ? i.purchase_order_book_number:i.purchase_order_number}
             td #{i.delivery_code}
+            td #{i.delivery_date}
             td #{i.labeler_name}
             td.right #{i.cost}
             td 
@@ -39,7 +41,7 @@ html
       tfoot
         tr
           td.bold.right(colspan="4")  รวม
-          td.right #{sumCost}
+          td.bold.right #{sumCost}
         tr
           td(colspan="7") <br>
         tr
