@@ -98,7 +98,11 @@ router.get('/warehouse/search/autocomplete', async (req, res, next) => {
         if (this.warehouse_type) {
           rs = await genericModel.warehouseSearchAutocompleteLimit(db, warehouseId, q);
         } else {
-          rs = await genericModel.warehouseSearchAutocompleteLimitStaff(db, warehouseId, q, srcWarehouseId);
+          if (sys_gp[0].value === 'N') {
+            rs = await genericModel.warehouseSearchAutocompleteLimit(db, warehouseId, q);
+          } else {
+            rs = await genericModel.warehouseSearchAutocompleteLimitStaff(db, warehouseId, q, srcWarehouseId);
+          }
         }
       } else {
         if (this.warehouse_type) {
