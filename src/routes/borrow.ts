@@ -723,11 +723,40 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
   for (let v of results) {
     let rsLots: any = await productModel.getBalance(db, v.product_id, v.src_warehouse_id, v.lot_no, v.lot_time);
     rsLots = rsLots[0][0];
+
     if (v.lot_qty > v.balance_src) {
       v.qty -= rsLots.balance_lot;
       v.lot_qty = rsLots.balance_lot;
 
       const idx = _.findIndex(returnData, { 'src_warehouse_id': v.src_warehouse_id, 'dst_warehouse_id': v.dst_warehouse_id });
+
+      let product = [];
+      if (idx > -1) {
+        returnData[idx].products.push({
+          generic_id: v.generic_id,
+          unit_generic_id: v.unit_generic_id,
+          qty: v.qty / v.conversion_qty,
+          lot_no: v.lot_no
+        })
+      } else {
+        product.push({
+          generic_id: v.generic_id,
+          unit_generic_id: v.unit_generic_id,
+          qty: v.qty / v.conversion_qty,
+          lot_no: v.lot_no
+        })
+        const obj: any = {
+          src_warehouse_id: v.src_warehouse_id,
+          dst_warehouse_id: v.dst_warehouse_id,
+          borrow_id: v.borrow_id,
+          people_id: v.people_id,
+          products: product
+        }
+        returnData.push(obj)
+      }
+    } else if (v.borrow_product_id === null) {
+      const idx = _.findIndex(returnData, { 'src_warehouse_id': v.src_warehouse_id, 'dst_warehouse_id': v.dst_warehouse_id });
+      
       let product = [];
 
       if (idx > -1) {
@@ -756,122 +785,122 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
     } else v.qty = +v.qty;
   };
 
-  for (let v of results) {
-    if (+v.lot_qty != 0) {
-      let id = uuid();
+  // for (let v of results) {
+  //   if (+v.lot_qty != 0) {
+  //     let id = uuid();
 
-      // let rsLots: any = await borrowModel.getLotbalance(db, v.src_warehouse_id, v.product_id, v.lot_no);
-      // let rsProducts: any = await borrowModel.getProductbalance(db, v.src_warehouse_id, v.product_id, v.lot_no)
+  //     // let rsLots: any = await borrowModel.getLotbalance(db, v.src_warehouse_id, v.product_id, v.lot_no);
+  //     // let rsProducts: any = await borrowModel.getProductbalance(db, v.src_warehouse_id, v.product_id, v.lot_no)
 
-      // =================================== WM_PRODUCTS PLUS ========================
-      let objIn: any = {};
-      objIn.wm_product_id = id;
-      objIn.warehouse_id = v.dst_warehouse_id;
-      objIn.product_id = v.product_id;
-      objIn.qty = +v.lot_qty;
-      objIn.cost = v.cost;
-      objIn.price = v.cost;
-      objIn.lot_no = v.lot_no;
-      objIn.lot_time = v.lot_time;
-      objIn.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
-      objIn.unit_generic_id = v.unit_generic_id;
-      objIn.location_id = v.location_id;
-      objIn.people_user_id = v.people_user_id;
-      objIn.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
-      let wmProductIdIn;
-      const checkDst = await productModel.checkProductToSave(db, v.dst_warehouse_id, v.product_id, v.lot_no, v.lot_time);
-      if (checkDst.length) {
-        wmProductIdIn = checkDst[0].wm_product_id;
-        await productModel.updatePlusStock(db, objIn, checkDst[0].wm_product_id)
-      } else {
-        wmProductIdIn = objIn.wm_product_id;
-        await productModel.insertStock(db, objIn)
-      }
-      // =================================== WM_PRODUCTS MINUS ========================
-      let objOut: any = {};
-      objOut.wm_product_id = id;
-      objOut.warehouse_id = v.src_warehouse_id;
-      objOut.product_id = v.product_id;
-      objOut.qty = +v.lot_qty;
-      objOut.cost = v.cost;
-      objOut.price = v.cost;
-      objOut.lot_no = v.lot_no;
-      objOut.lot_time = v.lot_time;
-      objOut.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
-      objOut.unit_generic_id = v.unit_generic_id;
-      objOut.location_id = v.location_id;
-      objOut.people_user_id = v.people_user_id;
-      objOut.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
-      let wmProductIdOut;
-      const checkSrc = await productModel.checkProductToSave(db, v.src_warehouse_id, v.product_id, v.lot_no, v.lot_time);
-      if (checkSrc.length) {
-        wmProductIdOut = checkSrc[0].wm_product_id;
-        await productModel.updateMinusStock(db, objOut, checkSrc[0].wm_product_id)
-      } else {
-        wmProductIdOut = objOut.wm_product_id;
-        await productModel.insertStock(db, objOut)
-      }
+  //     // =================================== WM_PRODUCTS PLUS ========================
+  //     let objIn: any = {};
+  //     objIn.wm_product_id = id;
+  //     objIn.warehouse_id = v.dst_warehouse_id;
+  //     objIn.product_id = v.product_id;
+  //     objIn.qty = +v.lot_qty;
+  //     objIn.cost = v.cost;
+  //     objIn.price = v.cost;
+  //     objIn.lot_no = v.lot_no;
+  //     objIn.lot_time = v.lot_time;
+  //     objIn.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
+  //     objIn.unit_generic_id = v.unit_generic_id;
+  //     objIn.location_id = v.location_id;
+  //     objIn.people_user_id = v.people_user_id;
+  //     objIn.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
+  //     let wmProductIdIn;
+  //     const checkDst = await productModel.checkProductToSave(db, v.dst_warehouse_id, v.product_id, v.lot_no, v.lot_time);
+  //     if (checkDst.length) {
+  //       wmProductIdIn = checkDst[0].wm_product_id;
+  //       await productModel.updatePlusStock(db, objIn, checkDst[0].wm_product_id)
+  //     } else {
+  //       wmProductIdIn = objIn.wm_product_id;
+  //       await productModel.insertStock(db, objIn)
+  //     }
+  //     // =================================== WM_PRODUCTS MINUS ========================
+  //     let objOut: any = {};
+  //     objOut.wm_product_id = id;
+  //     objOut.warehouse_id = v.src_warehouse_id;
+  //     objOut.product_id = v.product_id;
+  //     objOut.qty = +v.lot_qty;
+  //     objOut.cost = v.cost;
+  //     objOut.price = v.cost;
+  //     objOut.lot_no = v.lot_no;
+  //     objOut.lot_time = v.lot_time;
+  //     objOut.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
+  //     objOut.unit_generic_id = v.unit_generic_id;
+  //     objOut.location_id = v.location_id;
+  //     objOut.people_user_id = v.people_user_id;
+  //     objOut.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
+  //     let wmProductIdOut;
+  //     const checkSrc = await productModel.checkProductToSave(db, v.src_warehouse_id, v.product_id, v.lot_no, v.lot_time);
+  //     if (checkSrc.length) {
+  //       wmProductIdOut = checkSrc[0].wm_product_id;
+  //       await productModel.updateMinusStock(db, objOut, checkSrc[0].wm_product_id)
+  //     } else {
+  //       wmProductIdOut = objOut.wm_product_id;
+  //       await productModel.insertStock(db, objOut)
+  //     }
 
-      // =================================== STOCK CARD IN ========================
+  //     // =================================== STOCK CARD IN ========================
 
-      let remain_dst = await productModel.getBalance(db, v.product_id, v.dst_warehouse_id, v.lot_no, v.lot_time);
-      remain_dst = remain_dst[0]
-      let stockIn: any = {};
-      stockIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-      stockIn.product_id = v.product_id;
-      stockIn.generic_id = v.generic_id;
-      stockIn.unit_generic_id = v.unit_generic_id;
-      stockIn.transaction_type = TransactionType.BORROW_IN;
-      stockIn.document_ref_id = v.borrow_id;
-      stockIn.document_ref = v.borrow_code;
-      stockIn.in_qty = v.lot_qty;
-      stockIn.in_unit_cost = v.cost;
-      stockIn.balance_lot_qty = remain_dst[0].balance_lot;
-      stockIn.balance_qty = remain_dst[0].balance;
-      stockIn.balance_generic_qty = remain_dst[0].balance_generic;
-      stockIn.balance_unit_cost = v.cost;
-      stockIn.ref_src = v.dst_warehouse_id;
-      stockIn.ref_dst = v.src_warehouse_id;
-      stockIn.lot_no = v.lot_no;
-      stockIn.lot_time = v.lot_time;
-      stockIn.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;;
-      stockIn.comment = 'ยืม';
-      stockIn.wm_product_id_in = wmProductIdIn;
+  //     let remain_dst = await productModel.getBalance(db, v.product_id, v.dst_warehouse_id, v.lot_no, v.lot_time);
+  //     remain_dst = remain_dst[0]
+  //     let stockIn: any = {};
+  //     stockIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+  //     stockIn.product_id = v.product_id;
+  //     stockIn.generic_id = v.generic_id;
+  //     stockIn.unit_generic_id = v.unit_generic_id;
+  //     stockIn.transaction_type = TransactionType.BORROW_IN;
+  //     stockIn.document_ref_id = v.borrow_id;
+  //     stockIn.document_ref = v.borrow_code;
+  //     stockIn.in_qty = v.lot_qty;
+  //     stockIn.in_unit_cost = v.cost;
+  //     stockIn.balance_lot_qty = remain_dst[0].balance_lot;
+  //     stockIn.balance_qty = remain_dst[0].balance;
+  //     stockIn.balance_generic_qty = remain_dst[0].balance_generic;
+  //     stockIn.balance_unit_cost = v.cost;
+  //     stockIn.ref_src = v.dst_warehouse_id;
+  //     stockIn.ref_dst = v.src_warehouse_id;
+  //     stockIn.lot_no = v.lot_no;
+  //     stockIn.lot_time = v.lot_time;
+  //     stockIn.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;;
+  //     stockIn.comment = 'ยืม';
+  //     stockIn.wm_product_id_in = wmProductIdIn;
 
-      // =================================== STOCK CARD OUT ========================
-      let remain_src = await productModel.getBalance(db, v.product_id, v.src_warehouse_id, v.lot_no, v.lot_time);
-      remain_src = remain_src[0]
-      let stockOut: any = {};
-      stockOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-      stockOut.product_id = v.product_id;
-      stockOut.generic_id = v.generic_id;
-      stockOut.unit_generic_id = v.unit_generic_id;
-      stockOut.transaction_type = TransactionType.BORROW_OUT;
-      stockOut.document_ref_id = v.borrow_id;
-      stockOut.document_ref = v.borrow_code;
-      stockOut.out_qty = v.lot_qty;
-      stockOut.out_unit_cost = v.cost;
-      stockOut.balance_lot_qty = remain_src[0].balance_lot;
-      stockOut.balance_qty = remain_src[0].balance;
-      stockOut.balance_generic_qty = remain_src[0].balance_generic;
-      stockOut.balance_unit_cost = v.cost;
-      stockOut.ref_src = v.src_warehouse_id;
-      stockOut.ref_dst = v.dst_warehouse_id;
-      stockOut.lot_no = v.lot_no;
-      stockOut.lot_time = v.lot_time;
-      stockOut.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null
-      stockOut.comment = 'ให้ยืม';
-      stockOut.wm_product_id_out = wmProductIdOut;
-      await stockCard.saveFastStockTransaction(db, stockOut);
-      await stockCard.saveFastStockTransaction(db, stockIn);
-      let obj = {
-        wm_product_id: v.wm_product_id,
-        qty: v.lot_qty > remain_dst[0].balance_lot ? remain_dst[0].balance_lot : v.lot_qty
-      }
-      await borrowModel.updateConfirm(db, obj);
-    }
-  }
-  await borrowModel.changeApproveStatusIds(db, borrowIds, peopleUserId);
+  //     // =================================== STOCK CARD OUT ========================
+  //     let remain_src = await productModel.getBalance(db, v.product_id, v.src_warehouse_id, v.lot_no, v.lot_time);
+  //     remain_src = remain_src[0]
+  //     let stockOut: any = {};
+  //     stockOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+  //     stockOut.product_id = v.product_id;
+  //     stockOut.generic_id = v.generic_id;
+  //     stockOut.unit_generic_id = v.unit_generic_id;
+  //     stockOut.transaction_type = TransactionType.BORROW_OUT;
+  //     stockOut.document_ref_id = v.borrow_id;
+  //     stockOut.document_ref = v.borrow_code;
+  //     stockOut.out_qty = v.lot_qty;
+  //     stockOut.out_unit_cost = v.cost;
+  //     stockOut.balance_lot_qty = remain_src[0].balance_lot;
+  //     stockOut.balance_qty = remain_src[0].balance;
+  //     stockOut.balance_generic_qty = remain_src[0].balance_generic;
+  //     stockOut.balance_unit_cost = v.cost;
+  //     stockOut.ref_src = v.src_warehouse_id;
+  //     stockOut.ref_dst = v.dst_warehouse_id;
+  //     stockOut.lot_no = v.lot_no;
+  //     stockOut.lot_time = v.lot_time;
+  //     stockOut.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null
+  //     stockOut.comment = 'ให้ยืม';
+  //     stockOut.wm_product_id_out = wmProductIdOut;
+  //     await stockCard.saveFastStockTransaction(db, stockOut);
+  //     await stockCard.saveFastStockTransaction(db, stockIn);
+  //     let obj = {
+  //       wm_product_id: v.wm_product_id,
+  //       qty: v.lot_qty > remain_dst[0].balance_lot ? remain_dst[0].balance_lot : v.lot_qty
+  //     }
+  //     await borrowModel.updateConfirm(db, obj);
+  //   }
+  // }
+  // await borrowModel.changeApproveStatusIds(db, borrowIds, peopleUserId);
 
   return returnData;
 });
