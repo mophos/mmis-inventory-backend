@@ -34,6 +34,7 @@ router.get('/account/payable', wrap(async (req, res, next) => {
     if (rs.length > 0) {
       let sum: any = 0;
       for (const i of rs) {
+        i.delivery_date = moment(i.delivery_date).locale('th').format('DD MMM') + (moment(i.delivery_date).get('year') + 543);
         sum += i.cost;
         i.cost = inventoryReportModel.comma(i.cost);
       }

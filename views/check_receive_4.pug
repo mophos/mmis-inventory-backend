@@ -1,0 +1,229 @@
+include css.pug
+style(type='text/css').
+  body{
+  font-family:'THSarabunNewIT';
+  font-size: 13pt;
+  margin-left: 50px;
+  margin-right: 50px;
+  }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success.btnprint(onclick='window.print()') Print
+    - for(var v of check_receive)
+        .center.bold บันทึกการตรวจรับพัสดุ
+        br
+        table.table
+          tr
+            td.left เลขที่รับ #{v.receive_code}
+            td.center(style="margin-left:42%;") เขียนที่ #{hospitalName}
+        div(style='margin-left:42%;') วันที่ #{v.receive_date}
+        table.table
+          tr  
+            th(style="width:25%; border:0px")
+            th(style="width:25%; border:0px")
+            th(style="width:25%; border:0px")
+            th(style="width:25%; border:0px")
+          tr
+            if(v.purchase_order_book_number !== null)
+              td.center(colspan='2') ตามบันทึกที่ #{v.purchase_order_book_number}
+            else
+              td.center(colspan='2') ตามบันทึกที่ #{v.purchase_order_number}
+            td.center(colspan='2') ลงวันที่ #{v.podate}
+          tr
+            td.left(colspan='2') ได้แต่งตั้ง#{v.words}ตรวจรับพัสดุนั้น
+            td.right(colspan='2') 
+              span บัดนี้#{v.words}ตรวจรับพัสดุได้
+                if(v.committee.length > 1)
+                  | ร่วมกัน
+                | ตรวจพัสดุซึ่ง
+          tr
+            td.left(colspan='2') #{v.labeler_name_po}
+            td.right(colspan='2') 
+              span(style="padding-right:1.5em;") ผู้ขายได้นำส่งมอบเมื่อ
+          tr  
+            td.left(colspan='1')
+              span วันที่ &nbsp;&nbsp;#{v.receive_date}
+            td.center(colspan='2')
+              span(style="padding-right:3em") ตามใบส่งของเลขที่ #{v.delivery_code}
+            td.left(colspan='1')
+              span(style="padding-left:1.5em;") จำนวน #{v.amount_qty} รายการ
+          tr
+            td.left(colspan='1') รวมเป็นเงินสุทธิ
+            td.left(colspan='3' ) #{v.total_price} บาท (#{v.bahtText})
+          tr
+            td.left(colspan='4') เห็นว่ามีปริมาณและคุณภาพถูกต้องครบถ้วน และได้ส่งมอบให้เจ้าหน้าที่พัสดุรับไว้เรียบร้อยแล้ว
+          tr
+            td.left(colspan='4') จึง
+              if(v.committee.length > 1)
+                | พร้อมกัน
+              | ลงลายมือชื่อไว้เป็นหลักฐาน
+        br
+        table(style="width: 90%; margin-left: 5%;")
+          - for(var i of v.committee)
+            tr
+              td
+              td(style="height:20px;")
+              td 
+              td
+            tr
+              td.right(width="5%") (ลงชื่อ)
+              td.center(width="50%") ........................................................... 
+              td.left ตำแหน่ง #{i.pname}
+              td.left &nbsp; 
+                if(v.committee.length > 1) 
+                  | #{i.position_name}
+                else if(v.committee.length = 1)
+                  | ผู้ตรวจรับพัสดุ
+            tr
+              td
+              td.center (#{i.title_name}#{i.fname} #{i.lname})
+              td.center 
+              td
+        | ได้รับมอบพัสดุรายการข้างต้นจาก#{v.words}ตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
+        br
+        br
+        table(style="width: 90%;")
+          tr
+            td.right(width="5%") (ลงชื่อ)
+            td.center(width="20%") ...........................................................
+            td.left ตำแหน่ง #{v.staffReceive.position_name}
+            td.left &nbsp; #{v.staffReceive.type_name}
+          tr
+            td
+            td.center ( #{v.staffReceive.title_name}#{v.staffReceive.fname}  #{v.staffReceive.lname} )
+            td
+            td
+        br
+        | เรียน  ผู้ว่าราชการจังหวัด#{province}
+        br
+        .fontspace
+        | #{v.words}ตรวจรับพัสดุได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่าย#{v.bgtype_name}ประจำปีงบประมาน #{serialYear} แก่ผู้ขายต่อไป
+        br
+        br
+        br
+        table(style='width:90%;margin-left:5%;')
+          tr
+            td.right(width="5%")
+            td.center(width="50%") ...........................................................
+            td.left 
+          if(!v.staffReceive)
+            tr
+              td
+              td.center 
+              td
+            tr
+              td
+              td.center 
+              td
+            tr
+              td
+              td.center 
+              td
+          else
+            tr
+              td
+              td.center (#{v.staffReceive.title_name}#{v.staffReceive.fname}  #{v.staffReceive.lname})
+              td
+            tr
+              td
+              td.center #{v.staffReceive.position_name}
+              td
+            tr
+              td
+              td.center เจ้าหน้าที่
+              td
+          tr
+            td
+            td(style="height:50px;")
+            td
+          tr
+            td.right(width="5%")
+            td.center(width="50%") ...........................................................
+            td.left 
+          if(!v.header)
+            tr
+              td
+              td.center 
+              td
+            tr
+              td
+              td.center 
+              td
+            tr
+              td
+              td.center 
+              td
+          else
+            tr
+              td
+              td.center (#{v.header.title_name}#{v.header.fname}  #{v.header.lname})
+              td
+            tr
+              td
+              td.center #{v.header.position_name}
+              td
+            tr
+              td
+              td.center หัวหน้ากลุ่มงาน
+              td
+          tr
+            td
+            td(style="height:50px;")
+            td
+          tr
+            td.right(width="5%")
+            td.center(width="50%") ...........................................................
+            td.left 
+          if(!v.chief)
+            tr
+              td
+              td.center 
+              td
+            tr
+              td
+              td.center 
+              td
+            tr
+              td
+              td.center 
+              td
+          else
+            tr
+              td
+              td.center (#{v.chief.title_name}#{v.chief.fname}  #{v.chief.lname})
+              td
+            tr
+              td
+              td.center #{v.chief.position_name}
+              td
+            tr
+              td
+              td.center หัวหน้าเจ้าหน้าที่
+              td
+          tr
+            td
+            td(style="height:20px;")
+            td
+          tr
+            td
+            td(style="height:70px;").center ทราบ
+            td
+          tr
+            td.right(width="5%")
+            td.center(width="50%") ...........................................................
+            td.left 
+          tr
+            td.center 
+            td.center  
+              | (#{master})
+              br
+              | ผู้อำนวยการ#{hospitalName}
+              br
+              | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{province}
+            td
+        - c++ 
+        .pagebreak

@@ -498,17 +498,16 @@ export class BorrowModel {
       .whereRaw('wp.warehouse_id=t.dst_warehouse_id and wp.product_id=p.product_id and wp.lot_no<=>p.lot_no and wp.expired_date<=>p.expired_date')
     // .whereRaw('wp.product_id=d.product_id and wp.warehouse_id=t.dst_warehouse_id and wp.lot_no=d.lot_no and wp.expired_date=d.expired_date');
 
-    return knex('wm_borrow_product as d')
+    return knex('wm_borrow_generic as tg')
       .select('d.borrow_product_id', 'd.wm_product_id', 'ug.qty as conversion_qty', 'p.lot_no',
         'p.expired_date', 'p.cost', 'p.price', 'p.product_id', 'p.lot_time', 'd.qty as lot_qty',
-        'mp.generic_id', 't.*', 'tg.*', subBalanceSrc, subBalanceDst, 'p.unit_generic_id')
-      .innerJoin('wm_borrow as t', 't.borrow_id', 'd.borrow_id')
-      .joinRaw('join wm_borrow_generic as tg on tg.borrow_id = d.borrow_id and tg.borrow_generic_id = d.borrow_generic_id')
-      .joinRaw(`inner join wm_products as p on p.wm_product_id=d.wm_product_id`)
-      .innerJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
-      .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'p.unit_generic_id')
-      .whereIn('d.borrow_id', borrowIds)
-      .andWhereRaw('d.qty>0')
+        'mp.generic_id', 't.*', 'tg.*', subBalanceSrc, subBalanceDst)
+      .innerJoin('wm_borrow as t', 't.borrow_id', 'tg.borrow_id')
+      .leftJoin('wm_borrow_product as d', 'd.borrow_generic_id', 'tg.borrow_generic_id')
+      .leftJoin(`wm_products as p`, 'p.wm_product_id', 'd.wm_product_id')
+      .leftJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
+      .leftJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'tg.unit_generic_id')
+      .whereIn('tg.borrow_id', borrowIds)
       .groupByRaw('d.wm_product_id')
       .orderBy('p.expired_date');
   }
@@ -706,8 +705,8 @@ export class BorrowModel {
       INNER JOIN mm_units AS tu ON tu.unit_id = mug.to_unit_id
       INNER JOIN view_product_reserve AS vr ON vr.wm_product_id = wp.wm_product_id
     WHERE
-      wp.warehouse_id = ${warehouseId}
-      AND mp.generic_id = ${genericId}
+      wp.warehouse_id = '${warehouseId}'
+      AND mp.generic_id = '${genericId}'
       AND vr.remain_qty > 0
     ORDER BY
       wp.expired_date ASC`)

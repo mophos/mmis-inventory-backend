@@ -839,20 +839,36 @@ export class RequisitionOrderModel {
 
   getConfirmItems(db: Knex, confirmId: any) {
     let sql = `
-    select rci.wm_product_id, rci.generic_id, floor(rci.confirm_qty/ug.qty) as confirm_qty,
-    ug.qty as conversion_qty,mp.product_name,mp.working_code,wp.lot_no,wp.lot_time,wp.expired_date,
-    mu.unit_name as to_unit_name,mu2.unit_name as from_unit_name,ug.qty as conversion_qty,
-    wp.qty as small_remain_qty,wp.qty/ug.qty as pack_remain_qty,wp.unit_generic_id,wp.cost,
-    wp.product_id
-    from wm_requisition_confirm_items as rci
-    inner join wm_requisition_confirms as rc on rci.confirm_id = rc.confirm_id
-    inner join wm_requisition_orders as ro on ro.requisition_order_id = rc.requisition_order_id
-    inner join wm_products as wp on wp.wm_product_id=rci.wm_product_id
-    inner join mm_unit_generics as ug on ug.unit_generic_id=wp.unit_generic_id
-    inner join mm_units as mu on mu.unit_id = ug.to_unit_id
-    inner join mm_units as mu2 on mu2.unit_id = ug.from_unit_id
-    inner join mm_products as mp on wp.product_id = mp.product_id
-    where rci.confirm_id=?
+    SELECT
+      rci.wm_product_id,
+      rci.generic_id,
+      floor( rci.confirm_qty / ug.qty ) AS confirm_qty,
+      ug.qty AS conversion_qty,
+      mp.product_name,
+      mp.working_code,
+      wp.lot_no,
+      wp.lot_time,
+      wp.expired_date,
+      mu.unit_name AS to_unit_name,
+      mu2.unit_name AS from_unit_name,
+      ug.qty AS conversion_qty,
+      vr.remain_qty AS small_remain_qty,
+      vr.remain_qty / ug.qty AS pack_remain_qty,
+      wp.unit_generic_id,
+      wp.cost,
+      wp.product_id 
+    FROM
+      wm_requisition_confirm_items AS rci
+      INNER JOIN wm_requisition_confirms AS rc ON rci.confirm_id = rc.confirm_id
+      INNER JOIN wm_requisition_orders AS ro ON ro.requisition_order_id = rc.requisition_order_id
+      INNER JOIN view_product_reserve AS vr ON vr.wm_product_id = rci.wm_product_id
+      INNER JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
+      INNER JOIN mm_unit_generics AS ug ON ug.unit_generic_id = wp.unit_generic_id
+      INNER JOIN mm_units AS mu ON mu.unit_id = ug.to_unit_id
+      INNER JOIN mm_units AS mu2 ON mu2.unit_id = ug.from_unit_id
+      INNER JOIN mm_products AS mp ON wp.product_id = mp.product_id 
+    WHERE
+      rci.confirm_id = ?
     `;
     return db.raw(sql, [confirmId]);
   }

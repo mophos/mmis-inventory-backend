@@ -4,7 +4,7 @@ import * as moment from 'moment';
 export class MainReportModel {
   accountPayable(knex: Knex, warehouseId: number, startDate, endDate, genericTypeId) {
     return knex('pc_purchasing_order as pc')
-      .select('pc.purchase_order_id', 'pc.purchase_order_number', 'pc.purchase_order_book_number',
+      .select('r.delivery_code','r.delivery_date','pc.purchase_order_id', 'pc.purchase_order_number', 'pc.purchase_order_book_number',
         'r.receive_code', 'r.delivery_code', 'ml.labeler_id', knex.raw('sum(rd.cost*rd.receive_qty) as cost'),
         'ml.labeler_name')
       .join('wm_receives as r', 'r.purchase_order_id', 'pc.purchase_order_id')

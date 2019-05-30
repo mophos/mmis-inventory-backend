@@ -723,11 +723,40 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
   for (let v of results) {
     let rsLots: any = await productModel.getBalance(db, v.product_id, v.src_warehouse_id, v.lot_no, v.lot_time);
     rsLots = rsLots[0][0];
+
     if (v.lot_qty > v.balance_src) {
       v.qty -= rsLots.balance_lot;
       v.lot_qty = rsLots.balance_lot;
 
       const idx = _.findIndex(returnData, { 'src_warehouse_id': v.src_warehouse_id, 'dst_warehouse_id': v.dst_warehouse_id });
+
+      let product = [];
+      if (idx > -1) {
+        returnData[idx].products.push({
+          generic_id: v.generic_id,
+          unit_generic_id: v.unit_generic_id,
+          qty: v.qty / v.conversion_qty,
+          lot_no: v.lot_no
+        })
+      } else {
+        product.push({
+          generic_id: v.generic_id,
+          unit_generic_id: v.unit_generic_id,
+          qty: v.qty / v.conversion_qty,
+          lot_no: v.lot_no
+        })
+        const obj: any = {
+          src_warehouse_id: v.src_warehouse_id,
+          dst_warehouse_id: v.dst_warehouse_id,
+          borrow_id: v.borrow_id,
+          people_id: v.people_id,
+          products: product
+        }
+        returnData.push(obj)
+      }
+    } else if (v.borrow_product_id === null) {
+      const idx = _.findIndex(returnData, { 'src_warehouse_id': v.src_warehouse_id, 'dst_warehouse_id': v.dst_warehouse_id });
+
       let product = [];
 
       if (idx > -1) {

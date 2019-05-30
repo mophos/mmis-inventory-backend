@@ -2576,14 +2576,14 @@ OR sc.ref_src like ?
             .where('wr.receive_id', receiveID)
     }
 
-    staffReceive(knex: Knex) {
+    staffReceive(knex: Knex, status: any) {
         return knex('um_people as u')
             .select('*', 'p.position_name as pname')
             .leftJoin('um_positions as p', 'p.position_id', 'u.position_id')
             .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
             .leftJoin('um_purchasing_officer as up', 'up.people_id', 'u.people_id')
             .leftJoin('um_purchasing_officer_type as upt', 'upt.type_id', 'up.type_id')
-            .where('upt.type_code', 'STAFF_RECEIVE')
+            .where('upt.type_code', status)
             .andWhere('up.is_deleted', 'N');
     }
     staffReceivePo(knex: Knex, poId) {
