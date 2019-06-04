@@ -30,7 +30,7 @@ router.get('/account/payable', wrap(async (req, res, next) => {
     const hospcode = JSON.parse(sys_hospital).hospcode
     const hospname = JSON.parse(sys_hospital).hospname
     const gt: any = await inventoryReportModel.getGenericType(db, genericTypeId);
-    const rs: any = await mainReportModel.accountPayable(db, warehouseId, startDate, endDate, genericTypeId);
+    const rs: any = await mainReportModel.accountPayable(db, startDate, endDate, genericTypeId);
     if (rs.length > 0) {
       let sum: any = 0;
       for (const i of rs) {
@@ -57,10 +57,46 @@ router.get('/account/payable', wrap(async (req, res, next) => {
   }
 }));
 
+router.get('/account/payable/select', wrap(async (req, res, next) => {
+  try {
+    const db = req.db;
+    const sys_hospital = req.decoded.SYS_HOSPITAL;
+    let receiveId = req.query.receiveId;
+    console.log(receiveId);
+    const hospname = JSON.parse(sys_hospital).hospname
+    receiveId = Array.isArray(receiveId) ? receiveId : [receiveId];
+    const rs: any = await mainReportModel.accountPayableByReceiveId(db, receiveId);
+    let arRs = [];
+    
+    for (const v of receiveId) {
+      let idx = _.findIndex(rs, {'receive_id': +v});
+      if(idx > -1) arRs.push(rs[idx]);  
+    }
+    
+    if (rs.length > 0) {
+      let sum: any = 0;
+      for (const i of rs) {
+        i.delivery_date = moment(i.delivery_date).locale('th').format('DD MMM') + (moment(i.delivery_date).get('year') + 543);
+        sum += i.cost;
+        i.cost = inventoryReportModel.comma(i.cost);
+      }
+      sum = inventoryReportModel.comma(sum);
+      res.render('account_payable', {
+        hospname: hospname,
+        details: arRs,
+        sumCost: sum,
+        genericTypeName: '',
+        printDate: printDate(req.decoded.SYS_PRINT_DATE)
+      });
+    } else {
+      res.render('error404')
+    }
 
-
-
-
-
+  } catch (error) {
+    res.render('error404', {
+      title: error
+    })
+  }
+}));
 
 export default router;
