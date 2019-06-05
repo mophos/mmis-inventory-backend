@@ -2113,7 +2113,7 @@ FROM
         mg.working_code AS generics_code,
         mp.working_code AS products_code,
         mgd.dosage_name,
-        mug.cost
+        wp.cost
     FROM
         wm_transfer t
     LEFT JOIN wm_transfer_generic wg ON t.transfer_id = wg.transfer_id
