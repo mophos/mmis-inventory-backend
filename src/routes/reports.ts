@@ -44,7 +44,8 @@ router.get('/account/payable', wrap(async (req, res, next) => {
         details: rs,
         sumCost: sum,
         genericTypeName: gt[0].generic_type_name,
-        printDate: printDate(req.decoded.SYS_PRINT_DATE)
+        printDate: 'วันที่พิมพ์ ' + moment().format('D MMMM ') + (moment().get('year') + 543) + moment().format(', HH:mm:ss น.')
+
       });
     } else {
       res.render('error404')
@@ -67,12 +68,12 @@ router.get('/account/payable/select', wrap(async (req, res, next) => {
     receiveId = Array.isArray(receiveId) ? receiveId : [receiveId];
     const rs: any = await mainReportModel.accountPayableByReceiveId(db, receiveId);
     let arRs = [];
-    
+
     for (const v of receiveId) {
-      let idx = _.findIndex(rs, {'receive_id': +v});
-      if(idx > -1) arRs.push(rs[idx]);  
+      let idx = _.findIndex(rs, { 'receive_id': +v });
+      if (idx > -1) arRs.push(rs[idx]);
     }
-    
+
     if (rs.length > 0) {
       let sum: any = 0;
       for (const i of rs) {
@@ -86,7 +87,7 @@ router.get('/account/payable/select', wrap(async (req, res, next) => {
         details: arRs,
         sumCost: sum,
         genericTypeName: '',
-        printDate: printDate(req.decoded.SYS_PRINT_DATE)
+        printDate: 'วันที่พิมพ์ ' + moment().format('D MMMM ') + (moment().get('year') + 543) + moment().format(', HH:mm:ss น.')
       });
     } else {
       res.render('error404')
