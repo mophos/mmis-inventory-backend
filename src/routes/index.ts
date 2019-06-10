@@ -199,7 +199,7 @@ router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
   if (!warehouseId) {
     warehouseId = req.decoded.warehouseId;
   }
-  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
   const month = req.query.month
   const year = req.query.year
   let genericType = req.query.genericTypes
