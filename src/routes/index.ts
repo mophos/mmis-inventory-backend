@@ -5661,6 +5661,7 @@ router.get('/report/requisition-sum-product', wrap(async (req, res, next) => {
     const rs = await inventoryReportModel.getRequisitionSumProduct(db, requisId);
     console.log('rs', rs[0]);
     for (const i of rs[0]) {
+      i.qty = i.qty / i.conversion;
       if (i.count_unit > 1) {
         let units = i.group_unit_generic_id.split(',');
         let unit = units[0];

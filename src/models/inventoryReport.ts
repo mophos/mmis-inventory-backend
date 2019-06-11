@@ -4271,15 +4271,15 @@ GROUP BY
         return knex.raw(`
         SELECT
         mg.generic_id,
-            mg.working_code AS generic_code,
-                mg.generic_name,
-                sum(roi.requisition_qty) AS qty,
-                    count(mg.generic_id) as count_unit,
-                    GROUP_CONCAT(roi.unit_generic_id) as group_unit_generic_id,
-                    mu.unit_name as primary_unit_name,
-                    mug.qty as conversion,
-                    mu1.unit_name as from_unit_name,
-                    mu2.unit_name as to_unit_name
+        mg.working_code AS generic_code,
+        mg.generic_name,
+        sum(roi.requisition_qty) AS qty,
+        count(mg.generic_id) as count_unit,
+        GROUP_CONCAT(roi.unit_generic_id) as group_unit_generic_id,
+        mu.unit_name as primary_unit_name,
+        mug.qty as conversion,
+        mu1.unit_name as from_unit_name,
+        mu2.unit_name as to_unit_name
         FROM
         wm_requisition_orders AS ro
         INNER JOIN wm_requisition_order_items AS roi ON ro.requisition_order_id = roi.requisition_order_id

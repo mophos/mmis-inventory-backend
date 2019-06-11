@@ -4,6 +4,7 @@ import * as wrap from 'co-express';
 import * as moment from 'moment';
 import * as _ from 'lodash';
 import { InventoryReportModel } from "../models/inventoryReport";
+import { start } from "repl";
 const router = express.Router();
 const mainReportModel = new MainReportModel();
 const inventoryReportModel = new InventoryReportModel();
@@ -98,6 +99,23 @@ router.get('/account/payable/select', wrap(async (req, res, next) => {
       title: error
     })
   }
+}));
+
+router.get('/requisition/sum', wrap(async (req, res, next) => {
+  let db = req.db;
+  let startDate = req.query.startDate;
+  let endDate = req.query.endDate;
+  let warehouseId = req.decoded.warehouseId;
+
+  let _startDate = moment(startDate).locale('th').format('D MMM') + (moment(startDate).get('year') + 543);
+  let _endDate = moment(endDate).locale('th').format('D MMM') + (moment(endDate).get('year') + 543);
+  const rsR = await mainReportModel.requisitionSum(db, startDate, endDate, warehouseId);
+  
+  res.render('requisition_sum', {
+    rsR: rsR[0],
+    startDate: _startDate,
+    endDate: _endDate
+  });
 }));
 
 export default router;

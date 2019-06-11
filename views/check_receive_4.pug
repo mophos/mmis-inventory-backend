@@ -59,7 +59,7 @@ html
               if(v.committee.length > 1)
                 | พร้อมกัน
               | ลงลายมือชื่อไว้เป็นหลักฐาน
-        table(style="width: 90%; margin-left: 5%;")
+        table(style="width: 100%;")
           - for(var i of v.committee)
             tr
               td
@@ -67,9 +67,9 @@ html
               td 
               td
             tr
-              td.right(width="5%") (ลงชื่อ)
-              td.center(width="50%") ........................................................... 
-              td.center ตำแหน่ง #{i.pname}
+              td.left (ลงชื่อ)
+              td.center ........................................................... 
+              td ตำแหน่ง #{i.pname}
               td.center &nbsp; 
                 if(v.committee.length > 1) 
                   | #{i.position_name}
@@ -83,11 +83,11 @@ html
         | ได้รับมอบพัสดุรายการข้างต้นจาก#{v.words}ตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
         br
         br
-        table(style="width: 90%; margin-left: 5%;")
+        table(style="width: 100%;")
           tr
-            td.right(width="5%") (ลงชื่อ)
-            td.center(width="50%") ...........................................................
-            td.center ตำแหน่ง #{v.staffReceive.position_name}
+            td.left (ลงชื่อ)
+            td.center &nbsp;&nbsp;&nbsp;...........................................................
+            td &nbsp;&nbsp; ตำแหน่ง #{v.staffReceive.position_name}
             td.center &nbsp; #{v.staffReceive.type_name}
           tr
             td

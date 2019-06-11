@@ -1,5 +1,6 @@
 import Knex = require('knex');
 import * as moment from 'moment';
+import { start } from 'repl';
 
 export class MainReportModel {
   accountPayable(knex: Knex, startDate, endDate, genericTypeId) {
@@ -39,5 +40,38 @@ export class MainReportModel {
       .whereNotNull('pc.approved_date')
       .whereIn('r.receive_id', receiveId)
       .groupBy('r.receive_id')
+  }
+
+  requisitionSum(knex: Knex, startDate: any, endDate: any, warehouseId: any) {
+    let sql = `SELECT
+      t.src_warehouse_name,
+      t.dst_warehouse_name,
+      COUNT( t.requisition_code ) AS count_req,
+      ROUND( SUM( t.amount_confirm ), 2 ) 
+    FROM
+      (
+    SELECT
+      ro.requisition_code,
+      src.warehouse_id AS src_warehouse_id,
+      dst.warehouse_id AS dst_warehouse_id,
+      src.warehouse_name AS src_warehouse_name,
+      dst.warehouse_name AS dst_warehouse_name,
+      ( SELECT SUM( unit_cost * confirm_qty ) FROM wm_requisition_confirm_items WHERE confirm_id = rc.confirm_id GROUP BY confirm_id ) AS amount_confirm 
+    FROM
+      wm_requisition_orders ro
+      JOIN wm_requisition_confirms rc ON rc.requisition_order_id = ro.requisition_order_id
+      JOIN wm_warehouses dst ON dst.warehouse_id = ro.wm_requisition
+      JOIN wm_warehouses src ON src.warehouse_id = ro.wm_withdraw 
+    WHERE
+      rc.approve_date BETWEEN '${startDate}' 
+      AND '${endDate}' 
+      AND ro.wm_withdraw = '${warehouseId}' 
+    ORDER BY
+      ro.requisition_code 
+      ) t 
+    GROUP BY
+      t.src_warehouse_id,
+      t.dst_warehouse_id`;
+    return knex.raw(sql);
   }
 }
