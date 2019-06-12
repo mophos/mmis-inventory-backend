@@ -2021,7 +2021,11 @@ FROM
             .join('pc_committee_people as pcp', 'pc.committee_id', 'pcp.committee_id')
             .join('um_people as p', 'pcp.people_id', 'p.people_id')
             .join('um_titles as t', 't.title_id', 'p.title_id')
-            .join('um_positions as pos', 'p.position_id', 'pos.position_id')
+            .leftJoin('um_people_positions upp', function () {
+                this.on('upp.people_id', 'p.people_id')
+                    .on('upp.is_actived', 'Y')
+            })
+            .join('um_positions as pos', 'upp.position_id', 'pos.position_id')
             .where('wr.receive_id', receiveId);
     }
     receiveUser(knex: Knex, receiveId) {
@@ -2030,7 +2034,11 @@ FROM
             .join('um_people_users as upu', 'upu.user_id', 'ppo.user_id')
             .join('um_people as p', 'p.people_id', 'upu.people_id')
             .join('um_titles as t', 'p.title_id', 't.title_id')
-            .join('um_positions as ps', 'ps.position_id', 'p.position_id')
+            .leftJoin('um_people_positions upp', function () {
+                this.on('upp.people_id', 'p.people_id')
+                    .on('upp.is_actived', 'Y')
+            })
+            .join('um_positions as ps', 'ps.position_id', 'upp.position_id')
             .where('wr.receive_id', receiveId).where('upu.inuse', 'Y');
     }
     book_prefix(knex: Knex) {
@@ -2556,7 +2564,24 @@ OR sc.ref_src like ?
         wr.receive_id = ?
     ORDER BY
         pc.committee_id`;
-        return knex.raw(sql, receiveID);
+
+        return knex('wm_receives wr')
+            .select('pc.committee_id', 'pc.committee_name', 'pcp.people_id', 'pcp.position_name', 'upp.position_name as pname',
+                'ut.title_name', 'p.fname', 'p.lname', 'up.position_name AS position2')
+            .leftJoin('pc_committee pc', 'wr.committee_id', 'pc.committee_id')
+            .leftJoin('um_people p','p.people_id','pcp.people_id')
+            .leftJoin('um_titles ut','ut.title_id','p.title_id')
+            .leftJoin('pc_committee_people pcp','pc.committee_id',' pcp.committee_id')
+            .leftJoin('um_people_positions ups', function () {
+                this.on('ups.people_id', 'p.people_id')
+                    .on('ups.is_actived', 'Y')
+            })
+            .leftJoin('um_positions AS upp','upp.position_id','ups.position_id')
+            .leftJoin('um_positions up','up.position_id','ups.position_id ')
+            .where('wr.receive_id',receiveID)
+            .orderBy('pc.committee_id');
+
+        // return knex.raw(sql, receiveID);
     }
     getStaff(knex: Knex, typeCode: any) {
         //ดึงหัวหน้าเจ้าหน้าที่พัสดุ ส่ง 4 เข้ามา
@@ -2564,7 +2589,11 @@ OR sc.ref_src like ?
             .from('um_purchasing_officer as upo')
             .join('um_people as p', 'upo.people_id', 'p.people_id')
             .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
-            .join('um_positions as upos', 'upos.position_id', 'p.position_id')
+            .leftJoin('um_people_positions upp', function () {
+                this.on('upp.people_id', 'p.people_id')
+                    .on('upp.is_actived', 'Y')
+            })
+            .join('um_positions as upos', 'upos.position_id', 'upp.position_id')
             .join('um_purchasing_officer_type as upot', 'upot.type_id', 'upo.type_id')
             .where('upot.type_code', typeCode)
             .andWhere('upo.is_deleted', 'N');
@@ -2579,7 +2608,11 @@ OR sc.ref_src like ?
     staffReceive(knex: Knex, status: any) {
         return knex('um_people as u')
             .select('*', 'p.position_name as pname')
-            .leftJoin('um_positions as p', 'p.position_id', 'u.position_id')
+            .leftJoin('um_people_positions upp', function () {
+                this.on('upp.people_id', 'u.people_id')
+                    .on('upp.is_actived', 'Y')
+            })
+            .leftJoin('um_positions as p', 'p.position_id', 'upp.position_id')
             .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
             .leftJoin('um_purchasing_officer as up', 'up.people_id', 'u.people_id')
             .leftJoin('um_purchasing_officer_type as upt', 'upt.type_id', 'up.type_id')
@@ -2590,7 +2623,11 @@ OR sc.ref_src like ?
         return knex('pc_purchasing_order as po')
             .select('*', 'upt.type_name', 't.title_name', 'u.fname', 'u.lname', 'p.position_name as pname')
             .leftJoin('um_people as u', 'u.people_id', 'po.supply_id')
-            .leftJoin('um_positions as p', 'p.position_id', 'u.position_id')
+            .leftJoin('um_people_positions upp', function () {
+                this.on('upp.people_id', 'u.people_id')
+                    .on('upp.is_actived', 'Y')
+            })
+            .leftJoin('um_positions as p', 'p.position_id', 'upp.position_id')
             .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
             .leftJoin('um_purchasing_officer as up', 'up.people_id', 'u.people_id')
             .leftJoin('um_purchasing_officer_type as upt', 'upt.type_id', 'up.type_id')
@@ -4031,7 +4068,11 @@ GROUP BY
     peopleFullName(knex: Knex, people_id: any) {
         return knex('um_people as u')
             .select('*', 'p.position_name as pname', 'upot.type_name as position')
-            .leftJoin('um_positions as p', 'p.position_id', 'u.position_id')
+            .leftJoin('um_people_positions upp', function () {
+                this.on('upp.people_id', 'u.people_id')
+                    .on('upp.is_actived', 'Y')
+            })
+            .leftJoin('um_positions as p', 'p.position_id', 'upp.position_id')
             .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
             .leftJoin('um_purchasing_officer as upo', 'upo.people_id', 'u.people_id')
             .leftJoin('um_purchasing_officer_type as upot', 'upot.type_id', 'upo.type_id')
