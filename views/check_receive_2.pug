@@ -19,7 +19,7 @@ html
         table.table
           tr
             td.left เลขที่รับ #{v.receive_code}
-            td.center(style="margin-left:42%;") เขียนที่ #{hospitalName}
+            td.center(style="margin-left:42%;") เขียนที่ #{hospitalDetail.hospitalName}
         div(style='margin-left:42%;') วันที่ #{v.receive_date}
         table.table
           tr  
@@ -151,11 +151,11 @@ html
           tr
             td.center 
             td.center  
-              | (#{master})
+              | (#{v.manager.fullname})
               br
-              | ผู้อำนวยการ#{hospitalName}
+              | #{v.manager.position}
               br
-              | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{province}
+              | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{hospitalDetail.province}
             td
         - c++ 
         .pagebreak
