@@ -56,6 +56,11 @@ function checkGenericType(value) {
   }
 }
 
+async function getOfficer(db, officerId) {
+  const staff = await inventoryReportModel.getStaff(db, officerId);
+  return staff[0] ? staff[0] : null;
+}
+
 function dateToDDMMMMYYYY(date) {
   return moment(date).isValid() ? moment(date).format('DD MMMM ') + (+moment(date).get('year') + 543) : '-';
 }
@@ -2223,11 +2228,12 @@ router.get('/report/list/receivePoCheck/:sID/:eID', wrap(async (req, res, next) 
   })
 
   if (committees === undefined) { res.render('no_commitee'); }
-  let chief = await inventoryReportModel.getStaff(db, 'CHIEF')
+  // const chief = await getOfficer(db, i.chief_id);
+
 
   res.render('check_receives', {
     totalPrice: totalPrice,
-    chief: chief[0],
+    // chief: chief[0],
     staffReceive: staffReceive,
     master: master,
     hospitalName: hospitalName,

@@ -1594,7 +1594,6 @@ FROM
     }
     receiveSelect(knex: Knex, ID: any) {
         return knex('wm_receives as wr')
-            .select('wr.purchase_order_id')
             .whereIn('wr.receive_id', ID)
             .groupBy('wr.purchase_order_id')
     }
@@ -2021,7 +2020,8 @@ FROM
             .join('pc_committee_people as pcp', 'pc.committee_id', 'pcp.committee_id')
             .join('um_people as p', 'pcp.people_id', 'p.people_id')
             .join('um_titles as t', 't.title_id', 'p.title_id')
-            .join('um_positions as pos', 'p.position_id', 'pos.position_id')
+            .joinRaw(`left join um_people_positions as upp on p.people_id = upp.people_id and upp.is_actived='Y'`)
+            .join('um_positions as pos', 'upp.position_id', 'pos.position_id')
             .where('wr.receive_id', receiveId);
     }
     receiveUser(knex: Knex, receiveId) {
@@ -2534,36 +2534,33 @@ OR sc.ref_src like ?
         pc.committee_id,
         pc.committee_name,
         pcp.people_id,
-        pcp.position_name,
-        upp.position_name as pname,
+        pcp.position_name as commitee_position_name,
         ut.title_name,
         p.fname,
         p.lname,
-        up.position_name AS position2
+        up.position_name
     FROM
         wm_receives wr
     LEFT JOIN pc_committee pc ON wr.committee_id = pc.committee_id
     LEFT JOIN pc_committee_people pcp ON pc.committee_id = pcp.committee_id
     LEFT JOIN um_people p ON p.people_id = pcp.people_id
     LEFT JOIN um_titles ut ON ut.title_id = p.title_id
-    LEFT JOIN um_positions as upp on upp.position_id = p.position_id
-    LEFT JOIN um_positions up ON up.position_id = p.position_id
+    left join um_people_positions as upp on p.people_id = upp.people_id and upp.is_actived='Y'
+    LEFT JOIN um_positions up ON up.position_id = upp.position_id
     WHERE
         wr.receive_id = ?
     ORDER BY
         pc.committee_id`;
         return knex.raw(sql, receiveID);
     }
-    getStaff(knex: Knex, typeCode: any) {
-        //ดึงหัวหน้าเจ้าหน้าที่พัสดุ ส่ง 4 เข้ามา
-        return knex.select('upo.people_id', 't.title_name as title', 'p.fname', 'p.lname', 'upos.position_name', 'upot.type_name as position')
+    getStaff(knex: Knex, officerId) {
+        return knex.select('t.title_name as title', 'p.fname', 'p.lname', knex.raw(`concat(t.title_name,p.fname,' ',p.lname) as fullname`), 'upos.position_name', 'upo.type_name as position')
             .from('um_purchasing_officer as upo')
             .join('um_people as p', 'upo.people_id', 'p.people_id')
-            .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
-            .join('um_positions as upos', 'upos.position_id', 'p.position_id')
-            .join('um_purchasing_officer_type as upot', 'upot.type_id', 'upo.type_id')
-            .where('upot.type_code', typeCode)
-            .andWhere('upo.is_deleted', 'N');
+            .join('um_titles as t', 't.title_id', 'p.title_id')
+            .joinRaw(`left join um_people_positions upp on p.people_id = upp.people_id and upp.is_actived='Y'`)
+            .leftJoin('um_positions as upos', 'upos.position_id', 'upp.position_id')
+            .where('upo.officer_id', officerId)
     }
 
     inven2Chief(knex: Knex, receiveID) {
