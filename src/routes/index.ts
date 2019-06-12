@@ -2794,15 +2794,11 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID = req.query.receiveID
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
-  let hosdetail = await inventoryReportModel.hospital(db);
-  let master = hosdetail[0].managerName;
-  let hospitalName = hosdetail[0].hospname;
-  let province = hosdetail[0].province;
+  let hospitalDetail = await inventoryReportModel.hospitalNew(db);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
 
   let bahtText: any = []
   let committee: any = []
-  let invenChief: any = []
   check_receive = check_receive[0];
 
   for (const v of check_receive) {
@@ -2813,28 +2809,17 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     let _bahtText = inventoryReportModel.bahtText(v.total_price);
     v.bahtText = _bahtText;
     v.total_price = inventoryReportModel.comma(v.total_price);
-    let _committee = await inventoryReportModel.invenCommittee(db, v.receive_id);
-    v.committee = _committee[0];
+    v.committee = await getCommitee(db, v.verify_committee_id);
     if (v.committee === undefined) { res.render('no_commitee'); }
     let word: any = 'ผู้';
     if (v.committee.length > 1) {
       word = 'คณะกรรมการ';
     }
     v.words = word;
-    let _invenChief = await inventoryReportModel.inven2Chief(db, v.receive_id)
-    invenChief.push(_invenChief[0]);
 
-    let chief = await inventoryReportModel.peopleFullName(db, v.chief_id);
-    v.chief = chief[0];
-    let buyer = await inventoryReportModel.peopleFullName(db, v.supply_id);
-    let _staffReceive: any;
-
-    if (buyer[0] === undefined) {
-      _staffReceive = await inventoryReportModel.staffReceive(db, 'STAFF_RECEIVE');
-      v.staffReceive = _staffReceive[0];
-    } else {
-      v.staffReceive = buyer[0];
-    }
+    v.chief = await getOfficer(db, v.chief_id);
+    v.staffReceive = await getOfficer(db, v.supply_id);
+    v.manager = await getOfficer(db, v.manager_id);
   }
 
   let serialYear = moment().get('year') + 543;
@@ -2844,14 +2829,11 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   }
 
   res.render('check_receive_2', {
-    master: master,
-    hospitalName: hospitalName,
+    hospitalDetail: hospitalDetail,
     serialYear: serialYear,
     check_receive: check_receive,
-    province: province,
     bahtText: bahtText,
     committee: committee,
-    invenChief: invenChief,
     receiveID: receiveID
   });
 }));
@@ -2868,7 +2850,7 @@ router.get('/report/check/receive/singburi', wrap(async (req, res, next) => {
 
   let bahtText: any = []
   let committee: any = []
-  let invenChief: any = []
+  // let invenChief: any = []
   check_receive = check_receive[0];
 
   for (const v of check_receive) {
@@ -2879,30 +2861,16 @@ router.get('/report/check/receive/singburi', wrap(async (req, res, next) => {
     let _bahtText = inventoryReportModel.bahtText(v.total_price);
     v.bahtText = _bahtText;
     v.total_price = inventoryReportModel.comma(v.total_price);
-    let _committee = await inventoryReportModel.invenCommittee(db, v.receive_id);
-    v.committee = _committee[0];
+    v.committee = await getCommitee(db, v.verify_committee_id);
     if (v.committee === undefined) { res.render('no_commitee'); }
     let word: any = 'ผู้';
     if (v.committee.length > 1) {
       word = 'คณะกรรมการ';
     }
     v.words = word;
-    let _invenChief = await inventoryReportModel.inven2Chief(db, v.receive_id)
-    invenChief.push(_invenChief[0]);
-
-    let chief = await inventoryReportModel.peopleFullName(db, v.chief_id);
-    v.chief = chief[0];
-    let buyer = await inventoryReportModel.peopleFullName(db, v.supply_id);
-    let _staffReceive: any;
-
-    if (buyer[0] === undefined) {
-      _staffReceive = await inventoryReportModel.staffReceive(db, 'STAFF_RECEIVE');
-      v.staffReceive = _staffReceive[0];
-    } else {
-      v.staffReceive = buyer[0];
-    }
+    v.chief = await getOfficer(db, v.chief_id);
+    v.staffReceive = await getOfficer(db, v.supply_id);
   }
-
   let serialYear = moment().get('year') + 543;
   let monthRo = moment().get('month') + 1;
   if (monthRo >= 10) {
@@ -2917,7 +2885,7 @@ router.get('/report/check/receive/singburi', wrap(async (req, res, next) => {
     province: province,
     bahtText: bahtText,
     committee: committee,
-    invenChief: invenChief,
+    // invenChief: invenChief,
     receiveID: receiveID
   });
 }));
@@ -2926,15 +2894,11 @@ router.get('/report/check/receive/4', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID = req.query.receiveID
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
-  let hosdetail = await inventoryReportModel.hospital(db);
-  let master = hosdetail[0].managerName;
-  let hospitalName = hosdetail[0].hospname;
-  let province = hosdetail[0].province;
+  let hospitalDetail = await inventoryReportModel.hospitalNew(db);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
 
   let bahtText: any = []
   let committee: any = []
-  let invenChief: any = []
   check_receive = check_receive[0];
 
   for (const v of check_receive) {
@@ -2945,31 +2909,20 @@ router.get('/report/check/receive/4', wrap(async (req, res, next) => {
     let _bahtText = inventoryReportModel.bahtText(v.total_price);
     v.bahtText = _bahtText;
     v.total_price = inventoryReportModel.comma(v.total_price);
-    let _committee = await inventoryReportModel.invenCommittee(db, v.receive_id);
-    v.committee = _committee[0];
+    v.committee = await getCommitee(db, v.verify_committee_id);
     if (v.committee === undefined) { res.render('no_commitee'); }
     let word: any = 'ผู้';
     if (v.committee.length > 1) {
       word = 'คณะกรรมการ';
     }
     v.words = word;
-    let _invenChief = await inventoryReportModel.inven2Chief(db, v.receive_id)
-    invenChief.push(_invenChief[0]);
 
-    let chief = await inventoryReportModel.peopleFullName(db, v.chief_id);
-    v.chief = chief[0];
-    let buyer = await inventoryReportModel.peopleFullName(db, v.supply_id);
-    let _staffReceive: any;
-
-    if (buyer[0] === undefined) {
-      _staffReceive = await inventoryReportModel.staffReceive(db, 'STAFF_RECEIVE');
-      v.staffReceive = _staffReceive[0];
-    } else {
-      v.staffReceive = buyer[0];
-    }
-
-    let header = await inventoryReportModel.staffReceive(db, 'HEAD');
-    v.header = header[0];
+    v.chief = await getOfficer(db, v.chief_id);
+    v.staffReceive = await getOfficer(db, v.supply_id);
+    v.header = await getOfficer(db, v.buyer_id);
+    v.manager = await getOfficer(db, v.manager_id);
+    // let header = await inventoryReportModel.staffReceive(db, 'HEAD');
+    // v.header = header[0];
   }
 
   let serialYear = moment().get('year') + 543;
@@ -2979,14 +2932,11 @@ router.get('/report/check/receive/4', wrap(async (req, res, next) => {
   }
 
   res.render('check_receive_4', {
-    master: master,
-    hospitalName: hospitalName,
+    hospitalDetail: hospitalDetail,
     serialYear: serialYear,
     check_receive: check_receive,
-    province: province,
     bahtText: bahtText,
     committee: committee,
-    invenChief: invenChief,
     receiveID: receiveID
   });
 }));
@@ -3163,11 +3113,7 @@ router.get('/report/check/receive3', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID = req.query.receiveID
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
-  let hosdetail = await inventoryReportModel.hospital(db);
-  let master = hosdetail[0].managerName;
-  let hospitalName = hosdetail[0].hospname;
-  let province = hosdetail[0].province;
-  let telephone = hosdetail[0].telephone;
+  let hospitalDetail = await inventoryReportModel.hospitalNew(db);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
   let productReceive = await inventoryReportModel.productReceive2(db, receiveID);
 
@@ -3184,7 +3130,6 @@ router.get('/report/check/receive3', wrap(async (req, res, next) => {
   });
   let bahtText: any = []
   let committee: any = []
-  let invenChief: any = []
   check_receive = check_receive[0];
 
   for (const v of check_receive) {
@@ -3195,22 +3140,12 @@ router.get('/report/check/receive3', wrap(async (req, res, next) => {
     let _bahtText = inventoryReportModel.bahtText(v.total_price);
     v.bahtText = _bahtText;
     v.total_price = inventoryReportModel.comma(v.total_price);
-    let _committee = await inventoryReportModel.invenCommittee(db, v.receive_id);
-    v.committee = _committee[0];
-    let _invenChief = await inventoryReportModel.inven2Chief(db, v.receive_id)
-    invenChief.push(_invenChief[0]);
-
-    let chief = await inventoryReportModel.peopleFullName(db, v.chief_id);
-    v.chief = chief[0];
-    let buyer = await inventoryReportModel.peopleFullName(db, v.supply_id);
-    let _staffReceive: any;
-
-    if (buyer[0] === undefined) {
-      _staffReceive = await inventoryReportModel.staffReceive(db, 'STAFF_RECEIVE');
-      v.staffReceive = _staffReceive[0];
-    } else {
-      v.staffReceive = buyer[0];
+    let committee = await getCommitee(db, v.verify_committee_id);
+    if (committee.length == 1) {
+      committee[0].position_name = 'ผู้ตรวจรับพัสดุ'
     }
+    v.chief = await getOfficer(db, v.chief_id);
+    v.manager = await getOfficer(db, v.manager_id);
     v.productReceive = _.filter(productReceive, (_v: any) => {
       return v.receive_id == _v.receive_id
     })
@@ -3224,15 +3159,11 @@ router.get('/report/check/receive3', wrap(async (req, res, next) => {
   }
   // res.send(({check_receive:check_receive}))
   res.render('check_receive3', {
-    master: master,
-    hospitalName: hospitalName,
+    hospitalDetail: hospitalDetail,
     serialYear: serialYear,
     check_receive: check_receive,
-    province: province,
-    telephone: telephone,
     bahtText: bahtText,
     committee: committee,
-    invenChief: invenChief,
     receiveID: receiveID
   });
 }));
@@ -3260,22 +3191,16 @@ router.get('/report/check/receive/2', wrap(async (req, res, next) => {
     let _bahtText = inventoryReportModel.bahtText(v.total_price);
     v.bahtText = _bahtText;
     v.total_price = inventoryReportModel.comma(v.total_price);
-    let _committee = await inventoryReportModel.invenCommittee(db, v.receive_id);
-    v.committee = _committee[0];
-    let _invenChief = await inventoryReportModel.inven2Chief(db, v.receive_id)
-    invenChief.push(_invenChief[0]);
-
-    let chief = await inventoryReportModel.peopleFullName(db, v.chief_id);
-    v.chief = chief[0];
-    let buyer = await inventoryReportModel.peopleFullName(db, v.supply_id);
-    let _staffReceive: any;
-
-    if (buyer[0] === undefined) {
-      _staffReceive = await inventoryReportModel.staffReceive(db, 'STAFF_RECEIVE');
-      v.staffReceive = _staffReceive[0];
-    } else {
-      v.staffReceive = buyer[0];
+    v.committee = await getCommitee(db, v.verify_committee_id);
+    if (v.committee === undefined) { res.render('no_commitee'); }
+    let word: any = 'ผู้';
+    if (v.committee.length > 1) {
+      word = 'คณะกรรมการ';
     }
+    v.words = word;
+
+    v.chief = await getOfficer(db, v.chief_id);
+    v.staffReceive = await getOfficer(db, v.supply_id);
   }
 
   let serialYear = moment().get('year') + 543;
@@ -3306,14 +3231,9 @@ router.get('/report/check/receive/2', wrap(async (req, res, next) => {
 
 router.get('/report/check/receive2', wrap(async (req, res, next) => {
   let db = req.db;
-  let hosdetail = await inventoryReportModel.hospital(db);
-  let book_prefix = `${req.decoded.BOOK_PREFIX}${req.decoded.warehouseBook ? req.decoded.warehouseBook : ''}`;
-
-  let hospitalName = hosdetail[0].hospname;
-  let province = hosdetail[0].province;
-  let managerName = hosdetail[0].managerName;
+  let hospitalDetail = await inventoryReportModel.hospitalNew(db);
+  hospitalDetail.book_prefix = `${req.decoded.BOOK_PREFIX}${req.decoded.warehouseBook ? req.decoded.warehouseBook : ''}`;
   let receiveID = req.query.receiveID
-  // let invenChief = [];
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
   try {
     const data = [];
@@ -3323,8 +3243,18 @@ router.get('/report/check/receive2', wrap(async (req, res, next) => {
 
       rs[0].chief = await getOfficer(db, rs[0].chief_id);
       rs[0].supply = await getOfficer(db, rs[0].supply_id);
-      rs[0].committee = await getCommitee(db, id);
+      rs[0].manager = await getOfficer(db, rs[0].manager_id);
+      // let chief = await inventoryReportModel.peopleFullName(db, rs[0].chief_id);
+      // rs[0].chief = chief[0];
 
+      // let supply = await inventoryReportModel.peopleFullName(db, rs[0].supply_id);
+      // rs[0].supply = supply[0];
+
+      let committee = await getCommitee(db, rs[0].verify_committee_id);
+      if (committee.length == 1) {
+        committee[0].position_name = 'ผู้ตรวจรับพัสดุ'
+      }
+      rs[0].committee = committee;
       rs[0].receive_date = moment(rs[0].receive_date).format('D MMMM ') + (moment(rs[0].receive_date).get('year') + 543);
       rs[0].delivery_date = moment(rs[0].delivery_date).format('D MMMM ') + (moment(rs[0].delivery_date).get('year') + 543);
       rs[0].podate = moment(rs[0].podate).format('D MMMM ') + (moment(rs[0].podate).get('year') + 543);
@@ -3336,10 +3266,7 @@ router.get('/report/check/receive2', wrap(async (req, res, next) => {
     }
     res.render('check_receive2', {
       data: data,
-      hospitalName: hospitalName,
-      bookPrefix: book_prefix,
-      province: province,
-      managerName: managerName
+      hospitalDetail: hospitalDetail
     })
   } catch (error) {
     res.send({ ok: false, error: error });
@@ -3378,12 +3305,12 @@ router.get('/report/check/receives2', wrap(async (req, res, next) => {
     i.details = details;
   }
 
-
   res.render('check_receives2', {
     hospitalDetail: hospitalDetail,
     head: head,
   });
 }));
+
 router.get('/report/check/receives', wrap(async (req, res, next) => {
   let db = req.db;
   const receiveId = Array.isArray(req.query.receiveID) ? req.query.receiveID : [req.query.receiveID];

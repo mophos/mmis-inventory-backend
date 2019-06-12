@@ -1241,7 +1241,7 @@ mgt.generic_type_id `
         ml2.labeler_name as labeler_name_m
         ml2.labeler_name_po as labeler_name_po_m
         FROM
-            wm_receives wr
+            wm_receives as wr
         JOIN wm_receive_detail wrd on wr.receive_id=wrd.receive_id
         JOIN mm_labelers ml ON wr.vendor_labeler_id = ml.labeler_id
         JOIN wm_products wp ON wrd.product_id = wp.product_id
@@ -1313,7 +1313,7 @@ FROM
         ppoi.unit_price,
         wrd.is_free
         FROM
-            wm_receives wr
+            wm_receives as wr
         JOIN wm_receive_detail wrd ON wr.receive_id = wrd.receive_id
         JOIN mm_labelers ml ON wr.vendor_labeler_id = ml.labeler_id
         JOIN (
@@ -1467,7 +1467,7 @@ FROM
         ml2.labeler_name AS labeler_name_m,
         ml2.labeler_name_po AS labeler_name_po_m
         FROM
-            wm_receives wr
+            wm_receives as wr
         JOIN wm_receive_detail wrd ON wr.receive_id = wrd.receive_id
         JOIN mm_labelers ml ON wr.vendor_labeler_id = ml.labeler_id
         JOIN wm_products wp ON wrd.product_id = wp.product_id
@@ -2028,9 +2028,9 @@ FROM
             .join('pc_committee_people as pcp', 'pc.committee_id', 'pcp.committee_id')
             .join('um_people as p', 'pcp.people_id', 'p.people_id')
             .join('um_titles as t', 't.title_id', 'p.title_id')
-            .leftJoin('um_people_positions upp', function () {
+            .leftJoin('um_people_positions as upp', function () {
                 this.on('upp.people_id', 'p.people_id')
-                    .on('upp.is_actived', 'Y')
+                    .on('upp.is_actived', knex.raw('?', ['Y']))
             })
             .join('um_positions as pos', 'upp.position_id', 'pos.position_id')
             .where('wr.receive_id', receiveId);
@@ -2041,9 +2041,9 @@ FROM
             .join('um_people_users as upu', 'upu.user_id', 'ppo.user_id')
             .join('um_people as p', 'p.people_id', 'upu.people_id')
             .join('um_titles as t', 'p.title_id', 't.title_id')
-            .leftJoin('um_people_positions upp', function () {
+            .leftJoin('um_people_positions as upp', function () {
                 this.on('upp.people_id', 'p.people_id')
-                    .on('upp.is_actived', 'Y')
+                    .on('upp.is_actived', knex.raw('?', ['Y']))
             })
             .join('um_positions as ps', 'ps.position_id', 'upp.position_id')
             .where('wr.receive_id', receiveId).where('upu.inuse', 'Y');
@@ -2550,13 +2550,15 @@ OR sc.ref_src like ?
         po.purchase_order_book_number,
         po.purchase_order_number,
         po.chief_id,
+        po.verify_committee_id,
         po.buyer_id,
         po.supply_id,
+        po.manager_id,
         COUNT(wrd.receive_detail_id) AS amount_qty,
         mgt.generic_type_name,
         wr.committee_id
         FROM
-        wm_receives wr 
+        wm_receives as wr 
         LEFT JOIN wm_receive_detail wrd ON wrd.receive_id = wr.receive_id
         LEFT JOIN wm_receive_approve waa ON waa.receive_id = wr.receive_id
         LEFT JOIN pc_purchasing_order po ON po.purchase_order_id = wr.purchase_order_id
@@ -2591,14 +2593,14 @@ OR sc.ref_src like ?
         ppo.chief_id,
         subq.amount_qty,
         mgt.generic_type_name
-        FROM wm_receives wr
+        FROM wm_receives as wr
         JOIN wm_receive_detail wrd ON wrd.receive_id=wr.receive_id
         LEFT JOIN wm_receive_approve waa ON waa.receive_id = wr.receive_id
         LEFT JOIN (SELECT q.receive_id, count(q.product_id) as amount_qty from (
             SELECT
                wrr.receive_id, wrdd.product_id
             FROM
-                wm_receives wrr
+                wm_receives as wrr
                 JOIN wm_receive_detail wrdd ON wrdd.receive_id = wrr.receive_id
                 LEFT JOIN pc_purchasing_order ppoo ON ppoo.purchase_order_id = wrr.purchase_order_id
                 LEFT JOIN mm_products mp ON mp.product_id = wrdd.product_id
@@ -2633,7 +2635,7 @@ OR sc.ref_src like ?
         ppo.purchase_order_number,
         COUNT(*) amount_qty,
         mgt.generic_type_name
-        FROM wm_receives wr
+        FROM wm_receives as wr
         JOIN wm_receive_detail wrd ON wrd.receive_id=wr.receive_id
         LEFT JOIN wm_warehouses wh ON wh.warehouse_id=wrd.warehouse_id
         LEFT JOIN mm_labelers ml ON ml.labeler_id=wrd.vendor_labeler_id
@@ -2645,41 +2647,19 @@ OR sc.ref_src like ?
         return (knex.raw(sql))
     }
     invenCommittee(knex: Knex, receiveID) {
-        let sql = `SELECT
-        pc.committee_id,
-        pc.committee_name,
-        pcp.people_id,
-        pcp.position_name as commitee_position_name,
-        ut.title_name,
-        p.fname,
-        p.lname,
-        up.position_name
-    FROM
-        wm_receives wr
-    LEFT JOIN pc_committee pc ON wr.committee_id = pc.committee_id
-    LEFT JOIN pc_committee_people pcp ON pc.committee_id = pcp.committee_id
-    LEFT JOIN um_people p ON p.people_id = pcp.people_id
-    LEFT JOIN um_titles ut ON ut.title_id = p.title_id
-    left join um_people_positions as upp on p.people_id = upp.people_id and upp.is_actived='Y'
-    LEFT JOIN um_positions up ON up.position_id = upp.position_id
-    WHERE
-        wr.receive_id = ?
-    ORDER BY
-        pc.committee_id`;
-
-        return knex('wm_receives wr')
+        return knex('wm_receives as wr')
             .select('pc.committee_id', 'pc.committee_name', 'pcp.people_id', 'pcp.position_name', 'upp.position_name as pname',
                 'ut.title_name', 'p.fname', 'p.lname', 'up.position_name AS position2')
-            .leftJoin('pc_committee pc', 'wr.committee_id', 'pc.committee_id')
-            .leftJoin('um_people p', 'p.people_id', 'pcp.people_id')
-            .leftJoin('um_titles ut', 'ut.title_id', 'p.title_id')
-            .leftJoin('pc_committee_people pcp', 'pc.committee_id', ' pcp.committee_id')
-            .leftJoin('um_people_positions ups', function () {
+            .leftJoin('pc_committee as pc', 'wr.committee_id', 'pc.committee_id')
+            .leftJoin('pc_committee_people as pcp', 'pc.committee_id', ' pcp.committee_id')
+            .leftJoin('um_people as p', 'p.people_id', 'pcp.people_id')
+            .leftJoin('um_titles as ut', 'ut.title_id', 'p.title_id')
+            .leftJoin('um_people_positions as ups', function () {
                 this.on('ups.people_id', 'p.people_id')
-                    .on('ups.is_actived', 'Y')
+                    .on('ups.is_actived', knex.raw('?', ['Y']))
             })
             .leftJoin('um_positions AS upp', 'upp.position_id', 'ups.position_id')
-            .leftJoin('um_positions up', 'up.position_id', 'ups.position_id ')
+            .leftJoin('um_positions as up', 'up.position_id', 'ups.position_id ')
             .where('wr.receive_id', receiveID)
             .orderBy('pc.committee_id');
     }
@@ -2730,9 +2710,9 @@ OR sc.ref_src like ?
     staffReceive(knex: Knex, status: any) {
         return knex('um_people as u')
             .select('*', 'p.position_name as pname')
-            .leftJoin('um_people_positions upp', function () {
+            .leftJoin('um_people_positions as upp', function () {
                 this.on('upp.people_id', 'u.people_id')
-                    .on('upp.is_actived', 'Y')
+                    .on('upp.is_actived', knex.raw('?', ['Y']))
             })
             .leftJoin('um_positions as p', 'p.position_id', 'upp.position_id')
             .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
@@ -2745,9 +2725,9 @@ OR sc.ref_src like ?
         return knex('pc_purchasing_order as po')
             .select('*', 'upt.type_name', 't.title_name', 'u.fname', 'u.lname', 'p.position_name as pname')
             .leftJoin('um_people as u', 'u.people_id', 'po.supply_id')
-            .leftJoin('um_people_positions upp', function () {
+            .leftJoin('um_people_positions as upp', function () {
                 this.on('upp.people_id', 'u.people_id')
-                    .on('upp.is_actived', 'Y')
+                    .on('upp.is_actived', knex.raw('?', ['Y']))
             })
             .leftJoin('um_positions as p', 'p.position_id', 'upp.position_id')
             .leftJoin('um_titles as t', 't.title_id', 'u.title_id')
@@ -4192,7 +4172,7 @@ GROUP BY
             .select('u.title_name as title', 'u.fname', 'u.lname', 'p.position_name', knex.raw(`concat(t.title_name,u.fname,' ',u.lname) as fullname`))
             .leftJoin('um_people_positions as upp', function () {
                 this.on('upp.people_id', 'u.people_id')
-                    .on('upp.is_actived', 'Y')
+                    .on('upp.is_actived', knex.raw('?', ['Y']))
             })
             .leftJoin('um_positions as p', 'p.position_id', 'upp.position_id')
             .leftJoin('um_titles as t', 't.title_id', 'u.title_id')

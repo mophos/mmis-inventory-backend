@@ -72,15 +72,15 @@ html
             tr
               td.right(width="5%") (ลงชื่อ)
               td.center(width="50%") ........................................................... 
-              td.left ตำแหน่ง #{i.pname}
+              td.left ตำแหน่ง #{i.position_name}
               td.left &nbsp; 
                 if(v.committee.length > 1) 
-                  | #{i.position_name}
+                  | #{i.position}
                 else if(v.committee.length = 1)
                   | ผู้ตรวจรับพัสดุ
             tr
               td
-              td.center (#{i.title_name}#{i.fname} #{i.lname})
+              td.center (#{i.fullname})
               td.center 
               td
         | ได้รับมอบพัสดุรายการข้างต้นจาก#{v.words}ตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
@@ -91,10 +91,10 @@ html
             td.right(width="5%") (ลงชื่อ)
             td.center(width="20%") ...........................................................
             td.left ตำแหน่ง #{v.staffReceive.position_name}
-            td.left &nbsp; #{v.staffReceive.type_name}
+            td.left &nbsp; #{v.staffReceive.position}
           tr
             td
-            td.center ( #{v.staffReceive.title_name}#{v.staffReceive.fname}  #{v.staffReceive.lname} )
+            td.center ( #{v.staffReceive.fullname} )
             td
             td
         br
@@ -126,15 +126,15 @@ html
           else
             tr
               td
-              td.center (นายนิรันดร์ ชัยศรีสุขอำพร)
+              td.center (#{v.chief.fullname})
               td
             tr
               td
-              td.center นายแพทย์เชี่ยวชาญ (ด้านเวชกรรม สาขาสูติ-นรีเวชกรรม)
+              td.center #{v.chief.position_name}
               td
             tr
               td
-              td.center หัวหน้าเจ้าหน้าที่
+              td.center #{v.chief.position}
               td
           tr
             td

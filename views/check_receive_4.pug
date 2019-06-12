@@ -19,7 +19,7 @@ html
         table.table
           tr
             td.left เลขที่รับ #{v.receive_code}
-            td.center(style="margin-left:42%;") เขียนที่ #{hospitalName}
+            td.center(style="margin-left:42%;") เขียนที่ #{hospitalDetail.hospname}
         div(style='margin-left:42%;') วันที่ #{v.receive_date}
         table.table
           tr  
@@ -95,7 +95,7 @@ html
             td
             td
         br
-        | เรียน  ผู้ว่าราชการจังหวัด#{province}
+        | เรียน  ผู้ว่าราชการจังหวัด#{hospitalDetail.province}
         br
         .fontspace
         | #{v.words}ตรวจรับพัสดุได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่าย#{v.bgtype_name}ประจำปีงบประมาณ #{serialYear} แก่ผู้ขายต่อไป
@@ -144,15 +144,15 @@ html
           if(!v.header)
             tr
               td
-              td.center 
+              td.center &nbsp;
               td
             tr
               td
-              td.center 
+              td.center &nbsp;
               td
             tr
               td
-              td.center 
+              td.center หัวหน้ากลุ่มงาน
               td
           else
             tr
@@ -165,7 +165,7 @@ html
               td
             tr
               td
-              td.center หัวหน้ากลุ่มงาน
+              td.center #{v.header.position}
               td
           tr
             td
@@ -207,7 +207,7 @@ html
             td
           tr
             td
-            td(style="height:50px;").center ทราบ
+            td(style="height:40px;").center ทราบ
             td
           tr
             td.right(width="5%")
@@ -216,11 +216,11 @@ html
           tr
             td.center 
             td.center  
-              | (#{master})
+              | (#{v.manager.fullname})
               br
-              | ผู้อำนวยการ#{hospitalName}
+              | #{v.manager.position}
               br
-              | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{province}
+              | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{hospitalDetail.province}
             td
         - c++ 
         .pagebreak
