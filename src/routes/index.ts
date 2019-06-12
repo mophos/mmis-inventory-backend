@@ -61,6 +61,19 @@ async function getOfficer(db, officerId) {
   return staff[0] ? staff[0] : null;
 }
 
+async function getPeople(db, peopleId) {
+  const people = await inventoryReportModel.peopleFullName(db, peopleId);
+  return people[0] ? people[0] : null;
+}
+
+async function getCommitee(db, committeeId) {
+  let committee = await inventoryReportModel.getCommittee(db, committeeId);
+  if (committee.length == 1) {
+    committee[0].position = 'ผู้ตรวจรับพัสดุ';
+  }
+  return committee.length ? committee : null;
+}
+
 function dateToDDMMMMYYYY(date) {
   return moment(date).isValid() ? moment(date).format('DD MMMM ') + (+moment(date).get('year') + 543) : '-';
 }
