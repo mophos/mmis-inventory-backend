@@ -17,9 +17,9 @@ left join um_titles as t on t.title_id=p.title_id
     return knex('um_people as p')
       .select('p.*', 't.title_name', 'pt.position_name')
       .leftJoin('um_titles as t', 't.title_id', 'p.title_id')
-      .leftJoin('um_people_positions upp', function () {
+      .leftJoin('um_people_positions as upp', function () {
         this.on('upp.people_id', 'p.people_id')
-            .on('upp.is_actived', 'Y')
+            .on('upp.is_actived', knex.raw('?', ['Y']))
     })
       .leftJoin('um_positions as pt', 'pt.position_id', 'upp.position_id')
     .orderBy('p.fname')
