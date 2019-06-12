@@ -267,8 +267,9 @@ router.post('/history-list', co(async (req, res, next) => {
 router.delete('/remove', co(async (req, res, next) => {
   let db = req.db;
   let hospcode = req.decoded.his_hospcode;
+  let warehouseId = req.decoded.warehouseId
   try {
-    let rs = await hisTransactionModel.removeHisTransaction(db, hospcode);
+    let rs = await hisTransactionModel.removeHisTransaction(db, hospcode, warehouseId);
     res.send({ ok: true });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -396,8 +397,8 @@ router.post('/import', co(async (req, res, next) => {
                 expired_date: p.expired_date,
                 wm_product_id_out: p.wm_product_id
               };
-            //คนไข้คืนยา
-            } else if(h.qty < 0 && HIStype == 2) {
+              //คนไข้คืนยา
+            } else if (h.qty < 0 && HIStype == 2) {
               data = {
                 stock_date: moment(h.date_serv).format('YYYY-MM-DD HH:mm:ss'),
                 product_id: p.product_id,

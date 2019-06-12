@@ -60,10 +60,11 @@ export class HisTransactionModel {
         return db('wm_his_warehouse_mappings');
     }
 
-    removeHisTransaction(db: Knex, hospcode: any) {
+    removeHisTransaction(db: Knex, hospcode: any, warehouseId: any) {
         return db('wm_his_transaction')
             .where('is_cut_stock', '=', 'N')
             .where('hospcode', hospcode)
+            .andWhere('mmis_warehouse', warehouseId)
             .del();
     }
 
@@ -138,7 +139,7 @@ export class HisTransactionModel {
             }
         }
         sql.groupBy('tt.transaction_id')
-            .orderBy('tt.transaction_id');
+            .orderBy('tt.date_serv');
         return sql;
     }
 
@@ -168,7 +169,7 @@ export class HisTransactionModel {
             }
         }
         sql.groupBy('tt.transaction_id')
-            .orderBy('tt.transaction_id');
+            .orderBy('tt.date_serv');
         return sql;
     }
 
