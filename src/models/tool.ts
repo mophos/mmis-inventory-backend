@@ -413,7 +413,7 @@ export class ToolModel {
     from wm_stock_card_logs sl
     join view_stock_card_warehouse s on sl.stock_card_id=s.stock_card_id
     join um_people_users pu on pu.people_user_id=sl.people_user_id
-    join um_people p on pu.people_id = p.people_id
+    join um_people as p on pu.people_id = p.people_id
     join um_titles t on p.title_id = t.title_id
     join mm_products mp on mp.product_id = s.product_id
     join wm_warehouses w on s.warehouse_id = w.warehouse_id

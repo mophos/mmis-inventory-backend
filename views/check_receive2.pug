@@ -102,7 +102,7 @@ html
                       td.left &nbsp;#{c.position_name}
                     tr
                       td
-                      td.center (#{c.title_name}#{c.fname} #{c.lname})
+                      td.center (#{c.fullname})
                       td.center 
       | เจ้าหน้าที่พัสดุได้รับมอบพัสดุตามรายการข้างต้นถูกต้องและได้ลงบัญชีพัสดุเรียบร้อยแล้ว
       br
@@ -115,7 +115,7 @@ html
             td.left #{v.supply.position}
           tr
             td.right
-            td.center (#{v.supply.title}#{v.supply.fname}  #{v.supply.lname})
+            td.center (#{v.supply.fullname})
             td.left
         else
           tr
@@ -124,7 +124,7 @@ html
             td.left #{v.supply.position}
           tr
             td.right
-            td.center (#{v.supply.title}#{v.supply.fname}  #{v.supply.lname})
+            td.center (#{v.supply.fullname})
             td.left
       table.table
         tr
@@ -159,7 +159,7 @@ html
               else
                 tr
                   td
-                  td.center (#{v.chief.title}#{v.chief.fname}  #{v.chief.lname})
+                  td.center (#{v.chief.fullname})
                   td
                 tr
                   td
