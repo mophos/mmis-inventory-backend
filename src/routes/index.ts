@@ -3282,7 +3282,7 @@ router.get('/report/check/receives2', wrap(async (req, res, next) => {
   head = head[0];
   for (const i of head) {
     i.poNumber = i.purchase_order_book_number ? i.purchase_order_book_number : i.purchase_order_number;
-    const details: any = await inventoryReportModel.getReceiveByPO(db, i.purchase_order_id)
+    const details: any = await inventoryReportModel.getReceiveByPO(db, i.purchase_order_id);
     i.committee = await getCommitee(db, i.verify_committee_id);
     i.chief = await getOfficer(db, i.chief_id);
     i.buyer = await getOfficer(db, i.buyer_id);
@@ -3303,8 +3303,8 @@ router.get('/report/check/receives2', wrap(async (req, res, next) => {
     i.bahtText = inventoryReportModel.bahtText(totalPrice);
     i.totalPrice = inventoryReportModel.comma(totalPrice);
     i.details = details;
+    
   }
-
   res.render('check_receives2', {
     hospitalDetail: hospitalDetail,
     head: head,

@@ -53,7 +53,7 @@ html
       | มาส่งมอบ ณ #{hospitalDetail.hospname} ตามใบส่งของเลขที่ วันที่ใบส่งของ วันที่รับของ ดังรายการต่อไปนี้
       table.table
         - if(i.details.length <= 5)
-          - var i = 0
+          - var no = 0
           tr
             th
             th.left เลขที่ใบส่งของ
@@ -64,14 +64,14 @@ html
             th จำนวนเงิน(บาท)
           - for(var v of i.details)
             tr
-              td.left #{i+1} &nbsp;
+              td.left #{no+1} &nbsp;
               td.left #{v.delivery_code} &nbsp;
               td.right #{v.delivery_date} &nbsp;
               td.right #{v.receive_date} &nbsp;
               td.right #{v.approve_date} &nbsp;
               td.right #{v.approve_date} &nbsp;
               td.right #{v.total_price} &nbsp;
-              - i++
+              - no++
           tr
             td(colspan='5')
             th.right รวมทั้งสิ้น
