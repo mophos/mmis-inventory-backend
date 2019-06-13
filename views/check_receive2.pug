@@ -30,7 +30,7 @@ html
         tr
           td.left 
             .bold.conleft ที่ &nbsp;
-            | #{bookPrefix}
+            | #{hospitalDetail.bookPrefix}
           td.left วันที่ #{v.receive_date}
       .left.bold.conleft
         | เรื่อง&nbsp;
@@ -99,7 +99,7 @@ html
                     tr
                       td.right(width="5%") ลงชื่อ
                       td.center(width="60%") ........................................................... 
-                      td.left &nbsp;#{c.position_name}
+                      td.left &nbsp;#{c.position}
                     tr
                       td
                       td.center (#{c.fullname})

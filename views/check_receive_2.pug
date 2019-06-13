@@ -19,7 +19,7 @@ html
         table.table
           tr
             td.left เลขที่รับ #{v.receive_code}
-            td.center(style="margin-left:42%;") เขียนที่ #{hospitalDetail.hospitalName}
+            td.center(style="margin-left:42%;") เขียนที่ #{hospitalDetail.hospname}
         div(style='margin-left:42%;') วันที่ #{v.receive_date}
         table.table
           tr  
@@ -98,7 +98,7 @@ html
             td
             td
         br
-        | เรียน  ผู้ว่าราชการจังหวัด#{province}
+        | เรียน  ผู้ว่าราชการจังหวัด#{hospitalDetail.province}
         br
         .fontspace
         | #{v.words}ตรวจรับพัสดุได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่าย#{v.bgtype_name}ประจำปีงบประมาน #{serialYear} แก่ผู้ขายต่อไป
