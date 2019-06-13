@@ -107,10 +107,40 @@ router.get('/requisition/sum', wrap(async (req, res, next) => {
   let endDate = req.query.endDate;
   let warehouseId = req.decoded.warehouseId;
 
+  let data: any = [];
+
   let _startDate = moment(startDate).locale('th').format('D MMM') + (moment(startDate).get('year') + 543);
   let _endDate = moment(endDate).locale('th').format('D MMM') + (moment(endDate).get('year') + 543);
-  const rsR = await mainReportModel.requisitionSum(db, startDate, endDate, warehouseId);
-  
+  const rsR = await mainReportModel.sumReceiveStaff(db, startDate, endDate, warehouseId);
+  for (const v of rsR[0]) {
+    if (v.transaction_type === 'REQ_OUT') {
+      data.push({
+        src_warehouse_id: v.src_warehouse_id,
+        src_warehouse_name: v.src_warehouse_name,
+        dst_warehouse_id: v.dst_warehouse_id,
+        dst_warehouse_name: v.dst_warehouse_name,
+        count_req: v.count_req,
+        count_br: null,
+        total_cost_req: v.total_cost,
+        total_cost_br: null,
+        transaction_type: v.transaction_type
+      });
+    } else {
+      data.push({
+        src_warehouse_id: v.src_warehouse_id,
+        src_warehouse_name: v.src_warehouse_name,
+        dst_warehouse_id: v.dst_warehouse_id,
+        dst_warehouse_name: v.dst_warehouse_name,
+        count_req: null,
+        count_br: v.count_req,
+        total_cost_req: null,
+        total_cost_br: v.total_cost,
+        transaction_type: v.transaction_type
+      })
+    }
+  }
+  console.log(data);
+
   res.render('requisition_sum', {
     rsR: rsR[0],
     startDate: _startDate,
