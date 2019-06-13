@@ -69,10 +69,10 @@ html
             tr
               td.left (ลงชื่อ)
               td.center ........................................................... 
-              td ตำแหน่ง #{i.pname}
+              td ตำแหน่ง #{i.position_name}
               td.center &nbsp; 
                 if(v.committee.length > 1) 
-                  | #{i.position_name}
+                  | #{i.position}
                 else if(v.committee.length = 1)
                   | ผู้ตรวจรับพัสดุ
             tr
@@ -88,7 +88,7 @@ html
             td.left (ลงชื่อ)
             td.center &nbsp;&nbsp;&nbsp;...........................................................
             td &nbsp;&nbsp; ตำแหน่ง #{v.staffReceive.position_name}
-            td.center &nbsp; #{v.staffReceive.type_name}
+            td.center &nbsp; #{v.staffReceive.position}
           tr
             td
             td.center ( #{v.staffReceive.title_name}#{v.staffReceive.fname}  #{v.staffReceive.lname} )

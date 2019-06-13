@@ -42,36 +42,45 @@ export class MainReportModel {
       .groupBy('r.receive_id')
   }
 
-  requisitionSum(knex: Knex, startDate: any, endDate: any, warehouseId: any) {
+  sumReceiveStaff(knex: Knex, startDate: any, endDate: any, warehouseId: any) {
     let sql = `SELECT
+      t.src_warehouse_id,
       t.src_warehouse_name,
+      t.dst_warehouse_id,
       t.dst_warehouse_name,
-      COUNT( t.requisition_code ) AS count_req,
-      ROUND( SUM( t.amount_confirm ), 2 ) 
+      COUNT( t.document_ref ) AS count_req,
+      ROUND(SUM( t.amount ),2) AS total_cost,
+      t.transaction_type
     FROM
       (
-    SELECT
-      ro.requisition_code,
-      src.warehouse_id AS src_warehouse_id,
-      dst.warehouse_id AS dst_warehouse_id,
-      src.warehouse_name AS src_warehouse_name,
-      dst.warehouse_name AS dst_warehouse_name,
-      ( SELECT SUM( unit_cost * confirm_qty ) FROM wm_requisition_confirm_items WHERE confirm_id = rc.confirm_id GROUP BY confirm_id ) AS amount_confirm 
-    FROM
-      wm_requisition_orders ro
-      JOIN wm_requisition_confirms rc ON rc.requisition_order_id = ro.requisition_order_id
-      JOIN wm_warehouses dst ON dst.warehouse_id = ro.wm_requisition
-      JOIN wm_warehouses src ON src.warehouse_id = ro.wm_withdraw 
-    WHERE
-      rc.approve_date BETWEEN '${startDate}' 
-      AND '${endDate}' 
-      AND ro.wm_withdraw = '${warehouseId}' 
-    ORDER BY
-      ro.requisition_code 
-      ) t 
+      SELECT
+        vs.src_warehouse_id,
+        vs.dst_warehouse_id,
+        vs.src_warehouse_name,
+        vs.dst_warehouse_name,
+        vs.document_ref,
+        SUM( vs.out_qty * vs.balance_unit_cost ) AS amount,
+        vs.transaction_type
+      FROM
+        view_stock_card_new vs 
+      WHERE
+        vs.transaction_type = 'REQ_OUT' 
+        AND vs.stock_date BETWEEN '${startDate} 00:00:01' 
+        AND '${endDate} 23:59:59' 
+        AND vs.src_warehouse_id = ${warehouseId} 
+        AND vs.out_qty > 0 
+        OR vs.transaction_type = 'BORROW_OUT'
+        AND vs.stock_date BETWEEN '${startDate} 00:00:01' 
+        AND '${endDate} 23:59:59' 
+        AND vs.src_warehouse_id = ${warehouseId}
+        AND vs.out_qty > 0
+      GROUP BY
+        transaction_type,
+        document_ref_id 
+      ) AS t 
     GROUP BY
-      t.src_warehouse_id,
-      t.dst_warehouse_id`;
+      t.dst_warehouse_id,
+      t.transaction_type`;
     return knex.raw(sql);
   }
 }
