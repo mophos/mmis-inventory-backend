@@ -3329,7 +3329,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
     let serialYear = moment(i.order_date).get('year') + 543;
     let monthRo = moment(i.order_date).get('month') + 1;
     i.order_date = moment(i.order_date, 'YYYY-MM-DD').isValid() ? moment(i.order_date).format('D MMMM ') + (moment(i.order_date).get('year') + 543) : '-';
-    i.receive_date = moment(i.receive_date, 'YYYY-MM-DD').isValid() ? moment(i.receive_date).format('D MMM ') + (moment(i.receive_date).get('year') + 543) : '-';
+    i.receive_date = moment(i.receive_date, 'YYYY-MM-DD').isValid() ? moment(i.receive_date).format('D MMMM ') + (moment(i.receive_date).get('year') + 543) : '-';
     let totalPrice = 0;
     for (const d of details) {
       d.receive_date = moment(d.receive_date, 'YYYY-MM-DD').isValid() ? moment(d.receive_date).format('D MMM ') + (moment(d.receive_date).get('year') + 543) : '-';

@@ -43,7 +43,7 @@ html
       .fontspace 
       | ตามบันทึกข้อความที่ #{i.poNumber}&nbsp;
       | ลงวันที่ #{i.order_date} อนุมัติให้ดำเนินการจัดซื้อรวม #{i.details.length} รายการ
-      //- | เป็นเงิน #{bahtText[s]} บาท (#{_bahtText[s]})
+      | เป็นเงิน #{i.totalPrice} บาท (#{i.bahtText})
       br
       | ตามใบสั่งซื้อเลขที่ #{i.poNumber} และแต่งตั้งให้ข้าพเจ้าเป็นผู้ตรวจรับพัสดุ นั้น
       br
@@ -52,7 +52,7 @@ html
       br
       | มาส่งมอบ ณ #{hospitalDetail.hospname} ตามใบส่งของเลขที่ วันที่ใบส่งของ วันที่รับของ ดังรายการต่อไปนี้
       table.table
-        - if(i.details.lenngth <= 5)
+        - if(i.details.length <= 5)
           - var i = 0
           tr
             th
@@ -75,7 +75,7 @@ html
           tr
             td(colspan='5')
             th.right รวมทั้งสิ้น
-            th.right #{v.bahtText} &nbsp;
+            th.right #{i.totalPrice} &nbsp;
             br
         - else
           | ดังปรากฏรายละเอียดตรวจรับตามใบแนบเลขที่ #{i.poNumber}
@@ -93,7 +93,7 @@ html
             tr
               td.right(width="5%") ลงชื่อ
               td.center(width="50%") ........................................................... 
-              td.left &nbsp;#{c.position_name}
+              td.left &nbsp;#{c.position}
             tr
               td
               td.center (#{c.fullname})
