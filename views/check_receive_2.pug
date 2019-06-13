@@ -87,16 +87,28 @@ html
         br
         br
         table(style="width: 90%;")
-          tr
-            td.right(width="5%") (ลงชื่อ)
-            td.center(width="20%") ...........................................................
-            td.left ตำแหน่ง #{v.staffReceive.position_name}
-            td.left &nbsp; #{v.staffReceive.position}
-          tr
-            td
-            td.center ( #{v.staffReceive.fullname} )
-            td
-            td
+          if(v.staffReceive === null)
+            tr
+              td.right(width="5%") (ลงชื่อ)
+              td.center(width="20%") ...........................................................
+              td.left &nbsp;
+              td.left &nbsp;
+            tr
+              td
+              td.center &nbsp;
+              td
+              td
+          else
+            tr
+              td.right(width="5%") (ลงชื่อ)
+              td.center(width="20%") ...........................................................
+              td.left ตำแหน่ง #{v.staffReceive.position_name}
+              td.left &nbsp; #{v.staffReceive.position}
+            tr
+              td
+              td.center ( #{v.staffReceive.fullname} )
+              td
+              td
         br
         | เรียน  ผู้ว่าราชการจังหวัด#{hospitalDetail.province}
         br
