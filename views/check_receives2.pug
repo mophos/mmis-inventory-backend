@@ -194,7 +194,7 @@ html
               th วันที่ตรวจรับของ
               th วันที่ลงบัญชีรับของ
               th จำนวนเงิน(บาท)
-            for v in i.details
+            - for(var v of i.details)
               tr
                 td.left #{no} &nbsp;
                 td.left #{v.delivery_code} &nbsp;
