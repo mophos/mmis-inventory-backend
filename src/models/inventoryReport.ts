@@ -4500,7 +4500,7 @@ GROUP BY
             .where('rc.is_approve', 'Y')
             .where('ro.wm_withdraw', warehouseId);
         if (dateSetting) {
-            sql.whereBetween('ro.approve_date', [startDate, endDate])
+            sql.whereBetween('rc.approve_date', [startDate, endDate])
         } else {
             sql.whereBetween('ro.requisition_date', [startDate, endDate])
         }
