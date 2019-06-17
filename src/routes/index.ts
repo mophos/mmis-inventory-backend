@@ -2918,8 +2918,9 @@ router.get('/report/check/receive/4', wrap(async (req, res, next) => {
     v.words = word;
 
     v.chief = await getOfficer(db, v.chief_id);
+    v.buyer = await getOfficer(db, v.buyer_id);
     v.staffReceive = await getOfficer(db, v.supply_id);
-    v.header = await getOfficer(db, v.buyer_id);
+    v.header = await getOfficer(db, v.head_id);
     v.manager = await getOfficer(db, v.manager_id);
     // let header = await inventoryReportModel.staffReceive(db, 'HEAD');
     // v.header = header[0];
@@ -3303,7 +3304,7 @@ router.get('/report/check/receives2', wrap(async (req, res, next) => {
     i.bahtText = inventoryReportModel.bahtText(totalPrice);
     i.totalPrice = inventoryReportModel.comma(totalPrice);
     i.details = details;
-    
+
   }
   res.render('check_receives2', {
     hospitalDetail: hospitalDetail,

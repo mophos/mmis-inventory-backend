@@ -107,27 +107,27 @@ html
             td.right(width="5%")
             td.center(width="50%") ...........................................................
             td.left 
-          if(!v.staffReceive)
+          if(!v.buyer)
+            tr
+              td
+              td.center (..........................................................)
+              td
             tr
               td
               td.center 
               td
             tr
               td
-              td.center 
-              td
-            tr
-              td
-              td.center 
+              td.center เจ้าหน้าที่
               td
           else
             tr
               td
-              td.center (#{v.staffReceive.title_name}#{v.staffReceive.fname}  #{v.staffReceive.lname})
+              td.center (#{v.buyer.title_name}#{v.buyer.fname}  #{v.buyer.lname})
               td
             tr
               td
-              td.center #{v.staffReceive.position_name}
+              td.center #{v.buyer.position_name}
               td
             tr
               td
@@ -144,7 +144,7 @@ html
           if(!v.header)
             tr
               td
-              td.center &nbsp;
+              td.center (..........................................................)
               td
             tr
               td
@@ -216,9 +216,12 @@ html
           tr
             td.center 
             td.center  
-              | (#{v.manager.fullname})
-              br
-              | #{v.manager.position}
+              if(v.manager === null)
+                | (..........................................................)
+              else
+                | (#{v.manager.fullname})
+                br
+                | #{v.manager.position}
               br
               | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{hospitalDetail.province}
             td

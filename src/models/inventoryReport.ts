@@ -2554,6 +2554,7 @@ OR sc.ref_src like ?
         po.buyer_id,
         po.supply_id,
         po.manager_id,
+        po.head_id,
         COUNT(wrd.receive_detail_id) AS amount_qty,
         mgt.generic_type_name,
         wr.committee_id
