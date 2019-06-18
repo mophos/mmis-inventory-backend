@@ -4319,6 +4319,31 @@ GROUP BY
         return (knex.raw(sql))
     }
 
+    monthlyReportBalanceAfter(knex: Knex, warehouseId: any, genericType: any, date: any, dateSetting: any) {
+        let sql = `SELECT
+        mgt.generic_type_name,
+        mga.account_name,
+        sum( vscw.in_cost - vscw.out_cost ) AS balance
+    FROM
+        view_stock_card_new AS vscw
+        JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
+        LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+        LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
+    WHERE
+         vscw.${dateSetting} <= '${date} 23:59:59' 
+        AND mg.generic_type_id IN ( ${genericType} ) `
+        if (warehouseId != 'all') {
+            sql += `AND vscw.src_warehouse_id = '${warehouseId}'`
+        }
+        sql += ` GROUP BY
+        mg.generic_type_id,
+        mg.account_id 
+    ORDER BY
+        mgt.generic_type_id,
+        mga.account_id`
+        return (knex.raw(sql))
+    }
+
     monthlyReportCost(knex: Knex, warehouseId: any, genericType: any, startDate: any, endDate: any, dateSetting: any, transactionIn: any) {
         let sql = `SELECT
         ws.transaction_type,

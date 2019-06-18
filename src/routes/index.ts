@@ -6066,7 +6066,7 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
     // ------------------------------------------------
 
     // มูลค่าคงเหลือ -------------------------------------
-    let rsBalanceAfter = await inventoryReportModel.monthlyReportBalance(db, warehouseId, genericType, endDate, dateSetting);
+    let rsBalanceAfter = await inventoryReportModel.monthlyReportBalanceAfter(db, warehouseId, genericType, endDate, dateSetting);
     rsBalanceAfter = rsBalanceAfter[0];
     let sumBalanceAfter: any = 0;
 
