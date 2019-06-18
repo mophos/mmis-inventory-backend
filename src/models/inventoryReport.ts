@@ -2128,7 +2128,7 @@ FROM
         mg.working_code AS generics_code,
         mp.working_code AS products_code,
         mgd.dosage_name,
-        mug.cost
+        wp.cost
     FROM
         wm_transfer t
     LEFT JOIN wm_transfer_generic wg ON t.transfer_id = wg.transfer_id
@@ -4448,6 +4448,31 @@ GROUP BY
         LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
     WHERE
          vscw.${dateSetting} < '${date} 00:00:00' 
+        AND mg.generic_type_id IN ( ${genericType} ) `
+        if (warehouseId != 'all') {
+            sql += `AND vscw.src_warehouse_id = '${warehouseId}'`
+        }
+        sql += ` GROUP BY
+        mg.generic_type_id,
+        mg.account_id 
+    ORDER BY
+        mgt.generic_type_id,
+        mga.account_id`
+        return (knex.raw(sql))
+    }
+
+    monthlyReportBalanceAfter(knex: Knex, warehouseId: any, genericType: any, date: any, dateSetting: any) {
+        let sql = `SELECT
+        mgt.generic_type_name,
+        mga.account_name,
+        sum( vscw.in_cost - vscw.out_cost ) AS balance
+    FROM
+        view_stock_card_new AS vscw
+        JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
+        LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+        LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
+    WHERE
+         vscw.${dateSetting} <= '${date} 23:59:59' 
         AND mg.generic_type_id IN ( ${genericType} ) `
         if (warehouseId != 'all') {
             sql += `AND vscw.src_warehouse_id = '${warehouseId}'`
