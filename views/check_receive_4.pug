@@ -19,7 +19,7 @@ html
         table.table
           tr
             td.left เลขที่รับ #{v.receive_code}
-            td.center(style="margin-left:42%;") เขียนที่ #{hospitalName}
+            td.center(style="margin-left:42%;") เขียนที่ #{hospitalDetail.hospname}
         div(style='margin-left:42%;') วันที่ #{v.receive_date}
         table.table
           tr  
@@ -59,7 +59,7 @@ html
               if(v.committee.length > 1)
                 | พร้อมกัน
               | ลงลายมือชื่อไว้เป็นหลักฐาน
-        table(style="width: 90%; margin-left: 5%;")
+        table(style="width: 100%;")
           - for(var i of v.committee)
             tr
               td
@@ -67,12 +67,12 @@ html
               td 
               td
             tr
-              td.right(width="5%") (ลงชื่อ)
-              td.center(width="50%") ........................................................... 
-              td.center ตำแหน่ง #{i.pname}
+              td.left (ลงชื่อ)
+              td.center ........................................................... 
+              td ตำแหน่ง #{i.position_name}
               td.center &nbsp; 
                 if(v.committee.length > 1) 
-                  | #{i.position_name}
+                  | #{i.position}
                 else if(v.committee.length = 1)
                   | ผู้ตรวจรับพัสดุ
             tr
@@ -83,22 +83,22 @@ html
         | ได้รับมอบพัสดุรายการข้างต้นจาก#{v.words}ตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
         br
         br
-        table(style="width: 90%; margin-left: 5%;")
+        table(style="width: 100%;")
           tr
-            td.right(width="5%") (ลงชื่อ)
-            td.center(width="50%") ...........................................................
-            td.center ตำแหน่ง #{v.staffReceive.position_name}
-            td.center &nbsp; #{v.staffReceive.type_name}
+            td.left (ลงชื่อ)
+            td.center &nbsp;&nbsp;&nbsp;...........................................................
+            td &nbsp;&nbsp; ตำแหน่ง #{v.staffReceive.position_name}
+            td.center &nbsp; #{v.staffReceive.position}
           tr
             td
             td.center ( #{v.staffReceive.title_name}#{v.staffReceive.fname}  #{v.staffReceive.lname} )
             td
             td
         br
-        | เรียน  ผู้ว่าราชการจังหวัด#{province}
+        | เรียน  ผู้ว่าราชการจังหวัด#{hospitalDetail.province}
         br
         .fontspace
-        | #{v.words}ตรวจรับพัสดุได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่าย#{v.bgtype_name}ประจำปีงบประมาน #{serialYear} แก่ผู้ขายต่อไป
+        | #{v.words}ตรวจรับพัสดุได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่าย#{v.bgtype_name}ประจำปีงบประมาณ #{serialYear} แก่ผู้ขายต่อไป
         br
         br
         br
@@ -107,27 +107,27 @@ html
             td.right(width="5%")
             td.center(width="50%") ...........................................................
             td.left 
-          if(!v.staffReceive)
+          if(!v.buyer)
+            tr
+              td
+              td.center (..........................................................)
+              td
             tr
               td
               td.center 
               td
             tr
               td
-              td.center 
-              td
-            tr
-              td
-              td.center 
+              td.center เจ้าหน้าที่
               td
           else
             tr
               td
-              td.center (#{v.staffReceive.title_name}#{v.staffReceive.fname}  #{v.staffReceive.lname})
+              td.center (#{v.buyer.title_name}#{v.buyer.fname}  #{v.buyer.lname})
               td
             tr
               td
-              td.center #{v.staffReceive.position_name}
+              td.center #{v.buyer.position_name}
               td
             tr
               td
@@ -144,15 +144,15 @@ html
           if(!v.header)
             tr
               td
-              td.center 
+              td.center (..........................................................)
               td
             tr
               td
-              td.center 
+              td.center &nbsp;
               td
             tr
               td
-              td.center 
+              td.center หัวหน้ากลุ่มงาน
               td
           else
             tr
@@ -165,7 +165,7 @@ html
               td
             tr
               td
-              td.center หัวหน้ากลุ่มงาน
+              td.center #{v.header.position}
               td
           tr
             td
@@ -207,7 +207,7 @@ html
             td
           tr
             td
-            td(style="height:50px;").center ทราบ
+            td(style="height:40px;").center ทราบ
             td
           tr
             td.right(width="5%")
@@ -216,11 +216,14 @@ html
           tr
             td.center 
             td.center  
-              | (#{master})
+              if(v.manager === null)
+                | (..........................................................)
+              else
+                | (#{v.manager.fullname})
+                br
+                | #{v.manager.position}
               br
-              | ผู้อำนวยการ#{hospitalName}
-              br
-              | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{province}
+              | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{hospitalDetail.province}
             td
         - c++ 
         .pagebreak

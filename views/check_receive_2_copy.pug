@@ -19,7 +19,7 @@ html
         table.table
           tr
             td.left เลขที่รับ #{v.receive_code}
-            td.center(style="margin-left:42%;") เขียนที่ #{hospitalDetail.hospname}
+            td.center(style="margin-left:42%;") เขียนที่ #{hospitalName}
         div(style='margin-left:42%;') วันที่ #{v.receive_date}
         table.table
           tr  
@@ -72,45 +72,33 @@ html
             tr
               td.right(width="5%") (ลงชื่อ)
               td.center(width="50%") ........................................................... 
-              td.left ตำแหน่ง #{i.position_name}
+              td.left ตำแหน่ง #{i.pname}
               td.left &nbsp; 
                 if(v.committee.length > 1) 
-                  | #{i.position}
+                  | #{i.position_name}
                 else if(v.committee.length = 1)
                   | ผู้ตรวจรับพัสดุ
             tr
               td
-              td.center (#{i.fullname})
+              td.center (#{i.title_name}#{i.fname} #{i.lname})
               td.center 
               td
         | ได้รับมอบพัสดุรายการข้างต้นจาก#{v.words}ตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
         br
         br
         table(style="width: 90%;")
-          if(v.staffReceive === null)
-            tr
-              td.right(width="5%") (ลงชื่อ)
-              td.center(width="20%") ...........................................................
-              td.left &nbsp;
-              td.left &nbsp;
-            tr
-              td
-              td.center &nbsp;
-              td
-              td
-          else
-            tr
-              td.right(width="5%") (ลงชื่อ)
-              td.center(width="20%") ...........................................................
-              td.left ตำแหน่ง #{v.staffReceive.position_name}
-              td.left &nbsp; #{v.staffReceive.position}
-            tr
-              td
-              td.center ( #{v.staffReceive.fullname} )
-              td
-              td
+          tr
+            td.right(width="5%") (ลงชื่อ)
+            td.center(width="20%") ...........................................................
+            td.left ตำแหน่ง #{v.staffReceive.position_name}
+            td.left &nbsp; #{v.staffReceive.type_name}
+          tr
+            td
+            td.center ( #{v.staffReceive.title_name}#{v.staffReceive.fname}  #{v.staffReceive.lname} )
+            td
+            td
         br
-        | เรียน  ผู้ว่าราชการจังหวัด#{hospitalDetail.province}
+        | เรียน  ผู้ว่าราชการจังหวัด#{province}
         br
         .fontspace
         | #{v.words}ตรวจรับพัสดุได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่าย#{v.bgtype_name}ประจำปีงบประมาน #{serialYear} แก่ผู้ขายต่อไป
@@ -138,7 +126,7 @@ html
           else
             tr
               td
-              td.center (#{v.chief.fullname})
+              td.center (#{v.chief.title_name}#{v.chief.fname}  #{v.chief.lname})
               td
             tr
               td
@@ -146,7 +134,7 @@ html
               td
             tr
               td
-              td.center #{v.chief.position}
+              td.center หัวหน้าเจ้าหน้าที่
               td
           tr
             td
@@ -163,11 +151,11 @@ html
           tr
             td.center 
             td.center  
-              | (#{v.manager.fullname})
+              | (#{master})
               br
-              | #{v.manager.position}
+              | ผู้อำนวยการ#{hospitalName}
               br
-              | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{hospitalDetail.province}
+              | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{province}
             td
         - c++ 
         .pagebreak

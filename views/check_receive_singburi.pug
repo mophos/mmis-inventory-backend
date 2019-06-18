@@ -19,7 +19,7 @@ html
         table.table
           tr
             td.left เลขที่รับ #{v.receive_code}
-            td.center(style="margin-left:42%;") เขียนที่ #{hospitalDetail.hospname}
+            td.center(style="margin-left:42%;") เขียนที่ #{hospitalName}
         div(style='margin-left:42%;') วันที่ #{v.receive_date}
         table.table
           tr  
@@ -87,30 +87,18 @@ html
         br
         br
         table(style="width: 90%;")
-          if(v.staffReceive === null)
-            tr
-              td.right(width="5%") (ลงชื่อ)
-              td.center(width="20%") ...........................................................
-              td.left &nbsp;
-              td.left &nbsp;
-            tr
-              td
-              td.center &nbsp;
-              td
-              td
-          else
-            tr
-              td.right(width="5%") (ลงชื่อ)
-              td.center(width="20%") ...........................................................
-              td.left ตำแหน่ง #{v.staffReceive.position_name}
-              td.left &nbsp; #{v.staffReceive.position}
-            tr
-              td
-              td.center ( #{v.staffReceive.fullname} )
-              td
-              td
+          tr
+            td.right(width="5%") (ลงชื่อ)
+            td.center(width="20%") ...........................................................
+            td.left ตำแหน่ง #{v.staffReceive.position_name}
+            td.left &nbsp; #{v.staffReceive.position}
+          tr
+            td
+            td.center ( #{v.staffReceive.fullname} )
+            td
+            td
         br
-        | เรียน  ผู้ว่าราชการจังหวัด#{hospitalDetail.province}
+        | เรียน  ผู้ว่าราชการจังหวัด#{province}
         br
         .fontspace
         | #{v.words}ตรวจรับพัสดุได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่าย#{v.bgtype_name}ประจำปีงบประมาน #{serialYear} แก่ผู้ขายต่อไป
@@ -163,11 +151,11 @@ html
           tr
             td.center 
             td.center  
-              | (#{v.manager.fullname})
+              | (นางสาววนิดา สาดตระกูลวัฒนา)
               br
-              | #{v.manager.position}
+              | ผู้อำนวยการโรงพยาบาลสิงห์บุรี
               br
-              | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{hospitalDetail.province}
+              | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัดสิงห์บุรี
             td
         - c++ 
         .pagebreak

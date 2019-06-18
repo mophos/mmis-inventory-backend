@@ -19,7 +19,7 @@ html
         br
         table.table
           tr
-            td.left(colspan='2') ส่วนราชการ กลุ่มงานเภสัชกรรม #{hospitalName} จังหวัด#{province} โทร #{telephone}
+            td.left(colspan='2') ส่วนราชการ กลุ่มงานเภสัชกรรม #{hospitalDetail.hospname} จังหวัด#{hospitalDetail.province} โทร #{hospitalDetail.telephone}
           tr
             if(v.purchase_order_book_number !== null)
               td.left #{v.purchase_order_book_number}
@@ -32,7 +32,7 @@ html
             td(colspan='2')
         table.table
           tr  
-            td.left(colspan='5') เรียน ผู้ว่าราชการจังหวัด#{province}
+            td.left(colspan='5') เรียน ผู้ว่าราชการจังหวัด#{hospitalDetail.province}
           tr
             if(v.purchase_order_book_number !== null)
               td.left(style="padding-left: 75px;" colspan='5') ตามใบสั่งซื้อเลขที่ #{v.purchase_order_book_number} ลงวันที่ #{v.podate} ผู้ตรวจรับพัสดุ /กรรมการตรวจรับ
@@ -103,26 +103,6 @@ html
             td
             td.center ( ................................................ )
             td
-          //- tr
-          //-   td(style="padding-left: 300px;")
-          //-   td.right(width="5%") (ลงชื่อ)
-          //-   td.center(width="20%") ...........................................................
-          //-   td.left #{v.staffReceive.type_name}
-          //- tr
-          //-   td(style="padding-left: 200px;")
-          //-   td
-          //-   td.center ( #{v.staffReceive.title_name}#{v.staffReceive.fname}  #{v.staffReceive.lname} )
-          //-   td
-          //- tr
-          //-   td(style="padding-left: 300px;")
-          //-   td.right(width="5%") (ลงชื่อ)
-          //-   td.center(width="20%") ...........................................................
-          //-   td.left #{v.staffReceive.type_name}
-          //- tr
-          //-   td(style="padding-left: 200px;")
-          //-   td
-          //-   td.center ( #{v.staffReceive.title_name}#{v.staffReceive.fname}  #{v.staffReceive.lname} )
-          //-   td
         br
         .fontspace
         | ตามที่ ผู้ขาย #{v.labeler_name_po} &nbsp;&nbsp; ได้ส่งมอบเวชภัณฑ์ยา ซึ่งผู้ตรวจรับ /คณะกรรมการตรวจรับ ได้ตรวจรับและส่งมอบเข้าระบบควบคุมทางบัญชีและเก็บรักษาไว้แล้ว จึงเห็นควรเบิกจ่ายงินจำนวน #{v.total_price} บาท
@@ -141,7 +121,7 @@ html
             td
           tr
             td.right(width="5%")
-            td.center(width="50%") ลงชื่อ..................................................หัวหน้าเจ้าหน้าที่
+            td.center(width="50%") ลงชื่อ..................................................#{v.chief.position}
             td.left 
             td
             td.right(width="10%")
@@ -162,7 +142,7 @@ html
               td
               td
               td
-              td.center ผู้อำนวยการ#{hospitalName}
+              td.center ผู้อำนวยการ#{hospitalDetail.hospname}
               td
             tr
               td
@@ -170,16 +150,16 @@ html
               td
               td
               td 
-              td.center  ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{province}
+              td.center  ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{hospitalDetail.province}
               td
           else
             tr
               td.
-              td.left(style="padding-left: 55px;") (#{v.chief.title_name}#{v.chief.fname}  #{v.chief.lname})
+              td.left(style="padding-left: 55px;") (#{v.chief.fullname})
               td
               td
               td
-              td.center (#{master})
+              td.center (#{v.manager.fullname})
               td
             tr
               td
@@ -187,7 +167,7 @@ html
               td
               td
               td
-              td.center ผู้อำนวยการ#{hospitalName}
+              td.center #{v.manager.position}
               td
             tr
               td
@@ -195,7 +175,7 @@ html
               td
               td
               td 
-              td.center  ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{province}
+              td.center  ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{hospitalDetail.province}
               td
         - c++ 
         .pagebreak

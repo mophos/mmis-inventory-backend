@@ -1,5 +1,6 @@
 import Knex = require('knex');
 import * as moment from 'moment';
+import { start } from 'repl';
 
 export class MainReportModel {
   accountPayable(knex: Knex, startDate, endDate, genericTypeId) {
@@ -39,5 +40,47 @@ export class MainReportModel {
       .whereNotNull('pc.approved_date')
       .whereIn('r.receive_id', receiveId)
       .groupBy('r.receive_id')
+  }
+
+  sumReceiveStaff(knex: Knex, startDate: any, endDate: any, warehouseId: any) {
+    let sql = `SELECT
+      t.src_warehouse_id,
+      t.src_warehouse_name,
+      t.dst_warehouse_id,
+      t.dst_warehouse_name,
+      COUNT( t.document_ref ) AS count_req,
+      ROUND(SUM( t.amount ),2) AS total_cost,
+      t.transaction_type
+    FROM
+      (
+      SELECT
+        vs.src_warehouse_id,
+        vs.dst_warehouse_id,
+        vs.src_warehouse_name,
+        vs.dst_warehouse_name,
+        vs.document_ref,
+        SUM( vs.out_qty * vs.balance_unit_cost ) AS amount,
+        vs.transaction_type
+      FROM
+        view_stock_card_new vs 
+      WHERE
+        vs.transaction_type = 'REQ_OUT' 
+        AND vs.stock_date BETWEEN '${startDate} 00:00:01' 
+        AND '${endDate} 23:59:59' 
+        AND vs.src_warehouse_id = ${warehouseId} 
+        AND vs.out_qty > 0 
+        OR vs.transaction_type = 'BORROW_OUT'
+        AND vs.stock_date BETWEEN '${startDate} 00:00:01' 
+        AND '${endDate} 23:59:59' 
+        AND vs.src_warehouse_id = ${warehouseId}
+        AND vs.out_qty > 0
+      GROUP BY
+        transaction_type,
+        document_ref_id 
+      ) AS t 
+    GROUP BY
+      t.dst_warehouse_id,
+      t.transaction_type`;
+    return knex.raw(sql);
   }
 }

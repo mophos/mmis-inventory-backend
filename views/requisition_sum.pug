@@ -1,0 +1,39 @@
+include css.pug
+doctype html
+style(type='text/css').
+  body{
+    font-size: 16pt;
+    margin-left: 50px;
+    margin-right: 50px;
+  }
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    .center.bold รายงานการรับยาเข้าคลังย่อย
+    .enter.center ระหว่างวันที่ #{startDate} ถึง #{endDate}
+    table(style='width: 100%;')
+      tr
+        td(colspan='2').bold ชื่อหน่วยเบิก 
+      tr
+        td(colspan='2').bold เบิกจากคลัง
+      tr
+        td(style='width: 50%;') จำนวนครั้งการเบิก ครั้ง
+        td(style='width: 50%;') มูลค่า บาท
+      tr
+        td(style='width: 50%;') จำนวนครั้งการยืม ครั้ง
+        td(style='width: 50%;') มูลค่า บาท
+      tr
+        td(style='width: 50%;') จำนวนรับเข้า(เบิก+ยืม) ครั้ง
+        td(style='width: 50%;') มูลค่า บาท
+    br
+    .left.bold รายละเอียดรายการยาและเวชภัณฑ์ที่รับเข้าคลังย่อย
+    .enter 
+    table(style='width: 100%')
+      tr
+        td.center(style='border: 1px black solid;') ลำดับ
+        td.center(style='border: 1px black solid;') รายการยาและเวชภัณฑ์
+        td.center(style='border: 1px black solid;') จำนวน(หน่วยย่อย)
+        td.center(style='border: 1px black solid;') มูลค่า

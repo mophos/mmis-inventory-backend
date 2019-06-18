@@ -25,12 +25,12 @@ html
         tr
           td.left 
             .bold.conleft ส่วนราชการ &nbsp;
-            | #{hospitalName}
+            | #{hospitalDetail.hospname}
           td.center(style="padding-right:35px;") 
         tr
           td.left 
             .bold.conleft ที่ &nbsp;
-            | #{bookPrefix}
+            | #{hospitalDetail.bookPrefix}
           td.left วันที่ #{v.receive_date}
       .left.bold.conleft
         | เรื่อง&nbsp;
@@ -38,7 +38,7 @@ html
       hr
       .left.bold.conleft
         | เรียน&nbsp;
-      .noneBold ผู้ว่าราชการจังหวัด#{province}
+      .noneBold ผู้ว่าราชการจังหวัด#{hospitalDetail.province}
       if(v.purchase_order_book_number !== null)
         .fontspace 
         | ตามบันทึกข้อความที่ #{v.purchase_order_book_number}&nbsp;
@@ -58,7 +58,7 @@ html
       .fontspace
       | บัดนี้ #{v.labeler_name_po} ได้นำสิ่งของตามรายการและจำนวนดังกล่าว 
       br
-      | มาส่งมอบ ณ #{hospitalName} ตามใบส่งของเลขที่ วันที่ใบส่งของ วันที่รับของ ดังรายการต่อไปนี้
+      | มาส่งมอบ ณ #{hospitalDetail.hospname} ตามใบส่งของเลขที่ วันที่ใบส่งของ วันที่รับของ ดังรายการต่อไปนี้
       br
       table.table
         tr
@@ -99,10 +99,10 @@ html
                     tr
                       td.right(width="5%") ลงชื่อ
                       td.center(width="60%") ........................................................... 
-                      td.left &nbsp;#{c.position_name}
+                      td.left &nbsp;#{c.position}
                     tr
                       td
-                      td.center (#{c.title_name}#{c.fname} #{c.lname})
+                      td.center (#{c.fullname})
                       td.center 
       | เจ้าหน้าที่พัสดุได้รับมอบพัสดุตามรายการข้างต้นถูกต้องและได้ลงบัญชีพัสดุเรียบร้อยแล้ว
       br
@@ -115,7 +115,7 @@ html
             td.left #{v.supply.position}
           tr
             td.right
-            td.center (#{v.supply.title}#{v.supply.fname}  #{v.supply.lname})
+            td.center (#{v.supply.fullname})
             td.left
         else
           tr
@@ -124,11 +124,11 @@ html
             td.left #{v.supply.position}
           tr
             td.right
-            td.center (#{v.supply.title}#{v.supply.fname}  #{v.supply.lname})
+            td.center (#{v.supply.fullname})
             td.left
       table.table
         tr
-          td(style="width:30%").center เรียน ผู้ว่าราชการจังหวัด#{province}
+          td(style="width:30%").center เรียน ผู้ว่าราชการจังหวัด#{hospitalDetail.province}
           td(style="width:70%")
         tr
           td(style="width:30%").center เพื่อโปรดทราบ
@@ -159,7 +159,7 @@ html
               else
                 tr
                   td
-                  td.center (#{v.chief.title}#{v.chief.fname}  #{v.chief.lname})
+                  td.center (#{v.chief.fullname})
                   td
                 tr
                   td
@@ -174,84 +174,9 @@ html
               tr
                 td.center(colspan=3) 
               tr
-                td.center(colspan=3) (#{managerName})
+                td.center(colspan=3) (#{v.manager.fullname})
               tr
-                td.center(colspan=3) ผู้อำนวยการ#{hospitalName}
+                td.center(colspan=3) #{v.manager.position}
               tr
-                td.center(colspan=3) ปฏิบัติราชการแทน ผู้ว่าราชการจังหวัด#{province}
-      //- | ได้รับมอบพัสดุรายการข้างต้นจากคณะกรรมการตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
-      //- br
-      //- br
-      //- table(style="width: 80%;")
-      //-   tr
-      //-     td.right(width="5%") (ลงชื่อ)
-      //-     td.center(width="20%") ...........................................................
-      //-     td.left ตำแหน่ง #{staffReceive.position_name}
-      //-     td.left &nbsp; #{staffReceive.type_name}
-      //-   tr
-      //-     td
-      //-     td.center ( #{staffReceive.title_name}#{staffReceive.fname}  #{staffReceive.lname} )
-      //-     td
-      //-     td
-      //- br
-      //- | เรียน  ผู้ว่าราชการจังหวัด#{province}
-      //- br
-      //- .fontspace
-      //- | คณะกรรมการได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่ายเงินบำรุงโรงพยาบาลประจำปีงบประมาน #{serialYear} แก่ผู้ขายต่อไป
-      //- br
-      //- br
-      //- br
-      //- table(style='width:90%;margin-left:5%;')
-      //-   tr
-      //-     td.right(width="5%")
-      //-     td.center(width="50%") ...........................................................
-      //-     td.left 
-      //-   if(!chief)
-      //-     tr
-      //-       td
-      //-       td.center 
-      //-       td
-      //-     tr
-      //-       td
-      //-       td.center 
-      //-       td
-      //-     tr
-      //-       td
-      //-       td.center 
-      //-       td
-      //-   else
-      //-     tr
-      //-       td
-      //-       td.center (#{chief.title}#{chief.fname}  #{chief.lname})
-      //-       td
-      //-     tr
-      //-       td
-      //-       td.center #{chief.position_name}
-      //-       td
-      //-     tr
-      //-       td
-      //-       td.center #{chief.position}
-      //-       td
-      //-   tr
-      //-     td
-      //-     td(style="height:20px;")
-      //-     td
-      //-   tr
-      //-     td
-      //-     td(style="height:70px;").center ทราบ
-      //-     td
-      //-   tr
-      //-     td.right(width="5%")
-      //-     td.center(width="50%") ...........................................................
-      //-     td.left 
-      //-   tr
-      //-     td.center 
-      //-     td.center  
-      //-       | (#{master})
-      //-       br
-      //-       | ผู้อำนวยการ#{hospitalName}
-      //-       br
-      //-       | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{province}
-      //-     td
-      //- - c++ 
+                td.center(colspan=3) ปฏิบัติราชการแทน ผู้ว่าราชการจังหวัด#{hospitalDetail.province}
       .pagebreak

@@ -12,56 +12,44 @@ html
   body
     button.btn.btn-sm.btn-success.btnprint(onclick='window.print()') Print
     -var s = 0;
-    - for(var v of check_receive)
+    - for(var i of head)
       .center.bold บันทึกการตรวจรับพัสดุ
       br
       table.table
         tr
-          td.right(style="padding-right: 50px;") วันที่ #{v[0].receive_date}
+          td.right(style="padding-right: 50px;") วันที่ #{i.receive_date}
       .fontspace
-      | ตามกรรมการผู้มีรายนามและตำแหน่งข้างท้าย ได้พร้อมกันตรวจรับ #{generic_name[s]}
-      | ซึ่ง #{v[0].labeler_name_po} ผู้ขายได้นำส่งตามใบสั่งซื้อของ#{hospitalName}
-      | เลขที่ 
-      if(v[0].purchase_order_book_number) 
-        | #{v[0].purchase_order_book_number} 
-      else 
-        | #{v[0].purchase_order_number} 
-      | ลงวันที่ #{v[0].podate} 
-      | เพื่อใช้ในงานการรักษาของ#{hospitalName}
-      - if(length[s] <= 5)
+      | ตามกรรมการผู้มีรายนามและตำแหน่งข้างท้าย ได้พร้อมกันตรวจรับ #{i.generic_type_name}
+      | ซึ่ง #{i.labeler_name_po} ผู้ขายได้นำส่งตามใบสั่งซื้อของ#{hospitalDetail.hospname}
+      | เลขที่ #{i.poNumber}
+      | ลงวันที่ #{i.order_date} 
+      | เพื่อใช้ในงานการรักษาของ#{hospitalDetail.hospname}
+      - if(i.details.length <= 5)
         | ดังปรากฏรายละเอียดตรวจรับ คือ
         table.table
-          - var i = 0
-            for v in check_receive[s]
-              tr
-                td.right #{v.generic_type_name} 
-                td.right &nbsp;&nbsp;#{v.amount_qty}&nbsp;&nbsp;
-                td.left รายการ 
-                td.right ตามใบส่งของเลขที่ &nbsp;&nbsp;&nbsp;
-                td.left #{v.delivery_code} &nbsp;&nbsp;&nbsp;
-                td.right เป็นเงิน 
-                td.right #{v.total_price} &nbsp;
-                td.left บาท 
-                td.left 
-              - i++
+          for v in i.details
+            tr
+              td.right #{v.generic_type_name} 
+              td.right &nbsp;&nbsp;#{v.totalItem}&nbsp;&nbsp;
+              td.left รายการ 
+              td.right ตามใบส่งของเลขที่ &nbsp;&nbsp;&nbsp;
+              td.left #{v.delivery_code} &nbsp;&nbsp;&nbsp;
+              td.right เป็นเงิน 
+              td.right #{v.total_price} &nbsp;
+              td.left บาท 
+              td.left 
           tr
             td(colspan='4').right รวมเป็นเงินทั้งสิ้น
-            td.right #{bahtText[s]} &nbsp;
-            td(colspan='4').left บาท (#{_bahtText[s]})
-            br
+            td.right #{i.totalPrice} &nbsp;
+            td(colspan='4').left บาท (#{i.bahtText})
+        br
       - else
-        | ดังปรากฏรายละเอียดตรวจรับตามใบแนบเลขที่ 
-        if(v[0].purchase_order_book_number) 
-          | #{v[0].purchase_order_book_number}
-        else
-          | #{v[0].purchase_order_number}  
+        | ดังปรากฏรายละเอียดตรวจรับตามใบแนบเลขที่ #{i.poNumber}
       | คณะกรรมการตรวจรับพัสดุเห็นว่ามีปริมาณและคุณภาพถูกต้องครบถ้วน และได้ส่งมอบให้เจ้าหน้าที่พัสดุรับไว้เรียบร้อยแล้ว 
       | จึงพร้อมกันลงลายมือชื่อไว้เป็นหลักฐาน
       br
       table(style="width: 90%; margin-left: 5%;")
-        - var c = 0
-          for v in committee[s]
-            - c++ 
+          for v in i.committee
               tr
                 td
                 td(style="height:20px;")
@@ -70,11 +58,11 @@ html
               tr
                 td.right(width="5%") (ลงชื่อ)
                 td.center(width="50%") ........................................................... 
-                td.left ตำแหน่ง #{v.pname}
-                td.left &nbsp;#{v.position_name}
+                td.left ตำแหน่ง #{v.position_name}
+                td.left &nbsp;#{v.position}
               tr
                 td
-                td.center (#{v.title_name}#{v.fname} #{v.lname})
+                td.center (#{v.fullname})
                 td.center 
                 td
       | ได้รับมอบพัสดุรายการข้างต้นจากคณะกรรมการตรวจรับพัสดุไว้แล้วเพื่อเบิกจ่ายต่อไป
@@ -84,17 +72,17 @@ html
         tr
           td.right(width="5%") (ลงชื่อ)
           td.center(width="20%") ...........................................................
-          td.left ตำแหน่ง #{v[0].staffReceive.position_name}
-          td.left &nbsp; #{v[0].staffReceive.type_name}
+          td.left ตำแหน่ง #{i.supply.position_name}
+          td.left &nbsp; #{i.supply.position}
         tr
           td
-          td.center ( #{v[0].staffReceive.title_name}#{v[0].staffReceive.fname}  #{v[0].staffReceive.lname} )
+          td.center ( #{i.supply.fullname} )
           td
           td
-      | เรียน  ผู้ว่าราชการจังหวัด#{province}
+      | เรียน  ผู้ว่าราชการจังหวัด#{hospitalDetail.province}
       br
       .fontspace
-      | คณะกรรมการได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่ายเงินบำรุงโรงพยาบาลประจำปีงบประมาน #{serialYear} แก่ผู้ขายต่อไป
+      | คณะกรรมการได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่ายเงินบำรุงโรงพยาบาลประจำปีงบประมาน #{i.serialYear} แก่ผู้ขายต่อไป
       br
       br
       br
@@ -103,7 +91,7 @@ html
           td.right(width="5%") (ลงชื่อ)
           td.center(width="50%") ...........................................................
           td.left 
-        if(!v[0].chief)
+        if(i.chief===null)
           tr
             td
             td.center 
@@ -114,20 +102,20 @@ html
             td
           tr
             td
-            td.center 
+            td.center หัวหน้าเจ้าหน้าที่
             td
         else
           tr
             td
-            td.center (#{v[0].chief.title_name}#{v[0].chief.fname}  #{v[0].chief.lname})
+            td.center (#{i.chief.fullname})
             td
           tr
             td
-            td.center #{v[0].chief.position_name}
+            td.center #{i.chief.position_name}
             td
           tr
             td
-            td.center #{v[0].chief.position}
+            td.center #{i.chief.position}
             td
         tr
           td
@@ -144,35 +132,31 @@ html
         tr
           td.center 
           td.center  
-            | (#{master})
+            | (#{i.manager.fullname})
             br
-            | ผู้อำนวยการ#{hospitalName}
+            | #{i.manager.position}
             br
-            | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{province}
+            | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{hospitalDetail.province}
           td
       .pagebreak
-      - if(length > 5)
+      - if(i.details.length > 5)
         .center.bold รายละเอียดตรวจรับ(ใบแนบ)
         br
         table.table
           tr
-            td.left เลขที่ #{check_receive[0].purchase_order_number}-๑
+            td.left เลขที่ #{i.poNumber}
         br
         br
         table.table
-          - var i = 0
-            for v in check_receive[s]
-              tr
-                td.right #{v.generic_type_name} 
-                td.right &nbsp;&nbsp;#{v.amount_qty}&nbsp;&nbsp;
-                td.left รายการ 
-                td.right ตามใบส่งของเลขที่ &nbsp;
-                td.left #{v.delivery_code} 
-                td.right เป็นเงิน 
-                td.right #{v.total_price} &nbsp;
-                td.left บาท 
-                td.left (#{bahtText[s][i]})
-              br
-            - i++  
-      - s++
+          for v in i.details
+            tr
+              td.right #{v.generic_type_name} 
+              td.right &nbsp;&nbsp;#{v.totalItem}&nbsp;&nbsp;
+              td.left รายการ 
+              td.right ตามใบส่งของเลขที่ &nbsp;
+              td.left #{v.delivery_code} 
+              td.right เป็นเงิน 
+              td.right #{v.total_price} &nbsp;
+              td.left บาท 
+              td.left (#{v.bahtText})
       .pagebreak
