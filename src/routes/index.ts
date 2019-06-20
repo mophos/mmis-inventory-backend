@@ -2861,6 +2861,7 @@ router.get('/report/check/receive/singburi', wrap(async (req, res, next) => {
     let _bahtText = inventoryReportModel.bahtText(v.total_price);
     v.bahtText = _bahtText;
     v.total_price = inventoryReportModel.comma(v.total_price);
+    if (v.verify_committee_id === undefined) { res.render('no_commitee'); }
     v.committee = await getCommitee(db, v.verify_committee_id);
     if (v.committee === undefined) { res.render('no_commitee'); }
     let word: any = 'ผู้';
@@ -2868,7 +2869,6 @@ router.get('/report/check/receive/singburi', wrap(async (req, res, next) => {
       word = 'คณะกรรมการ';
     }
     v.words = word;
-    v.chief = await getOfficer(db, v.chief_id);
     v.staffReceive = await getOfficer(db, v.supply_id);
   }
   let serialYear = moment().get('year') + 543;
@@ -3381,15 +3381,10 @@ router.get('/report/check/receives/singburi', wrap(async (req, res, next) => {
 
   for (let i in receiveID) {
     let _check_receive: any = []
-    let committee: any = []
     for (let ii in receiveID[i]) {
       let _check = await inventoryReportModel.checkReceive(db, receiveID[i][ii].receive_id);
       _check_receive.push(_check[0][0]);
     }
-    committee = await inventoryReportModel.invenCommittee(db, receiveID[i][0].receive_id);
-    committees.push(committee[0]);
-    let _invenChief = await inventoryReportModel.inven2Chief(db, receiveID[i][0].receive_id)
-    invenChief.push(_invenChief)
     length.push(_check_receive.length);
     check_receive.push(_check_receive);
   }
@@ -3415,18 +3410,13 @@ router.get('/report/check/receives/singburi', wrap(async (req, res, next) => {
     _bahtText.push(inventoryReportModel.bahtText(totalPrice));
     _generic_name = _.join(_.uniq(_generic_name), ', ')
     generic_name.push(_generic_name)
+    let committee: any = []
+    if (objects[0].verify_committee_id === undefined) { res.render('no_commitee'); }
+    committee = await  getCommitee(db, objects[0].verify_committee_id);
+    if (committee === undefined) { res.render('no_commitee'); }
+    committees.push(committee);
+    objects[0].staffReceive = await getOfficer(db, objects[0].supply_id);
 
-    let chief = await inventoryReportModel.peopleFullName(db, objects[0].chief_id);
-    objects[0].chief = chief[0];
-    let buyer = await inventoryReportModel.peopleFullName(db, objects[0].supply_id);
-    let _staffReceive: any;
-
-    if (buyer[0] === undefined) {
-      _staffReceive = await inventoryReportModel.staffReceive(db, 'STAFF_RECEIVE');
-      objects[0].staffReceive = _staffReceive[0];
-    } else {
-      objects[0].staffReceive = buyer[0];
-    }
   }
 
   let serialYear = moment().get('year') + 543;
@@ -3447,7 +3437,6 @@ router.get('/report/check/receives/singburi', wrap(async (req, res, next) => {
     province: province,
     bahtText: bahtText,
     committee: committees,
-    invenChief: invenChief,
     generic_name: generic_name
   });
 }));
