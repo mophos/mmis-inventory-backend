@@ -70,8 +70,8 @@ html
               tr
                 td.right(width="5%") (ลงชื่อ)
                 td.center(width="50%") ........................................................... 
-                td.left ตำแหน่ง #{v.pname}
-                td.left &nbsp;#{v.position_name}
+                td.left ตำแหน่ง #{v.position_name}
+                td.left &nbsp;#{v.position}
               tr
                 td
                 td.center (#{v.title_name}#{v.fname} #{v.lname})
@@ -85,10 +85,10 @@ html
           td.right(width="5%") (ลงชื่อ)
           td.center(width="20%") ...........................................................
           td.left ตำแหน่ง #{v[0].staffReceive.position_name}
-          td.left &nbsp; #{v[0].staffReceive.type_name}
+          td.left &nbsp; #{v[0].staffReceive.position}
         tr
           td
-          td.center ( #{v[0].staffReceive.title_name}#{v[0].staffReceive.fname}  #{v[0].staffReceive.lname} )
+          td.center ( #{v[0].staffReceive.fullname })
           td
           td
       | เรียน  ผู้ว่าราชการจังหวัด#{province}
