@@ -3412,7 +3412,7 @@ router.get('/report/check/receives/singburi', wrap(async (req, res, next) => {
     generic_name.push(_generic_name)
     let committee: any = []
     if (objects[0].verify_committee_id === undefined) { res.render('no_commitee'); }
-    committee = await  getCommitee(db, objects[0].verify_committee_id);
+    committee = await getCommitee(db, objects[0].verify_committee_id);
     if (committee === undefined) { res.render('no_commitee'); }
     committees.push(committee);
     objects[0].staffReceive = await getOfficer(db, objects[0].supply_id);
