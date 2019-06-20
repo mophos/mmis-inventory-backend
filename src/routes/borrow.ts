@@ -901,7 +901,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
     }
   }
   await borrowModel.changeApproveStatusIds(db, borrowIds, peopleUserId);
-
+  
   return returnData;
 });
 

@@ -26,20 +26,22 @@ router.post('/', async (req, res, next) => {
 
     let _detail: any = [];
 
-    detail.forEach(v => {
-      let obj: any = {};
-      obj.borrow_note_id = borrowId;
-      obj.generic_id = v.generic_id;
-      obj.qty = v.qty; // pack
-      obj.unit_generic_id = v.unit_generic_id;
+    for (const v of detail) {
+      let obj: any = {
+        borrow_note_id: borrowId,
+        generic_id: v.generic_id,
+        qty: v.qty,
+        unit_generic_id: v.unit_generic_id
+      };
       _detail.push(obj);
-    });
+    }
 
     await borrowModel.saveDetail(db, _detail);
 
     res.send({ ok: true });
   } catch (error) {
     res.send({ ok: false, error: error.message });
+    console.log(error)
   } finally {
     db.destroy();
   }
