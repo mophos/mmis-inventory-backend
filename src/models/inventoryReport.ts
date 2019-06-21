@@ -3289,10 +3289,11 @@ OR sc.ref_src like ?
         return knex.raw(sql);
     }
 
-    summaryDisbursement(knex: Knex, startDate: any, endDate: any, warehouseId: any) {
+    summaryDisbursement(knex: Knex, startDate: any, endDate: any, warehouseId: any, dateSetting) {
+        let date = dateSetting ? 'ro.requisition_date' : 'rc.approve_date'
         let subSql = `
         SELECT 
-            ro.requisition_date,
+            ${date} as requisition_date,
             ro.wm_requisition,
             rci.unit_cost as cost,
             SUM(rci.confirm_qty) as confirm_qty,
@@ -3304,7 +3305,7 @@ OR sc.ref_src like ?
             JOIN wm_requisition_confirm_items rci ON rc.confirm_id = rci.confirm_id AND rci.confirm_qty > 0
             JOIN wm_products wp ON rci.wm_product_id = wp.wm_product_id
             JOIN wm_warehouses ww ON ww.warehouse_id = ro.wm_requisition
-            WHERE ro.requisition_date BETWEEN '${startDate}' and '${endDate}'
+            WHERE ${date} BETWEEN '${startDate}' and '${endDate}'
         `;
         if (warehouseId != '0') {
             subSql += `AND ww.warehouse_id = '${warehouseId}'`
@@ -3318,12 +3319,13 @@ OR sc.ref_src like ?
             SELECT
             count(*)
             FROM
-            wm_requisition_orders r
+            wm_requisition_orders ro
+            left JOIN wm_requisition_confirms rc ON ro.requisition_order_id = rc.requisition_order_id
             WHERE
-            r.wm_requisition = t.wm_requisition
-            AND r.is_cancel = 'N' and r.requisition_date BETWEEN '${startDate}' and '${endDate}'
+            ro.wm_requisition = t.wm_requisition
+            AND ro.is_cancel = 'N' and ${date} BETWEEN '${startDate}' and '${endDate}'
             GROUP BY
-            r.wm_requisition
+            ro.wm_requisition
         ) count_requisition,
         count(*) AS count_requisition_item,
         SUM(t.cost*t.confirm_qty) AS cost,
@@ -3340,7 +3342,9 @@ OR sc.ref_src like ?
         return knex.raw(sql);
     }
 
-    summaryDisbursement_list(knex: Knex, startDate: any, endDate: any, warehouse_id: any) {
+
+    summaryDisbursement_list(knex: Knex, startDate: any, endDate: any, warehouse_id: any, dateSetting) {
+        let date = dateSetting ? 'ro.requisition_date' : 'rc.approve_date'        
         let sql = `SELECT
         mgt.generic_type_name,
         a.*
@@ -3371,7 +3375,7 @@ OR sc.ref_src like ?
             JOIN wm_products wp ON rci.wm_product_id = wp.wm_product_id
             WHERE
             ro.wm_requisition = '${warehouse_id}'
-            and  ro.requisition_date BETWEEN '${startDate}' and '${endDate}'
+            and  ${date} BETWEEN '${startDate}' and '${endDate}'
         	and ro.is_cancel = 'N'  
             GROUP BY rci.generic_id
         ) as t
@@ -4545,7 +4549,7 @@ GROUP BY
             .where('rc.is_approve', 'Y')
             .where('ro.wm_requisition', warehouseId);
         if (dateSetting) {
-            sql.whereBetween('ro.approve_date', [startDate, endDate])
+            sql.whereBetween('rc.approve_date', [startDate, endDate])
         } else {
             sql.whereBetween('ro.requisition_date', [startDate, endDate])
         }
@@ -4566,7 +4570,7 @@ GROUP BY
             .join('mm_generics as mg', 'mg.generic_id', 'rci.generic_id')
             .join('mm_units as mu', 'mg.primary_unit_id', 'mu.unit_id');
         if (dateSetting) {
-            sql.whereBetween('ro.approve_date', [startDate, endDate])
+            sql.whereBetween('rc.approve_date', [startDate, endDate])
         } else {
             sql.whereBetween('ro.requisition_date', [startDate, endDate])
         }
