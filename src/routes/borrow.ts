@@ -246,32 +246,12 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
                 from_unit_name: p.from_unit_name,
                 to_unit_name: p.to_unit_name
               }
-              if (qty > 0) {
-                g.products.push(obj);
-                idx++;
-              } else if (idx === 0 && qty === 0) {
-                g.products.push({
-                  wm_product_id: p.wm_product_id,
-                  product_qty: g.qty / p.conversion_qty,
-                  generic_id: g.generic_id,
-                  conversion_qty: p.conversion_qty,
-                  product_name: p.product_name,
-                  pack_remain_qty: p.pack_remain_qty,
-                  small_remain_qty: p.small_remain_qty,
-                  lot_no: p.lot_no,
-                  lot_time: p.lot_time,
-                  expired_date: p.expired_date,
-                  from_unit_name: p.from_unit_name,
-                  to_unit_name: p.to_unit_name
-                });
-                idx++;
-              }
+              g.products.push(obj);
+              idx++;
             }
           }
         }
       }
-      // const rsProducts = await borrowModel.getProductsInfo(db, borrowId, g.borrow_generic_id);
-      // let _products = rsProducts[0];
     }
     res.send({ ok: true, rows: _generics });
   } catch (error) {
