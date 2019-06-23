@@ -3904,7 +3904,8 @@ router.get('/report/summary/disbursement', wrap(async (req, res, next) => {
   let warehouseId = req.query.warehouseId
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate, warehouseId);
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
+  let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate, warehouseId, dateSetting);
   if (rs[0].length == 0) { res.render('error404'); }
   let summary = rs[0]
   let warehouse_id = []
@@ -3916,7 +3917,7 @@ router.get('/report/summary/disbursement', wrap(async (req, res, next) => {
   });
 
   for (let i in summary) {
-    let list = await inventoryReportModel.summaryDisbursement_list(db, startDate, endDate, warehouse_id[i]);
+    let list = await inventoryReportModel.summaryDisbursement_list(db, startDate, endDate, warehouse_id[i], dateSetting);
     list = list[0]
     list.forEach(v => {
       v.cost = v.cost !== null ? v.cost : '0';
@@ -3945,7 +3946,8 @@ router.get('/report/summary/disbursement/excel', wrap(async (req, res, next) => 
   let warehouseId = req.query.warehouseId
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate, warehouseId);
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
+  let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate, warehouseId, dateSetting);
   let summary = rs[0];
   // let summary_list = [];
   let data = []
@@ -3958,7 +3960,7 @@ router.get('/report/summary/disbursement/excel', wrap(async (req, res, next) => 
     data.push({ '': 'แยกรายการตามประเภท', ' ': '', '  ': '' });
     data.push({ '': '', ' ': 'จำนวนรายการ', '  ': 'มูลค่าเบิก' });
 
-    let list = await inventoryReportModel.summaryDisbursement_list(db, startDate, endDate, v.wm_requisition);
+    let list = await inventoryReportModel.summaryDisbursement_list(db, startDate, endDate, v.wm_requisition, dateSetting);
     for (const l of list[0]) {
       l.cost = l.cost !== null ? l.cost : '0';
       l.count = l.count !== null ? l.count : '0';
