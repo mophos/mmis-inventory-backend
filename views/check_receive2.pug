@@ -30,7 +30,7 @@ html
         tr
           td.left 
             .bold.conleft ที่ &nbsp;
-            | #{hospitalDetail.bookPrefix}
+            | #{hospitalDetail.book_prefix}
           td.left วันที่ #{v.receive_date}
       .left.bold.conleft
         | เรื่อง&nbsp;
@@ -89,21 +89,33 @@ html
       | ซึ่งข้าพเจ้าได้ทำการตรวจรับพัสดุตามใบส่งของเป็นการถูกต้องแล้ว ตามวันที่ตรวจรับของ ดังกล่าวข้างบน จึงได้ลงนามไว้เป็นหลักฐานและได้ส่งมอบพัสดุดังกล่าวให้กับเจ้าหน้าที่พัสดุแล้ว
       br
       table(style="width: 50%; margin-left:50%;")
-          - var i = 0
-                - for(var c of v.committee)
-                  - i++ 
-                    tr
-                      td
-                      td(style="height:20px;")
-                      td 
-                    tr
-                      td.right(width="5%") ลงชื่อ
-                      td.center(width="60%") ........................................................... 
-                      td.left &nbsp;#{c.position}
-                    tr
-                      td
-                      td.center (#{c.fullname})
-                      td.center 
+        if(!v.committee)
+          tr
+            td
+            td(style="height:20px;")
+            td 
+          tr
+            td.right(width="5%") ลงชื่อ
+            td.center(width="60%") ........................................................... 
+            td.left &nbsp;............
+          tr
+            td
+            td.center (..............................................)
+            td.center
+        else
+          - for(var c of v.committee)
+            tr
+              td
+              td(style="height:20px;")
+              td 
+            tr
+              td.right(width="5%") ลงชื่อ
+              td.center(width="60%") ........................................................... 
+              td.left &nbsp;#{c.position}
+            tr
+              td
+              td.center (#{c.fullname})
+              td.center
       | เจ้าหน้าที่พัสดุได้รับมอบพัสดุตามรายการข้างต้นถูกต้องและได้ลงบัญชีพัสดุเรียบร้อยแล้ว
       br
       br
@@ -112,10 +124,10 @@ html
           tr
             td.right(style="width:5%") ลงชื่อ
             td.center(style="width:60%") ...........................................................
-            td.left #{v.supply.position}
+            td.left ...................
           tr
             td.right
-            td.center (#{v.supply.fullname})
+            td.center (......................................)
             td.left
         else
           tr
@@ -142,7 +154,7 @@ html
               tr
                 td.right(style="width:10%") ลงชื่อ
                 td.center(style="width:30%") ...........................................................
-                td.left #{v.chiefPosition}
+                td.left 
               if(!v.chief)
                 tr
                   td
@@ -154,7 +166,7 @@ html
                   td
                 tr
                   td
-                  td.center 
+                  td.center หัวหน้าเจ้าที่
                   td
               else
                 tr
@@ -173,10 +185,17 @@ html
             table.table
               tr
                 td.center(colspan=3) 
-              tr
-                td.center(colspan=3) (#{v.manager.fullname})
-              tr
-                td.center(colspan=3) #{v.manager.position}
+              if(!v.manager)
+                tr
+                  td.center(colspan=3) (...........................................................)
+                tr
+                  td.center(colspan=3) ...........................................................
+              else
+                tr
+                  td.center(colspan=3) (#{v.manager.fullname})
+                tr
+                  td.center(colspan=3) #{v.manager.position}
               tr
                 td.center(colspan=3) ปฏิบัติราชการแทน ผู้ว่าราชการจังหวัด#{hospitalDetail.province}
+               
       .pagebreak

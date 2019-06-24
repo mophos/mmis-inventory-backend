@@ -810,6 +810,20 @@ router.get('/orders/confirm/:confirmId', async (req, res, next) => {
   }
 });
 
+router.get('/orders/edit-confirm/:confirmId', async (req, res, next) => {
+  let db = req.db;
+  let confirmId = req.params.confirmId;
+
+  try {
+    let rs: any = await orderModel.getEditConfirmItems(db, confirmId);
+    res.send({ ok: true, rows: rs[0] });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
 router.post('/orders/confirm-without-unpaid', async (req, res, next) => {
   let db = req.db;
   try {
