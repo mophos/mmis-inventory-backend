@@ -4095,7 +4095,8 @@ router.get('/report/receive/export', async (req, res, next) => {
         'บริษัทผู้จำหน่าย': v.labeler_name_po,
         'รูปแบบการจัดซื้อ(Generic)': v.bid_name,
         'กลุ่มยา': v.product_group_name,
-        'ประเภทยา': v.generic_hosp_name
+        'ประเภทยา': v.generic_hosp_name,
+        'เลขที่ใบส่งของ': v.delivery_code
       };
       json.push(obj);
     });
