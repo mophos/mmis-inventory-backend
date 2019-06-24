@@ -873,6 +873,42 @@ export class RequisitionOrderModel {
     return db.raw(sql, [confirmId]);
   }
 
+  getEditConfirmItems(db: Knex, confirmId: any) {
+    let sql = `
+    SELECT
+      rci.wm_product_id,
+      rci.generic_id,
+      floor( rci.confirm_qty / ug.qty ) AS confirm_qty,
+      ug.qty AS conversion_qty,
+      mp.product_name,
+      mp.working_code,
+      wp.lot_no,
+      wp.lot_time,
+      wp.expired_date,
+      mu.unit_name AS to_unit_name,
+      mu2.unit_name AS from_unit_name,
+      ug.qty AS conversion_qty,
+      vr.remain_qty + rci.confirm_qty AS small_remain_qty,
+      ( vr.remain_qty + rci.confirm_qty )/ ug.qty AS pack_remain_qty,
+      wp.unit_generic_id,
+      wp.cost,
+      wp.product_id 
+    FROM
+      wm_requisition_confirm_items AS rci
+      INNER JOIN wm_requisition_confirms AS rc ON rci.confirm_id = rc.confirm_id
+      INNER JOIN wm_requisition_orders AS ro ON ro.requisition_order_id = rc.requisition_order_id
+      INNER JOIN view_product_reserve AS vr ON vr.wm_product_id = rci.wm_product_id
+      INNER JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
+      INNER JOIN mm_unit_generics AS ug ON ug.unit_generic_id = wp.unit_generic_id
+      INNER JOIN mm_units AS mu ON mu.unit_id = ug.to_unit_id
+      INNER JOIN mm_units AS mu2 ON mu2.unit_id = ug.from_unit_id
+      INNER JOIN mm_products AS mp ON wp.product_id = mp.product_id 
+    WHERE
+      rci.confirm_id = ?
+    `;
+    return db.raw(sql, [confirmId]);
+  }
+
   saveApproveConfirmOrder(db: Knex, confirmId: any, approveData: any) {
     return db('wm_requisition_confirms')
       .where('confirm_id', confirmId)
