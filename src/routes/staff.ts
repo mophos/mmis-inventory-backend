@@ -317,6 +317,23 @@ router.post('/warehouse/generics/min-max', co(async (req, res, next) => {
   }
 }));
 
+router.post('/warehouse/min-max/search', co(async (req, res, next) => {
+  let warehouseId = req.decoded.warehouseId;
+  let query = req.body.query;
+  let genericType = req.body.genericType;
+  let db = req.db;
+
+  try {
+    let rows = await warehouseModel.searchGenericWarehouse(db, warehouseId, query, genericType);
+    res.send({ ok: true, rows: rows });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
 router.post('/warehouse/save-minmax', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   let _processDate = req.body.processDate;
