@@ -5,6 +5,7 @@ export class MinMaxModel {
 
   getMinMaxGroup(knex: Knex) {
     return knex('mm_minmax_groups')
+    .where('is_deleted','N')
   }
 
   getMinMaxGroupDetail(knex: Knex, groupId: any, warehouseId: string, genericType: any, query: any) {
