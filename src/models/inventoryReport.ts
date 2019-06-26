@@ -3344,7 +3344,7 @@ OR sc.ref_src like ?
 
 
     summaryDisbursement_list(knex: Knex, startDate: any, endDate: any, warehouse_id: any, dateSetting) {
-        let date = dateSetting ? 'ro.requisition_date' : 'rc.approve_date'        
+        let date = dateSetting ? 'ro.requisition_date' : 'rc.approve_date'
         let sql = `SELECT
         mgt.generic_type_name,
         a.*
@@ -3554,6 +3554,7 @@ OR sc.ref_src like ?
         ml.labeler_name AS labeler_name_po,
         ws.lot_no,
         lb.bid_name,
+        lbp.bid_name bid_nameP,
         pg.product_group_name
     FROM
         ${dateSetting} as ws
@@ -3570,6 +3571,7 @@ OR sc.ref_src like ?
         LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
         LEFT JOIN mm_labelers ml ON ppo.labeler_id = ml.labeler_id
         LEFT JOIN l_bid_type AS lb ON lb.bid_id = mg.purchasing_method 
+        LEFT JOIN l_bid_type AS lbp ON lbp.bid_id = ppo.purchase_type_id
     WHERE
         ws.transaction_type = 'REV'
         AND ws.stock_date BETWEEN '${startdate} 00:00:00' 
@@ -3813,13 +3815,14 @@ FROM
             .orderBy('bid_name');
     }
 
-    purchaseBitType(knex: Knex, startdate: any, enddate: any, wareHouseId: any, genericTypeId: any, dateSetting = 'stock_date') {
+    purchaseBitType(knex: Knex, startdate: any, enddate: any, wareHouseId: any, genericTypeId: any, dateSetting = 'stock_date', getFrom = 'M') {
+        let from = getFrom =='M' ? 'mg.purchasing_method' : 'ppo.purchase_type_id'
         let sql = `SELECT
-        lb.bid_id,
-        lb.bid_name,
-        mga.account_id,
-        mga.account_name,
-        mga.account_code,
+        ifnull(lb.bid_id,'00') bid_id ,
+        ifnull(lb.bid_name,'ไม่ระบุ') bid_name ,
+        ifnull(mga.account_id,'00') account_id ,
+        ifnull(mga.account_name, 'ไม่ระบุ') account_name ,
+        ifnull(mga.account_code,'00') account_code ,
         mgt.generic_type_id,
         mgt.generic_type_name,
         mgt.generic_type_code,
@@ -3831,7 +3834,7 @@ FROM
         JOIN mm_generics AS mg ON mg.generic_id = ws.generic_id
         LEFT JOIN mm_generic_types mgt ON mgt.generic_type_id = mg.generic_type_id
         LEFT JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
-        LEFT JOIN l_bid_type AS lb ON lb.bid_id = mg.purchasing_method
+        LEFT JOIN l_bid_type AS lb ON lb.bid_id = ${from}
         WHERE
         ws.transaction_type = 'REV' 
         AND ws.${dateSetting} BETWEEN '${startdate} 00:00:00' 
