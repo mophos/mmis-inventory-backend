@@ -342,12 +342,19 @@ router.get('/report/purchase-bit-type', wrap(async (req, res, next) => {
   genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
   let warehouseId: any = req.query.warehouseId;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
+  let getFrom = req.query.getFrom
   if (!warehouseId) {
     warehouseId = req.decoded.warehouseId;
   }
   try {
-    const rs: any = await inventoryReportModel.purchaseBitType(db, startdate, enddate, warehouseId, genericTypeId, dateSetting)
-    const rst: any = await inventoryReportModel.lBitType(db)
+    const rs: any = await inventoryReportModel.purchaseBitType(db, startdate, enddate, warehouseId, genericTypeId, dateSetting, getFrom)
+    let rst: any = await inventoryReportModel.lBitType(db)
+    rst.push({
+      bid_id: '00',
+      bid_name: 'ไม่ระบุ',
+      isactive: 1,
+      isdefault: null
+    })
     startdate = moment(startdate).isValid() ? moment(startdate).format('DD MMM ') + (+moment(startdate).get('year') + 543) : '-'
     enddate = moment(enddate).isValid() ? moment(enddate).format('DD MMM ') + (+moment(enddate).get('year') + 543) : '-'
     let _data = []
@@ -4096,7 +4103,8 @@ router.get('/report/receive/export', async (req, res, next) => {
         'รูปแบบการจัดซื้อ(Generic)': v.bid_name,
         'กลุ่มยา': v.product_group_name,
         'ประเภทยา': v.generic_hosp_name,
-        'เลขที่ใบส่งของ': v.delivery_code
+        'เลขที่ใบส่งของ': v.delivery_code,
+        'รูปแบบการจัดซื้อ(Purchase)': v.bid_nameP
       };
       json.push(obj);
     });
