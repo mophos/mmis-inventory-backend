@@ -342,12 +342,19 @@ router.get('/report/purchase-bit-type', wrap(async (req, res, next) => {
   genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
   let warehouseId: any = req.query.warehouseId;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
+  let getFrom = req.query.getFrom
   if (!warehouseId) {
     warehouseId = req.decoded.warehouseId;
   }
   try {
-    const rs: any = await inventoryReportModel.purchaseBitType(db, startdate, enddate, warehouseId, genericTypeId, dateSetting)
-    const rst: any = await inventoryReportModel.lBitType(db)
+    const rs: any = await inventoryReportModel.purchaseBitType(db, startdate, enddate, warehouseId, genericTypeId, dateSetting, getFrom)
+    let rst: any = await inventoryReportModel.lBitType(db)
+    rst.push({
+      bid_id: '00',
+      bid_name: 'ไม่ระบุ',
+      isactive: 1,
+      isdefault: null
+    })
     startdate = moment(startdate).isValid() ? moment(startdate).format('DD MMM ') + (+moment(startdate).get('year') + 543) : '-'
     enddate = moment(enddate).isValid() ? moment(enddate).format('DD MMM ') + (+moment(enddate).get('year') + 543) : '-'
     let _data = []
@@ -2861,6 +2868,7 @@ router.get('/report/check/receive/singburi', wrap(async (req, res, next) => {
     let _bahtText = inventoryReportModel.bahtText(v.total_price);
     v.bahtText = _bahtText;
     v.total_price = inventoryReportModel.comma(v.total_price);
+    if (v.verify_committee_id === undefined) { res.render('no_commitee'); }
     v.committee = await getCommitee(db, v.verify_committee_id);
     if (v.committee === undefined) { res.render('no_commitee'); }
     let word: any = 'ผู้';
@@ -2868,7 +2876,6 @@ router.get('/report/check/receive/singburi', wrap(async (req, res, next) => {
       word = 'คณะกรรมการ';
     }
     v.words = word;
-    v.chief = await getOfficer(db, v.chief_id);
     v.staffReceive = await getOfficer(db, v.supply_id);
   }
   let serialYear = moment().get('year') + 543;
@@ -3381,15 +3388,10 @@ router.get('/report/check/receives/singburi', wrap(async (req, res, next) => {
 
   for (let i in receiveID) {
     let _check_receive: any = []
-    let committee: any = []
     for (let ii in receiveID[i]) {
       let _check = await inventoryReportModel.checkReceive(db, receiveID[i][ii].receive_id);
       _check_receive.push(_check[0][0]);
     }
-    committee = await inventoryReportModel.invenCommittee(db, receiveID[i][0].receive_id);
-    committees.push(committee[0]);
-    let _invenChief = await inventoryReportModel.inven2Chief(db, receiveID[i][0].receive_id)
-    invenChief.push(_invenChief)
     length.push(_check_receive.length);
     check_receive.push(_check_receive);
   }
@@ -3415,18 +3417,13 @@ router.get('/report/check/receives/singburi', wrap(async (req, res, next) => {
     _bahtText.push(inventoryReportModel.bahtText(totalPrice));
     _generic_name = _.join(_.uniq(_generic_name), ', ')
     generic_name.push(_generic_name)
+    let committee: any = []
+    if (objects[0].verify_committee_id === undefined) { res.render('no_commitee'); }
+    committee = await getCommitee(db, objects[0].verify_committee_id);
+    if (committee === undefined) { res.render('no_commitee'); }
+    committees.push(committee);
+    objects[0].staffReceive = await getOfficer(db, objects[0].supply_id);
 
-    let chief = await inventoryReportModel.peopleFullName(db, objects[0].chief_id);
-    objects[0].chief = chief[0];
-    let buyer = await inventoryReportModel.peopleFullName(db, objects[0].supply_id);
-    let _staffReceive: any;
-
-    if (buyer[0] === undefined) {
-      _staffReceive = await inventoryReportModel.staffReceive(db, 'STAFF_RECEIVE');
-      objects[0].staffReceive = _staffReceive[0];
-    } else {
-      objects[0].staffReceive = buyer[0];
-    }
   }
 
   let serialYear = moment().get('year') + 543;
@@ -3447,7 +3444,6 @@ router.get('/report/check/receives/singburi', wrap(async (req, res, next) => {
     province: province,
     bahtText: bahtText,
     committee: committees,
-    invenChief: invenChief,
     generic_name: generic_name
   });
 }));
@@ -3915,7 +3911,8 @@ router.get('/report/summary/disbursement', wrap(async (req, res, next) => {
   let warehouseId = req.query.warehouseId
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate, warehouseId);
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
+  let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate, warehouseId, dateSetting);
   if (rs[0].length == 0) { res.render('error404'); }
   let summary = rs[0]
   let warehouse_id = []
@@ -3927,7 +3924,7 @@ router.get('/report/summary/disbursement', wrap(async (req, res, next) => {
   });
 
   for (let i in summary) {
-    let list = await inventoryReportModel.summaryDisbursement_list(db, startDate, endDate, warehouse_id[i]);
+    let list = await inventoryReportModel.summaryDisbursement_list(db, startDate, endDate, warehouse_id[i], dateSetting);
     list = list[0]
     list.forEach(v => {
       v.cost = v.cost !== null ? v.cost : '0';
@@ -3956,7 +3953,8 @@ router.get('/report/summary/disbursement/excel', wrap(async (req, res, next) => 
   let warehouseId = req.query.warehouseId
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate, warehouseId);
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
+  let rs = await inventoryReportModel.summaryDisbursement(db, startDate, endDate, warehouseId, dateSetting);
   let summary = rs[0];
   // let summary_list = [];
   let data = []
@@ -3969,7 +3967,7 @@ router.get('/report/summary/disbursement/excel', wrap(async (req, res, next) => 
     data.push({ '': 'แยกรายการตามประเภท', ' ': '', '  ': '' });
     data.push({ '': '', ' ': 'จำนวนรายการ', '  ': 'มูลค่าเบิก' });
 
-    let list = await inventoryReportModel.summaryDisbursement_list(db, startDate, endDate, v.wm_requisition);
+    let list = await inventoryReportModel.summaryDisbursement_list(db, startDate, endDate, v.wm_requisition, dateSetting);
     for (const l of list[0]) {
       l.cost = l.cost !== null ? l.cost : '0';
       l.count = l.count !== null ? l.count : '0';
@@ -4104,7 +4102,9 @@ router.get('/report/receive/export', async (req, res, next) => {
         'บริษัทผู้จำหน่าย': v.labeler_name_po,
         'รูปแบบการจัดซื้อ(Generic)': v.bid_name,
         'กลุ่มยา': v.product_group_name,
-        'ประเภทยา': v.generic_hosp_name
+        'ประเภทยา': v.generic_hosp_name,
+        'เลขที่ใบส่งของ': v.delivery_code,
+        'รูปแบบการจัดซื้อ(Purchase)': v.bid_nameP
       };
       json.push(obj);
     });

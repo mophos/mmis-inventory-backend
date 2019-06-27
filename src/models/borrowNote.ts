@@ -62,47 +62,34 @@ export class BorrowNoteModel {
 
   getAllGeneric(db: Knex, warehouseId: any, dstWarehouseId: any) {
     let sql = `
-    SELECT * FROM (
     SELECT
       b.borrow_id,
       b.borrow_code,
       mg.generic_id,
       mg.generic_name,
-      SUM( d.qty ) AS qty,
+      d.qty AS qty,
       lu.unit_name AS large_unit,
       mug.qty AS conversion,
       su.unit_name AS small_unit,
-      SUM( d.qty * mug.qty ) AS unpaidQty,
-      IFNULL( wp.wpQty, 0 ) AS wpQty,
-      mug.unit_generic_id
+      d.qty * mug.qty AS unpaidQty,
+      ( SELECT sum( remain_qty ) FROM view_product_reserve WHERE generic_id = mg.generic_id AND warehouse_id = ${warehouseId} GROUP BY generic_id ) AS wpQty,
+      mug.unit_generic_id 
     FROM
       wm_borrow_note_detail d
-      JOIN wm_borrow_notes n ON n.borrow_note_id = d.borrow_note_id AND n.is_cancel = 'N'
-      JOIN wm_borrow b ON b.borrow_id = n.document_ref_id AND n.is_approve = 'N'
+      JOIN wm_borrow_notes n ON n.borrow_note_id = d.borrow_note_id 
+      AND n.is_cancel = 'N '
+      JOIN wm_borrow b ON b.borrow_id = n.document_ref_id 
+      AND n.is_approve = 'N '
       JOIN mm_generics mg ON mg.generic_id = d.generic_id
       JOIN mm_unit_generics mug ON mug.unit_generic_id = d.unit_generic_id
       JOIN mm_units lu ON lu.unit_id = mug.from_unit_id
-      JOIN mm_units su ON su.unit_id = mug.to_unit_id
-      LEFT JOIN (
-        SELECT
-        mp.generic_id,
-        SUM( wp.remain_qty ) AS wpQty 
-      FROM
-        view_product_reserve wp
-        JOIN wm_products w ON w.wm_product_id = wp.wm_product_id
-        JOIN mm_products mp ON mp.product_id = wp.product_id 
-      WHERE
-        wp.warehouse_id = ${warehouseId}
-      GROUP BY
-        mp.generic_id,
-        w.unit_generic_id
-      ) AS wp ON wp.generic_id = mg.generic_id 
-      WHERE n.wm_borrow = ${dstWarehouseId}
-    GROUP BY
-      d.generic_id,
-      d.unit_generic_id
-    ORDER BY mg.generic_name
-    ) AS t GROUP BY t.borrow_id HAVING t.wpQty - t.unpaidQty > 0 ORDER BY t.wpQty - t.unpaidQty DESC`
+      JOIN mm_units su ON su.unit_id = mug.to_unit_id 
+    WHERE
+      n.wm_borrow = ${dstWarehouseId}
+    HAVING
+      wpQty - unpaidQty > 0 
+    ORDER BY
+      mg.generic_name`
     return db.raw(sql)
   }
 
