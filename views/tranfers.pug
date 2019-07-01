@@ -21,7 +21,9 @@ html
               td.left(colspan='5') เลขที่ใบเบิก #{_tmpTranfer[i][p][0].transfer_code}
               td.right(colspan='5') วันที่อนุมัติ #{today}
             tr
-              td.left(colspan='10') หน่วยงานที่เบิก : #{_tmpTranfer[i][p][0].dst_warehouse_name}  
+              td.left(colspan='10') หน่วยงานที่เบิก : #{_tmpTranfer[i][p][0].dst_warehouse_name}
+            tr
+              td.left(colspan='10') หน่วยงานที่จ่าย : #{_tmpTranfer[i][p][0].src_warehouse_name}  
             tr
               td.left(colspan='10') #{printDate}
             tr
