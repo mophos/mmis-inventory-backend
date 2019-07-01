@@ -2101,6 +2101,7 @@ FROM
                 LEFT JOIN wm_receives r on r.purchase_order_id = po.purchase_order_id
                 LEFT JOIN wm_receive_detail rd on rd.receive_id = r.receive_id AND poi.product_id = rd.product_id
                 WHERE po.purchase_order_status = 'APPROVED' AND po.order_date BETWEEN '${startdate}' AND '${enddate}' 
+                AND po.is_cancel = 'Y'
                 AND po.warehouse_id = '${warehouseId}' 
                 GROUP BY po.purchase_order_id,poi.product_id
                 ORDER BY
