@@ -26,6 +26,8 @@ html
               td.left(colspan='9')(style="font-size: 15pt;") หน่วยงานที่เบิก #{c[0].warehouse_name}
               //- td.right(colspan='5')(style="font-size: 15pt;") วันที่เบิก #{c[0].requisition_date}
             tr 
+              td.left(colspan='9')(style="font-size: 15pt;") หน่วยงานที่จ่าย #{c[0].src_warehouse_name}
+            tr 
               td.left(colspan='9')(style="font-size: 15pt;") #{c[0].today}
             tr 
               td.left(colspan='9')(style="font-size: 15pt; padding-bottom: 10px;") อนุมัติให้เบิกเวชภัณฑ์ตามรายการนี้
