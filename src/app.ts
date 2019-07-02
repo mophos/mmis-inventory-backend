@@ -204,7 +204,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     pool: {
       min: 0,
       max: 7,
-      afterCreate: (conn, done) => {
+      create: (conn, done) => {
         conn.query('SET NAMES utf8', (err) => {
           done(err, conn);
         });
