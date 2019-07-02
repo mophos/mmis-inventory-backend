@@ -174,7 +174,6 @@ export class IssueModel {
     query.whereIn('issue_id', issueIds)
 
     return query;
-
   }
 
   getListIssues(knex: Knex, limit: number = 15, offset: number = 0, status: any = '', warehouseId: any) {
