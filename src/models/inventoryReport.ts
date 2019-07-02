@@ -176,6 +176,7 @@ export class InventoryReportModel {
             mus.unit_name AS small_unit,
             mug.qty as conversion_qty,
             wh.warehouse_name,
+            src.warehouse_name as src_warehouse_name,
             rc.confirm_date,
             mg.generic_id,
             mg.working_code AS generic_code,
@@ -198,6 +199,7 @@ export class InventoryReportModel {
             JOIN mm_generics AS mg ON mg.generic_id = roi.generic_id
             LEFT JOIN mm_generic_dosages AS mgd ON mgd.dosage_id = mg.dosage_id
             JOIN wm_warehouses wh ON wh.warehouse_id = ro.wm_requisition
+            JOIN wm_warehouses src ON src.warehouse_id = ro.wm_withdraw
             LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
             JOIN mm_products mp ON wp.product_id = mp.product_id
             JOIN mm_unit_generics AS mug ON wp.unit_generic_id = mug.unit_generic_id
