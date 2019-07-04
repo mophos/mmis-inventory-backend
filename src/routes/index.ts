@@ -6188,6 +6188,7 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
       ws.cell(2, 6).string('หน่วยนับ');
       ws.cell(2, 7).string('จำนวนจ่าย');
       ws.cell(2, 8).string('รวม');
+      ws.cell(2, 9).string('จ่ายให้')
 
 
       let cell = 2;
@@ -6195,11 +6196,11 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
       let priceAll = 0;
       for (const h of rs) {
         let priceWarehouse = 0;
-        let no = 0;
+        let no = 1;
 
         cell++;
-        ws.cell(cell, 1, cell, 2, true).string('จ่ายให้');
-        ws.cell(cell, 3, cell, 8, true).string(h.warehouse_name);
+        // ws.cell(cell, 1, cell, 2, true).string('จ่ายให้');
+        // ws.cell(cell, 3, cell, 8, true).string(h.warehouse_name);
 
         const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting)
         if (type) {
@@ -6219,6 +6220,7 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
                 ws.cell(cell, 7).string(d.unit_name);
                 ws.cell(cell, 8).number(d.qty).style(styleQty);
                 ws.cell(cell, 10).number(d.cost).style(styleCost);
+                ws.cell(cell, 11).string(d.warehouse_name);
                 priceWarehouse += d.cost;
                 priceAll += d.cost;
                 priceGenericType += d.cost;
