@@ -1243,7 +1243,7 @@ router.get('/report/staff/UnPaid/requis', wrap(async (req, res, next) => {
     let rs: any = await inventoryReportModel.getUnPaidOrders(db, null, warehouseId);
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
-    
+
     _.forEach(requisId, object => {
       let tmp = _.find(rs[0], ['requisition_order_id', +object])
       tmp.unpaid_date = moment(tmp.unpaid_date).format('D MMMM ') + (moment(tmp.unpaid_date).get('year') + 543);
@@ -1292,7 +1292,7 @@ router.get('/report/staff/pay/UnPaid/requis', wrap(async (req, res, next) => {
     let rs: any = await inventoryReportModel.getUnPaidOrders(db, warehouseId, null);
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
-    
+
     _.forEach(requisId, object => {
       let tmp = _.find(rs[0], ['requisition_order_id', +object])
       tmp.unpaid_date = moment(tmp.unpaid_date).format('D MMMM ') + (moment(tmp.unpaid_date).get('year') + 543);
@@ -6188,7 +6188,6 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
       ws.cell(2, 6).string('หน่วยนับ');
       ws.cell(2, 7).string('จำนวนจ่าย');
       ws.cell(2, 8).string('รวม');
-      ws.cell(2, 9).string('จ่ายให้')
 
 
       let cell = 2;
@@ -6196,11 +6195,11 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
       let priceAll = 0;
       for (const h of rs) {
         let priceWarehouse = 0;
-        let no = 1;
+        let no = 0;
 
         cell++;
-        // ws.cell(cell, 1, cell, 2, true).string('จ่ายให้');
-        // ws.cell(cell, 3, cell, 8, true).string(h.warehouse_name);
+        ws.cell(cell, 1, cell, 2, true).string('จ่ายให้');
+        ws.cell(cell, 3, cell, 8, true).string(h.warehouse_name);
 
         const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting)
         if (type) {
@@ -6220,7 +6219,6 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
                 ws.cell(cell, 7).string(d.unit_name);
                 ws.cell(cell, 8).number(d.qty).style(styleQty);
                 ws.cell(cell, 10).number(d.cost).style(styleCost);
-                ws.cell(cell, 11).string(d.warehouse_name);
                 priceWarehouse += d.cost;
                 priceAll += d.cost;
                 priceGenericType += d.cost;
@@ -6245,6 +6243,139 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
       // ws.cell(startCell, 10).string('บาท').style(lastList);
       // create directory
       fse.ensureDirSync(process.env.MMIS_TMP);
+
+      let filename = `สรุปยอดจ่าย${startDate}ถึง${endDate}.xlsx`;
+      filename = path.join(process.env.MMIS_TMP, filename);
+      wb.write(filename, function (err, stats) {
+        if (err) {
+          console.error(err);
+          res.send({ ok: false, error: err })
+        } else {
+          res.download(filename, (err) => {
+            if (err) {
+              res.send({ ok: false, message: err })
+            } else {
+              fse.removeSync(filename);
+            }
+          });
+        }
+      });
+
+    } else {
+      res.send({ ok: false, error: 'data error!!' })
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  }
+}))
+
+router.get('/report/requisition/generic/excel/sum', wrap(async (req, res, next) => {
+  const db = req.db;
+  const startDate = req.query.startDate;
+  const endDate = req.query.endDate;
+  let genericTypeId = req.query.genericTypes;
+  genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
+  const warehouseId = req.query.warehouseId;
+  const warehouseName = req.query.warehouseName;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
+
+
+  const wb = new excel4node.Workbook();
+  // Add Worksheets to the workbook
+  const ws = wb.addWorksheet('Sheet 1');
+  try {
+    // const gn: any = await inventoryReportModel.getGenericType(db, genericTypeId);
+    const rs: any = await inventoryReportModel.payToWarehouse(db, startDate, endDate, genericTypeId, warehouseId, dateSetting)
+    if (rs) {
+
+      var textBold = wb.createStyle({
+        font: {
+          // color: '#FF0800',
+          bold: true
+        },
+        numberFormat: '#,##0.00; (#,##0.00); -',
+      });
+      var styleQty = wb.createStyle({
+        numberFormat: '#,##0; (#,##0); -',
+      });
+      var styleCost = wb.createStyle({
+        numberFormat: '#,##0.00; (#,##0.00); -',
+      });
+      var lastSet = wb.createStyle({
+        border: {
+          bottom: {
+            style: 'medium'
+          }
+        }
+      });
+      var lastList = wb.createStyle({
+        border: {
+          bottom: {
+            style: 'double'
+          }
+        }
+      });
+
+      ws.cell(1, 1, 1, 6, true).string('สรุปยอดจ่ายระหว่างวันที่ ' + dateToDDMMMMYYYY(startDate) + ' ถึง ' + dateToDDMMMMYYYY(endDate)).style(textBold);
+      ws.cell(1, 7, 1, 8, true).string(warehouseName);
+
+      ws.cell(2, 2, 2, 4, true).string('ชื่อวัสดุ');
+      ws.cell(2, 5).string('วัน/เดือน/ปี');
+      ws.cell(2, 6).string('เลขที่ใบเบิก');
+      ws.cell(2, 7).string('ราคา/หน่วย');
+      ws.cell(2, 8).string('หน่วยนับ');
+      ws.cell(2, 9).string('จำนวนจ่าย');
+      ws.cell(2, 10).string('รวม');
+      ws.cell(2, 11).string('จ่ายให้');
+      ws.cell(2, 12).string('กลุ่มยา 1');
+      ws.cell(2, 13).string('กลุ่มยา 2');
+      ws.cell(2, 14).string('กลุ่มยา 3');
+      ws.cell(2, 15).string('กลุ่มยา 4');
+
+
+      let cell = 2;
+
+      let priceAll = 0;
+      for (const h of rs) {
+        let priceWarehouse = 0;
+        let no = 1;
+
+        // cell++;
+
+        const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting)
+        if (type) {
+          for (const t of type) {
+            // cell++;
+            // ws.cell(cell, 1, cell, 8, true).string(t.generic_type_name);
+            let priceGenericType = 0;
+            const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting)
+            if (detail) {
+              for (const d of detail) {
+                cell++;
+                ws.cell(cell, 1).number(no++);
+                ws.cell(cell, 2, cell, 4, true).string(d.generic_name);
+                ws.cell(cell, 5).date(moment(d.approve_date).format('YYYY-MM-DD'));
+                ws.cell(cell, 6).string(d.requisition_code);
+                ws.cell(cell, 9).number(d.unit_cost).style(styleCost);
+                ws.cell(cell, 7).string(d.unit_name);
+                ws.cell(cell, 8).number(d.qty).style(styleQty);
+                ws.cell(cell, 10).number(d.cost).style(styleCost);
+                ws.cell(cell, 11).string(h.warehouse_name);
+                ws.cell(cell, 12).string(d.group_name_1);
+                ws.cell(cell, 13).string(d.group_name_2);
+                ws.cell(cell, 14).string(d.group_name_3);
+                ws.cell(cell, 15).string(d.group_name_4);
+                priceWarehouse += d.cost;
+                priceAll += d.cost;
+                priceGenericType += d.cost;
+              }
+            }
+            // cell++;
+         }
+        }
+        // cell++;
+      }
+     fse.ensureDirSync(process.env.MMIS_TMP);
 
       let filename = `สรุปยอดจ่าย${startDate}ถึง${endDate}.xlsx`;
       filename = path.join(process.env.MMIS_TMP, filename);
