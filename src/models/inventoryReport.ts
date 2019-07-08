@@ -176,6 +176,7 @@ export class InventoryReportModel {
             mus.unit_name AS small_unit,
             mug.qty as conversion_qty,
             wh.warehouse_name,
+            src.warehouse_name as src_warehouse_name,
             rc.confirm_date,
             mg.generic_id,
             mg.working_code AS generic_code,
@@ -198,6 +199,7 @@ export class InventoryReportModel {
             JOIN mm_generics AS mg ON mg.generic_id = roi.generic_id
             LEFT JOIN mm_generic_dosages AS mgd ON mgd.dosage_id = mg.dosage_id
             JOIN wm_warehouses wh ON wh.warehouse_id = ro.wm_requisition
+            JOIN wm_warehouses src ON src.warehouse_id = ro.wm_withdraw
             LEFT JOIN wm_products AS wp ON wp.wm_product_id = rci.wm_product_id
             JOIN mm_products mp ON wp.product_id = mp.product_id
             JOIN mm_unit_generics AS mug ON wp.unit_generic_id = mug.unit_generic_id
@@ -2101,6 +2103,7 @@ FROM
                 LEFT JOIN wm_receives r on r.purchase_order_id = po.purchase_order_id
                 LEFT JOIN wm_receive_detail rd on rd.receive_id = r.receive_id AND poi.product_id = rd.product_id
                 WHERE po.purchase_order_status = 'APPROVED' AND po.order_date BETWEEN '${startdate}' AND '${enddate}' 
+                AND po.is_cancel = 'Y'
                 AND po.warehouse_id = '${warehouseId}' 
                 GROUP BY po.purchase_order_id,poi.product_id
                 ORDER BY
@@ -4565,12 +4568,16 @@ GROUP BY
     payToWarehouseGenericTypeDetail(knex: Knex, startDate, endDate, genericTypeId, warehouseId, dateSetting) {
         //dateSetting = true  = approveDate
         let sql = knex('wm_requisition_orders as ro')
-            .select('rci.generic_id', 'mg.generic_name', 'ro.requisition_code', 'rc.approve_date', 'mu.unit_name',
+            .select('g1.group_name_1','g2.group_name_2','g3.group_name_3','g4.group_name_4','rci.generic_id', 'mg.generic_name', 'ro.requisition_code', 'rc.approve_date', 'mu.unit_name',
                 knex.raw('sum(rci.confirm_qty) as qty'), knex.raw('avg(rci.unit_cost) as unit_cost'), knex.raw('sum(rci.confirm_qty*rci.unit_cost) as cost'))
             .join('wm_requisition_confirms as rc', 'ro.requisition_order_id', 'rc.requisition_order_id')
             .join('wm_requisition_confirm_items as rci', 'rc.confirm_id', 'rci.confirm_id')
             .join('wm_products as wp', 'rci.wm_product_id', 'wp.wm_product_id')
             .join('mm_generics as mg', 'mg.generic_id', 'rci.generic_id')
+            .leftJoin('mm_generic_group_1 as g1', 'g1.group_code_1', 'mg.group_code_1')
+            .leftJoin('mm_generic_group_2 as g2', 'g2.group_code_2', 'mg.group_code_2')
+            .leftJoin('mm_generic_group_3 as g3', 'g3.group_code_3', 'mg.group_code_3')
+            .leftJoin('mm_generic_group_4 as g4', 'g4.group_code_4', 'mg.group_code_4')
             .join('mm_units as mu', 'mg.primary_unit_id', 'mu.unit_id');
         if (dateSetting) {
             sql.whereBetween('rc.approve_date', [startDate, endDate])
