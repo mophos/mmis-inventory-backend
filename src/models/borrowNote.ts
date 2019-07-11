@@ -63,6 +63,7 @@ export class BorrowNoteModel {
   getAllGeneric(db: Knex, warehouseId: any, dstWarehouseId: any) {
     let sql = `
     SELECT
+      d.borrow_note_detail_id,
       b.borrow_id,
       b.borrow_code,
       mg.generic_id,
