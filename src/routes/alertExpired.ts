@@ -1,6 +1,4 @@
-import { ReceiveModel } from './../models/receive';
 'use strict';
-
 import * as express from 'express';
 import * as moment from 'moment';
 import * as wrap from 'co-express';
@@ -8,6 +6,7 @@ import * as wrap from 'co-express';
 import { AlertExpiredModel } from '../models/alertExpired';
 import { SettingModel } from '../models/settings';
 import { awaitExpression } from 'babel-types';
+import { ReceiveModel } from './../models/receive';
 
 const router = express.Router();
 

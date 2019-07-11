@@ -1,10 +1,9 @@
-import {ReceiveotherTypeModel } from './../models/receiveotherType';
 'use strict';
- 
+
 import * as express from 'express';
-import * as moment from 'moment';
 const router = express.Router();
 
+import { ReceiveotherTypeModel } from './../models/receiveotherType';
 const receiveotherTypeModel = new ReceiveotherTypeModel();
 
 router.get('/', (req, res, next) => {
@@ -25,7 +24,7 @@ router.get('/', (req, res, next) => {
 
 router.post('/', (req, res, next) => {
   let receiveotherTypeName = req.body.receiveotherTypeName;
-  
+
   let db = req.db;
 
   if (receiveotherTypeName) {
@@ -45,7 +44,7 @@ router.post('/', (req, res, next) => {
         db.destroy();
       });
   } else {
-    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' }) ;
+    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' });
   }
 });
 
@@ -71,7 +70,7 @@ router.put('/:receiveotherTypeId', (req, res, next) => {
         db.destroy();
       });
   } else {
-    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' }) ;
+    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' });
   }
 });
 

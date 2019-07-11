@@ -1,10 +1,16 @@
-import { MainReportModel } from "../models/reports/mainReport";
 import * as express from 'express';
 import * as wrap from 'co-express';
 import * as moment from 'moment';
 import * as _ from 'lodash';
+import * as ejs from 'ejs';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as fse from 'fs-extra';
+import * as pdf from 'html-pdf';
+import * as rimraf from 'rimraf';
+var pug = require('pug');
+import { MainReportModel } from "../models/reports/mainReport";
 import { InventoryReportModel } from "../models/inventoryReport";
-import { start } from "repl";
 const router = express.Router();
 const mainReportModel = new MainReportModel();
 const inventoryReportModel = new InventoryReportModel();
@@ -19,6 +25,35 @@ function printDate(SYS_PRINT_DATE) {
   }
   return printDate;
 }
+
+router.get('/process', wrap(async (req, res, next) => {
+  try {
+    const db = req.db;
+    const rs = await inventoryReportModel.getProcess(db);
+    res.send({ ok: true, rows: rs })
+  } catch (error) {
+    res.send({ ok: false })
+  }
+}));
+
+router.get('/process/:id', wrap(async (req, res, next) => {
+  try {
+    const db = req.db;
+    const id = req.params.id;
+    const rs = await inventoryReportModel.getProcessId(db, id);
+    const exportPath = path.join(process.env.MMIS_TMP);
+    const pdfPath = path.join(exportPath, rs[0].path);
+    console.log(pdfPath);
+    fs.readFile(pdfPath, function (err, data) {
+      res.contentType("application/pdf");
+      res.send(data);
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.send({ ok: false })
+  }
+}));
 
 router.get('/account/payable', wrap(async (req, res, next) => {
   try {
@@ -148,4 +183,319 @@ router.get('/requisition/sum', wrap(async (req, res, next) => {
   });
 }));
 
+
+
+router.get('/monthlyReport', wrap(async (req, res, next) => {
+
+  const db = req.db;
+  // ------- pdf ---------
+  const exportPath = path.join(process.env.MMIS_TMP);
+  fse.ensureDirSync(exportPath);
+
+  const fileName = `${moment().format('x')}.pdf`;
+  const pdfPath = path.join(exportPath, fileName);
+
+  const obj = {
+    report_name: 'รายงานสรุปงานคลังประจำเดือน',
+    path: fileName
+  }
+  const id = await inventoryReportModel.saveProcess(db, obj)
+  // const _ejsPath = path.join(__dirname, '../../views/monthly-report.pug');
+  // var contents = fs.readFileSync(_ejsPath, 'utf8');
+  // ------- pdf ---------
+
+  // ------- query -------
+  let warehouseId: any = req.query.warehouseId;
+  if (!warehouseId) {
+    warehouseId = req.decoded.warehouseId;
+  }
+  const month = req.query.month
+  const year = req.query.year
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
+  let genericType = req.query.genericTypes
+  genericType = Array.isArray(genericType) ? genericType : [genericType];
+
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let monthName = moment((+year) + '-' + (+month) + '-1').format('MMMM');
+  let monthbeforName = moment(((+month) % 12 == 1 ? +year - 1 : +year) + '-' + ((+month) % 12 == 1 ? 12 : +month - 1) + '-1').format('MMMM');
+  const rsM: any = await inventoryReportModel.monthlyReportM(db, month, year, genericType, warehouseId, dateSetting);
+  const rs: any = await inventoryReportModel.monthlyReport(db, month, year, genericType, warehouseId, dateSetting);
+  let ans: any = []
+  for (const items of rsM[0]) {
+    rs[0].push(items)
+  }
+  ans = _.sortBy(rs[0], ['generic_type_id', 'account_id']);
+  let sum: any = {
+    balance: 0,
+    in_cost: 0,
+    out_cost: 0,
+    balanceAfter: 0
+  }
+  for (const items of ans) {
+    sum.balance += items.balance
+    sum.in_cost += items.in_cost
+    sum.out_cost += items.out_cost
+    sum.balanceAfter += items.balanceAfter
+    items.balance = inventoryReportModel.comma(items.balance)
+    items.in_cost = inventoryReportModel.comma(items.in_cost)
+    items.out_cost = inventoryReportModel.comma(items.out_cost)
+    items.balanceAfter = inventoryReportModel.comma(items.balanceAfter)
+  }
+  sum.balance = inventoryReportModel.comma(sum.balance)
+  sum.in_cost = inventoryReportModel.comma(sum.in_cost)
+  sum.out_cost = inventoryReportModel.comma(sum.out_cost)
+  sum.balanceAfter = inventoryReportModel.comma(sum.balanceAfter)
+  const data = {
+    ans: ans,
+    monthName: monthName,
+    monthbeforName: monthbeforName,
+    year: +year + 543,
+    sum: sum,
+    hospitalName: hospitalName
+  };
+  // ------- query -------
+  // const data = {
+  //   ans: 'ans',
+  //   monthName: 'monthName',
+  //   monthbeforName: 'monthbeforName',
+  //   year: '+year + 543',
+  //   sum: 'sum',
+  //   hospitalName: 'hospitalName'
+  // };
+  let html = pug.renderFile('./views/monthly-report.pug', data);
+  console.log(html);
+
+  // Pdf size
+  let options = {
+    format: 'A4',
+    "border": {
+      "top": "2cm",
+      "right": "1.2cm",
+      "bottom": "2cm",
+      "left": "1.2cm"
+    }
+  };
+
+
+  pdf.create(html, options).toFile(pdfPath, async function (err, data) {
+    await inventoryReportModel.updateProcess(db, id);
+    // if (err) {
+    //   console.log(err);
+    //   res.send({ ok: false, error: err });
+    // } else {
+    //   fs.readFile(pdfPath, function (err, data) {
+    //     if (err) {
+    //       res.send({ ok: false, error: err });
+    //     } else {
+
+    //       rimraf.sync(pdfPath);
+
+    //       res.contentType("application/pdf");
+    //       res.send(data);
+    //     }
+    //   });
+    // }
+  });
+
+}));
+
+router.get('/monthlyReportall', wrap(async (req, res, next) => {
+  const db = req.db;
+
+  // ------- pdf ---------
+  const exportPath = path.join(process.env.MMIS_TMP);
+  fse.ensureDirSync(exportPath);
+
+  const fileName = `${moment().format('x')}.pdf`;
+  const pdfPath = path.join(exportPath, fileName);
+  const obj = {
+    report_name: 'รายงานสรุปงานคลังประจำเดือน(แยกประเภทการรับ-จ่าย)',
+    path: fileName
+  }
+  const id = await inventoryReportModel.saveProcess(db, obj)
+  // ------- query -------
+  let warehouseId: any = req.query.warehouseId;
+  if (!warehouseId) {
+    warehouseId = req.decoded.warehouseId;
+  }
+  const month = moment(req.query.month, 'M').format('MM');
+  const year = req.query.year
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
+  let genericType = req.query.genericTypes
+  genericType = Array.isArray(genericType) ? genericType : [genericType];
+  let transactionIn = ['SUMMIT', 'REV', 'REV_OTHER', 'REQ_IN', 'TRN_IN', 'ADD_IN', 'BORROW_IN', 'BORROW_OTHER_IN', 'RETURNED_IN', 'REP_IN', 'ADJUST', 'HIS']
+  let transactionOut = ['REQ_OUT', 'TRN_OUT', 'ADD_OUT', 'BORROW_OUT', 'BORROW_OTHER_OUT', 'RETURNED_OUT', 'REP_OUT', 'IST', 'ADJUST', 'HIS']
+  let dataIn = []
+  let dataOut = []
+
+  let hosdetail = await inventoryReportModel.hospital(db);
+  let hospitalName = hosdetail[0].hospname;
+  let monthName = moment((+year) + '-' + (+month) + '-1').format('MMMM');
+  let monthbeforName = moment(((+month) % 12 == 1 ? +year - 1 : +year) + '-' + ((+month) % 12 == 1 ? 12 : +month - 1) + '-1').format('MMMM');
+  let dateMonth = `${year}-${month}`;
+  let startDate = `${dateMonth}-01`;
+  let endDate = `${dateMonth}-${moment(dateMonth, 'YYYY-MM').daysInMonth()}`;
+
+  // มูลค่ายกยอดมา -----------------------------------
+  let rsBalance = await inventoryReportModel.monthlyReportBalance(db, warehouseId, genericType, startDate, dateSetting);
+  rsBalance = rsBalance[0];
+  let sumBalance: any = 0;
+
+  for (const e of rsBalance) {
+    sumBalance += e.balance
+    e.balance = inventoryReportModel.comma(e.balance)
+  }
+  sumBalance = inventoryReportModel.comma(sumBalance)
+  // ------------------------------------------------
+
+  // มูลค่ารับเข้า --------------------------------------
+  let sumInCost: any = 0;
+  for (let In in transactionIn) {
+    var totalIn: any = 0;
+    let comment = ''
+    let rs = await inventoryReportModel.monthlyReportCost(db, warehouseId, genericType, startDate, endDate, dateSetting, transactionIn[In])
+    rs = rs[0];
+    if (rs.length) {
+      for (const v of rs) {
+        totalIn += v.in_cost
+        v.in_cost = inventoryReportModel.comma(v.in_cost)
+      }
+      if (transactionIn[In] === 'SUMMIT') {
+        comment = 'ยอดยกมา'
+      } else if (transactionIn[In] === 'REV') {
+        comment = 'รับจากการซื้อ'
+      } else if (transactionIn[In] === 'REV_OTHER') {
+        comment = 'รับอื่นๆ'
+      } else if (transactionIn[In] === 'REQ_IN') {
+        comment = 'เบิก'
+      } else if (transactionIn[In] === 'TRN_IN') {
+        comment = 'รับโอน'
+      } else if (transactionIn[In] === 'ADD_IN') {
+        comment = 'รับเติม'
+      } else if (transactionIn[In] === 'BORROW_IN') {
+        comment = 'ยืม'
+      } else if (transactionIn[In] === 'BORROW_OTHER_IN') {
+        comment = 'รับคืนนอกหน่วยงาน'
+      } else if (transactionIn[In] === 'RETURNED_IN') {
+        comment = 'รับคืน'
+      } else if (transactionIn[In] === 'REP_IN') {
+        comment = 'ปรับ package'
+      } else if (transactionIn[In] === 'ADJUST') {
+        comment = 'ปรับยอด'
+      } else if (transactionIn[In] === 'HIS') {
+        comment = 'ตัดจ่าย HIS(คนไข้คืนยา)'
+      }
+      sumInCost += totalIn
+      totalIn = inventoryReportModel.comma(totalIn)
+      dataIn.push({ transactionIn: comment, totalIn: totalIn, detail: rs })
+    }
+  }
+  sumInCost = inventoryReportModel.comma(sumInCost)
+  // ------------------------------------------------
+
+  // มูลค่ารับจ่ายออก -----------------------------------
+  let sumOutCost: any = 0;
+  for (let out in transactionOut) {
+    var totalOut: any = 0;
+    let comment = ''
+    let rs = await inventoryReportModel.monthlyReportCost(db, warehouseId, genericType, startDate, endDate, dateSetting, transactionOut[out])
+    rs = rs[0];
+    if (rs.length) {
+      for (const v of rs) {
+        totalOut += v.out_cost
+        v.out_cost = inventoryReportModel.comma(v.out_cost)
+      }
+      if (transactionOut[out] === 'REQ_OUT') {
+        comment = 'ให้เบิก'
+      } else if (transactionOut[out] === 'TRN_OUT') {
+        comment = 'โอน'
+      } else if (transactionOut[out] === 'ADD_OUT') {
+        comment = 'เติม'
+      } else if (transactionOut[out] === 'BORROW_OUT') {
+        comment = 'ให้ยืม'
+      } else if (transactionOut[out] === 'BORROW_OTHER_OUT') {
+        comment = 'ให้ยืมนอกหน่วยงาน'
+      } else if (transactionOut[out] === 'RETURNED_OUT') {
+        comment = 'คืน'
+      } else if (transactionOut[out] === 'REP_OUT') {
+        comment = 'ปรับ package'
+      } else if (transactionOut[out] === 'IST') {
+        comment = 'ตัดจ่าย'
+      } else if (transactionOut[out] === 'ADJUST') {
+        comment = 'ปรับยอด'
+      } else if (transactionOut[out] === 'HIS') {
+        comment = 'ตัดจ่าย HIS'
+      }
+      sumOutCost += totalOut
+      totalOut = inventoryReportModel.comma(totalOut)
+      dataOut.push({ transactionOut: comment, totalOut: totalOut, detail: rs })
+    }
+  }
+  sumOutCost = inventoryReportModel.comma(sumOutCost)
+  // ------------------------------------------------
+
+  // มูลค่าคงเหลือ -------------------------------------
+  let rsBalanceAfter = await inventoryReportModel.monthlyReportBalanceAfter(db, warehouseId, genericType, endDate, dateSetting);
+  rsBalanceAfter = rsBalanceAfter[0];
+  let sumBalanceAfter: any = 0;
+
+  for (const e of rsBalanceAfter) {
+    sumBalanceAfter += e.balance
+    e.balance = inventoryReportModel.comma(e.balance)
+  }
+  sumBalanceAfter = inventoryReportModel.comma(sumBalanceAfter)
+  // ------------------------------------------------
+
+  const data = {
+    monthName: monthName,
+    monthbeforName: monthbeforName,
+    year: +year + 543,
+    hospitalName: hospitalName,
+    rsBalance: rsBalance,
+    sumBalance: sumBalance,
+    dataIn: dataIn,
+    sumInCost: sumInCost,
+    dataOut: dataOut,
+    sumOutCost: sumOutCost,
+    rsBalanceAfter: rsBalanceAfter,
+    sumBalanceAfter: sumBalanceAfter
+  }
+
+  let html = pug.renderFile('./views/monthly-report-all.pug', data);
+  console.log(html);
+
+  // Pdf size
+  let options = {
+    format: 'A4',
+    "border": {
+      "top": "2cm",
+      "right": "1.2cm",
+      "bottom": "2cm",
+      "left": "1.2cm"
+    }
+  };
+
+
+  pdf.create(html, options).toFile(pdfPath, async function (err, data) {
+    await inventoryReportModel.updateProcess(db, id);
+    // if (err) {
+    //   console.log(err);
+    //   res.send({ ok: false, error: err });
+    // } else {
+    //   fs.readFile(pdfPath, function (err, data) {
+    //     if (err) {
+    //       res.send({ ok: false, error: err });
+    //     } else {
+
+    //       // rimraf.sync(pdfPath);
+
+    //       res.contentType("application/pdf");
+    //       res.send(data);
+    //     }
+    //   });
+    // }
+  });
+
+}));
 export default router;

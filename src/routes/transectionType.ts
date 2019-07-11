@@ -1,10 +1,10 @@
-import { TransectionTypeModel } from './../models/transectionType';
 'use strict';
- 
+
 import * as express from 'express';
 import * as moment from 'moment';
 const router = express.Router();
 
+import { TransectionTypeModel } from './../models/transectionType';
 const transectionTypeModel = new TransectionTypeModel();
 
 router.get('/', (req, res, next) => {
@@ -25,7 +25,7 @@ router.get('/', (req, res, next) => {
 router.post('/', (req, res, next) => {
   let transectionTypeName = req.body.transectionTypeName;
   console.log(transectionTypeName);
-  
+
   let db = req.db;
 
   if (transectionTypeName) {
@@ -45,7 +45,7 @@ router.post('/', (req, res, next) => {
         db.destroy();
       });
   } else {
-    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' }) ;
+    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' });
   }
 });
 
@@ -56,7 +56,7 @@ router.put('/:transectionTypeId', (req, res, next) => {
   let db = req.db;
   console.log(transectionTypeId);
   console.log(transectionTypeName);
-  
+
   if (transectionTypeId) {
     let datas: any = {
       transaction_name: transectionTypeName,
@@ -74,7 +74,7 @@ router.put('/:transectionTypeId', (req, res, next) => {
         db.destroy();
       });
   } else {
-    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' }) ;
+    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' });
   }
 });
 

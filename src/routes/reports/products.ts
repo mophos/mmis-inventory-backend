@@ -1,7 +1,7 @@
+'use strict';
 import { ProductModel } from './../../models/product';
 import { WarehouseModel } from './../../models/warehouse';
 import { ReportProductModel } from './../../models/reports/products';
-'use strict';
 
 import * as express from 'express';
 import * as moment from 'moment';

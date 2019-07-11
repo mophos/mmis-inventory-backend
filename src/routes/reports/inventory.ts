@@ -1,5 +1,4 @@
 
-import { InventoryReportModel } from '../../models/inventoryReport';
 'use strict';
 
 import * as express from 'express';
@@ -16,6 +15,7 @@ import * as pdf from 'html-pdf';
 import * as json2xls from 'json2xls';
 import * as wrap from 'co-express';
 
+import { InventoryReportModel } from '../../models/inventoryReport';
 const inventoryReportModel = new InventoryReportModel();
 
 const router = express.Router();

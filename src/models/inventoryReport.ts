@@ -4603,5 +4603,25 @@ GROUP BY
             .groupBy('rci.generic_id')
         return sql
     }
+    saveProcess(knex: Knex, data) {
+        return knex('rp_report_process')
+            .insert(data, 'id');
+    }
 
+    updateProcess(knex: Knex, id) {
+        return knex('rp_report_process')
+            .update('is_complete', 'Y')
+            .where('id', id);
+    }
+
+    getProcess(knex: Knex) {
+        return knex('rp_report_process')
+            .orderBy('id', 'DESC');
+    }
+
+    getProcessId(knex: Knex, id) {
+        return knex('rp_report_process')
+            .orderBy('id', 'DESC')
+            .where('id', id);
+    }
 }
