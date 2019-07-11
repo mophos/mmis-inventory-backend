@@ -3836,7 +3836,7 @@ FROM
     }
 
     purchaseBitType(knex: Knex, startdate: any, enddate: any, wareHouseId: any, genericTypeId: any, dateSetting = 'stock_date', getFrom = 'M') {
-        let from = getFrom =='M' ? 'mg.purchasing_method' : 'ppo.purchase_type_id'
+        let from = getFrom == 'M' ? 'mg.purchasing_method' : 'ppo.purchase_type_id'
         let sql = `SELECT
         ifnull(lb.bid_id,'00') bid_id ,
         ifnull(lb.bid_name,'ไม่ระบุ') bid_name ,
@@ -4585,7 +4585,7 @@ GROUP BY
     payToWarehouseGenericTypeDetail(knex: Knex, startDate, endDate, genericTypeId, warehouseId, dateSetting) {
         //dateSetting = true  = approveDate
         let sql = knex('wm_requisition_orders as ro')
-            .select('g1.group_name_1','g2.group_name_2','g3.group_name_3','g4.group_name_4','rci.generic_id', 'mg.generic_name', 'ro.requisition_code', 'rc.approve_date', 'mu.unit_name',
+            .select('g1.group_name_1', 'g2.group_name_2', 'g3.group_name_3', 'g4.group_name_4', 'rci.generic_id', 'mg.generic_name', 'ro.requisition_code', 'rc.approve_date', 'mu.unit_name',
                 knex.raw('sum(rci.confirm_qty) as qty'), knex.raw('avg(rci.unit_cost) as unit_cost'), knex.raw('sum(rci.confirm_qty*rci.unit_cost) as cost'))
             .join('wm_requisition_confirms as rc', 'ro.requisition_order_id', 'rc.requisition_order_id')
             .join('wm_requisition_confirm_items as rci', 'rc.confirm_id', 'rci.confirm_id')
@@ -4607,5 +4607,25 @@ GROUP BY
             .groupBy('rci.generic_id')
         return sql
     }
+    saveProcess(knex: Knex, data) {
+        return knex('rp_report_process')
+            .insert(data, 'id');
+    }
 
+    updateProcess(knex: Knex, id) {
+        return knex('rp_report_process')
+            .update('is_complete', 'Y')
+            .where('id', id);
+    }
+
+    getProcess(knex: Knex) {
+        return knex('rp_report_process')
+            .orderBy('id', 'DESC');
+    }
+
+    getProcessId(knex: Knex, id) {
+        return knex('rp_report_process')
+            .orderBy('id', 'DESC')
+            .where('id', id);
+    }
 }
