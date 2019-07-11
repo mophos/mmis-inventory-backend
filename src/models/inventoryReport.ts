@@ -2091,7 +2091,7 @@ FROM
                 u1.unit_name as u1,
                 u2.unit_name as u2,
                 mug.qty as mugQty
-                FROM 
+                FROM
                 pc_purchasing_order po 
                 JOIN pc_purchasing_order_item poi on poi.purchase_order_id = po.purchase_order_id
                 JOIN mm_products mp on mp.product_id = poi.product_id
@@ -2102,8 +2102,10 @@ FROM
                 JOIN mm_labelers ml on ml.labeler_id = mp.v_labeler_id
                 LEFT JOIN wm_receives r on r.purchase_order_id = po.purchase_order_id
                 LEFT JOIN wm_receive_detail rd on rd.receive_id = r.receive_id AND poi.product_id = rd.product_id
-                WHERE po.purchase_order_status = 'APPROVED' AND po.order_date BETWEEN '${startdate}' AND '${enddate}' 
-                AND po.is_cancel = 'Y'
+                WHERE po.purchase_order_status = 'APPROVED' 
+                AND po.order_date BETWEEN '${startdate}' AND '${enddate}' 
+                AND po.is_cancel != 'Y'
+                and po.purchase_order_status != 'COMPLETED'
                 AND po.warehouse_id = '${warehouseId}' 
                 GROUP BY po.purchase_order_id,poi.product_id
                 ORDER BY
@@ -2111,6 +2113,21 @@ FROM
         ) as ap WHERE ap.qty - ap.receive_qty > 0`;
         return knex.raw(sql);
     }
+    // (
+    //     select sum(pci.qty * pci.unit_price)
+    //     from pc_purchasing_order_item as pci
+    //     where pci.purchase_order_id = po.purchase_order_id
+    //     and pci.giveaway = 'N'
+    //     and po.is_cancel = 'N'
+    // ) as purchase_price,
+    // (
+    //     select sum(rd.receive_qty * rd.cost)
+    //     from wm_receive_detail as rdd
+    //     inner join wm_receives as rr on rr.receive_id = rdd.receive_id
+    //     where rdd.is_free = 'N'
+    //     and rr.purchase_order_id = po.purchase_order_id
+    //     and rr.is_cancel = 'N'
+    //   ) as receive_price
 
     tranfer(knex: Knex, tranferId) {
         let sql = `SELECT
