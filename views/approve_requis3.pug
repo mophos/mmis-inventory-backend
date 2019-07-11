@@ -10,7 +10,7 @@ html
     - for(var i of approve_requis)
       - for(var c of i)
         span.page
-        table.table(style="font-size: 13pt;")
+        table.table(style="font-size: 15pt;")
           thead
             tr
               td.right(colspan='9') #{c[0].sPage} / #{c[0].nPage}
@@ -44,30 +44,30 @@ html
             tr
               if ( (y-1) === 0)
                 td #{s+1}.
-                td(style="font-size: 12pt;") &nbsp;#{a.generic_name}
-                //- td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
+                td(style="font-size: 14pt;") &nbsp;#{a.generic_name}
+                //- td(style="font-size: 15pt;") &nbsp;#{a.dosage_name}
                 - s++
               else
                 if ( c[y-2].generic_name !== a.generic_name )  
                   td #{s+1}.
-                  td(style="font-size: 12pt;") &nbsp;#{a.generic_name}
-                  //- td(style="font-size: 12pt;") &nbsp;#{a.dosage_name}
+                  td(style="font-size: 14pt;") &nbsp;#{a.generic_name}
+                  //- td(style="font-size: 15pt;") &nbsp;#{a.dosage_name}
                   - s++
                 else 
                   td 
                   td 
                   //- td.right 
-              td.right(style="font-size: 12pt;") &nbsp;#{a.confirm_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit}) &nbsp;
-              td(style="font-size: 12pt; word-break:break-all;") &nbsp;#{a.lot_no}
-              td.right(style="font-size: 12pt;") &nbsp;#{a.expired_date}
+              td.right(style="font-size: 14pt;") &nbsp;#{a.confirm_qty} #{a.large_unit} (#{a.conversion_qty} #{a.small_unit}) &nbsp;
+              td(style="font-size: 14pt; word-break:break-all;") &nbsp;#{a.lot_no}
+              td.right(style="font-size: 14pt;") &nbsp;#{a.expired_date}
               if ( (y-1) === 0)
-                td.right(style="font-size: 12pt;") &nbsp;#{a.generic_stock_qty }  #{a.small_unit}
+                td.right(style="font-size: 14pt;") &nbsp;#{a.generic_stock_qty }  #{a.small_unit}
               else
                 if ( c[y-2].generic_name !== a.generic_name )  
-                  td.right(style="font-size: 12pt;") &nbsp;#{a.generic_stock_qty }  #{a.small_unit}
+                  td.right(style="font-size: 14pt;") &nbsp;#{a.generic_stock_qty }  #{a.small_unit}
                 else 
                   td 
-              td.right(style="font-size: 12pt;") &nbsp;#{a.location_name }
+              td.right(style="font-size: 14pt;") &nbsp;#{a.location_name }
             .pagebreak
           tfoot
             tr.dash-top
@@ -81,7 +81,7 @@ html
             tr 
               td(colspan='9') &nbsp; 
         - l++
-          table.table(style="font-size: 13pt;")
+          table.table(style="font-size: 15pt;")
             tr
               td &nbsp;
               td &nbsp;
