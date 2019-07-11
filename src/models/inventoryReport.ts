@@ -4591,11 +4591,7 @@ GROUP BY
             .join('wm_requisition_confirm_items as rci', 'rc.confirm_id', 'rci.confirm_id')
             .join('wm_products as wp', 'rci.wm_product_id', 'wp.wm_product_id')
             .join('mm_generics as mg', 'mg.generic_id', 'rci.generic_id')
-            .leftJoin('mm_generic_group_1 as g1', 'g1.group_code_1', 'mg.group_code_1')
-            .leftJoin('mm_generic_group_2 as g2', 'g2.group_code_2', 'mg.group_code_2')
-            .leftJoin('mm_generic_group_3 as g3', 'g3.group_code_3', 'mg.group_code_3')
-            .leftJoin('mm_generic_group_4 as g4', 'g4.group_code_4', 'mg.group_code_4')
-            .join('mm_units as mu', 'mg.primary_unit_id', 'mu.unit_id');
+            .joinRaw('LEFT JOIN mm_generic_group_1 AS g1 ON g1.group_code_1 = mg.group_code_1 LEFT JOIN mm_generic_group_2 AS g2 ON g2.group_code_2 = mg.group_code_2 and g1.group_code_1 = g2.group_code_1 LEFT JOIN mm_generic_group_3 AS g3 ON g3.group_code_3 = mg.group_code_3 and g1.group_code_1 = g3.group_code_1  and g2.group_code_2 = g3.group_code_2 LEFT JOIN mm_generic_group_4 AS g4 ON g4.group_code_4 = mg.group_code_4 and g1.group_code_1 = g4.group_code_1  and g2.group_code_2 = g4.group_code_2 and g3.group_code_3 = g4.group_code_3 INNER JOIN mm_units AS mu ON mg.primary_unit_id = mu.unit_id')
         if (dateSetting) {
             sql.whereBetween('rc.approve_date', [startDate, endDate])
         } else {
