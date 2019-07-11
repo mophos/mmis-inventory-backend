@@ -78,10 +78,7 @@ router.post('/approvePick', async (req, res, next) => {
         receiveError.push(rs[0])
       }
     }
-    console.log(receiveError);
-    console.log(rsd);
 
-    receiveError.length != rsd.length
     if (receiveError.length != rsd.length) {
       res.send({ ok: false, error: 'มีใบรับที่ไม่สามารถหยิบได้' });
     } else if (_.find(receiveError, (o: any) => { return o.receive_qty - o.remain_qty - o.pick_qty < 0 })) {

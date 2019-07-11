@@ -302,13 +302,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.log(err);
   let errorMessage;
-  switch (err['code']) {
-    case 'ER_DUP_ENTRY':
-      errorMessage = 'ข้อมูลซ้ำ';
-      break;
-    default:
-      errorMessage = err;
-      res.status(err['status'] || 500);
+  if (err['code'] === 'ER_DUP_ENTRY') {
+    errorMessage = 'ข้อมูลซ้ำ';
+  } else {
+    errorMessage = err;
+    res.status(err['status'] || 500);
   }
   res.send({ ok: false, error: errorMessage });
 });

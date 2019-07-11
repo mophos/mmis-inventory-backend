@@ -2658,7 +2658,7 @@ router.post('/upload/issue-his', upload.single('file'), co(async (req, res, next
   let icode = _.indexOf(header, 'HIS_CODE');
   let qty = _.indexOf(header, 'QTY');
 
-  if (icode > -1 && icode > -1) {
+  if (icode > -1) {
     let _data = [];
     let id = uuid();
     // x = 0 = header      

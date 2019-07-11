@@ -901,9 +901,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
         all_cost += _.sumBy(values, 'total_cost')
         page++;
         for (const value of values) {
-          if (dateApprove === 'Y' && value.approve_date) {
-            value.approve_date = value.approve_date;
-          } else {
+          if (dateApprove !== 'Y' && !value.approve_date) {
             value.approve_date = value.requisition_date;
           }
           value.sPage = page;
@@ -966,9 +964,7 @@ router.get('/report/approve/requis3', wrap(async (req, res, next) => {
         sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
         page++;
         for (const value of values) {
-          if (dateApprove === 'Y' && value.approve_date) {
-            value.approve_date = value.approve_date;
-          } else {
+          if (dateApprove !== 'Y' && !value.approve_date) {
             value.approve_date = value.requisition_date;
           }
           value.sPage = page;
@@ -1033,9 +1029,7 @@ router.get('/report/approve/requis2', wrap(async (req, res, next) => {
         sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
         page++;
         for (const value of values) {
-          if (dateApprove === 'Y' && value.approve_date) {
-            value.approve_date = value.approve_date;
-          } else {
+          if (dateApprove !== 'Y' && !value.approve_date) {
             value.approve_date = value.requisition_date;
           }
           value.sPage = page;
@@ -2217,7 +2211,7 @@ router.get('/report/list/receivePoCheck/:sID/:eID', wrap(async (req, res, next) 
       _check_receive.push(_check[0][0]);
     }
     let _staffReceive = await inventoryReportModel.staffReceivePo(db, receiveID[i][0].purchase_order_id);
-    _staffReceive[0] ? '' : _staffReceive = await inventoryReportModel.staffReceive(db, 'STAFF_RECEIVE');
+    _staffReceive = _staffReceive[0] ? '' : await inventoryReportModel.staffReceive(db, 'STAFF_RECEIVE');
     committee = await inventoryReportModel.invenCommittee(db, receiveID[i][0].receive_id);
     committees.push(committee[0]);
     let _invenChief = await inventoryReportModel.inven2Chief(db, receiveID[i][0].receive_id)
@@ -2301,7 +2295,7 @@ router.get('/report/list/receiveCodeCheck/:sID/:eID', wrap(async (req, res, next
     let _invenChief = await inventoryReportModel.inven2Chief(db, receiveID[i])
     invenChief.push(_invenChief[0]);
     let _staffReceive = await inventoryReportModel.staffReceivePo(db, check_receive[i].purchase_order_id);
-    _staffReceive[0] ? '' : _staffReceive = await inventoryReportModel.staffReceive(db, 'STAFF_RECEIVE');
+    _staffReceive = _staffReceive[0] ? '' : await inventoryReportModel.staffReceive(db, 'STAFF_RECEIVE');
     staffReceive.push(_staffReceive[0])
   }
   if (committee[0] === undefined) { res.render('no_commitee'); }
@@ -2439,7 +2433,7 @@ router.get('/report/list/receiveDateCheck/:sDate/:eDate', wrap(async (req, res, 
     let _invenChief = await inventoryReportModel.inven2Chief(db, receiveID[i])
     invenChief.push(_invenChief[0]);
     let _staffReceive = await inventoryReportModel.staffReceivePo(db, check_receive[i].purchase_order_id);
-    _staffReceive[0] ? '' : _staffReceive = await inventoryReportModel.staffReceive(db, 'STAFF_RECEIVE');
+    _staffReceive = _staffReceive[0] ? '' : await inventoryReportModel.staffReceive(db, 'STAFF_RECEIVE');
     staffReceive.push(_staffReceive[0])
   }
   if (committee[0] === undefined) { res.render('no_commitee'); }

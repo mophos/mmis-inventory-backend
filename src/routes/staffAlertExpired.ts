@@ -1,5 +1,5 @@
-import { ReceiveModel } from '../models/receive';
 'use strict';
+import { ReceiveModel } from '../models/receive';
 
 import * as express from 'express';
 import * as moment from 'moment';
