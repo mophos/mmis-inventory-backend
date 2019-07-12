@@ -1,56 +1,56 @@
-include css.pug
-doctype html
 html
-  head
+  head 
+    include mystyle_pdf.html
     meta(charset="utf-8")
     title report
-  body(style="font-size: 13pt;")
+  body(style="font-size: 10pt;")
     table.table
         thead
-        tr 
+          tr 
             td.center.bold(colspan='6') #{hospitalName} 
-        tr 
+          tr 
             td.center.bold(colspan='6') สรุป งานคลังเวชภัณฑ์
-        tr 
+          tr 
             td.center.bold(colspan='6') ประจำเดือน#{monthName} พ.ศ.#{year}
-        tr 
+          tr 
             th.left(rowspan='2') ลำดับ
             th.left(rowspan='2') รายการ
             th.center(colspan='4') มีมูลค่า (บาท)
-        tr(style="font-size: 11pt;")
+          tr(style="font-size: 8pt;")
             th.right ยอดคงคลังยกมาจาก
-                br
-                | เดือน#{monthbeforName}
+              br
+              | เดือน#{monthbeforName}
             th.right รับเข้าคลัง
-                br
-                | (ใน 1 เดือน)
+              br
+              | (ใน 1 เดือน)
             th.right จ่ายออกจากคลัง
-                br
-                | (ใน 1 เดือน)
+              br
+              | (ใน 1 เดือน)
             th.right เหลือคงคลัง
-                br
-                | (เมื่อสิ้นเดือน)
-        - var l=0
-        for i in ans
-            span.page
-            tr 
+              br
+              | (เมื่อสิ้นเดือน)
+          tbody
+          - var l=0
+            for i in ans
+              span.page
+              tr 
                 td.left #{l+1}
                 if(i.account_code == "ed")
                     td.left ยาในบัญชียาหลัก
                 else
                     if(i.account_code == "ned")
-                        td.left ยานอกบัญชียาหลัก
+                      td.left ยานอกบัญชียาหลัก
                     else
-                        if(i.account_name)
-                            td.left  #{i.generic_type_name} - #{i.account_name}
-                        else
-                            td.left  #{i.generic_type_name}
+                      if(i.account_name)
+                        td.left  #{i.generic_type_name} - #{i.account_name}
+                      else
+                        td.left  #{i.generic_type_name}
                 td.right #{i.balance}
                 td.right #{i.in_cost}
                 td.right #{i.out_cost}
                 td.right #{i.balanceAfter}
-            - l++ 
-        tr
+              - l++ 
+          tr
             td
             td.left รวมทุกประเภท
             td.right #{sum.balance}
