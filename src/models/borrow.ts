@@ -59,6 +59,27 @@ export class BorrowModel {
       .insert(data);
   }
 
+  getNoteDetailId(knex: Knex, srcWarehouseId: any, dstWarehouseId: any, genericId: any) {
+    return knex.raw(`SELECT
+      nd.borrow_note_detail_id,
+      nd.generic_id,
+      mug.qty AS conversion,
+      nd.qty 
+    FROM
+      wm_borrow_notes n
+      JOIN wm_borrow_note_detail nd ON nd.borrow_note_id = n.borrow_note_id
+      JOIN mm_unit_generics mug ON mug.unit_generic_id = nd.unit_generic_id 
+    WHERE
+      n.wm_withdarw = ${srcWarehouseId}
+      AND n.wm_borrow = ${dstWarehouseId} 
+      AND nd.generic_id = '${genericId}'`)
+  }
+
+  updateNoteDetail(knex: Knex, noteDetailId: any, borrowId: any) {
+    return knex('wm_borrow_note_detail').update('borrow_id', borrowId)
+      .where('borrow_note_detail_id', noteDetailId)
+  }
+
   all(knex: Knex, warehouseId: any, limit: number, offset: number) {
     return knex('wm_borrow as wmt')
       .select('wmt.borrow_id', 'wmt.remark', 'wmt.returned_approved', 'wmt.src_warehouse_id', 'wmt.dst_warehouse_id', 'wmt.borrow_code', 'wmt.borrow_date',
@@ -518,6 +539,14 @@ export class BorrowModel {
       .update({
         mark_deleted: 'Y'
       });
+  }
+
+  setNoteDetail(knex: Knex, borrowId: any) {
+    return knex('wm_borrow_note_detail')
+      .where('borrow_id', borrowId)
+      .update({
+        borrow_id: null
+      })
   }
 
   removeBorrowOther(knex: Knex, borrowId: any) {
