@@ -294,7 +294,8 @@ router.delete('/:borrowId', co(async (req, res, next) => {
     if (status.approved === 'Y') {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
     } else {
-      let rows = await borrowModel.removeBorrow(db, borrowId);
+      await borrowModel.removeBorrow(db, borrowId);
+      await borrowModel.setNoteDetail(db, borrowId);
       res.send({ ok: true, row: [] });
     }
   } catch (error) {
@@ -489,6 +490,8 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
         await borrowModel.deleteBorrowProduct(db, borrowId);
         await borrowModel.updateBorrowSummary(db, borrowId, borrow);
 
+        let updateNoteData = [];
+
         for (const g of _generics) {
           let generics = {
             borrow_id: borrowId,
@@ -512,6 +515,16 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
               create_by: req.decoded.people_user_id
             });
           });
+
+          let res = await borrowModel.getNoteDetailId(db, _summary.srcWarehouseId, _summary.dstWarehouseId, g.generic_id);
+
+          for (const y of res[0]) {
+            let totalQty = g.borrow_qty - y.qty;
+            if (totalQty > 0) {
+              await borrowModel.updateNoteDetail(db, y.borrow_note_detail_id, borrowId);
+            }
+          }
+
           await borrowModel.saveBorrowProduct(db, products);
         }
 

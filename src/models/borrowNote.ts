@@ -87,6 +87,7 @@ export class BorrowNoteModel {
       JOIN mm_units su ON su.unit_id = mug.to_unit_id 
     WHERE
       n.wm_borrow = ${dstWarehouseId}
+      and d.borrow_id is null
     HAVING
       wpQty - unpaidQty > 0 
     ORDER BY
