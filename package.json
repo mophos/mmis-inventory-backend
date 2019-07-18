@@ -23,6 +23,7 @@
     "gulp-data": "^1.2.1",
     "gulp-pug": "^3.3.0",
     "html-pdf": "^2.2.0",
+    "json2csv": "^4.5.2",
     "json2xls": "^0.1.2",
     "jsonwebtoken": "^8.2.2",
     "knex": "0.14.6",
