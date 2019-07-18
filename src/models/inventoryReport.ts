@@ -4624,4 +4624,121 @@ GROUP BY
             .orderBy('id', 'DESC')
             .where('id', id);
     }
+
+    Distribute(knex: Knex) {
+        return knex.raw(`SELECT
+        '' AS HOSP_CODE ,
+        mp.working_code as WORKING_CODE,
+        mp.product_name as TRADE_NAME,
+        ml.labeler_name as VENDOR_NAME,
+        mp.tmt_id as TMTID,
+        mp.std_code as NCD24,
+        rci.confirm_qty as QTY_DIS,
+        rci.confirm_qty/mug.qty as PACK_SIZE,
+        mug.to_unit_id as BASE_UNIT,
+        wp.cost * rci.confirm_qty as VALUE,
+        ro.requisition_code as DIS_NO,
+        ro.wm_requisition as DIS_DEPT,
+        ro.requisition_date as DIS_DATE,
+        wp.lot_no as LOT_NO,
+        CURRENT_DATE() as D_UPDATE,
+        CURRENT_DATE() as DATE_SEND
+        
+    FROM
+    wm_requisition_orders as ro
+    join wm_requisition_confirms rc on ro.requisition_order_id = rc.requisition_order_id
+    join wm_requisition_confirm_items rci on rc.confirm_id = rci.confirm_id
+    join mm_generics mg on rci.generic_id = mg.generic_id
+    join wm_products wp on rci.wm_product_id = wp.wm_product_id
+    join mm_products mp on wp.product_id = mp.product_id
+    join mm_labelers ml on mp.v_labeler_id = ml.labeler_id
+    join mm_unit_generics mug on wp.unit_generic_id = mug.unit_generic_id`);
+    }
+
+    Druglist(knex: Knex) {
+        return knex.raw(`SELECT
+        '' as HOSP_CODE,
+            mg.working_code as WORKING_CODE,
+            mg.generic_name as GENERIC_NAME,
+            mp.product_name AS TRADE_NAME ,
+            mp.tmt_id AS TMTID,
+            mp.std_code AS NCD24,
+            mga.account_code as NLEM, 
+            bt.bid_name as PRODUCT_CAT,
+        '' as CONTENT_VALUE,
+        '' as CONTENT_UNIT,
+        mg.primary_unit_id as BASE_UNIT,
+        1 as STATUS,
+        '' as DATE_STATUS,
+        '' as D_UPDATE,
+        CURRENT_DATE as DATE_SEND
+        FROM
+            mm_generics AS mg
+            JOIN mm_products AS mp on mg.generic_id = mp.generic_id
+            left join mm_generic_accounts as mga on mga.account_id = mg.account_id
+            left join l_bid_type as bt on bt.bid_id = mg.planning_method`);
+    }
+
+    Inventory(knex: Knex) {
+        return knex.raw(`SELECT
+        '' AS HOSP_CODE ,
+        mp.working_code as WORKING_CODE,
+        mp.product_name as TRADE_NAME,
+        ml.labeler_name as VENDOR_NAME,
+        mp.tmt_id as TMTID,
+        mp.std_code as NCD24,
+        wp.qty as QTY_ONHAND,
+        mug.qty as PACK_SIZE,
+        mug.to_unit_id as BASE_UNIT,
+        wp.cost * mug.qty as UNIT_COST,
+        wp.qty * wp.cost as VALUE_ONHAND,
+        wp.lot_no as LOT_NO,
+        wp.expired_date as EXPIRE_DATE,
+        CURRENT_DATE() as D_UPDATE,
+        CURRENT_DATE() as DATE_SEND
+    FROM
+        wm_products wp
+        join mm_products mp on mp.product_id = wp.product_id
+        join mm_labelers ml on mp.v_labeler_id = ml.labeler_id
+        join mm_unit_generics mug on mug.unit_generic_id = wp.unit_generic_id`);
+    }
+
+    Receive(knex: Knex) {
+        return knex.raw(`SELECT
+        '' as HOSP_CODE,
+        mg.working_code as WORKING_CODE,
+        mp.product_name as TRADE_NAME,
+        ml2.labeler_name as MANUFAC_NAME,
+        ml.labeler_name as VENDOR_NAME,
+        mp.tmt_id as TMTID,
+        mp.std_code as NCD24,
+        rd.receive_qty as QTY_RCV,
+        mug.qty as PACK_SIZE,
+        mug.to_unit_id as BASE_UNIT,
+        rd.cost as UNIT_COST,
+        rd.cost * rd.receive_qty as TOTAL_VALUE,
+        rd.lot_no as LOT_NO,
+        rd.expired_date as EXPIRE_DATE,
+        r.receive_code as RCV_NO,
+        po.purchase_order_number as PO_NO,
+        '' as CNT_NO,
+        r.receive_date as DATE_RCV,
+        po.purchase_method_id as BUY_METHOD,
+        po.purchase_type_id as CO_PURCHASE,
+        1 as RCV_FLAG,
+        '' as D_UPDATE,
+        CURRENT_DATE() as DATE_SEND
+        
+        
+    FROM
+        wm_receives as r
+        join wm_receive_detail as rd on r.receive_id = rd.receive_id
+        join mm_products as mp on rd.product_id = mp.product_id
+        join mm_generics as mg on mg.generic_id = mp.generic_id
+        join mm_labelers as ml on ml.labeler_id = r.vendor_labeler_id
+        join mm_labelers as ml2 on ml2.labeler_id = mp.m_labeler_id
+        join mm_unit_generics as mug on rd.unit_generic_id = mug.unit_generic_id
+        join pc_purchasing_order as po on po.purchase_order_id = r.purchase_order_id
+        `);
+    }
 }

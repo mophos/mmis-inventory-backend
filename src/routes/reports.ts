@@ -9,6 +9,7 @@ import * as fse from 'fs-extra';
 import * as pdf from 'html-pdf';
 import * as rimraf from 'rimraf';
 var pug = require('pug');
+const { Parser } = require('json2csv');
 import { MainReportModel } from "../models/reports/mainReport";
 import { InventoryReportModel } from "../models/inventoryReport";
 const router = express.Router();
@@ -498,4 +499,170 @@ router.get('/monthlyReportall', wrap(async (req, res, next) => {
   });
 
 }));
+
+router.get('/export/distribute', wrap(async (req, res, next) => {
+
+  const db = req.db;
+  const hospcode = req.decoded.hospcode;
+  const exportPath = path.join(process.env.MMIS_TMP);
+  fse.ensureDirSync(exportPath);
+
+  const fileName = `DISTRIBUTE_${moment().format('MMDD')}.txt`;
+  const filePath = path.join(exportPath, fileName);
+
+  const rs: any = await inventoryReportModel.Distribute(db);
+  const fields = ['HOSP_CODE', 'WORKING_CODE', 'TRADE_NAME', 'VENDOR_NAME',
+    'TMTID', 'NCD24', 'QTY_DIS', 'PACK_SIZE', 'BASE_UNIT', 'VALUE', 'DIS_NO',
+    'DIS_DEPT', 'DIS_DATE', 'LOT_NO', 'D_UPDATE', 'DATE_SEND'];
+
+  const data = rs[0];
+  for (const d of data) {
+    d.HOSP_CODE = hospcode;
+    d.DIS_DATE = d.DIS_DATE = '' ? '' : moment(d.DIS_DATE).format('YYYYMMDD')
+    d.D_UPDATE = d.D_UPDATE = '' ? '' : moment(d.D_UPDATE).format('YYYYMMDDhhmmss')
+    d.DATE_SEND = d.DATE_SEND = '' ? '' : moment(d.DATE_SEND).format('YYYYMM')
+  }
+  const json2csvParser = new Parser({ fields, delimiter: '|', quote: '' });
+  const csv = json2csvParser.parse(data);
+
+  fs.writeFile(filePath, csv, function (err) {
+    if (err) throw err;
+    fs.readFile(filePath, function (err, file) {
+      if (err) {
+        res.send({ ok: false, error: err });
+      } else {
+        rimraf.sync(filePath);
+        // res.contentType("application/file");
+        res.send(file);
+      }
+    });
+  });
+}));
+
+router.get('/export/druglist', wrap(async (req, res, next) => {
+
+  const db = req.db;
+  const hospcode = req.decoded.hospcode;
+  const exportPath = path.join(process.env.MMIS_TMP);
+  fse.ensureDirSync(exportPath);
+
+  const fileName = `DRUGLIST_${moment().format('MMDD')}.txt`;
+  const filePath = path.join(exportPath, fileName);
+
+  const rs: any = await inventoryReportModel.Druglist(db);
+  const fields = ['HOSP_CODE', 'WORKING_CODE', 'GENERIC_NAME', 'TRADE_NAME',
+    'TMTID', 'NCD24', 'NLEM', 'PRODUCT_CAT', 'CONTENT_VALUE', 'CONTENT_UNIT', 'BASE_UNIT',
+    'STATUS', 'DATE_STATUS', 'D_UPDATE', 'DATE_SEND'];
+
+  const data = rs[0];
+  for (const d of data) {
+    d.HOSP_CODE = hospcode;
+    d.DATE_STATUS = d.DATE_STATUS = '' ? '' : moment(d.DATE_STATUS).format('YYYYMMDD')
+    d.D_UPDATE = d.D_UPDATE = '' ? '' : moment(d.D_UPDATE).format('YYYYMMDDhhmmss')
+    d.DATE_SEND = d.DATE_SEND = '' ? '' : moment(d.DATE_SEND).format('YYYYMM')
+  }
+  const json2csvParser = new Parser({ fields, delimiter: '|', quote: '' });
+  const csv = json2csvParser.parse(data);
+
+  fs.writeFile(filePath, csv, function (err) {
+    if (err) throw err;
+    fs.readFile(filePath, function (err, file) {
+      if (err) {
+        res.send({ ok: false, error: err });
+      } else {
+        rimraf.sync(filePath);
+        // res.contentType("application/pdf");
+        res.send(file);
+      }
+    });
+  });
+
+
+
+}));
+
+router.get('/export/inventory', wrap(async (req, res, next) => {
+
+  const db = req.db;
+  const hospcode = req.decoded.hospcode;
+  const exportPath = path.join(process.env.MMIS_TMP);
+  fse.ensureDirSync(exportPath);
+
+  const fileName = `INVENTORY_${moment().format('MMDD')}.txt`;
+  const filePath = path.join(exportPath, fileName);
+
+  const rs: any = await inventoryReportModel.Inventory(db);
+
+  const fields = ['HOSP_CODE', 'WORKING_CODE', 'TRADE_NAME', 'VENDOR_NAME',
+    'TMTID', 'NCD24', 'QTY_ONHAND', 'PACK_SIZE', 'BASE_UNIT', 'UNIT_COST', 'VALUE_ONHAND',
+    'LOT_NO', 'EXPIRE_DATE', 'D_UPDATE', 'DATE_SEND'];
+
+  const data = rs[0];
+  for (const d of data) {
+    d.HOSP_CODE = hospcode;
+    d.EXPIRE_DATE = d.EXPIRE_DATE = '' ? '' : moment(d.EXPIRE_DATE).format('YYYYMMDD')
+    d.D_UPDATE = d.D_UPDATE = '' ? '' : moment(d.D_UPDATE).format('YYYYMMDDhhmmss')
+    d.DATE_SEND = d.DATE_SEND = '' ? '' : moment(d.DATE_SEND).format('YYYYMM')
+  }
+  const json2csvParser = new Parser({ fields, delimiter: '|', quote: '' });
+  const csv = json2csvParser.parse(data);
+
+  fs.writeFile(filePath, csv, function (err) {
+    if (err) throw err;
+    fs.readFile(filePath, function (err, file) {
+      if (err) {
+        res.send({ ok: false, error: err });
+      } else {
+        rimraf.sync(filePath);
+        // res.contentType("application/pdf");
+        res.send(file);
+      }
+    });
+  });
+}));
+
+router.get('/export/receive', wrap(async (req, res, next) => {
+
+  const db = req.db;
+  const hospcode = req.decoded.hospcode;
+  const exportPath = path.join(process.env.MMIS_TMP);
+  fse.ensureDirSync(exportPath);
+
+  const fileName = `RECEIVE_${moment().format('MMDD')}.txt`;
+  const filePath = path.join(exportPath, fileName);
+
+  const rs: any = await inventoryReportModel.Receive(db);
+
+
+  const fields = ['HOSP_CODE', 'WORKING_CODE', 'TRADE_NAME', 'MANUFAC_NAME', 'VENDOR_NAME',
+    'TMTID', 'NCD24', 'QTY_RCV', 'PACK_SIZE', 'BASE_UNIT', 'UNIT_COST', 'TOTAL_VALUE',
+    'LOT_NO', 'EXPIRE_DATE', 'RCV_NO', 'PO_NO', 'CNT_NO', 'DATE_RCV', 'BUY_METHOD', 'CO_PURCHASE'
+    , 'RCV_FLAG', 'D_UPDATE', 'DATE_SEND'];
+
+  const data = rs[0];
+  for (const d of data) {
+    d.HOSP_CODE = hospcode;
+    d.D_UPDATE = d.D_UPDATE = '' ? '' : moment(d.D_UPDATE).format('YYYYMMDDhhmmss')
+    d.DATE_SEND = d.DATE_SEND = '' ? '' : moment(d.DATE_SEND).format('YYYYMM')
+  }
+  const json2csvParser = new Parser({ fields, delimiter: '|', quote: '' });
+  const csv = json2csvParser.parse(data);
+
+  fs.writeFile(filePath, csv, function (err) {
+    if (err) throw err;
+    fs.readFile(filePath, function (err, file) {
+      if (err) {
+        res.send({ ok: false, error: err });
+      } else {
+        rimraf.sync(filePath);
+        // res.contentType("application/pdf");
+        res.send(file);
+      }
+    });
+  });
+
+
+
+}));
+
 export default router;
