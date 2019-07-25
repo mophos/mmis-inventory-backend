@@ -177,7 +177,7 @@ export class HisTransactionModel {
     getHisTransactionForImport(db: Knex, transactionIds: any[]) {
         return db('wm_his_transaction as tt')
             .select('tt.transaction_id', 'tt.date_serv', 'tt.hn', 'tt.seq', 'tt.mmis_warehouse as warehouse_id',
-                'mg.generic_id', 'hm.conversion', db.raw('tt.qty * hm.conversion as qty'))
+                'mg.generic_id', 'hm.conversion','tt.qty')
             .joinRaw('inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode')
             .innerJoin('mm_generics as mg', 'mg.generic_id', 'hm.mmis')
             .whereIn('tt.transaction_id', transactionIds)
