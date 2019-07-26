@@ -4116,14 +4116,13 @@ router.get('/report/receive/export', async (req, res, next) => {
   let warehouseId = req.query.warehouseId
   let isFree = req.query.isFree
 
-  console.log(startdate, enddate);
-
   // get tmt data
   let rs: any = await inventoryReportModel.productReceive(db, startdate, enddate, genericType, dateSetting, warehouseId, isFree);
   let json = [];
   if (rs[0].length) {
     let i = 0;
     rs[0].forEach(e => {
+      e.f_amount = inventoryReportModel.comma(e.f_amount)
       e.receive_date = moment(e.receive_date).isValid() ? moment(e.receive_date).format('DD/MM/') + (moment(e.receive_date).get('year') + 543) : '-';
     });
     rs[0].forEach(v => {
@@ -4132,6 +4131,7 @@ router.get('/report/receive/export', async (req, res, next) => {
         'ลำดับ': i,
         'เลขที่ใบสั่งซื้อ': v.purchase_order_number,
         'วันที่รับของ': v.receive_date,
+        'วันที่สั่งซื้อ': v.order_date,
         'รหัสเวชภัณฑ์': v.generic_code,
         'ชื่อเวชภัณฑ์': v.generic_name,
         'ชื่อทางการค้า': v.product_name,
@@ -4148,7 +4148,8 @@ router.get('/report/receive/export', async (req, res, next) => {
         'กลุ่มยา': v.product_group_name,
         'ประเภทยา': v.generic_hosp_name,
         'เลขที่ใบส่งของ': v.delivery_code,
-        'รูปแบบการจัดซื้อ(Purchase)': v.bid_nameP
+        'รูปแบบการจัดซื้อ(Purchase)': v.bid_nameP,
+        'วิธีการจัดซื้อ': v.name + ' (วงเงิน ' + v.f_amount + ' บาท)'
       };
       json.push(obj);
     });
