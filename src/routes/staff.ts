@@ -2229,7 +2229,7 @@ router.post('/his-transaction/upload', upload.single('file'), co(async (req, res
             qty = qty * -1;
           }
         } else {
-          qty = 0;
+          qty = excelData[x][4]
         }
 
         let obj: any = {
