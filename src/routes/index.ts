@@ -4124,6 +4124,7 @@ router.get('/report/receive/export', async (req, res, next) => {
     rs[0].forEach(e => {
       e.f_amount = inventoryReportModel.comma(e.f_amount)
       e.receive_date = moment(e.receive_date).isValid() ? moment(e.receive_date).format('DD/MM/') + (moment(e.receive_date).get('year') + 543) : '-';
+      e.order_date = moment(e.order_date).isValid() ? moment(e.order_date).format('DD/MM/') + (moment(e.order_date).get('year') + 543) : '-';
     });
     rs[0].forEach(v => {
       i++;
