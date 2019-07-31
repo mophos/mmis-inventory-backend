@@ -3575,7 +3575,9 @@ OR sc.ref_src like ?
         ws.lot_no,
         lb.bid_name,
         lbp.bid_name bid_nameP,
-        pg.product_group_name
+        pg.product_group_name,
+        bp.name,
+        bp.f_amount
     FROM
         ${dateSetting} as ws
         JOIN wm_receives AS wr ON ws.document_ref_id = wr.receive_id
@@ -3592,6 +3594,7 @@ OR sc.ref_src like ?
         LEFT JOIN mm_labelers ml ON ppo.labeler_id = ml.labeler_id
         LEFT JOIN l_bid_type AS lb ON lb.bid_id = mg.purchasing_method 
         LEFT JOIN l_bid_type AS lbp ON lbp.bid_id = ppo.purchase_type_id
+        LEFT JOIN l_bid_process AS bp ON bp.id = ppo.purchase_method_id
     WHERE
         ws.transaction_type = 'REV'
         AND ws.stock_date BETWEEN '${startdate} 00:00:00' 

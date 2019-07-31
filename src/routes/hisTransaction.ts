@@ -75,6 +75,7 @@ router.post('/upload', upload.single('file'), co(async (req, res, next) => {
         if (idx > -1 && excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] != 0 && excelData[x][5]) {
           let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3]);
           let qty;
+          console.log(conversion);
           if (conversion.length) {
             if (excelData[x][4] > 0) {
               qty = Math.ceil(excelData[x][4] / conversion[0].conversion);
@@ -84,7 +85,7 @@ router.post('/upload', upload.single('file'), co(async (req, res, next) => {
               qty = qty * -1;
             }
           } else {
-            qty = 0;
+            qty = excelData[x][4];
           }
           mmisWarehouse = rsWarehouseMapping[idx].mmis_warehouse;
           let obj: any = {
@@ -103,8 +104,6 @@ router.post('/upload', upload.single('file'), co(async (req, res, next) => {
         }
       }
     }
-    console.log(_data, 'zzzzzzzzz');
-
 
     if (_data.length) {
       try {
