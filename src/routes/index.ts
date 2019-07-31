@@ -908,8 +908,10 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
         all_cost += _.sumBy(values, 'total_cost')
         page++;
         for (const value of values) {
-          if (dateApprove !== 'Y' && !value.approve_date) {
+          if (dateApprove === 'N') {
             value.approve_date = value.requisition_date;
+          } else if (dateApprove === 'Y' && !value.approve_date) {
+            value.approve_date = value.requisition_date
           }
           value.sPage = page;
           value.nPage = approve_requis[i].length;
@@ -971,8 +973,10 @@ router.get('/report/approve/requis3', wrap(async (req, res, next) => {
         sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
         page++;
         for (const value of values) {
-          if (dateApprove !== 'Y' && !value.approve_date) {
+          if (dateApprove === 'N') {
             value.approve_date = value.requisition_date;
+          } else if (dateApprove === 'Y' && !value.approve_date) {
+            value.approve_date = value.requisition_date
           }
           value.sPage = page;
           value.nPage = approve_requis[i].length;
@@ -1036,8 +1040,10 @@ router.get('/report/approve/requis2', wrap(async (req, res, next) => {
         sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
         page++;
         for (const value of values) {
-          if (dateApprove !== 'Y' && !value.approve_date) {
+          if (dateApprove === 'N') {
             value.approve_date = value.requisition_date;
+          } else if (dateApprove === 'Y' && !value.approve_date) {
+            value.approve_date = value.requisition_date
           }
           value.sPage = page;
           value.nPage = approve_requis[i].length;
@@ -6367,11 +6373,11 @@ router.get('/report/requisition/generic/excel/sum', wrap(async (req, res, next) 
               }
             }
             // cell++;
-         }
+          }
         }
         // cell++;
       }
-     fse.ensureDirSync(process.env.MMIS_TMP);
+      fse.ensureDirSync(process.env.MMIS_TMP);
 
       let filename = `สรุปยอดจ่าย${startDate}ถึง${endDate}.xlsx`;
       filename = path.join(process.env.MMIS_TMP, filename);
