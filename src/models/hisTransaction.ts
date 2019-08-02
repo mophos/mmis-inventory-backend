@@ -382,4 +382,8 @@ export class HisTransactionModel {
         wh.drug_code`
         return knex.raw(sql)
     }
+
+    saveHistransactionHis(knex: Knex, data: any) {
+        return knex('wm_his_transaction').insert(data);
+    }
 } 

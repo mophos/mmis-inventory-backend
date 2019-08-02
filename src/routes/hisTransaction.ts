@@ -477,4 +477,43 @@ router.get('/get-not-mappings', async (req, res, next) => {
   };
 });
 
+router.post('/upload-his', async (req, res, next) => {
+  let db = req.db;
+  let warehouseId = req.decoded.warehouseId;
+  let hospcode = req.decoded.hospcode;
+  let data = req.body.data;
+
+  try {
+    let _data: any = [];
+    for (const v of data) {
+      _data.push({
+        hospcode: hospcode,
+        date_serv: v.date_serv,
+        seq: v.seq,
+        hn: v.hn,
+        drug_code: v.drug_code,
+        qty: v.qty,
+        his_warehouse: v.warehouse_id,
+        mmis_warehouse: warehouseId,
+        people_user_id: req.decoded.peopleUserId,
+        is_cut_stock: 'Y',
+        cut_stock_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+        cut_stock_people_user_id: req.decoded.peopleUserId,
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        is_duplicate: 'N'
+      });
+    }
+
+    let rs: any = await hisTransactionModel.saveHistransactionHis(db, _data);
+    // let rs: any = await hisTransactionModel.getNotMappings(db, warehouseId);
+    // console.log(rs[0]);
+
+    res.send({ ok: true, rows: 'test' });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  };
+});
+
 export default router;
