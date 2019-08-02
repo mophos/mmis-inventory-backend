@@ -31,6 +31,8 @@ router.get('/process', wrap(async (req, res, next) => {
   try {
     const db = req.db;
     const rs = await inventoryReportModel.getProcess(db);
+    console.log(rs);
+
     res.send({ ok: true, rows: rs })
   } catch (error) {
     res.send({ ok: false })
@@ -198,7 +200,8 @@ router.get('/monthlyReport', wrap(async (req, res, next) => {
 
   const obj = {
     report_name: 'รายงานสรุปงานคลังประจำเดือน',
-    path: fileName
+    path: fileName,
+    create_date: moment().format('YYYY-MM-DD hh:mm:ss')
   }
   const id = await inventoryReportModel.saveProcess(db, obj)
   // const _ejsPath = path.join(__dirname, '../../views/monthly-report.pug');
@@ -265,8 +268,6 @@ router.get('/monthlyReport', wrap(async (req, res, next) => {
   //   hospitalName: 'hospitalName'
   // };
   let html = pug.renderFile('./views/monthly-report.pug', data);
-  console.log(html);
-
   // Pdf size
   let options = {
     format: 'A4',
@@ -312,7 +313,8 @@ router.get('/monthlyReportall', wrap(async (req, res, next) => {
   const pdfPath = path.join(exportPath, fileName);
   const obj = {
     report_name: 'รายงานสรุปงานคลังประจำเดือน(แยกประเภทการรับ-จ่าย)',
-    path: fileName
+    path: fileName,
+    create_date: moment().format('YYYY-MM-DD hh:mm:ss')
   }
   const id = await inventoryReportModel.saveProcess(db, obj)
   // ------- query -------
