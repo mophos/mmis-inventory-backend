@@ -4425,7 +4425,7 @@ router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
   try {
     const rs: any = await inventoryReportModel.productExpired(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, warehouseId);
     rs.forEach(element => {
-      element.expired_date = (moment(element.expired_date).get('year')) + moment(element.expired_date).format('/D/M');
+      element.expired_date = moment(element.expired_date).format('D/M/') + (moment(element.expired_date).get('year'));
       element.cost = inventoryReportModel.comma(element.cost);
     });
     res.render('alert-expired', {
@@ -4446,7 +4446,7 @@ router.get('/report/print/alert-expried/excel', async (req, res, next) => {
   try {
     const rs: any = await inventoryReportModel.productExpired(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, warehouseId);
     rs.forEach(element => {
-      element.expired_date = (moment(element.expired_date).get('year')) + moment(element.expired_date).format('/D/M');
+      element.expired_date = moment(element.expired_date).format('D/M/') + (moment(element.expired_date).get('year'));
       element.cost = inventoryReportModel.comma(element.cost);
     });
     let json = [];
