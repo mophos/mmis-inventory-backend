@@ -3,7 +3,7 @@ html
     include mystyle_pdf.html
     meta(charset="utf-8")
     title report
-  body(style="font-size: 10pt;")
+  body
     table.table
         thead
           tr 
@@ -16,7 +16,7 @@ html
             th.left(rowspan='2') ลำดับ
             th.left(rowspan='2') รายการ
             th.center(colspan='4') มีมูลค่า (บาท)
-          tr(style="font-size: 8pt;")
+          tr
             th.right ยอดคงคลังยกมาจาก
               br
               | เดือน#{monthbeforName}
