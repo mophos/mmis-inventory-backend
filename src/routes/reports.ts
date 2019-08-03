@@ -27,6 +27,20 @@ function printDate(SYS_PRINT_DATE) {
   return printDate;
 }
 
+
+async function getOfficer(db, officerId) {
+  const staff = await mainReportModel.getStaff(db, officerId);
+  return staff[0] ? staff[0] : null;
+}
+
+async function getCommitee(db, committeeId) {
+  let committee = await mainReportModel.purchasingCommittee(db, committeeId);
+  if (committee.length == 1) {
+    committee[0].position = 'ผู้ตรวจรับพัสดุ';
+  }
+  return committee.length ? committee : null;
+}
+
 router.get('/process', wrap(async (req, res, next) => {
   try {
     const db = req.db;
@@ -665,6 +679,30 @@ router.get('/export/receive', wrap(async (req, res, next) => {
 
 
 
+}));
+
+router.get('/receive/free', wrap(async (req, res, next) => {
+  const db = req.db;
+  const hospitalDetail = await mainReportModel.hospital(db);
+  const receiveDate = req.query.receiveDate;
+  const receiveTypeId = req.query.receiveTypeId;
+  const warehouseId = req.query.warehouseId;
+  const warehouseName = req.query.warehouseName || '';
+  const note = req.query.note || '';
+  console.log(receiveTypeId, warehouseId);
+
+  const rs: any = await mainReportModel.receiveFree(db, receiveDate, receiveTypeId, warehouseId);
+
+  const _receiveDate = `${moment(receiveDate, 'YYYY-MM-DD').format('DD MMMM')} ${(moment(receiveDate, 'YYYY-MM-DD').get('year') + 543)}`
+  const detail = _.chunk(rs[0], 10);
+  res.render('receive_free', {
+    hospitalDetail: hospitalDetail,
+    printDate: printDate(req.decoded.SYS_PRINT_DATE),
+    receiveDate: _receiveDate,
+    detail: detail,
+    warehouseName: warehouseName,
+    note: note
+  });
 }));
 
 export default router;

@@ -1,0 +1,87 @@
+include css.pug
+style(media='print').
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body(style="font-size:16pt")
+    - for(let p of detail)
+      button.btn.btn-sm.btn-success(onclick='window.print()') Print
+      span.page
+      center แบบรายงานการรับของแถม (บริจาค)
+        br
+        | ของส่วนราชการ หน่วยงาน หน่วยบริการ ในสังกัดสำนักงานปลัดกระทรวงสาธารณสุข
+        br
+        | ภายใต้พระราชบัญญัติการจัดซื้อจัดจ้างและการบริหารพัสดุภาครัฐ พ.ศ.๒๕๖๐
+        br
+        | หน่วยงาน #{hospitalDetail.hospname}
+        br
+        br
+        | เรียน #{hospitalDetail.managerName}
+        br
+      div(style="float:right") #{printDate}
+      .fontspace
+      | ด้วยเมื่อวันที่ #{receiveDate} หน่วยงาน #{hospitalDetail.hospname}
+      br
+      - let no = 1;
+      - for(let a of p)
+        | #{no++}. #{a.generic_name} , จำนวน #{a.receive_qty} #{a.unit_name} จาก #{a.labeler_name}
+        br
+      - if(p.length < 10)
+        - for (let i=1;i<=15-p.length;i++)
+          br
+      br
+      .fontspace
+      | หน่วยงาน #{warehouseName}
+      br
+      | พิจารณาของแถมดังกล่าว เห็นควร #{note}
+      br
+      br
+      div(style="width:50%;margin-left:50%")
+        center
+          | ลงชื่อ..........................................................
+          br
+          | (................................................)
+      br
+      br
+      table.table
+        tr
+          td.border.center(style="width:50%") คำสั่งของผู้บังคับบัญชาขั้นต้น
+          td.border.center(style="width:50%") คำสั่งของหัวหน้าส่วนราชการ
+        tr.border
+          td 
+            input(type='checkbox') 
+            | มีเหตุผลความจำเป็น เหมาะสมที่ทางราชการพึงได้รับ เนื่องจากมีประโยชน์ต่อหน่วยงาน และตรงกับหน้าที่และอำนาจของหน่วยงาน
+            br
+            input(type='checkbox') 
+            | เห็นสมควรรับบริจาคในนามของส่วนราชการ
+            br
+            br
+            br
+            br
+            center
+              | ลงชื่อ..........................................................
+              br
+              | (................................................)
+              br
+              | วันที่ ................................................
+          td.border
+            input(type='checkbox') 
+            | รับทราบ
+            br
+            input(type='checkbox') 
+            | ดำเนินการตรวจรับวัสดุ และนำพัสดุลงบัญชีหรือทะเบียนคุมตามระเบียบกระทรวงการคลังว่าด้วยการจัดซื้อจัดจ้าง
+            br
+            input(type='checkbox') 
+            | กำกับดูแล และติดตามตรวจสอบอย่างเคร่งครัด
+            br
+            br
+            br
+            center
+              | ลงชื่อ..........................................................
+              br
+              | (................................................)
+              br
+              | วันที่ ................................................
+          
