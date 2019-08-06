@@ -18,17 +18,20 @@ html
         | หน่วยงาน #{hospitalDetail.hospname}
         br
         br
-        | เรียน #{hospitalDetail.managerName}
-        br
+      | เรียน #{hospitalDetail.managerName}
+      br
       div(style="float:right") #{printDate}
       .fontspace
       | ด้วยเมื่อวันที่ #{receiveDate} หน่วยงาน #{hospitalDetail.hospname}
       br
+      | ได้รับของแถม (บริจาค) ดังนี้
+      br
       - let no = 1;
       - for(let a of p)
+        .fontspace
         | #{no++}. #{a.generic_name} , จำนวน #{a.receive_qty} #{a.unit_name} จาก #{a.labeler_name}
         br
-      - if(p.length < 10)
+      - if(p.length < 15)
         - for (let i=1;i<=15-p.length;i++)
           br
       br
