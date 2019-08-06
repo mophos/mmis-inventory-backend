@@ -182,6 +182,12 @@ hr {
   float: left;
 }
 
+.fontspace2 {
+  width: 45;
+  height: 3px;
+  float: left;
+}
+
 .enter {
   padding-bottom: 7pt;
 }

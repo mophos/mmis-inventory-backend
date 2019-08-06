@@ -1,5 +1,10 @@
 include css.pug
-style(media='print').
+style(type='text/css').
+  @page{
+    margin-top: 1.5cm;
+    margin-left: 2cm;
+    margin-right: 2cm;
+ }
 doctype html
 html
   head
@@ -9,7 +14,7 @@ html
     - for(let p of detail)
       button.btn.btn-sm.btn-success(onclick='window.print()') Print
       span.page
-      center แบบรายงานการรับของแถม (บริจาค)
+      center.border แบบรายงานการรับของแถม (บริจาค)
         br
         | ของส่วนราชการ หน่วยงาน หน่วยบริการ ในสังกัดสำนักงานปลัดกระทรวงสาธารณสุข
         br
@@ -21,21 +26,21 @@ html
       | เรียน #{hospitalDetail.managerName}
       br
       div(style="float:right") #{printDate}
-      .fontspace
+      .fontspace2
       | ด้วยเมื่อวันที่ #{receiveDate} หน่วยงาน #{hospitalDetail.hospname}
       br
       | ได้รับของแถม (บริจาค) ดังนี้
       br
       - let no = 1;
       - for(let a of p)
-        .fontspace
+        .fontspace2
         | #{no++}. #{a.generic_name} , จำนวน #{a.receive_qty} #{a.unit_name} จาก #{a.labeler_name}
         br
       - if(p.length < 15)
         - for (let i=1;i<=15-p.length;i++)
           br
       br
-      .fontspace
+      .fontspace2
       | หน่วยงาน #{warehouseName}
       br
       | พิจารณาของแถมดังกล่าว เห็นควร #{note}
