@@ -281,7 +281,8 @@ router.get('/monthlyReport', wrap(async (req, res, next) => {
   //   sum: 'sum',
   //   hospitalName: 'hospitalName'
   // };
-  let html = pug.renderFile('./views/monthly-report.pug', data);
+  const pugPath = path.join(__dirname, '../views/monthly-report.pug');
+  let html = pug.renderFile(pugPath, data);
   // Pdf size
   let options = {
     format: 'A4',
@@ -479,8 +480,8 @@ router.get('/monthlyReportall', wrap(async (req, res, next) => {
     sumBalanceAfter: sumBalanceAfter
   }
 
-  let html = pug.renderFile('./views/monthly-report-all.pug', data);
-  console.log(html);
+  const pugPath = path.join(__dirname, '../views/monthly-report-all.pug');
+  let html = pug.renderFile(pugPath, data);
 
   // Pdf size
   let options = {
