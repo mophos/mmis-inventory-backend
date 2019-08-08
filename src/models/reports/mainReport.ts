@@ -3,6 +3,54 @@ import * as moment from 'moment';
 import { start } from 'repl';
 
 export class MainReportModel {
+
+  async hospital(knex: Knex) {
+    let array = [];
+    let result = await this.hospname(knex);
+    result = JSON.parse(result[0].value);
+    array.push(result);
+    return array[0];
+  }
+
+  hospname(knex: Knex) {
+    return knex.select('value').from('sys_settings').where('action_name', 'SYS_HOSPITAL');
+  }
+
+  getStaff(knex: Knex, officerId) {
+    return knex.select('t.title_name as title', 'p.fname', 'p.lname', knex.raw(`concat(t.title_name,p.fname,' ',p.lname) as fullname`), 'upos.position_name', 'upo.type_name as position')
+      .from('um_purchasing_officer as upo')
+      .join('um_people as p', 'upo.people_id', 'p.people_id')
+      .join('um_titles as t', 't.title_id', 'p.title_id')
+      .joinRaw(`left join um_people_positions upp on p.people_id = upp.people_id and upp.is_actived='Y'`)
+      .leftJoin('um_positions as upos', 'upos.position_id', 'upp.position_id')
+      .where('upo.officer_id', officerId)
+  }
+  purchasingCommittee(knex: Knex, committeeId) {
+    return knex('pc_committee as pc')
+      .select(
+        'pc.committee_id',
+        'pcp.people_id',
+        'ut.title_name',
+        'p.fname',
+        'p.lname',
+        'up.position_name',
+        'pcp.position_name AS position',
+        knex.raw(`concat(
+              ut.title_name,
+              p.fname,
+              " ",
+              p.lname
+          ) AS fullname`
+        ))
+      .join('pc_committee_people as pcp', 'pc.committee_id', 'pcp.committee_id')
+      .join('um_people as p', 'p.people_id', 'pcp.people_id')
+      .join('um_titles as ut', 'ut.title_id', 'p.title_id')
+      .joinRaw(`left join um_people_positions upp on p.people_id = upp.people_id and upp.is_actived='Y'`)
+      .leftJoin('um_positions as up', 'up.position_id', 'upp.position_id')
+      .orderBy('pcp.committee_people_id')
+      .where('pc.committee_id', committeeId)
+  }
+
   accountPayable(knex: Knex, startDate, endDate, genericTypeId) {
     return knex('pc_purchasing_order as pc')
       .select('r.delivery_code', 'r.delivery_date', 'pc.purchase_order_id', 'pc.purchase_order_number', 'pc.purchase_order_book_number',
@@ -82,5 +130,28 @@ export class MainReportModel {
       t.dst_warehouse_id,
       t.transaction_type`;
     return knex.raw(sql);
+  }
+
+  receiveFree(knex: Knex, receiveDate, receiveTypeId, warehouseId) {
+    const sql =
+      `select a.*,mg.generic_name,u.unit_name from (
+      SELECT wrd.product_id,ml.labeler_name,wrd.receive_qty,wrd.unit_generic_id from wm_receives wr
+      join wm_receive_detail wrd on wr.receive_id =wrd.receive_id
+      join mm_labelers as ml on wrd.vendor_labeler_id = ml.labeler_id
+      where wrd.is_free = 'Y' and wr.receive_date = ? and wrd.warehouse_id = ?
+      
+      
+      UNION ALL
+      
+      select rod.product_id,d.donator_name as labeler_name,rod.receive_qty,rod.unit_generic_id from wm_receive_other ro
+      join wm_receive_other_detail rod on ro.receive_other_id = rod.receive_other_id
+      join wm_donators as d on ro.donator_id = d.donator_id
+      where ro.receive_type_id in (?) and ro.receive_date = ? and rod.warehouse_id = ?
+      ) as a 
+      join mm_products as mp on mp.product_id =a.product_id
+      join mm_generics as mg on mg.generic_id = mp.generic_id
+      join mm_unit_generics as mug on mug.unit_generic_id = a.unit_generic_id
+      join mm_units as u on u.unit_id = mug.from_unit_id`;
+    return knex.raw(sql, [receiveDate, warehouseId, receiveTypeId, receiveDate, warehouseId]);
   }
 }
