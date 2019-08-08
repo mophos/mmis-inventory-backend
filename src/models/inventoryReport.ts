@@ -4200,7 +4200,7 @@ GROUP BY
     }
     peopleFullName(knex: Knex, people_id: any) {
         return knex('um_people as u')
-            .select('u.title_name as title', 'u.fname', 'u.lname', 'p.position_name', knex.raw(`concat(t.title_name,u.fname,' ',u.lname) as fullname`))
+            .select('t.title_name as title', 'u.fname', 'u.lname', 'p.position_name', knex.raw(`concat(t.title_name,u.fname,' ',u.lname) as fullname`))
             .leftJoin('um_people_positions as upp', function () {
                 this.on('upp.people_id', 'u.people_id')
                     .on('upp.is_actived', knex.raw('?', ['Y']))
