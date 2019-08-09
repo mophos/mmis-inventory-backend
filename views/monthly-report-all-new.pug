@@ -1,42 +1,41 @@
-include css.pug
 doctype html
 html
   head
+    include mystyle_pdf.html
     meta(charset="utf-8")
     title report
-  body
-    button.btn.btn-sm.btn-success(onclick='window.print()') Print
-    table.table(style="font-size: 13pt;")
-        thead
+  body(style="font-size: 10pt;")
+    table.table
+      thead
         tr 
-            td.center.bold(colspan='6')(style="font-size: 15pt;") #{hospitalName} 
+          td.center.bold(colspan='6') #{hospitalName} 
         tr 
-            td.center.bold(colspan='6')(style="font-size: 15pt;") สรุป งานคลังเวชภัณฑ์
+          td.center.bold(colspan='6') สรุป งานคลังเวชภัณฑ์
         tr 
-            td.center.bold(colspan='6')(style="font-size: 15pt;") ประจำเดือน#{monthName} พ.ศ.#{year}
-                br
-                br
+          td.center.bold(colspan='6') ประจำเดือน#{monthName} พ.ศ.#{year}
+            br
+            br
         tr
-            th.center(style="font-size: 15pt;",colspan='6') ยอดมูลค่าคงคลังยกมาจาก
-                br
-                | เดือน#{monthbeforName}
+          th.center(colspan='6') ยอดมูลค่าคงคลังยกมาจาก
+            br
+            | เดือน#{monthbeforName}
         tbody
-        - var y=0
-        for a in  rsBalance
-          - y++
-          tr
-            td(style='padding-top: 5px;width:10%') #{a.generic_type_name} &nbsp;
-            td.left(style='width:15%') #{a.account_name} &nbsp;
-            td(colspan='4') : #{a.balance} บาท &nbsp;
-        tfooter 
+          - var y=0
+          for a in  rsBalance
+            - y++
             tr
-                td.dash-top.right(colspan=6 style='padding-top: 5px') รวมมูลค่าทั้งสิ้น #{sumBalance} บาท
+              td(style='padding-top: 5px;width:10%') #{a.generic_type_name} &nbsp;
+              td.left(style='width:20%') #{a.account_name} &nbsp;
+              td(colspan='4') : #{a.balance} บาท &nbsp;
+        tfooter 
+          tr
+              td.dash-top.right(colspan=6 style='padding-top: 5px') รวมมูลค่าทั้งสิ้น #{sumBalance} บาท
     br
 
-    table.table(style="font-size: 13pt;")
+    table.table
         thead
         tr
-            th.center(style="font-size: 15pt;",colspan='6') ยอดรับทั้งหมดของ
+            th.center(colspan='6') ยอดรับทั้งหมดของ
                 br
                 | เดือน#{monthName}
         tbody
@@ -52,7 +51,7 @@ html
           - for(var a of v.detail)
             tr
                 td(style='padding-top: 5px;width:10%') #{a.generic_type_name} &nbsp;
-                td.left(style='width:15%') #{a.account_name} &nbsp;
+                td.left(style='width:20%') #{a.account_name} &nbsp;
                 td(colspan='4') : #{a.in_cost} บาท &nbsp;
           tr
             td.right(colspan=4) รวมยอด #{v.totalIn} บาท
@@ -61,10 +60,10 @@ html
             td.dash-top.right(colspan=6 style='padding-top: 5px') รวมมูลค่าทั้งสิ้น #{sumInCost} บาท
     br
 
-    table.table(style="font-size: 13pt;")
+    table.table
         thead
         tr
-            th.center(style="font-size: 15pt;",colspan='6') ยอดจ่ายทั้งหมดของ
+            th.center(colspan='6') ยอดจ่ายทั้งหมดของ
                 br
                 | เดือน#{monthName}
         tbody
@@ -80,7 +79,7 @@ html
           - for(var a of v.detail)
             tr
                 td(style='padding-top: 5px;width:10%') #{a.generic_type_name} &nbsp;
-                td.left(style='width:15%') #{a.account_name} &nbsp;
+                td.left(style='width:20%') #{a.account_name} &nbsp;
                 td(colspan='4') : #{a.out_cost} บาท &nbsp;
           tr
             td.right(colspan=4) รวมยอด #{v.totalOut} บาท
@@ -89,10 +88,10 @@ html
             td.dash-top.right(colspan=6 style='padding-top: 5px') รวมมูลค่าทั้งสิ้น #{sumOutCost} บาท
     br
 
-    table.table(style="font-size: 13pt;")
+    table.table
         thead
         tr
-            th.center(style="font-size: 15pt;",colspan='6') ยอดมูลค่าคงคลังของ
+            th.center(colspan='6') ยอดมูลค่าคงคลังของ
                 br
                 | เดือน#{monthName}
         tbody
@@ -101,8 +100,9 @@ html
           - y++
           tr
             td(style='padding-top: 5px;width:10%') #{a.generic_type_name} &nbsp;
-            td.left(style='width:15%') #{a.account_name} &nbsp;
+            td.left(style='width:20%') #{a.account_name} &nbsp;
             td(colspan='4') : #{a.balance} บาท &nbsp;
         tfooter 
             tr
                 td.dash-top.right(colspan=6 style='padding-top: 5px') รวมมูลค่าทั้งสิ้น #{sumBalanceAfter} บาท
+        

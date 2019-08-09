@@ -1,59 +1,61 @@
+include css.pug
+doctype html
 html
-  head 
-    include mystyle_pdf.html
+  head
     meta(charset="utf-8")
     title report
   body
-    table.table
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table(style="font-size: 13pt;")
         thead
-          tr 
-            td.center.bold(colspan='6') #{hospitalName} 
-          tr 
-            td.center.bold(colspan='6') สรุป งานคลังเวชภัณฑ์
-          tr 
-            td.center.bold(colspan='6') ประจำเดือน#{monthName} พ.ศ.#{year}
-          tr 
-            th.left(rowspan='2') ลำดับ
-            th.left(rowspan='2') รายการ
-            th.center(colspan='4') มีมูลค่า (บาท)
-          tr
-            th.right ยอดคงคลังยกมาจาก
-              br
-              | เดือน#{monthbeforName}
-            th.right รับเข้าคลัง
-              br
-              | (ใน 1 เดือน)
-            th.right จ่ายออกจากคลัง
-              br
-              | (ใน 1 เดือน)
-            th.right เหลือคงคลัง
-              br
-              | (เมื่อสิ้นเดือน)
-          tbody
-          - var l=0
-            for i in ans
-              span.page
-              tr 
-                td.left #{l+1}
+        tr 
+            td.center.bold(colspan='6')(style="font-size: 15pt;") #{hospitalName} 
+        tr 
+            td.center.bold(colspan='6')(style="font-size: 15pt;") สรุป งานคลังเวชภัณฑ์
+        tr 
+            td.center.bold(colspan='6')(style="font-size: 15pt;") ประจำเดือน#{monthName} พ.ศ.#{year}
+        tr 
+            th.left(rowspan='2')(style="font-size: 15pt;") ลำดับ
+            th.left(rowspan='2')(style="font-size: 15pt;") รายการ
+            th.center(colspan='4')(style="font-size: 15pt;") มีมูลค่า (บาท)
+        tr
+            th.right(style="font-size: 15pt;") ยอดคงคลังยกมาจาก
+                br
+                | เดือน#{monthbeforName}
+            th.right(style="font-size: 15pt;") รับเข้าคลัง
+                br
+                | (ใน 1 เดือน)
+            th.right(style="font-size: 15pt;") จ่ายออกจากคลัง
+                br
+                | (ใน 1 เดือน)
+            th.right(style="font-size: 15pt;") เหลือคงคลัง
+                br
+                | (เมื่อสิ้นเดือน)
+        - var l=0
+        for i in ans
+            span.page
+            tr 
+                td.left(style="font-size: 15pt;") #{l+1}
                 if(i.account_code == "ed")
-                    td.left ยาในบัญชียาหลัก
+                    td.left(style="font-size: 15pt;") ยาในบัญชียาหลัก
                 else
                     if(i.account_code == "ned")
-                      td.left ยานอกบัญชียาหลัก
+                        td.left(style="font-size: 15pt;") ยานอกบัญชียาหลัก
                     else
-                      if(i.account_name)
-                        td.left  #{i.generic_type_name} - #{i.account_name}
-                      else
-                        td.left  #{i.generic_type_name}
-                td.right #{i.balance}
-                td.right #{i.in_cost}
-                td.right #{i.out_cost}
-                td.right #{i.balanceAfter}
-              - l++ 
-          tr
+                        if(i.account_name)
+                            td.left(style="font-size: 15pt;")  #{i.generic_type_name} - #{i.account_name}
+                        else
+                            td.left(style="font-size: 15pt;")  #{i.generic_type_name}
+                td.right(style="font-size: 15pt;") #{i.balance}
+                td.right(style="font-size: 15pt;") #{i.in_cost}
+                td.right(style="font-size: 15pt;") #{i.out_cost}
+                td.right(style="font-size: 15pt;") #{i.balanceAfter}
+            - l++ 
+        tr
             td
-            td.left รวมทุกประเภท
-            td.right #{sum.balance}
-            td.right #{sum.in_cost}
-            td.right #{sum.out_cost}
-            td.right #{sum.balanceAfter}
+            td.left(style="font-size: 15pt;") รวมทุกประเภท
+            td.right(style="font-size: 15pt;") #{sum.balance}
+            td.right(style="font-size: 15pt;") #{sum.in_cost}
+            td.right(style="font-size: 15pt;") #{sum.out_cost}
+            td.right(style="font-size: 15pt;") #{sum.balanceAfter}
+        .pagebreak
