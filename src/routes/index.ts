@@ -4217,9 +4217,9 @@ router.get('/report/list/cost/excel', wrap(async (req, res, next) => {
 
 router.get('/report/receive-issue/year/export/:year', async (req, res, next) => {
   const db = req.db;
-  const year = req.params.year - 543
-  const warehouseId: any = req.decoded.warehouseId
-  const genericType = req.query.genericType
+  const year = +req.params.year - 543;
+  const warehouseId: any = req.decoded.warehouseId;
+  const genericType = req.query.genericType;
 
   try {
     const rs: any = await inventoryReportModel.issueYear(db, year, warehouseId, genericType);
