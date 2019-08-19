@@ -148,7 +148,7 @@ export class MinMaxModel {
         , IFNULL(SUM(ws.out_qty), 0) / DATEDIFF(?, ?) use_per_day
         from wm_stock_card ws
         where ws.ref_src = ?
-        and ws.transaction_type in ('TRN_OUT', 'ISS', 'HIS', 'REQ_OUT', 'ADJUST', 'ADD_OUT')
+        and ws.transaction_type in ('TRN_OUT', 'IST', 'HIS', 'REQ_OUT', 'ADJUST', 'ADD_OUT')
         and (date(ws.stock_date) between ? and ?)
         group by ws.generic_id
       ) sc on sc.generic_id = mp.generic_id
@@ -183,7 +183,7 @@ export class MinMaxModel {
         , IFNULL(SUM(ws.out_qty), 0) / DATEDIFF(?, ?) use_per_day
         from wm_stock_card ws
         where ws.ref_src = ?
-        and ws.transaction_type in ('TRN_OUT', 'ISS', 'HIS', 'REQ_OUT', 'ADJUST', 'ADD_OUT')
+        and ws.transaction_type in ('TRN_OUT', 'IST', 'HIS', 'REQ_OUT', 'ADJUST', 'ADD_OUT')
         and (date(ws.stock_date) between ? and ?)
         group by ws.generic_id
       ) sc on sc.generic_id = mp.generic_id
