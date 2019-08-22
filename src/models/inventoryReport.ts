@@ -3020,7 +3020,8 @@ OR sc.ref_src like ?
           wp.expired_date,
           r.requisition_code,
           rc.is_approve,
-          mp.product_name
+          mp.product_name,
+	        wp.lot_time
         FROM
           wm_requisition_orders r
         LEFT JOIN wm_requisition_confirms rc ON rc.requisition_order_id = r.requisition_order_id
@@ -3035,7 +3036,7 @@ OR sc.ref_src like ?
           r.requisition_order_id = '${requisId}'
         AND rci.confirm_qty != 0 and rci.generic_id = '${genericId}'
         GROUP BY
-          wp.product_id,wp.lot_no
+          wp.product_id,wp.lot_no,wp.lot_time
         UNION ALL
         select 
             '0',
@@ -3051,7 +3052,8 @@ OR sc.ref_src like ?
             expired_date,
             '',
             'Y',
-            'คงคลัง'
+            'คงคลัง',
+            lot_time
         from (
           SELECT
             mp.generic_id,
@@ -3061,7 +3063,8 @@ OR sc.ref_src like ?
             mus.unit_name,
             sum(wp.qty) as remain,
             wp.lot_no,
-            wp.expired_date
+            wp.expired_date,
+            wp.lot_time
           FROM
             wm_products wp
           JOIN mm_products mp ON wp.product_id = mp.product_id
@@ -3087,10 +3090,11 @@ OR sc.ref_src like ?
           AND wp.warehouse_id = '${warehouseId}'
           GROUP BY
             wp.product_id,
-            wp.lot_no
+            wp.lot_no,
+            wp.lot_time
         ) as sq1 where sq1.remain > 0
         ) as a
-        group by a.product_id,a.lot_no
+        group by a.product_id,a.lot_no,a.lot_time
         ORDER BY a.generic_code desc, a.product_id asc`
         return knex.raw(sql);
     }
