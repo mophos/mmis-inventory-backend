@@ -98,6 +98,7 @@ import borrowNoteRoute from './routes/borrowNote';
 import borrowOtherRoute from './routes/borrow-other';
 
 import toolsRoute from './routes/tools';
+import apiRoute from './routes/api';
 import returnBudgetRoute from "./routes/returnBudget";
 import staffBorrowRoute from './routes/staffBorrow';
 import staffAlertExpired from './routes/staffAlertExpired';
@@ -289,6 +290,7 @@ app.use('/setting', checkAuth, settingRoute);
 // tools
 app.use('/tools', checkAuth, adminAuth, toolsRoute);
 
+app.use('/api', checkAuth, apiRoute);
 app.use('/', checkAuth, indexRoute);
 //temperature
 app.use('/temperature', temperatureRoute);

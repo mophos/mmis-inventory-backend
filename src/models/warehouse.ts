@@ -1090,6 +1090,7 @@ export class WarehouseModel {
         .where('g.mark_deleted', 'N')
         .where('g.is_active', 'Y')
         .whereIn('g.generic_id', genericId)
+        .groupBy('g.generic_id')
         .as('g');
     })
     sql.where((w) => {
