@@ -264,6 +264,8 @@ router.post('/', co(async (req, res, next) => {
             const data: any = {
               receive_code: _receiveCode,
               receive_tmp_code: _receiveTmpCode,
+              tax_number: summary.taxNumber,
+              paper_number: summary.paperNumber,
               delivery_code: summary.deliveryCode,
               delivery_date: summary.deliveryDate,
               vendor_labeler_id: summary.supplierId,
@@ -335,6 +337,8 @@ router.put('/:receiveId', co(async (req, res, next) => {
 
     const data: any = {
       // receive_code: summary.receiveCode,
+      tax_number: summary.taxNumber,
+      paper_number: summary.paperNumber,
       delivery_code: summary.deliveryCode,
       delivery_date: summary.deliveryDate,
       vendor_labeler_id: summary.supplierId,
