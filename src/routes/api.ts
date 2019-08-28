@@ -25,6 +25,7 @@ router.post('/issue-jhcis2', async (req, res, next) => {
 });
 
 router.post('/issue-jhcis', async (req, res, next) => {
+  // router.post('/inventory/api/issue-jhcis', async (req, res, next) => {
   let db = req.db;
   let warehouseId = req.decoded.warehouseId;
   let sys_hospital = req.decoded.SYS_HOSPITAL;
@@ -57,12 +58,17 @@ router.post('/issue-jhcis', async (req, res, next) => {
     const data_: any = await conversion(db, hospcode, _data);
     await hisTransactionModel.saveHisTransactionTemp(db, data_);
     const rs = await hisTransactionModel.getGroupTransaction(db, hospcode, dateServe, warehouseId);
+
     if (rs.length) {
       const rsAllocate = await allocate(db, warehouseId, rs);
       if (rsAllocate.ok) {
         for (const i of rsAllocate.rows) {
           //-------------- get UnitGeneric --------------
+          console.log('***********************');
+          console.log(i.generic_id)
+
           let unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, i.generic_id);
+
           //เช็ค unitId
           if (!unitId.length) {
             let unit = await hisTransactionModel.getUnitGenericId(db, i.generic_id);
@@ -76,7 +82,10 @@ router.post('/issue-jhcis', async (req, res, next) => {
             }
             unitId = newUnit;
             //insert UnitGeneric
-            await hisTransactionModel.insertUnitId(db, newUnit);
+            const u = await hisTransactionModel.insertUnitId(db, newUnit);
+            unitId.unit_generic_id = u[0];
+          } else {
+            unitId = unitId[0];
           }
           //----------------------------------------
           //--------------ตัดคงคลัง--------------
@@ -113,7 +122,7 @@ router.post('/issue-jhcis', async (req, res, next) => {
               ref_src: warehouseId,
               ref_dst: null,
               comment: 'ตัดจ่าย HIS',
-              unit_generic_id: unitId[0].unit_generic_id,
+              unit_generic_id: unitId.unit_generic_id,
               lot_no: i.lot_no,
               lot_time: i.lot_time,
               expired_date: i.expired_date,
@@ -139,7 +148,7 @@ router.post('/issue-jhcis', async (req, res, next) => {
               ref_src: warehouseId,
               ref_dst: null,
               comment: 'ตัดจ่าย HIS (คนไข้คืนยา)',
-              unit_generic_id: unitId[0].unit_generic_id,
+              unit_generic_id: unitId.unit_generic_id,
               lot_no: i.lot_no,
               lot_time: i.lot_time,
               expired_date: i.expired_date,
