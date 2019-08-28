@@ -218,9 +218,9 @@ export class HisTransactionModel {
                 't.cut_stock_people_user_id': peopleUserId
             })
             .join('wm_his_mappings as ht', 'ht.his', 'tt.drug_code')
-            .where('hospcode', hospcode)
-            .where('mmis_warehouse', warehouseId)
-            .where('date_serv', dateServe)
+            .where('tt.hospcode', hospcode)
+            .where('tt.mmis_warehouse', warehouseId)
+            .where('tt.date_serv', dateServe)
             .where('ht.mmis', productId)
     }
 
