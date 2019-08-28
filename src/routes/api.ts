@@ -6,17 +6,17 @@ import * as co from 'co-express';
 import * as _ from 'lodash';
 import { GenericModel } from '../models/generic';
 
-
 import { TransactionType } from '../interfaces/basic';
 import { StockCard } from '../models/stockcard';
 import { HisTransactionModel } from '../models/hisTransaction';
 import { WarehouseModel } from '../models/warehouse';
+import { MainReportModel } from '../models/reports/mainReport';
+const mainReportModel = new MainReportModel();
 
 const genericModel = new GenericModel();
 const hisTransactionModel = new HisTransactionModel();
 const stockCardModel = new StockCard();
 const warehouseModel = new WarehouseModel();
-
 const router = express.Router();
 
 
@@ -245,4 +245,26 @@ const conversion = (async (db, hospcode: any, data: any) => {
   }
   return data;
 });
+
+
+router.get('/financial', (async (req, res, next) => {
+  const db = req.db;
+  const hospitalDetail = await mainReportModel.hospital(db);
+  const startDate = req.query.startDate;
+  const endDate = req.query.endDate;
+  const genericTypeId = req.query.genericTypeId;
+  try {
+    const rs: any = await mainReportModel.financial(db, startDate, endDate, genericTypeId);
+    console.log(rs[0]);
+    if (rs[0] == undefined) {
+      res.send({ ok: false })
+    } else {
+      res.send({ ok: true, rows: rs[0] });
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+
+  }
+
+}));
 export default router;
