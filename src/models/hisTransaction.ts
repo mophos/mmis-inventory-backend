@@ -217,10 +217,10 @@ export class HisTransactionModel {
                 't.cut_stock_date': cutDate,
                 't.cut_stock_people_user_id': peopleUserId
             })
-            .join('wm_his_mappings as ht', 'ht.his', 'tt.drug_code')
-            .where('tt.hospcode', hospcode)
-            .where('tt.mmis_warehouse', warehouseId)
-            .where('tt.date_serv', dateServe)
+            .join('wm_his_mappings as ht', 'ht.his', 't.drug_code')
+            .where('t.hospcode', hospcode)
+            .where('t.mmis_warehouse', warehouseId)
+            .where('t.date_serv', dateServe)
             .where('ht.mmis', productId)
     }
 
