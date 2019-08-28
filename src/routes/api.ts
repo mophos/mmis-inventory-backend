@@ -81,7 +81,7 @@ router.post('/issue-jhcis', async (req, res, next) => {
           //----------------------------------------
           //--------------ตัดคงคลัง--------------
           await hisTransactionModel.decreaseProductQty(db, i.wm_product_id, i.small_remain_qty - i.product_qty);
-          await hisTransactionModel.changeStatusToCut2(db, moment().format('YYYY-MM-DD hh:mm:ss'), req.decoded.people_user_id, hospcode, warehouseId, dateServe);
+          await hisTransactionModel.changeStatusToCut2(db, moment().format('YYYY-MM-DD hh:mm:ss'), req.decoded.people_user_id, hospcode, warehouseId, dateServe, i.product_id);
 
           //getBalance เพื่อไปลง stockcard
           let balance = await hisTransactionModel.getBalance(db, i.wm_product_id);

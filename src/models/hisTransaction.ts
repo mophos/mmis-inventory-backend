@@ -210,16 +210,18 @@ export class HisTransactionModel {
             .where('transaction_id', transactionIds);
     }
 
-    changeStatusToCut2(db: Knex, cutDate: any, peopleUserId: any, hospcode, warehouseId, dateServe) {
-        return db('wm_his_transaction')
+    changeStatusToCut2(db: Knex, cutDate: any, peopleUserId: any, hospcode, warehouseId, dateServe, productId) {
+        return db('wm_his_transaction as t')
             .update({
-                is_cut_stock: 'Y',
-                cut_stock_date: cutDate,
-                cut_stock_people_user_id: peopleUserId
+                't.is_cut_stock': 'Y',
+                't.cut_stock_date': cutDate,
+                't.cut_stock_people_user_id': peopleUserId
             })
+            .join('wm_his_mappings as ht', 'ht.his', 'tt.drug_code')
             .where('hospcode', hospcode)
             .where('mmis_warehouse', warehouseId)
             .where('date_serv', dateServe)
+            .where('ht.mmis', productId)
     }
 
     changeQtyInHisTransaction(db: Knex, cutDate: any, peopleUserId: any, transactionIds: any, diff: any) {
