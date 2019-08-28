@@ -177,7 +177,7 @@ export class HisTransactionModel {
     getHisTransactionForImport(db: Knex, transactionIds: any[]) {
         return db('wm_his_transaction as tt')
             .select('tt.transaction_id', 'tt.date_serv', 'tt.hn', 'tt.seq', 'tt.mmis_warehouse as warehouse_id',
-                'mg.generic_id', 'hm.conversion','tt.qty')
+                'mg.generic_id', 'hm.conversion', 'tt.qty')
             .joinRaw('inner join wm_his_mappings as hm on hm.his=tt.drug_code and hm.hospcode=tt.hospcode')
             .innerJoin('mm_generics as mg', 'mg.generic_id', 'hm.mmis')
             .whereIn('tt.transaction_id', transactionIds)
@@ -208,6 +208,20 @@ export class HisTransactionModel {
                 cut_stock_people_user_id: peopleUserId
             })
             .where('transaction_id', transactionIds);
+    }
+
+    changeStatusToCut2(db: Knex, cutDate: any, peopleUserId: any, hospcode, warehouseId, dateServe, productId) {
+        return db('wm_his_transaction as t')
+            .update({
+                't.is_cut_stock': 'Y',
+                't.cut_stock_date': cutDate,
+                't.cut_stock_people_user_id': peopleUserId
+            })
+            .join('wm_his_mappings as ht', 'ht.his', 't.drug_code')
+            .where('t.hospcode', hospcode)
+            .where('t.mmis_warehouse', warehouseId)
+            .where('t.date_serv', dateServe)
+            .where('ht.mmis', productId)
     }
 
     changeQtyInHisTransaction(db: Knex, cutDate: any, peopleUserId: any, transactionIds: any, diff: any) {
@@ -353,9 +367,9 @@ export class HisTransactionModel {
             .andWhere(`his`, his)
     }
 
-    insertUnitId(db: Knex, data: any[]) {
+    insertUnitId(db: Knex, data: any) {
         return db('mm_unit_generics')
-            .insert(data);
+            .insert(data, 'unit_generic_id');
     }
 
     getUnitGenericId(knex: Knex, generic_id: any) {
@@ -385,5 +399,19 @@ export class HisTransactionModel {
 
     saveHistransactionHis(knex: Knex, data: any) {
         return knex('wm_his_transaction').insert(data);
+    }
+
+
+    getGroupTransaction(db: Knex, hospcode: any, dateServe: any, warehouseId) {
+        return db('wm_his_transaction as tt')
+            .select('mp.product_id', 'mp.product_name', 'mp.generic_id', 'mp.generic_id as genericId',
+                db.raw(`sum(tt.qty) as genericQty`), db.raw(`sum(tt.qty) as qty`), 'tt.transaction_id')
+            .join('wm_his_mappings as ht', 'ht.his', 'tt.drug_code')
+            .join('mm_products as mp', 'mp.product_id', 'ht.mmis')
+            .where('ht.hospcode', hospcode)
+            .where('tt.mmis_warehouse', warehouseId)
+            .where('tt.date_serv', dateServe)
+            .where('tt.is_cut_stock', 'N')
+            .groupBy('mp.product_id');
     }
 } 
