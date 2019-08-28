@@ -567,7 +567,7 @@ export class ReceiveModel {
 
   getReceiveInfo(knex: Knex, receiveId: any) {
     return knex('wm_receives as r')
-      .select('r.receive_id', 'r.receive_code', 'r.receive_tmp_code', 'r.receive_date', 'r.delivery_code', 'r.delivery_date',
+      .select('r.receive_id', 'r.receive_code', 'r.receive_tmp_code', 'r.receive_date', 'r.paper_number', 'r.delivery_code', 'r.delivery_date',
         'r.receive_type_id', 'r.receive_status_id', 'r.vendor_labeler_id',
         'lm.labeler_name', 'rt.receive_type_name', 'rs.receive_status_name', 'r.committee_id',
         'pc.purchase_order_number', 'pc.purchase_order_id', 'pc.order_date',
