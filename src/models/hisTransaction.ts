@@ -369,7 +369,7 @@ export class HisTransactionModel {
 
     insertUnitId(db: Knex, data: any) {
         return db('mm_unit_generics')
-            .insert(data);
+            .insert(data, 'unit_generic_id');
     }
 
     getUnitGenericId(knex: Knex, generic_id: any) {
