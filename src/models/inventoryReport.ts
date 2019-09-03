@@ -2576,7 +2576,8 @@ OR sc.ref_src like ?
         po.manager_id,
         po.head_id,
         mgt.generic_type_name,
-        wr.committee_id
+        wr.committee_id,
+        count(wrd.receive_detail_id) as amount_qty
         FROM
         wm_receives as wr 
         LEFT JOIN wm_receive_detail wrd ON wrd.receive_id = wr.receive_id
