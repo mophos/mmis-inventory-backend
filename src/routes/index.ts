@@ -1079,6 +1079,76 @@ router.get('/report/approve/requis2', wrap(async (req, res, next) => {
 
 }));
 
+router.get('/report/approve/requis4', wrap(async (req, res, next) => {
+  let db = req.db;
+  let approve_requis: any = []
+  let sum: any = []
+  let allcost = [];
+  const line = await inventoryReportModel.getLine(db, 'AR');
+  const signature = await inventoryReportModel.getSignature(db, 'AR')
+  let page_re: any = line[0].line;
+  const dateApprove = req.decoded.WM_REPORT_DATE_APPROVE; // Y = วันที่อนุมัติ
+  let warehouse_id: any = req.decoded.warehouseId
+  // console.log(req.decoded);
+
+  try {
+    let requisId = req.query.requisId;
+    requisId = Array.isArray(requisId) ? requisId : [requisId]
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+    let all_cost: any = 0;
+    for (let i in requisId) {
+      const _approve_requis = await inventoryReportModel.approve_requis2(db, requisId[i]);
+      approve_requis.push(_approve_requis[0])
+      approve_requis[i] = _.chunk(approve_requis[i], page_re)
+      let page = 0;
+      all_cost = 0;
+      for (const values of approve_requis[i]) {
+        sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
+        all_cost += _.sumBy(values, 'total_cost')
+        page++;
+        for (const value of values) {
+          if (dateApprove === 'N') {
+            value.approve_date = value.requisition_date;
+          } else if (dateApprove === 'Y' && !value.approve_date) {
+            value.approve_date = value.requisition_date
+          }
+          value.sPage = page;
+          value.nPage = approve_requis[i].length;
+          value.full_name = signature[0].signature === 'N' ? '' : value.full_name
+          value.full_namec = signature[0].signature === 'N' ? '' : value.full_namec
+          value.total_cost = inventoryReportModel.comma(value.unit_cost * value.confirm_qty);
+          value.approve_date = moment(value.approve_date).format('D MMMM ') + (moment(value.approve_date).get('year') + 543);
+          value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
+          value.unit_cost = inventoryReportModel.comma(value.unit_cost);
+          value.requisition_qty = inventoryReportModel.commaQty(value.requisition_qty / value.conversion_qty);
+          value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
+          value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
+          value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
+          value.today = printDate(req.decoded.SYS_PRINT_DATE);
+          if (req.decoded.SYS_PRINT_DATE_EDIT === 'Y') {
+            value.today += (value.updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) + moment(value.updated_at).format(', HH:mm') + ' น.' : '';
+          }
+          // })
+        }
+        // })
+      }
+      allcost.push(inventoryReportModel.comma(all_cost));
+    }
+    res.render('approve_requis4', {
+      all_cost: allcost,
+      hospitalName: hospitalName,
+      approve_requis: approve_requis,
+      sum: sum
+    });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
 router.get('/report/staff/approve/requis', wrap(async (req, res, next) => {
   let db = req.db;
   let approve_requis: any = []
