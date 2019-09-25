@@ -47,4 +47,9 @@ html
             div(style='width:33%;float:left;') (#{committee[0].title_name} #{committee[0].fname} #{committee[0].lname})
             div(style='width:33%;float:left;') (#{committee[1].title_name} #{committee[1].fname} #{committee[1].lname})
             div(style='width:33%;float:left;') (#{committee[2].title_name} #{committee[2].fname} #{committee[2].lname})
+        tr(style='border: 0')
+          td.center(colspan='9')
+            div(style='width:33%;float:left;') #{committee[0].position_name}
+            div(style='width:33%;float:left;') #{committee[1].position_name}
+            div(style='width:33%;float:left;') #{committee[2].position_name}
       .pagebreak

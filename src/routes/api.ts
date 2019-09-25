@@ -263,8 +263,6 @@ router.get('/financial', (async (req, res, next) => {
     }
   } catch (error) {
     res.send({ ok: false, error: error.message });
-
   }
-
 }));
 export default router;
