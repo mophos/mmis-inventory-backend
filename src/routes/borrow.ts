@@ -835,6 +835,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       }
 
       // =================================== STOCK CARD IN ========================
+      console.log('zxcvcxvzzxcvzxcvxcvzcvxvczvzxcvxcvzxcvxcvzxcv', v.wpp_unit_generic_id);
 
       let remain_dst = await productModel.getBalance(db, v.product_id, v.dst_warehouse_id, v.lot_no, v.lot_time);
       remain_dst = remain_dst[0]
@@ -842,7 +843,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       stockIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
       stockIn.product_id = v.product_id;
       stockIn.generic_id = v.generic_id;
-      stockIn.unit_generic_id = v.unit_generic_id;
+      stockIn.unit_generic_id = v.wpp_unit_generic_id;
       stockIn.transaction_type = TransactionType.BORROW_IN;
       stockIn.document_ref_id = v.borrow_id;
       stockIn.document_ref = v.borrow_code;
@@ -867,7 +868,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       stockOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
       stockOut.product_id = v.product_id;
       stockOut.generic_id = v.generic_id;
-      stockOut.unit_generic_id = v.unit_generic_id;
+      stockOut.unit_generic_id = v.wpp_unit_generic_id;
       stockOut.transaction_type = TransactionType.BORROW_OUT;
       stockOut.document_ref_id = v.borrow_id;
       stockOut.document_ref = v.borrow_code;

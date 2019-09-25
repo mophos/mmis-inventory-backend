@@ -522,9 +522,10 @@ export class BorrowModel {
     return knex('wm_borrow_generic as tg')
       .select('d.borrow_product_id', 'd.wm_product_id', 'ug.qty as conversion_qty', 'p.lot_no',
         'p.expired_date', 'p.cost', 'p.price', 'p.product_id', 'p.lot_time', 'd.qty as lot_qty',
-        'mp.generic_id', 't.*', 'tg.*', subBalanceSrc, subBalanceDst)
+        'mp.generic_id', 't.*', 'tg.*', subBalanceSrc, subBalanceDst, 'wpp.unit_generic_id as wpp_unit_generic_id')
       .innerJoin('wm_borrow as t', 't.borrow_id', 'tg.borrow_id')
       .leftJoin('wm_borrow_product as d', 'd.borrow_generic_id', 'tg.borrow_generic_id')
+      .leftJoin('wm_products as wpp', 'wpp.wm_product_id', 'd.wm_product_id')
       .leftJoin(`wm_products as p`, 'p.wm_product_id', 'd.wm_product_id')
       .leftJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
       .leftJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'tg.unit_generic_id')
