@@ -3904,8 +3904,8 @@ FROM
 		'  ',
 		IFNULL( mgg4.group_name_4, ' ' ) 
 	) AS group_name,
-	(sum(in_qty*in_unit_cost) - sum(out_qty*out_unit_cost)) / (sum(in_qty) - sum(out_qty)) AS cost,
-	(
+	ROUND((sum(in_qty*in_unit_cost) - sum(out_qty*out_unit_cost)) / (sum(in_qty) - sum(out_qty)),2) AS cost,
+	ROUND((
 	SELECT
 		avg( cost ) 
 	FROM
@@ -3914,7 +3914,7 @@ FROM
 		warehouse_id = vs.warehouse_id 
 		AND product_id = vs.product_id 
 		AND lot_no IN ( SELECT lot_no FROM view_stock_card_warehouse WHERE product_id = vs.product_id AND unit_generic_id = vs.unit_generic_id GROUP BY lot_no ) 
-	) AS cost2,
+	),2) AS cost2,
 	mug.qty,
 	mu1.unit_name AS pack,
 	mu2.unit_name AS small_unit,
@@ -3972,7 +3972,7 @@ WHERE
 GROUP BY
 	vs.unit_generic_id,
 	vs.product_id
-	
+ORDER BY mg.generic_name
         `)
         // return knex.raw(`select 
         // mg.generic_name,
