@@ -35,10 +35,9 @@ router.post('/issue-jhcis', async (req, res, next) => {
   let dateServe = req.body.date_serv;
   let hisWarehouseId = req.body.his_warehouse;
 
-  const hospcode = data[0].hospcode;
+  let hospcode = await hisTransactionModel.getHospcode(db, hisWarehouseId);
   console.log('xxxcvzcvxzvxzcvxzcvzxcvzxc', hospcode);
-  
-  
+
   try {
     let _data: any = [];
     for (const v of data) {
@@ -60,10 +59,10 @@ router.post('/issue-jhcis', async (req, res, next) => {
       });
     }
 
-    const data_: any = await conversion(db, hospcode, _data);
-    await hisTransactionModel.saveHisTransactionTemp(db, data_);
-    const rs = await hisTransactionModel.getGroupTransaction(db, hospcode, dateServe, warehouseId);
-    console.log(rs);
+    // const data_: any = await conversion(db, hospcode, _data);
+    // await hisTransactionModel.saveHisTransactionTemp(db, data_);
+    // const rs = await hisTransactionModel.getGroupTransaction(db, hospcode, dateServe, warehouseId);
+    // console.log(rs);
 
     // if (rs.length) {
     //   const rsAllocate = await allocate(db, warehouseId, rs);
