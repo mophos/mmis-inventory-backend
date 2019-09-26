@@ -35,12 +35,10 @@ router.post('/issue-jhcis', async (req, res, next) => {
   let dateServe = req.body.date_serv;
   let hisWarehouseId = req.body.his_warehouse;
 
-  let hospcode = await hisTransactionModel.getHospcode(db, hisWarehouseId);
-  console.log('xxxcvzcvxzvxzcvxzcvzxcvzxc', hospcode);
-
   try {
     let _data: any = [];
     for (const v of data) {
+      console.log(v.hospcode);
       _data.push({
         hospcode: v.hospcode,
         date_serv: dateServe,

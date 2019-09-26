@@ -414,9 +414,4 @@ export class HisTransactionModel {
             .where('tt.is_cut_stock', 'N')
             .groupBy('mp.product_id');
     }
-
-    getHospcode(db: Knex, hisWarehouse: any) {
-        return db('wm_warehouses as w')
-            .where('w.warehouse_id', hisWarehouse);
-    }
 } 
