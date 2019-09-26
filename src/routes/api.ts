@@ -30,11 +30,14 @@ router.post('/issue-jhcis', async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
   // let sys_hospital = req.decoded.SYS_HOSPITAL;
   // const hospcode = JSON.parse(sys_hospital).hospcode
-  const hospcode = req.body.hospcode;
 
   let data = req.body.data;
   let dateServe = req.body.date_serv;
   let hisWarehouseId = req.body.his_warehouse;
+
+  const hospcode = data[0].hospcode;
+  console.log('xxxcvzcvxzvxzcvxzcvzxcvzxc', hospcode);
+  
   
   try {
     let _data: any = [];
@@ -56,8 +59,6 @@ router.post('/issue-jhcis', async (req, res, next) => {
         is_duplicate: 'N'
       });
     }
-    console.log('xxxxxxxxxx', hospcode);
-    
 
     const data_: any = await conversion(db, hospcode, _data);
     await hisTransactionModel.saveHisTransactionTemp(db, data_);
