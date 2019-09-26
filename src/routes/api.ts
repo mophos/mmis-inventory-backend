@@ -55,6 +55,8 @@ router.post('/issue-jhcis', async (req, res, next) => {
       });
     }
 
+    console.log(_data);
+
     const data_: any = await conversion(db, hospcode, _data);
     await hisTransactionModel.saveHisTransactionTemp(db, data_);
     const rs = await hisTransactionModel.getGroupTransaction(db, hospcode, dateServe, warehouseId);
@@ -263,6 +265,8 @@ router.get('/financial', (async (req, res, next) => {
     }
   } catch (error) {
     res.send({ ok: false, error: error.message });
+
   }
+
 }));
 export default router;
