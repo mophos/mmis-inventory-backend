@@ -407,7 +407,7 @@ export class HisTransactionModel {
             .select('mp.product_id', 'mp.product_name', 'mp.generic_id', 'mp.generic_id as genericId',
                 db.raw(`sum(tt.qty) as genericQty`), db.raw(`sum(tt.qty) as qty`), 'tt.transaction_id')
             .join('wm_his_mappings as ht', 'ht.his', 'tt.drug_code')
-            .join('mm_products as mp', 'mp.product_id', 'ht.mmis')
+            .join('mm_products as mp', 'mp.generic_id', 'ht.mmis')
             .where('ht.hospcode', hospcode)
             .where('tt.mmis_warehouse', warehouseId)
             .where('tt.date_serv', dateServe)
