@@ -97,7 +97,7 @@ router.put('/purchases/return', co(async (req, res, nex) => {
 
     await returnModel.updatePurchase(db, purchaseId, data);
     await returnModel.insertBudgetTransaction(db, purchaseId, returnPrice * -1);
-    await returnModel.insertBudgetTransactionLog(db, purchaseId, returnPrice * -1);
+    // await returnModel.insertBudgetTransactionLog(db, purchaseId, returnPrice * -1);
     res.send({ ok: true });
   } catch (error) {
     res.send({ ok: false, error: error.message });
