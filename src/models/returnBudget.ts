@@ -18,7 +18,7 @@ export class ReturnBudgetModel {
     group by pci.purchase_order_id
       ) as po_price on po_price.purchase_order_id = pc.purchase_order_id and pc.is_cancel = 'N'
     join mm_labelers as ml on ml.labeler_id = pc.labeler_id
-    join view_budget_subtype bs on bs.bgdetail_id = pc.budget_detail_id
+    join view_budget_subtype bs on bs.view_bgdetail_id = pc.budget_detail_id
     left join (
         select cast(sum(rd.receive_qty * rd.cost) as decimal(32,4)) receive_price, r.purchase_order_id
     from wm_receive_detail as rd
@@ -74,7 +74,7 @@ export class ReturnBudgetModel {
     group by pci.purchase_order_id
       ) as po_price on po_price.purchase_order_id = pc.purchase_order_id and pc.is_cancel = 'N'
     join mm_labelers as ml on ml.labeler_id = pc.labeler_id
-    join view_budget_subtype bs on bs.bgdetail_id = pc.budget_detail_id
+    join view_budget_subtype bs on bs.view_bgdetail_id = pc.budget_detail_id
     left join (
         select cast(sum(rd.receive_qty * rd.cost) as decimal(32,4)) receive_price, r.purchase_order_id
     from wm_receive_detail as rd
@@ -131,7 +131,7 @@ export class ReturnBudgetModel {
     group by pci.purchase_order_id
       ) as po_price on po_price.purchase_order_id = pc.purchase_order_id and pc.is_cancel = 'N'
     join mm_labelers as ml on ml.labeler_id = pc.labeler_id
-    join view_budget_subtype bs on bs.bgdetail_id = pc.budget_detail_id
+    join view_budget_subtype bs on bs.view_bgdetail_id = pc.budget_detail_id
     left join (
         select cast(sum(rd.receive_qty * rd.cost) as decimal(32,4)) receive_price, r.purchase_order_id
     from wm_receive_detail as rd
@@ -190,7 +190,7 @@ export class ReturnBudgetModel {
     group by pci.purchase_order_id
       ) as po_price on po_price.purchase_order_id = pc.purchase_order_id and pc.is_cancel = 'N'
     join mm_labelers as ml on ml.labeler_id = pc.labeler_id
-    join view_budget_subtype bs on bs.bgdetail_id = pc.budget_detail_id
+    join view_budget_subtype bs on bs.view_bgdetail_id = pc.budget_detail_id
     left join (
         select cast(sum(rd.receive_qty * rd.cost) as decimal(32,4)) receive_price, r.purchase_order_id
     from wm_receive_detail as rd

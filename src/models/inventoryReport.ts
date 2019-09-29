@@ -4241,7 +4241,7 @@ GROUP BY
         ) AS po_price ON po_price.purchase_order_id = pc.purchase_order_id
         AND pc.is_cancel = 'N'
         JOIN mm_labelers AS ml ON ml.labeler_id = pc.labeler_id
-        JOIN view_budget_subtype bs ON bs.bgdetail_id = pc.budget_detail_id
+        JOIN view_budget_subtype bs ON bs.view_bgdetail_id = pc.budget_detail_id
         LEFT JOIN(
             SELECT
         cast(sum(rd.receive_qty * rd.cost) AS DECIMAL(32, 4)) receive_price,
