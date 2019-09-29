@@ -154,4 +154,42 @@ export class MainReportModel {
       join mm_units as u on u.unit_id = mug.from_unit_id`;
     return knex.raw(sql, [receiveDate, warehouseId, receiveTypeId, receiveDate, warehouseId]);
   }
+
+  financial(knex: Knex, startDate: any, endDate: any, genericTypeId: any) {
+    var sql = `SELECT
+        r.receive_date,
+        r.paper_number docunoxx,
+        r.tax_number invxnoxx,
+        l.pay_code payacode,
+        l.labeler_name payaname1,
+        sum(sc.cost) sumxgoodamnt,
+        sum(sc.cost) totaamnt,
+        sum(sc.cost) goodamnt,
+        gt.accxcode,
+        gt.generic_type_name accxthainame,
+        r.receive_id,
+        l.labeler_id,
+        gt.generic_type_id
+      FROM
+        view_stock_card_receives AS sc
+        JOIN wm_receives AS r ON r.receive_id = sc.document_ref_id
+        JOIN mm_generics AS g ON g.generic_id = sc.generic_id
+        JOIN mm_generic_types AS gt ON gt.generic_type_id = g.generic_type_id
+        JOIN mm_labelers AS l ON l.labeler_id = r.vendor_labeler_id
+      where 
+        r.receive_date between ? and ?
+        `
+        if(genericTypeId != 0) sql +=`and gt.generic_type_id = ?`
+        else sql +=`and gt.generic_type_id != ?`
+      sql += `group by
+        r.receive_id,
+        l.labeler_id,
+        gt.generic_type_id
+        order by 
+        gt.generic_type_id
+  `
+    return knex.raw(sql, [startDate, endDate, genericTypeId]);
+
+  }
+
 }

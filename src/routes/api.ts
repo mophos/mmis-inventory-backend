@@ -6,17 +6,17 @@ import * as co from 'co-express';
 import * as _ from 'lodash';
 import { GenericModel } from '../models/generic';
 
-
 import { TransactionType } from '../interfaces/basic';
 import { StockCard } from '../models/stockcard';
 import { HisTransactionModel } from '../models/hisTransaction';
 import { WarehouseModel } from '../models/warehouse';
+import { MainReportModel } from '../models/reports/mainReport';
+const mainReportModel = new MainReportModel();
 
 const genericModel = new GenericModel();
 const hisTransactionModel = new HisTransactionModel();
 const stockCardModel = new StockCard();
 const warehouseModel = new WarehouseModel();
-
 const router = express.Router();
 
 
@@ -28,17 +28,20 @@ router.post('/issue-jhcis', async (req, res, next) => {
   // router.post('/inventory/api/issue-jhcis', async (req, res, next) => {
   let db = req.db;
   let warehouseId = req.decoded.warehouseId;
-  let sys_hospital = req.decoded.SYS_HOSPITAL;
-  const hospcode = JSON.parse(sys_hospital).hospcode
+  // let sys_hospital = req.decoded.SYS_HOSPITAL;
+  // const hospcode = JSON.parse(sys_hospital).hospcode
 
   let data = req.body.data;
   let dateServe = req.body.date_serv;
   let hisWarehouseId = req.body.his_warehouse;
+  let hospcode: any;
+
   try {
     let _data: any = [];
     for (const v of data) {
+      hospcode = v.hospcode
       _data.push({
-        hospcode: hospcode,
+        hospcode: v.hospcode,
         date_serv: dateServe,
         seq: v.seq,
         hn: v.hn,
@@ -58,7 +61,7 @@ router.post('/issue-jhcis', async (req, res, next) => {
     const data_: any = await conversion(db, hospcode, _data);
     await hisTransactionModel.saveHisTransactionTemp(db, data_);
     const rs = await hisTransactionModel.getGroupTransaction(db, hospcode, dateServe, warehouseId);
-
+    
     if (rs.length) {
       const rsAllocate = await allocate(db, warehouseId, rs);
       if (rsAllocate.ok) {
@@ -161,7 +164,6 @@ router.post('/issue-jhcis', async (req, res, next) => {
           // save stockcard
 
         }
-        console.log(rsAllocate.rows);
       } else {
         res.send({ ok: false, error: 'ไม่สามารถตัดจ่ายได้' });
       }
@@ -245,4 +247,26 @@ const conversion = (async (db, hospcode: any, data: any) => {
   }
   return data;
 });
+
+
+router.get('/financial', (async (req, res, next) => {
+  const db = req.db;
+  const hospitalDetail = await mainReportModel.hospital(db);
+  const startDate = req.query.startDate;
+  const endDate = req.query.endDate;
+  const genericTypeId = req.query.genericTypeId;
+  try {
+    const rs: any = await mainReportModel.financial(db, startDate, endDate, genericTypeId);
+    console.log(rs[0]);
+    if (rs[0] == undefined) {
+      res.send({ ok: false })
+    } else {
+      res.send({ ok: true, rows: rs[0] });
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+
+  }
+
+}));
 export default router;

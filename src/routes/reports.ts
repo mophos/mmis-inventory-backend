@@ -15,6 +15,7 @@ import { InventoryReportModel } from "../models/inventoryReport";
 const router = express.Router();
 const mainReportModel = new MainReportModel();
 const inventoryReportModel = new InventoryReportModel();
+const json2xls = require('json2xls');
 
 function printDate(SYS_PRINT_DATE) {
   moment.locale('th');
@@ -704,6 +705,66 @@ router.get('/receive/free', wrap(async (req, res, next) => {
     warehouseName: warehouseName,
     note: note
   });
+}));
+
+router.get('/exports/financial/:startDate/:endDate/:genericTypeId', wrap(async (req, res, next) => {
+  const db = req.db;
+  const hospitalDetail = await mainReportModel.hospital(db);
+  const startDate = req.params.startDate;
+  const endDate = req.params.endDate;
+  const genericTypeId = req.params.genericTypeId;
+  try {
+    const rs: any = await mainReportModel.financial(db, startDate, endDate, genericTypeId);
+    console.log(rs[0]);
+    if (rs[0] == undefined) {
+      res.send({ ok: false })
+    } else {
+      res.send({ ok: true, rows: rs[0] });
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+
+  }
+
+}));
+
+router.get('/exports/financialData', wrap(async (req, res, next) => {
+  const db = req.db;
+  const startDate = req.query.startDate;
+  const endDate = req.query.endDate;
+  const genericTypeId = req.query.genericTypeId;
+  try {
+    const rs: any = await mainReportModel.financial(db, startDate, endDate, genericTypeId);
+    console.log(rs[0]);
+    if (rs[0] == undefined) {
+      res.send({ ok: false })
+    } else {
+      let json = []
+      _.forEach(rs[0], (v: any) => {
+        json.push({
+          'invxdate': moment(v.receive_date).format('YYYY-MM-DD'),
+          'docunoxx': v.docunoxx,
+          'invxnoxx': v.invxnoxx,
+          'payacode': v.paycode,
+          'payaname1': v.payaname1,
+          'sumxgoodamnt': v.sumxgoodamnt,
+          'accxcode': v.accxcode,
+          'accxthainame': v.accxthainame,
+        })
+      });
+      const xls = json2xls(json);
+      const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+      // create directory
+      fse.ensureDirSync(exportDirectory);
+      const filePath = path.join(exportDirectory, 'รายงานการเงิน' + startDate + '-' + endDate + '.xlsx');
+      fs.writeFileSync(filePath, xls, 'binary');
+      // force download
+      res.download(filePath, 'รายงานการเงิน' + startDate + '-' + endDate + '.xlsx');
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+
 }));
 
 export default router;
