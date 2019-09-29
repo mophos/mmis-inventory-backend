@@ -227,7 +227,7 @@ export class ReturnBudgetModel {
   insertBudgetTransaction(db: Knex, purchaseId: any, returnPrice: any) {
     let sql = `
     insert into pc_budget_transection(
-      purchase_order_id, bgdetail_id, incoming_balance, amount, balance
+      purchase_order_id, view_bgdetail_id, incoming_balance, amount, balance
       , date_time, transaction_status, remark)
     select 
       pc.purchase_order_id
@@ -242,7 +242,7 @@ export class ReturnBudgetModel {
     left join pc_budget_transection trx on trx.transection_id = (
     select max(transection_id)
     from pc_budget_transection t
-    where t.bgdetail_id = pc.budget_detail_id
+    where t.view_bgdetail_id = pc.budget_detail_id
     order by transection_id DESC
     limit 1
     )
@@ -254,7 +254,7 @@ export class ReturnBudgetModel {
   insertBudgetTransactionLog(db: Knex, purchaseId: any, returnPrice: any) {
     let sql = `
     insert into pc_budget_transection_log(
-      purchase_order_id, bgdetail_id, incoming_balance, amount, balance
+      purchase_order_id, view_bgdetail_id, incoming_balance, amount, balance
       , date_time, transaction_status, remark)
     select 
       pc.purchase_order_id
@@ -269,7 +269,7 @@ export class ReturnBudgetModel {
     left join pc_budget_transection_log trx on trx.transection_id = (
     select max(transection_id)
     from pc_budget_transection_log t
-    where t.bgdetail_id = pc.budget_detail_id
+    where t.view_bgdetail_id = pc.budget_detail_id
     order by transection_id DESC
     limit 1
     )
