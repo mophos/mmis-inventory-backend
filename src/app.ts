@@ -127,16 +127,6 @@ app.use(cors());
 //   body: true,
 //   loggerFunction: console.error
 // }));
-let reqQuery = (req, res, next) => {
-  const url = decodeURI(req.url).substring(_.indexOf(req.url, '?') + 1, decodeURI(req.url).length).split('&');
-  let query = {};
-  for (const u of url) {
-    const up = u.split('=');
-    query[up[0]] = up[1]
-  }
-  req.query2 = query;
-  next();
-}
 
 let checkAuth = (req, res, next) => {
 
@@ -310,7 +300,7 @@ app.use('/setting', checkAuth, settingRoute);
 app.use('/tools', checkAuth, adminAuth, toolsRoute);
 
 app.use('/api', checkAuth, apiRoute);
-app.use('/', checkAuth, reqQuery, indexRoute);
+app.use('/', checkAuth, indexRoute);
 //temperature
 app.use('/temperature', temperatureRoute);
 
