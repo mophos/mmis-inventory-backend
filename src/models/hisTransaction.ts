@@ -207,7 +207,7 @@ export class HisTransactionModel {
                 cut_stock_date: cutDate,
                 cut_stock_people_user_id: peopleUserId
             })
-            .where('transaction_id', transactionIds);
+            .whereIn('transaction_id', transactionIds);
     }
 
     changeStatusToCut2(db: Knex, cutDate: any, peopleUserId: any, hospcode, warehouseId, dateServe, productId) {
@@ -411,6 +411,17 @@ export class HisTransactionModel {
             .where('ht.hospcode', hospcode)
             .where('tt.mmis_warehouse', warehouseId)
             .where('tt.date_serv', dateServe)
+            .where('tt.is_cut_stock', 'N')
+            .groupBy('mp.product_id');
+    }
+
+    getGroupTransactionFromTransactionId(db: Knex, transactions: any) {
+        return db('wm_his_transaction as tt')
+            .select('tt.mmis_warehouse', 'mp.product_id', 'mp.product_name', 'mp.generic_id', 'mp.generic_id as genericId',
+                db.raw(`sum(tt.qty) as genericQty`), db.raw(`sum(tt.qty) as qty`), 'tt.transaction_id')
+            .join('wm_his_mappings as ht', 'ht.his', 'tt.drug_code')
+            .join('mm_products as mp', 'mp.generic_id', 'ht.mmis')
+            .whereIn('tt.transaction_id', transactions)
             .where('tt.is_cut_stock', 'N')
             .groupBy('mp.product_id');
     }
