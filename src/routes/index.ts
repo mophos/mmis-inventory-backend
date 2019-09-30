@@ -144,6 +144,7 @@ function commaQty(num) {
   }
 
 }
+
 router.get('/', (req, res, next) => {
   res.send({ ok: true, message: 'Welcome to Inventory API server' });
 });
