@@ -133,7 +133,7 @@ router.get('/warehouse/search/autocomplete', async (req, res, next) => {
 router.get('/warehouse/search/autocomplete/all', async (req, res, next) => {
   // search generics แบบ ทั้งหมด
   let db = req.db;
-  let q = req.query.q;
+  let q = req.query2.q;
   let warehouseId = req.query.warehouseId;
   let limit = req.query.limit === 'Y' ? false : true;
   if (warehouseId == undefined || warehouseId == null || warehouseId == '') {

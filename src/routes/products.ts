@@ -54,7 +54,7 @@ router.get('/', async (req, res, next) => {
 router.get('/search-autocomplete', async (req, res, next) => {
 
   let db = req.db;
-  const query = req.query.q;
+  const query = req.query2.q;
   const labelerId = req.query.labelerId;
   let genericTypes = req.decoded.generic_type_id;
   let limit = req.query.limit === 'Y' ? false : true;

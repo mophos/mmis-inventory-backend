@@ -89,7 +89,10 @@ export class IssueModel {
       sp.qty AS product_qty,
       mp.product_name,
       mug.qty AS product_conversion,
-      wp.qty AS product_remain_qty,
+      ( SELECT remain_qty FROM view_product_reserve 
+        WHERE warehouse_id = ss.warehouse_id 
+        AND wm_product_id = sp.wm_product_id
+        GROUP BY sp.product_id ) AS product_remain_qty,
       mu.unit_name AS from_unit_name,
       mu2.unit_name AS to_unit_name,
       wp.lot_no,
@@ -118,16 +121,11 @@ export class IssueModel {
     sg.unit_generic_id,
     mg.generic_name,
   	(
-      SELECT
-        sum(wm.qty) AS qty
-      FROM
-        wm_products wm
-      JOIN mm_products mp2 ON wm.product_id = mp2.product_id
-      WHERE
-        mp2.generic_id = sg.generic_id
-      AND wm.warehouse_id = ss.warehouse_id
-      GROUP BY
-        mp2.generic_id
+      SELECT sum( remain_qty ) 
+      FROM view_product_reserve 
+      WHERE warehouse_id = ss.warehouse_id 
+      AND generic_id = sg.generic_id 
+      GROUP BY generic_id
     ) AS generic_remain_qty
     FROM
       wm_issue_generics sg
