@@ -2971,7 +2971,7 @@ router.get('/report/check/receive/singburi', wrap(async (req, res, next) => {
   let receiveID = req.query.receiveID
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
   let hosdetail = await inventoryReportModel.hospital(db);
-  let master = hosdetail[0].managerName;
+  // let master = hosdetail[0].managerName;
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
@@ -3006,7 +3006,6 @@ router.get('/report/check/receive/singburi', wrap(async (req, res, next) => {
   }
 
   res.render('check_receive_singburi', {
-    master: master,
     hospitalName: hospitalName,
     serialYear: serialYear,
     check_receive: check_receive,

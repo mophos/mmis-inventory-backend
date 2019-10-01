@@ -2548,12 +2548,22 @@ OR sc.ref_src like ?
         po.head_id,
         mgt.generic_type_name,
         wr.committee_id,
-        count(wrd.receive_detail_id) as amount_qty
+        count(wrd.receive_detail_id) as amount_qty,
+        upo.type_name as manager_type_name,
+        t.title_name as manager_title_name,
+        p.fname as manager_fname,
+        p.lname as manager_lname,
+        up.position_name as manager_position_name
         FROM
         wm_receives as wr 
         LEFT JOIN wm_receive_detail wrd ON wrd.receive_id = wr.receive_id
         LEFT JOIN wm_receive_approve waa ON waa.receive_id = wr.receive_id
         LEFT JOIN pc_purchasing_order po ON po.purchase_order_id = wr.purchase_order_id
+        LEFT JOIN um_purchasing_officer as upo on upo.officer_id = po.manager_id
+        LEFT JOIN um_people p on upo.people_id = p.people_id
+        LEFT JOIN um_people_positions upp on upp.people_id = p.people_id and upp.is_actived = 'Y'
+        LEFT JOIN um_positions up on up.position_id = upp.position_id
+        LEFT JOIN um_titles t on p.title_id = t.title_id
         LEFT JOIN view_budget_subtype v ON v.bgtypesub_id = po.budget_detail_id
         LEFT JOIN wm_receive_types wrt ON wrt.receive_type_id = wr.receive_type_id
         LEFT JOIN mm_labelers ml ON ml.labeler_id = po.labeler_id
