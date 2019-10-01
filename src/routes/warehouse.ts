@@ -154,10 +154,11 @@ router.put('/:warehouseId', wrap(async (req, res, next) => {
     is_unit_issue: isUnitIssue,
     his_hospcode: hospcode,
     warehouse_book: book,
+    his_dep_code:depCode
   }
 
   let dataWarehouse = [];
-
+  
   let _depCode = [];
   if (depCode) {
     _depCode = depCode.split(',');
@@ -168,7 +169,6 @@ router.put('/:warehouseId', wrap(async (req, res, next) => {
       dataWarehouse.push(obj);
     })
   }
-
   if (warehouseId && warehouseName && hospcode && depCode) {
     try {
       await warehouseModel.removeWarehouseMapping(db, warehouseId);
