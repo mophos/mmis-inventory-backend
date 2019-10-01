@@ -447,20 +447,8 @@ mgt.generic_type_id `
                 vscw.in_unit_cost,
 	            vscw.out_unit_cost,
                 sum( vscw.in_qty ) - sum( vscw.out_qty ) AS balance_generic_qty,
-                (
-                SELECT
-                    balance_unit_cost 
-                FROM
-                    view_stock_card_warehouse 
-                WHERE
-                    generic_id = vscw.generic_id 
-                    AND warehouse_id = vscw.warehouse_id 
-                    AND stock_date < '${startDate} 00:00:00' 
-                ORDER BY
-                    stock_date DESC 
-                    LIMIT 1 
-                ) AS balance_unit_cost,
-                vscw.cost,
+                (sum( vscw.in_cost ) - sum( vscw.out_cost )) / sum( vscw.in_qty ) - sum( vscw.out_qty ) AS balance_unit_cost,
+                sum( vscw.in_cost ) - sum( vscw.out_cost ) as cost,
                 '' AS lot_no,
                 '' AS expired_date,
                 vscw.small_unit,
