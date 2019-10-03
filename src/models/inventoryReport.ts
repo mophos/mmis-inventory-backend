@@ -3995,7 +3995,7 @@ ORDER BY mg.generic_name
 		'  ',
 		IFNULL( mgg4.group_name_4, ' ' ) 
 	) AS group_name,
-	ROUND(((sum(summit.summit_cost) + sum(in_qty*in_unit_cost)) - sum(out_qty*out_unit_cost)) / ((sum(summit.summit)+sum(in_qty)) - sum(out_qty)),2) AS cost,
+	ROUND(((sum(ifnull(summit.summit_cost,0 )) + sum(in_qty*in_unit_cost)) - sum(out_qty*out_unit_cost)) / ((sum(ifnull(summit.summit,0 ))+sum(in_qty)) - sum(out_qty)),2) AS cost,
 	ROUND((
 	SELECT
 		avg( cost ) 
@@ -4012,7 +4012,7 @@ ORDER BY mg.generic_name
 	ifnull(summit.summit,0 ) summit,
 	sum( vs.in_qty ) / mug.qty AS in_qty,
 	sum( vs.out_qty ) / mug.qty AS out_qty,
-    ifnull(summit.summit,0 ) + sum( vs.in_qty ) - sum( vs.out_qty ) AS balance 
+    (sum(ifnull(summit.summit,0 )) + sum( vs.in_qty )) - sum( vs.out_qty ) AS balance
 FROM
 	view_stock_card_warehouse vs
 	JOIN mm_products mp ON vs.product_id = mp.product_id
