@@ -20,7 +20,9 @@ html
           th.center.bold(style="border: 1px solid black;") รับ
           th.center.bold(style="border: 1px solid black;") จ่าย
           th.center.bold(style="border: 1px solid black;") คงเหลือ
-          th.center.bold(style="border: 1px solid black;") มูลค่าคงเหลือ
+          th.center.bold(style="border: 1px solid black;") มูลค่าคงเหลือ     
+          th.center.bold(style="border: 1px solid black;width:80px") หมายเหตุ
+
       tbody
       - y=0
       for a in rs
@@ -34,6 +36,7 @@ html
           td.right(style="border: 1px solid black;") #{a.out_qty}
           td.right(style="border: 1px solid black;") #{a.balance}
           td.right(style="border: 1px solid black;") #{a.amount}
+          td.right(style="border: 1px solid black;") 
       tfoot
         tr(style='border: 0; height:30px;')
           

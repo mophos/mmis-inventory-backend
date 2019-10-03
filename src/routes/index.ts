@@ -444,10 +444,10 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
       v.unit_price = v.cost ? inventoryReportModel.comma(v.cost) : inventoryReportModel.comma(v.cost2);
       // v.balance = +v.balance / +v.qty
       v.amount = inventoryReportModel.comma(+v.balance * +v.cost);
-      v.balance = inventoryReportModel.commaQty(+v.balance / +v.qty);
-      v.in_qty = inventoryReportModel.commaQty(v.in_qty);
-      v.out_qty = inventoryReportModel.commaQty(v.out_qty);
-      v.summit = inventoryReportModel.commaQty(+v.summit / +v.qty);
+      v.balance = inventoryReportModel.comma(+v.balance / +v.qty);
+      v.in_qty = inventoryReportModel.comma(v.in_qty);
+      v.out_qty = inventoryReportModel.comma(v.out_qty);
+      v.summit = inventoryReportModel.comma(+v.summit / +v.qty);
 
     });
     let committee: any = []
@@ -488,10 +488,10 @@ router.get('/report/receiveIssueYearGeneric/:year', wrap(async (req, res, next) 
       v.unit_price = v.cost ? inventoryReportModel.comma(v.cost) : inventoryReportModel.comma(v.cost2);
       // v.balance = +v.balance / +v.qty
       v.amount = inventoryReportModel.comma(+v.balance * +v.cost);
-      v.balance = inventoryReportModel.commaQty(+v.balance / +v.qty);
-      v.in_qty = inventoryReportModel.commaQty(v.in_qty);
-      v.out_qty = inventoryReportModel.commaQty(v.out_qty);
-      v.summit = inventoryReportModel.commaQty(+v.summit / +v.qty);
+      v.balance = inventoryReportModel.comma(+v.balance / +v.qty);
+      v.in_qty = inventoryReportModel.comma(v.in_qty);
+      v.out_qty = inventoryReportModel.comma(v.out_qty);
+      v.summit = inventoryReportModel.comma(+v.summit / +v.qty);
 
     });
     let committee: any = []
