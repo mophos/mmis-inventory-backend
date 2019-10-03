@@ -417,12 +417,29 @@ export class HisTransactionModel {
 
     getGroupTransactionFromTransactionId(db: Knex, transactions: any) {
         return db('wm_his_transaction as tt')
-            .select('tt.mmis_warehouse', 'mp.product_id', 'mp.product_name', 'mp.generic_id', 'mp.generic_id as genericId',
-                db.raw(`sum(tt.qty) as genericQty`), db.raw(`sum(tt.qty) as qty`), 'tt.transaction_id')
+            .select('tt.mmis_warehouse', 'tt.mmis_warehouse as warehouse_id', 'mp.product_id', 'mp.product_name', 'mp.generic_id', 'mp.generic_id as genericId',
+                db.raw(`sum(tt.qty) as genericQty`), db.raw(`sum(tt.qty) as qty`), db.raw(`GROUP_CONCAT(tt.transaction_id) as transaction_id`))
             .join('wm_his_mappings as ht', 'ht.his', 'tt.drug_code')
             .join('mm_products as mp', 'mp.generic_id', 'ht.mmis')
             .whereIn('tt.transaction_id', transactions)
             .where('tt.is_cut_stock', 'N')
             .groupBy('mp.product_id');
+    }
+
+    getProductInWarehousesByGeneric(knex: Knex, generics: any, warehouseId: any) {
+        return knex('wm_products as wp')
+            .select('wp.*', 'pr.remain_qty', 'mp.generic_id', 'ug.unit_generic_id', 'ug.qty as conversion_qty'
+                , 'mp.product_name', 'fu.unit_name as from_unit_name', 'tu.unit_name as to_unit_name'
+                , knex.raw('FLOOR(pr.remain_qty/ug.qty) as pack_remain_qty'))
+            .join('view_product_reserve as pr', 'pr.wm_product_id', 'wp.wm_product_id') //คงคลังหลังจากหักยอดจองแล้ว
+            .innerJoin('mm_products as mp', 'mp.product_id', 'wp.product_id')
+            .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'wp.unit_generic_id')
+            .innerJoin('mm_units as fu', 'fu.unit_id', 'ug.from_unit_id')
+            .innerJoin('mm_units as tu', 'tu.unit_id', 'ug.to_unit_id')
+            .where('mp.generic_id', generics)
+            .andWhere('wp.warehouse_id', warehouseId)
+            //   .whereRaw('wp.qty > 0')
+            .orderBy('wp.expired_date', 'asc')
+            .groupBy('wp.wm_product_id');
     }
 } 
