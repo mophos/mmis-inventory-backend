@@ -556,7 +556,6 @@ export class GenericModel {
       .whereRaw('wp.qty > 0')
       .orderBy('wp.expired_date', 'asc')
       .groupBy('wp.wm_product_id');
-
   }
 
   getGenericQty(knex: Knex, generics: any, warehouseId: any) {

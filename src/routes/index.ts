@@ -144,6 +144,7 @@ function commaQty(num) {
   }
 
 }
+
 router.get('/', (req, res, next) => {
   res.send({ ok: true, message: 'Welcome to Inventory API server' });
 });
@@ -3015,7 +3016,7 @@ router.get('/report/check/receive/singburi', wrap(async (req, res, next) => {
   let receiveID = req.query.receiveID
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
   let hosdetail = await inventoryReportModel.hospital(db);
-  let master = hosdetail[0].managerName;
+  // let master = hosdetail[0].managerName;
   let hospitalName = hosdetail[0].hospname;
   let province = hosdetail[0].province;
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
@@ -3050,7 +3051,6 @@ router.get('/report/check/receive/singburi', wrap(async (req, res, next) => {
   }
 
   res.render('check_receive_singburi', {
-    master: master,
     hospitalName: hospitalName,
     serialYear: serialYear,
     check_receive: check_receive,
@@ -4787,8 +4787,6 @@ router.get('/report/genericStock/all', wrap(async (req, res, next) => {
         const _out_qty = +v.out_qty;
         const _conversion_qty = +v.conversion_qty;
         const _balance_unit_cost = v.balance_unit_cost
-        const _in_unit_cost = v.in_unit_cost
-        const _out_unit_cost = v.out_unit_cost
 
         if (v.transaction_type == 'SUMMIT') {
           v.stock_date = moment(_startDate, 'YYYY-MM-DD').isValid() ? moment(_startDate).format('DD/MM/') + (moment(_startDate).get('year') + 543) : '-';
@@ -4799,8 +4797,8 @@ router.get('/report/genericStock/all', wrap(async (req, res, next) => {
           //มี unit_generic_id จะโชว์เป็น pack
         }
         if (v.small_unit && v.large_unit) {
-          v.in_cost = inventoryReportModel.comma(_in_qty * _in_unit_cost);
-          v.out_cost = inventoryReportModel.comma(_out_qty * _out_unit_cost);
+          v.in_cost = inventoryReportModel.comma(v.in_cost);
+          v.out_cost = inventoryReportModel.comma(v.out_cost);
           // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
           v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
           v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
@@ -4931,8 +4929,6 @@ router.get('/report/genericStock/all/staff', wrap(async (req, res, next) => {
         const _out_qty = +v.out_qty;
         const _conversion_qty = +v.conversion_qty;
         const _balance_unit_cost = v.balance_unit_cost
-        const _in_unit_cost = v.in_unit_cost
-        const _out_unit_cost = v.out_unit_cost
 
         if (v.transaction_type == 'SUMMIT') {
           v.stock_date = moment(_startDate, 'YYYY-MM-DD').isValid() ? moment(_startDate).format('DD/MM/') + (moment(_startDate).get('year') + 543) : '-';
@@ -4943,8 +4939,8 @@ router.get('/report/genericStock/all/staff', wrap(async (req, res, next) => {
           //มี unit_generic_id จะโชว์เป็น pack
         }
         if (v.small_unit && v.large_unit) {
-          v.in_cost = inventoryReportModel.comma(_in_qty * _in_unit_cost);
-          v.out_cost = inventoryReportModel.comma(_out_qty * _out_unit_cost);
+          v.in_cost = inventoryReportModel.comma(v.in_cost);
+          v.out_cost = inventoryReportModel.comma(v.out_cost);
           // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
           v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
           v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
@@ -5079,8 +5075,6 @@ router.get('/report/generic/stock', wrap(async (req, res, next) => {
         const _out_qty = +v.out_qty;
         const _conversion_qty = +v.conversion_qty;
         const _balance_unit_cost = v.balance_unit_cost
-        const _in_unit_cost = v.in_unit_cost
-        const _out_unit_cost = v.out_unit_cost
 
         if (v.transaction_type == 'SUMMIT') {
           v.stock_date = moment(_startDate, 'YYYY-MM-DD').isValid() ? moment(_startDate).format('DD/MM/') + (moment(_startDate).get('year') + 543) : '-';
@@ -5091,8 +5085,9 @@ router.get('/report/generic/stock', wrap(async (req, res, next) => {
           //มี unit_generic_id จะโชว์เป็น pack
         }
         if (v.small_unit && v.large_unit) {
-          v.in_cost = inventoryReportModel.comma(_in_qty * _in_unit_cost);
-          v.out_cost = inventoryReportModel.comma(_out_qty * _out_unit_cost);
+          v.in_cost = inventoryReportModel.comma(v.in_cost);
+          v.out_cost = inventoryReportModel.comma(v.out_cost);
+          
           // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
           v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
           v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
@@ -5218,8 +5213,6 @@ router.get('/report/generic/stock/staff', wrap(async (req, res, next) => {
         const _out_qty = +v.out_qty;
         const _conversion_qty = +v.conversion_qty;
         const _balance_unit_cost = v.balance_unit_cost
-        const _in_unit_cost = v.in_unit_cost
-        const _out_unit_cost = v.out_unit_cost
 
         if (v.transaction_type == 'SUMMIT') {
           v.stock_date = moment(_startDate, 'YYYY-MM-DD').isValid() ? moment(_startDate).format('DD/MM/') + (moment(_startDate).get('year') + 543) : '-';
@@ -5230,8 +5223,8 @@ router.get('/report/generic/stock/staff', wrap(async (req, res, next) => {
           //มี unit_generic_id จะโชว์เป็น pack
         }
         if (v.small_unit && v.large_unit) {
-          v.in_cost = inventoryReportModel.comma(_in_qty * _in_unit_cost);
-          v.out_cost = inventoryReportModel.comma(_out_qty * _out_unit_cost);
+          v.in_cost = inventoryReportModel.comma(v.in_cost);
+          v.out_cost = inventoryReportModel.comma(v.out_cost);
           // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
           v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
           v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
@@ -5362,8 +5355,6 @@ router.get('/report/genericStock/haveMovement', wrap(async (req, res, next) => {
         const _out_qty = +v.out_qty;
         const _conversion_qty = +v.conversion_qty;
         const _balance_unit_cost = v.balance_unit_cost
-        const _in_unit_cost = v.in_unit_cost
-        const _out_unit_cost = v.out_unit_cost
 
         if (v.transaction_type == 'SUMMIT') {
           v.stock_date = moment(_startDate, 'YYYY-MM-DD').isValid() ? moment(_startDate).format('DD/MM/') + (moment(_startDate).get('year') + 543) : '-';
@@ -5374,8 +5365,8 @@ router.get('/report/genericStock/haveMovement', wrap(async (req, res, next) => {
           //มี unit_generic_id จะโชว์เป็น pack
         }
         if (v.small_unit && v.large_unit) {
-          v.in_cost = inventoryReportModel.comma(_in_qty * _balance_unit_cost);
-          v.out_cost = inventoryReportModel.comma(_out_qty * _balance_unit_cost);
+          v.in_cost = inventoryReportModel.comma(v.in_cost);
+          v.out_cost = inventoryReportModel.comma(v.out_cost);
           // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
           v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
           v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
@@ -5507,8 +5498,6 @@ router.get('/report/genericStock/haveMovement/staff', wrap(async (req, res, next
         const _out_qty = +v.out_qty;
         const _conversion_qty = +v.conversion_qty;
         const _balance_unit_cost = v.balance_unit_cost
-        const _in_unit_cost = v.in_unit_cost
-        const _out_unit_cost = v.out_unit_cost
 
         if (v.transaction_type == 'SUMMIT') {
           v.stock_date = moment(_startDate, 'YYYY-MM-DD').isValid() ? moment(_startDate).format('DD/MM/') + (moment(_startDate).get('year') + 543) : '-';
@@ -5519,8 +5508,8 @@ router.get('/report/genericStock/haveMovement/staff', wrap(async (req, res, next
           //มี unit_generic_id จะโชว์เป็น pack
         }
         if (v.small_unit && v.large_unit) {
-          v.in_cost = inventoryReportModel.comma(_in_qty * _in_unit_cost);
-          v.out_cost = inventoryReportModel.comma(_out_qty * _out_unit_cost);
+          v.in_cost = inventoryReportModel.comma(v.in_cost);
+          v.out_cost = inventoryReportModel.comma(v.out_cost);
           // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
           v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
           v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));

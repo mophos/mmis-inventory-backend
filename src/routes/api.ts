@@ -60,8 +60,8 @@ router.post('/issue-jhcis', async (req, res, next) => {
 
     const data_: any = await conversion(db, hospcode, _data);
     await hisTransactionModel.saveHisTransactionTemp(db, data_);
+
     const rs = await hisTransactionModel.getGroupTransaction(db, hospcode, dateServe, warehouseId);
-    
     if (rs.length) {
       const rsAllocate = await allocate(db, warehouseId, rs);
       if (rsAllocate.ok) {
@@ -191,12 +191,12 @@ const allocate = (async (db, warehouseId: any, data: any) => {
     for (const d of data) {
       rsProducts = await genericModel.getProductInWarehousesByGenerics(db, [d.genericId], warehouseId);
       for (const p of rsProducts) {
-        const remainQty = p.remain_qty;
+        const remainQty = p.qty;
         let qty = d.genericQty;
         if (qty > remainQty) {
           qty = remainQty;
         }
-        p.remain_qty -= qty;
+        p.qty -= qty;
         d.genericQty -= qty;
         const obj: any = {
           wm_product_id: p.wm_product_id,

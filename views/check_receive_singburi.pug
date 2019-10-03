@@ -137,9 +137,12 @@ html
           tr
             td.center 
             td.center  
-              | (นางสาววนิดา สาดตระกูลวัฒนา)
+              | #{v.manager_title_name}#{v.manager_fname} #{v.manager_lname}
               br
-              | ผู้อำนวยการโรงพยาบาลสิงห์บุรี
+              if(i.manager_position_name != null) 
+                | #{i.manager_position_name}
+                br
+              | #{v.manager_type_name}
               br
               | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัดสิงห์บุรี
             td

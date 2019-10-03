@@ -445,22 +445,12 @@ mgt.generic_type_id `
                 sum( vscw.in_qty ) - sum( vscw.out_qty ) AS in_qty,
                 0 AS out_qty,
                 vscw.in_unit_cost,
-	            vscw.out_unit_cost,
+                vscw.out_unit_cost,
+                sum( vscw.in_cost ) - sum( vscw.out_cost ) AS in_cost,
+	            0 AS out_cost,
                 sum( vscw.in_qty ) - sum( vscw.out_qty ) AS balance_generic_qty,
-                (
-                SELECT
-                    balance_unit_cost 
-                FROM
-                    view_stock_card_warehouse 
-                WHERE
-                    generic_id = vscw.generic_id 
-                    AND warehouse_id = vscw.warehouse_id 
-                    AND stock_date < '${startDate} 00:00:00' 
-                ORDER BY
-                    stock_date DESC 
-                    LIMIT 1 
-                ) AS balance_unit_cost,
-                vscw.cost,
+                ( sum( vscw.in_cost ) - sum( vscw.out_cost ) ) / (sum( vscw.in_qty ) - sum( vscw.out_qty )) AS balance_unit_cost,
+                sum( vscw.in_cost ) - sum( vscw.out_cost ) as cost,
                 '' AS lot_no,
                 '' AS expired_date,
                 vscw.small_unit,
@@ -495,7 +485,9 @@ mgt.generic_type_id `
                 vscw.in_qty,
                 vscw.out_qty,
                 vscw.in_unit_cost,
-	            vscw.out_unit_cost,
+                vscw.out_unit_cost,
+                vscw.in_cost,
+                vscw.out_cost,
                 vscw.balance_generic_qty,
                 vscw.balance_unit_cost,
                 vscw.cost,
@@ -526,49 +518,6 @@ mgt.generic_type_id `
                 ) AS q
             ORDER BY
 	            abs(q.stock_card_id)`
-        return knex.raw(sql)
-    }
-
-    // ยอดยกมาใน stockcard 
-    summit_stockcard(knex: Knex, dateSetting = 'view_stock_card_warehouse', genericId, startDate, warehouseId) {
-        let sql = `SELECT
-        vscw.stock_card_id,
-        vscw.product_id,
-        vscw.generic_id,
-        vscw.generic_name,
-        vscw.stock_date,
-        'SUMMIT' AS transaction_type,
-        'ยอดยกมา' AS comment,
-        '' AS document_ref,
-        '' AS document_ref_id,
-        vscw.small_unit,
-        vscw.large_unit,
-        vscw.conversion_qty,
-        vscw.dosage_name,
-        '' AS lot_no,
-        vscw.expired_date,
-        vscw.ref_src,
-        vscw.ref_dst,
-        '' AS warehouse_name,
-        sum(vscw.in_qty) - sum(vscw.out_qty) AS in_qty,
-        0 AS out_qty,
-        vscw.cost,
-        sum(vscw.in_qty) - sum(vscw.out_qty) AS balance_generic_qty,
-        sum(vscw.in_qty) - sum(vscw.out_qty) AS balance_qty,
-        vscw.balance_unit_cost,
-        vscw.balance_amount,
-        vscw.warehouse_id,
-        '' AS delivery_code,
-        '' AS delivery_code_other
-    FROM
-        ${dateSetting} AS vscw
-    WHERE
-        vscw.warehouse_id = '${warehouseId}'
-    AND vscw.generic_id = '${genericId}'
-    AND vscw.stock_date < '${startDate} 00:00:00'
-    GROUP BY
-        vscw.generic_id`
-        // console.log(sql);
         return knex.raw(sql)
     }
 
@@ -2560,12 +2509,22 @@ OR sc.ref_src like ?
         po.head_id,
         mgt.generic_type_name,
         wr.committee_id,
-        count(wrd.receive_detail_id) as amount_qty
+        count(wrd.receive_detail_id) as amount_qty,
+        upo.type_name as manager_type_name,
+        t.title_name as manager_title_name,
+        p.fname as manager_fname,
+        p.lname as manager_lname,
+        up.position_name as manager_position_name
         FROM
         wm_receives as wr 
         LEFT JOIN wm_receive_detail wrd ON wrd.receive_id = wr.receive_id
         LEFT JOIN wm_receive_approve waa ON waa.receive_id = wr.receive_id
         LEFT JOIN pc_purchasing_order po ON po.purchase_order_id = wr.purchase_order_id
+        LEFT JOIN um_purchasing_officer as upo on upo.officer_id = po.manager_id
+        LEFT JOIN um_people p on upo.people_id = p.people_id
+        LEFT JOIN um_people_positions upp on upp.people_id = p.people_id and upp.is_actived = 'Y'
+        LEFT JOIN um_positions up on up.position_id = upp.position_id
+        LEFT JOIN um_titles t on p.title_id = t.title_id
         LEFT JOIN view_budget_subtype v ON v.bgtypesub_id = po.budget_detail_id
         LEFT JOIN wm_receive_types wrt ON wrt.receive_type_id = wr.receive_type_id
         LEFT JOIN mm_labelers ml ON ml.labeler_id = po.labeler_id
