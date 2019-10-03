@@ -470,7 +470,7 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
 }))
 
 
-router.get('/report/receiveIssueYearGneric/:year', wrap(async (req, res, next) => {
+router.get('/report/receiveIssueYearGeneric/:year', wrap(async (req, res, next) => {
   const db = req.db;
   const year = req.params.year - 543
   const warehouseId: any = req.decoded.warehouseId
