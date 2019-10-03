@@ -440,7 +440,7 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
 
     const rs: any = await inventoryReportModel.issueYear(db, year, warehouseId, genericType);
     rs[0].forEach(v => {
-      v.unit_price = inventoryReportModel.comma(v.cost);
+      v.unit_price = v.cost ? inventoryReportModel.comma(v.cost) : inventoryReportModel.comma(v.cost2);
       // v.balance = +v.balance / +v.qty
       v.amount = inventoryReportModel.comma(+v.balance * +v.cost);
       v.balance = inventoryReportModel.commaQty(+v.balance / +v.qty);
@@ -467,6 +467,51 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
     res.send({ ok: false, error: error.message })
   }
 }))
+
+
+router.get('/report/receiveIssueYearGneric/:year', wrap(async (req, res, next) => {
+  const db = req.db;
+  const year = req.params.year - 543
+  const warehouseId: any = req.decoded.warehouseId
+  const genericType = req.query.genericType
+  const people1 = req.query.people1
+  const people2 = req.query.people2
+  const people3 = req.query.people3
+  let people = [people1, people2, people3]
+  try {
+    let hosdetail = await inventoryReportModel.hospital(db);
+    let hospitalName = hosdetail[0].hospname;
+
+    const rs: any = await inventoryReportModel.issueYearGeneric(db, year, warehouseId, genericType);
+    rs[0].forEach(v => {
+      v.unit_price = v.cost ? inventoryReportModel.comma(v.cost) : inventoryReportModel.comma(v.cost2);
+      // v.balance = +v.balance / +v.qty
+      v.amount = inventoryReportModel.comma(+v.balance * +v.cost);
+      v.balance = inventoryReportModel.commaQty(+v.balance / +v.qty);
+      v.in_qty = inventoryReportModel.commaQty(v.in_qty);
+      v.out_qty = inventoryReportModel.commaQty(v.out_qty);
+      v.summit = inventoryReportModel.commaQty(+v.summit / +v.qty);
+
+    });
+    let committee: any = []
+    for (let peopleId of people) {
+      console.log(peopleId);
+      let pe: any = await inventoryReportModel.peopleFullName(db, peopleId)
+      committee.push(pe[0])
+    }
+    // res.send({rs:rs[0]})
+    res.render('issue_year_generic', {
+      syear: year + 542,
+      rs: rs[0],
+      hospitalName: hospitalName,
+      year: year + 543,
+      committee: committee
+    });
+  } catch (error) {
+    res.send({ ok: false, error: error.message })
+  }
+}))
+
 router.get('/report/adjust-stockcard', wrap(async (req, res, next) => {
   const db = req.db;
   let adjustId = req.query.adjustId;
@@ -4314,12 +4359,12 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
         'MIN_QTY(หน่วยย่อย)': v.min_qty,
         'MAX_QTY(หน่วยย่อย)': v.max_qty,
         'แพ็ค': v.pack,
-        'ราคาต่อแพ็ค': v.cost * v.qty,
+        'ราคาต่อแพ็ค': v.cost ? v.cost * v.qty : v.cost2 * v.qty,
         'ยอดยกมา(หน่วยใหญ่)': v.summit / v.qty,
         'รับ(หน่วยใหญ่)': v.in_qty,
         'จ่าย(หน่วยใหญ่)': v.out_qty,
         'คงเหลือ(หน่วยใหญ่)': v.balance / v.qty,
-        'มูลค่า': v.balance * v.cost
+        'มูลค่า': v.cost ? v.balance * v.cost : v.balance * v.cost2
         // WORKING_CODE: v.working_code,
         // GENERIC_CODE: v.generic_name,
         // PRODUCT_NAME: v.product_name,
@@ -4343,6 +4388,78 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
         // AMOUNT_QTY: v.amount_qty
       };
 
+      json.push(obj);
+    });
+
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'receive-issue.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'receive-issue.xlsx');
+  } catch (error) {
+    res.send({ ok: false, message: error.message })
+  }
+});
+
+router.get('/report/receive-issue-generic/year/export/:year', async (req, res, next) => {
+  const db = req.db;
+  const year = +req.params.year - 543;
+  const warehouseId: any = req.decoded.warehouseId;
+  const genericType = req.query.genericType;
+
+  try {
+    const rs: any = await inventoryReportModel.issueYearGeneric(db, year, warehouseId, genericType);
+    let json = [];
+
+    rs[0].forEach(v => {
+      let obj: any = {
+        'รหัส_Generics': v.working_code,
+        'ชื่อสามัญ': v.generic_name,
+        'ผู้จำหน่าย': v.m_labeler_name,
+        'ผู้ผลิต': v.v_labeler_name,
+        'CONVERSION': v.qty,
+        'หน่วยเล็กสุด': v.small_unit,
+        'บัญชียา': v.account_name,
+        'ขนาด': v.dosage_name,
+        'ประเภทยา': v.generic_hosp_name,
+        'ประเภทสินค้า': v.generic_type_name,
+        'ราคากลาง': v.standard_cost,
+        'รูปแบบการจัดซื้อ': v.bid_name,
+        'กลุ่มยา': v.group_name,
+        'MIN_QTY(หน่วยย่อย)': v.min_qty,
+        'MAX_QTY(หน่วยย่อย)': v.max_qty,
+        'แพ็ค': v.pack,
+        'ราคาต่อแพ็ค': v.cost ? v.cost * v.qty : v.cost2 * v.qty,
+        'ยอดยกมา(หน่วยใหญ่)': v.summit / v.qty,
+        'รับ(หน่วยใหญ่)': v.in_qty,
+        'จ่าย(หน่วยใหญ่)': v.out_qty,
+        'คงเหลือ(หน่วยใหญ่)': v.balance / v.qty,
+        'มูลค่า': v.cost ? v.balance * v.cost : v.balance * v.cost2
+        // WORKING_CODE: v.working_code,
+        // GENERIC_CODE: v.generic_name,
+        // PRODUCT_NAME: v.product_name,
+        // CONVERSION: v.conversion,
+        // BASEUNIT: v.baseunit,
+        // ACCOUNT_NAME: v.account_name,
+        // DOSAGE_NAME: v.dosage_name,
+        // GENERIC_HOSP_NAME: v.generic_hosp_name,
+        // GENERIC_TYPE_NAME: v.generic_type_name,
+        // STANDARD_COST: v.standard_cost,
+        // BID_NAME: v.bid_name,
+        // GROUP_NAME: v.group_name,
+        // MIN_QTY: v.min_qty,
+        // MAX_QTY: v.max_qty,
+        // PACK: v.pack,
+        // UNIT_PRICE: v.unit_price,
+        // BALANCE_QTY: v.balance_qty,
+        // IN_QTY: v.in_qty,
+        // OUT_QTY: v.out_qty,
+        // SUMMIT_QTY: v.summit_qty,
+        // AMOUNT_QTY: v.amount_qty
+      };
       json.push(obj);
     });
 
