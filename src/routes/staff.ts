@@ -2341,11 +2341,8 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
 
       const rs = await hisTransactionModel.getGroupTransactionFromTransactionId(db, transactionIds);
       if (rs.length) {
-        console.log('rs', rs);
         for (const r of rs) {
           const rsAllocate = await allocate(db, r.warehouse_id, [r]);
-          console.log('rsAllocate', rsAllocate);
-
           if (rsAllocate.ok) {
             for (const i of rsAllocate.rows) {
               //-------------- get UnitGeneric --------------
@@ -2444,9 +2441,7 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
               }
 
             }
-            res.send({ ok: true });
           }
-
         }
         res.send({ ok: true });
       } else {
