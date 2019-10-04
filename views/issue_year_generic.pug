@@ -20,14 +20,15 @@ html
           th.center.bold(style="border: 1px solid black;") รับ
           th.center.bold(style="border: 1px solid black;") จ่าย
           th.center.bold(style="border: 1px solid black;") คงเหลือ
-          th.center.bold(style="border: 1px solid black;") มูลค่าคงเหลือ
+          th.center.bold(style="border: 1px solid black;") มูลค่าคงเหลือ     
           th.center.bold(style="border: 1px solid black;width:80px") หมายเหตุ
+
       tbody
       - y=0
       for a in rs
         - y++
         tr
-          td.left(style="border: 1px solid black;") #{a.product_name}
+          td.left(style="border: 1px solid black;") #{a.generic_name}
           td.center(style="border: 1px solid black;") #{a.pack} (#{a.qty} #{a.small_unit})
           td.center(style="border: 1px solid black;") #{a.unit_price}
           td.right(style="border: 1px solid black;") #{a.summit}
