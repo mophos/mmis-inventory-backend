@@ -468,12 +468,65 @@ router.post('/allocate', async (req, res, next) => {
           lot_no: p.lot_no,
           lot_time: p.lot_time,
           product_id: p.product_id,
+          _product_qty: qty,
           product_qty: qty,
           cost: p.cost
         }
         if (remainQty > 0) {
           allocate.push(obj);
         }
+      }
+    }
+
+    res.send({ ok: true, rows: allocate });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+});
+
+router.post('/allocate-issue', async (req, res, next) => {
+
+  const db = req.db;
+  const data: any = req.body.data;
+  const warehouseId = req.body.srcWarehouseId || req.decoded.warehouseId;
+  try {
+    let allocate = [];
+    let rsProducts: any = [];
+    for (const d of data) {
+      rsProducts = await genericModel.getProductInWarehousesByGeneric(db, d.genericId, warehouseId);
+
+      for (const p of rsProducts) {
+        console.log('zxcvzxm,cvnz,mxcnvz.,mxcnv.z,mxcnv.,mznxcv',p)
+        const remainQty = p.remain_qty;
+        let qty = Math.floor(d.genericQty / p.conversion_qty) * p.conversion_qty;
+        if (qty > remainQty) {
+          qty = Math.floor(remainQty / p.conversion_qty) * p.conversion_qty
+        }
+        p.remain_qty -= qty;
+        d.genericQty -= qty;
+        const obj: any = {
+          wm_product_id: p.wm_product_id,
+          unit_generic_id: p.unit_generic_id,
+          conversion_qty: p.conversion_qty,
+          generic_id: p.generic_id,
+          pack_remain_qty: Math.floor(remainQty / p.conversion_qty),
+          small_remain_qty: remainQty,
+          product_name: p.product_name,
+          from_unit_name: p.from_unit_name,
+          to_unit_name: p.to_unit_name,
+          expired_date: p.expired_date,
+          lot_no: p.lot_no,
+          lot_time: p.lot_time,
+          product_id: p.product_id,
+          _product_qty: qty,
+          product_qty: qty,
+          cost: p.cost
+        }
+        // if (remainQty > 0) {
+        allocate.push(obj);
+        // }
       }
     }
 
