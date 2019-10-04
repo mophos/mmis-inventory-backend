@@ -63,7 +63,7 @@ router.post('/', co(async (req, res, next) => {
       let issue_generic_id = await issueModel.saveGenerics(db, _generics);
 
       for (let e of v.items) {
-        if (e.product_qty > 0) {
+        // if (e.product_qty > 0) {
           let objP: any = {};
           let cutProduct: any = {};
           let _products = [];
@@ -76,7 +76,7 @@ router.post('/', co(async (req, res, next) => {
           _products.push(objP);
           _cutProduct.push(cutProduct);
           await issueModel.saveProducts(db, _products);
-        }
+        // }
       }
     }
     const decoded = req.decoded;
@@ -230,7 +230,7 @@ router.put('/:issueId', co(async (req, res, next) => {
       _generics.push(obj);
       let issue_generic_id = await issueModel.saveGenerics(db, _generics);
       for (let e of v.items) {
-        if (e.product_qty > 0) {
+        // if (e.product_qty > 0) {
           let objP: any = {};
           let cutProduct: any = {};
           let _products = [];
@@ -243,7 +243,7 @@ router.put('/:issueId', co(async (req, res, next) => {
           _products.push(objP);
           _cutProduct.push(cutProduct);
           await issueModel.saveProducts(db, _products);
-        }
+        // }
       }
     }
 

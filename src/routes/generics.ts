@@ -468,6 +468,7 @@ router.post('/allocate', async (req, res, next) => {
           lot_no: p.lot_no,
           lot_time: p.lot_time,
           product_id: p.product_id,
+          _product_qty: qty,
           product_qty: qty,
           cost: p.cost
         }
