@@ -215,6 +215,7 @@ router.get('/report/getBudgetYear', wrap(async (req, res, next) => {
 router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
   const db = req.db;
   let warehouseId: any = req.query.warehouseId
+  let warehouseName = req.query.warehouseName;
   if (!warehouseId) {
     warehouseId = req.decoded.warehouseId;
   }
@@ -278,6 +279,7 @@ router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
 router.get('/report/monthlyReport', wrap(async (req, res, next) => {
   const db = req.db;
   let warehouseId: any = req.query.warehouseId;
+  let warehouseName = req.query.warehouseName;
   if (!warehouseId) {
     warehouseId = req.decoded.warehouseId;
   }
@@ -324,6 +326,7 @@ router.get('/report/monthlyReport', wrap(async (req, res, next) => {
       ans: ans,
       monthName: monthName,
       monthbeforName: monthbeforName,
+      warehouseName: warehouseName,
       year: +year + 543,
       sum: sum,
       hospitalName: hospitalName
@@ -5087,7 +5090,7 @@ router.get('/report/generic/stock', wrap(async (req, res, next) => {
         if (v.small_unit && v.large_unit) {
           v.in_cost = inventoryReportModel.comma(v.in_cost);
           v.out_cost = inventoryReportModel.comma(v.out_cost);
-          
+
           // #{g.in_qty} #{g.large_unit} (#{g.conversion_qty} #{g.small_unit})
           v.in_qty = inventoryReportModel.commaQty(Math.floor(_in_qty / _conversion_qty));
           v.out_qty = inventoryReportModel.commaQty(Math.floor(_out_qty / _conversion_qty));
@@ -6160,6 +6163,7 @@ router.get('/report/export/staff-remain', wrap(async (req, res, next) => {
 router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
   const db = req.db;
   let warehouseId: any = req.query.warehouseId;
+  let warehouseName = req.query.warehouseName;
   if (!warehouseId) {
     warehouseId = req.decoded.warehouseId;
   }
@@ -6295,6 +6299,7 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
     res.render('monthly-report-all', {
       monthName: monthName,
       monthbeforName: monthbeforName,
+      warehouseName: warehouseName,
       year: +year + 543,
       hospitalName: hospitalName,
       rsBalance: rsBalance,
