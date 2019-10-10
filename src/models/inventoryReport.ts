@@ -2465,11 +2465,12 @@ OR sc.ref_src like ?
             .leftJoin('wm_receive_detail as wrd', 'wrd.receive_id', 'wr.receive_id')
             .leftJoin('wm_receive_approve as wra', 'wra.receive_id', 'wr.receive_id')
             .leftJoin('pc_purchasing_order as po', 'po.purchase_order_id', 'wr.purchase_order_id')
-            .leftJoin('view_budget_subtype as vb', 'vb.bgtypesub_id', 'po.budget_detail_id')
+            .leftJoin('view_budget_subtype as vb', 'vb.view_bgdetail_id', 'po.budget_detail_id')
             .leftJoin('wm_receive_types as wrt', 'wrt.receive_type_id', 'wr.receive_type_id')
             .leftJoin('mm_labelers as ml', 'ml.labeler_id', 'po.labeler_id')
             .leftJoin('mm_generic_types as mgt', 'mgt.generic_type_id', 'po.generic_type_id')
             .where('wr.purchase_order_id', purchaseOrderId)
+            .groupBy('wr.receive_id');
     }
 
     getReceiveDetails(knex: Knex, receiveID) {
