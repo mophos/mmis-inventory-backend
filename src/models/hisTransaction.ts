@@ -424,10 +424,10 @@ export class HisTransactionModel {
 
     getGroupTransactionFromTransactionId(db: Knex, transactions: any) {
         return db('wm_his_transaction as tt')
-            .select('tt.mmis_warehouse', 'tt.mmis_warehouse as warehouse_id', 'mp.product_id', 'mp.product_name', 'mp.generic_id', 'mp.generic_id as genericId',
+            .select('tt.mmis_warehouse', 'tt.mmis_warehouse as warehouse_id', 'mg.generic_id', 'mg.generic_id as genericId',
                 db.raw(`sum(tt.qty) as genericQty`), db.raw(`sum(tt.qty) as qty`), db.raw(`count(tt.transaction_id) as count`), db.raw(`GROUP_CONCAT(tt.transaction_id) as transaction_id`))
             .join('wm_his_mappings as ht', 'ht.his', 'tt.drug_code')
-            .join('mm_generics as mg', 'mp.generic_id', 'ht.mmis')
+            .join('mm_generics as mg', 'mg.generic_id', 'ht.mmis')
             .whereIn('tt.transaction_id', transactions)
             .where('tt.is_cut_stock', 'N')
             .groupBy('mg.generic_id');
