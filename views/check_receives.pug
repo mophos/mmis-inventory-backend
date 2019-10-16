@@ -82,7 +82,7 @@ html
       | เรียน  ผู้ว่าราชการจังหวัด#{hospitalDetail.province}
       br
       .fontspace
-      | คณะกรรมการได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่ายเงินบำรุงโรงพยาบาลประจำปีงบประมาน #{i.serialYear} แก่ผู้ขายต่อไป
+      | คณะกรรมการได้ตรวจรับเวชภัณฑ์ ดังกล่าวถูกต้องแล้ว การส่งมอบ ( &nbsp; ) ภายในกำหนด ( &nbsp; ) เกินกำหนด เห็นควรอนุมัติให้เบิกจ่ายเงินบำรุงโรงพยาบาลประจำปีงบประมาณ #{i.serialYear} แก่ผู้ขายต่อไป
       br
       br
       br
@@ -134,6 +134,9 @@ html
           td.center  
             | (#{i.manager.fullname})
             br
+            if(i.manager.position_name)
+              | #{i.manager.position_name}
+              br
             | #{i.manager.position}
             br
             | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{hospitalDetail.province}

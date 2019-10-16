@@ -644,7 +644,8 @@ export class BorrowModel {
     mp.product_name,
     fu.unit_name AS from_unit_name,
     ug.qty AS conversion_qty,
-    tu.unit_name AS to_unit_name 
+    tu.unit_name AS to_unit_name,
+    ug.unit_generic_id
   FROM
     wm_borrow_product AS bp
 		JOIN wm_borrow_generic AS bg ON bg.borrow_generic_id = bp.borrow_generic_id
@@ -653,7 +654,9 @@ export class BorrowModel {
     JOIN mm_products AS mp ON mp.product_id = wp.product_id
     JOIN mm_units AS fu ON fu.unit_id = ug.from_unit_id
     JOIN mm_units AS tu ON tu.unit_id = ug.to_unit_id 
-		LEFT JOIN view_product_reserve vr ON vr.wm_product_id = wp.wm_product_id AND vr.lot_no = wp.lot_no
+    LEFT JOIN view_product_reserve vr 
+    ON vr.wm_product_id = wp.wm_product_id 
+    AND vr.lot_no = wp.lot_no
     WHERE
     bp.borrow_id = ?
     and bg.borrow_generic_id = ?
@@ -674,7 +677,8 @@ export class BorrowModel {
     fu.unit_name AS from_unit_name,
     ug.qty AS conversion_qty,
     tu.unit_name AS to_unit_name,
-    wp.product_id 
+    wp.product_id,
+    ug.unit_generic_id
   FROM
     wm_transfer_product AS tp
     JOIN wm_products AS wp ON wp.wm_product_id = tp.wm_product_id
@@ -726,7 +730,8 @@ export class BorrowModel {
       wp.qty as remain_qty,
       fu.unit_name AS from_unit_name,
       mug.qty AS conversion_qty,
-      tu.unit_name AS to_unit_name 
+      tu.unit_name AS to_unit_name,
+      mug.unit_generic_id
     FROM
       wm_products AS wp
       INNER JOIN mm_products AS mp ON mp.product_id = wp.product_id

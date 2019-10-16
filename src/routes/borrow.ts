@@ -215,7 +215,8 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
             lot_time: v.lot_time,
             expired_date: v.expired_date,
             from_unit_name: v.from_unit_name,
-            to_unit_name: v.to_unit_name
+            to_unit_name: v.to_unit_name,
+            unit_generic_id: v.unit_generic_id
           });
         }
       } else {
@@ -244,7 +245,8 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
                 lot_time: p.lot_time,
                 expired_date: p.expired_date,
                 from_unit_name: p.from_unit_name,
-                to_unit_name: p.to_unit_name
+                to_unit_name: p.to_unit_name,
+                unit_generic_id: p.unit_generic_id
               }
               g.products.push(obj);
               idx++;
@@ -253,6 +255,7 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
         }
       }
     }
+    console.log(_generics, 'zm,x.cmnvz,.xmcnvz,x.mcnv,z.xmcnvz,.xmcnv')
     res.send({ ok: true, rows: _generics });
   } catch (error) {
     res.send({ ok: false, error: error.message });
