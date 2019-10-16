@@ -4648,7 +4648,7 @@ ORDER BY mg.generic_name
         sql.where('ro.wm_requisition', warehouseId)
             .where('rc.is_approve', 'Y')
             .where('mg.generic_type_id', genericTypeId)
-            .groupBy('rci.generic_id')
+            .groupBy('rci.generic_id', 'ro.requisition_order_id');
         return sql
     }
     saveProcess(knex: Knex, data) {
