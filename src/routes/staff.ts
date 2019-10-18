@@ -4078,7 +4078,7 @@ const allocate = (async (db, warehouseId: any, data: any) => {
       for (const p of rsProducts) {
         const remainQty = p.qty;
         let qty = d.genericQty;
-        if (qty > remainQty && remainQty == 0) {
+        if (qty > remainQty || remainQty == 0) {
           qty = remainQty;
         }
         p.qty -= qty;
