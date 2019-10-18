@@ -2335,7 +2335,7 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
   let hospcode = req.decoded.his_hospcode;
   let peopleUserId = req.decoded.people_user_id;
   let cutStockDate = moment().format('YYYY-MM-DD HH:mm:ss');
-
+  let no = 1;
   if (transactionIds.length) {
     try {
 
@@ -2387,7 +2387,7 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
                       product_id: i.product_id,
                       generic_id: i.generic_id,
                       transaction_type: 'HIS',
-                      document_ref_id: null,
+                      document_ref_id: no++,
                       document_ref: null,
                       in_qty: 0,
                       in_unit_cost: 0,
@@ -2413,7 +2413,7 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
                       product_id: i.product_id,
                       generic_id: i.generic_id,
                       transaction_type: 'HIS',
-                      document_ref_id: null,
+                      document_ref_id: no++,
                       document_ref: null,
                       in_qty: Math.abs(i.product_qty),
                       in_unit_cost: Math.abs(i.cost),
