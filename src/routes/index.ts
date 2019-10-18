@@ -433,6 +433,7 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
   const db = req.db;
   const year = req.params.year - 543
   const warehouseId: any = req.decoded.warehouseId
+  const warehouseName: any = req.decoded.warehouseName
   const genericType = req.query.genericType
   const people1 = req.query.people1
   const people2 = req.query.people2
@@ -464,6 +465,7 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
       syear: year + 542,
       rs: rs[0],
       hospitalName: hospitalName,
+      warehouseName: warehouseName,
       year: year + 543,
       committee: committee
     });
@@ -477,6 +479,7 @@ router.get('/report/receiveIssueYearGeneric/:year', wrap(async (req, res, next) 
   const db = req.db;
   const year = req.params.year - 543
   const warehouseId: any = req.decoded.warehouseId
+  const warehouseName: any = req.decoded.warehouseName
   const genericType = req.query.genericType
   const people1 = req.query.people1
   const people2 = req.query.people2
@@ -508,6 +511,7 @@ router.get('/report/receiveIssueYearGeneric/:year', wrap(async (req, res, next) 
       syear: year + 542,
       rs: rs[0],
       hospitalName: hospitalName,
+      warehouseName: warehouseName,
       year: year + 543,
       committee: committee
     });

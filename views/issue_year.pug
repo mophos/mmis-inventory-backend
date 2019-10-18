@@ -11,8 +11,13 @@ html
     table.table(style="font-size: 13pt;")
       thead
         tr 
-          td.center(colspan='9') รายงานการตรวจสอบการรับ-จ่ายยา#{hospitalName} ประจำปีงบประมาณ #{year} (1 ตุลาคม #{syear} - 30 กันยายน #{year})
+          td.center(colspan='9') รายงานการตรวจสอบการรับ-จ่ายยา#{hospitalName} 
         tr
+          td.center(colspan='9') ประจำปีงบประมาณ #{year} (1 ตุลาคม #{syear} - 30 กันยายน #{year})
+        tr
+          td.center(colspan='9') คลัง #{warehouseName} 
+        tr
+          th.center.bold(style="border: 1px solid black;") ลำดับที่
           th.center.bold(style="border: 1px solid black;") รายการ
           th.center.bold(style="border: 1px solid black;") ขนาดบรรจุ
           th.center.bold(style="border: 1px solid black;") ราคาต่อขนาดบรรจุ
@@ -27,6 +32,7 @@ html
       for a in rs
         - y++
         tr
+          td.center(style="border: 1px solid black;") #{y}
           td.left(style="border: 1px solid black;") #{a.product_name}
           td.center(style="border: 1px solid black;") #{a.pack} (#{a.qty} #{a.small_unit})
           td.center(style="border: 1px solid black;") #{a.unit_price}
