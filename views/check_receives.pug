@@ -134,29 +134,32 @@ html
           td.center  
             | (#{i.manager.fullname})
             br
+            if(i.manager.position_name)
+              | #{i.manager.position_name}
+              br
             | #{i.manager.position}
             br
             | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{hospitalDetail.province}
           td
       .pagebreak
-      - if(i.details.length > 5)
-        .center.bold รายละเอียดตรวจรับ(ใบแนบ)
-        br
-        table.table
-          tr
-            td.left เลขที่ #{i.poNumber}
-        br
-        br
-        table.table
-          for v in i.details
-            tr
-              td.right #{v.generic_type_name} 
-              td.right &nbsp;&nbsp;#{v.totalItem}&nbsp;&nbsp;
-              td.left รายการ 
-              td.right ตามใบส่งของเลขที่ &nbsp;
-              td.left #{v.delivery_code} 
-              td.right เป็นเงิน 
-              td.right #{v.total_price} &nbsp;
-              td.left บาท 
-              td.left (#{v.bahtText})
-      .pagebreak
+      //- - if(i.details.length > 5)
+      //-   .center.bold รายละเอียดตรวจรับ(ใบแนบ)
+      //-   br
+      //-   table.table
+      //-     tr
+      //-       td.left เลขที่ #{i.poNumber}
+      //-   br
+      //-   br
+      //-   table.table
+      //-     for v in i.details
+      //-       tr
+      //-         td.right #{v.generic_type_name} 
+      //-         td.right &nbsp;&nbsp;#{v.totalItem}&nbsp;&nbsp;
+      //-         td.left รายการ 
+      //-         td.right ตามใบส่งของเลขที่ &nbsp;
+      //-         td.left #{v.delivery_code} 
+      //-         td.right เป็นเงิน 
+      //-         td.right #{v.total_price} &nbsp;
+      //-         td.left บาท 
+      //-         td.left (#{v.bahtText})
+      //- .pagebreak

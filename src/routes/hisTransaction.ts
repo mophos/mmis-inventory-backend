@@ -300,159 +300,119 @@ router.post('/import', co(async (req, res, next) => {
 
   if (transactionIds.length) {
     try {
-      let unCutStockIds = [];
-      let cutStockIds = [];
 
-      //หา generic_id จาก transaction_id
-      let hisProducts = await hisTransactionModel.getHisTransactionForImport(db, transactionIds);
-
-      for (const h of hisProducts) {
-        let qty = h.qty
-        let cutQty;
-        //หาคงคลัง จาก wmProducts ตาม lot
-        let wmProducts = await hisTransactionModel.getProductInWarehouseForImport(db, h.warehouse_id, h.generic_id);
-
-        for (const p of wmProducts) {
-          let check = false;
-          let HIStype = 0
-          if (p.qty >= qty && qty > 0) {
-            check = true;
-            HIStype = 1
-            cutQty = qty;
-            p.qty = p.qty - qty;
-            qty = 0
-          } else if (p.qty < qty && qty > 0) { //กรณีตัดแล้วแต่คงคลังไม่พอ
-            check = true;
-            HIStype = 1
-            qty = qty - p.qty;
-            cutQty = p.qty
-            p.qty = 0;
-          } else if (qty < 0 && p.qty > 0) {
-            check = true;
-            HIStype = 2
-            p.qty = p.qty + (qty * -1)
-            cutQty = (qty * -1);
-            qty = 0
-          }
-
-          // checkUnitGeneric , ตัดคงคลัง , ลงstockcard
-          if (check) {
-            let stockCards = [];
-            //getUnitGeneric
-            let unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, h.generic_id);
-            let insertUnit = [];
-            //เช็ค unitId
-            if (!unitId.length) {
-              let unit = await hisTransactionModel.getUnitGenericId(db, h.generic_id);
-              //สร้าง unit 1 ต่อ 1 ใหม่
-              let newUnit = {
-                from_unit_id: unit[0].to_unit_id,
-                to_unit_id: unit[0].to_unit_id,
-                qty: 1,
-                cost: unit[0].cost / unit[0].qty,
-                generic_id: unit[0].generic_id
+      const rs = await hisTransactionModel.getGroupTransactionFromTransactionId(db, transactionIds);
+      if (rs.length) {
+        for (const r of rs) {
+          const rsAllocate = await allocate(db, r.warehouse_id, [r]);
+          if (rsAllocate.ok) {
+            for (const i of rsAllocate.rows) {
+              //-------------- get UnitGeneric --------------
+              let unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, i.generic_id);
+              //เช็ค unitId
+              if (!unitId.length) {
+                let unit = await hisTransactionModel.getUnitGenericId(db, i.generic_id);
+                //สร้าง unit 1 ต่อ 1 ใหม่
+                let newUnit = {
+                  from_unit_id: unit[0].to_unit_id,
+                  to_unit_id: unit[0].to_unit_id,
+                  qty: 1,
+                  cost: unit[0].cost / unit[0].qty,
+                  generic_id: unit[0].generic_id
+                }
+                unitId = newUnit;
+                //insert UnitGeneric
+                const u = await hisTransactionModel.insertUnitId(db, newUnit);
+                unitId.unit_generic_id = u[0];
+              } else {
+                unitId = unitId[0];
               }
-              insertUnit.push(newUnit)
-              //insert UnitGeneric
-              await hisTransactionModel.insertUnitId(db, insertUnit);
-              unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, h.generic_id);
-            }
+              //----------------------------------------
+              //--------------ตัดคงคลัง--------------
+              if (i.small_remain_qty - i.product_qty >= 0 && i.small_remain_qty > 0) {
+                const transactionIds = r.transaction_id.split(',');
+                if (transactionIds.length == r.count) {
+                  await hisTransactionModel.decreaseProductQty(db, i.wm_product_id, i.small_remain_qty - i.product_qty);
+                  await hisTransactionModel.changeStatusToCut(db, moment().format('YYYY-MM-DD hh:mm:ss'), req.decoded.people_user_id, transactionIds);
+                  //getBalance เพื่อไปลง stockcard
+                  let balance: any = await hisTransactionModel.getBalance(db, i.wm_product_id);
+                  balance = balance[0];
+                  let balance_qty = balance[0].balance_qty;
+                  let balance_lot_qty = balance[0].balance_lot_qty;
+                  let balance_generic_qty = balance[0].balance_generic_qty;
+                  let balance_unit_cost = balance[0].balance_unit_cost;
+                  //ทำ data เพื่อไปลง stockcard
+                  let data = {}
+                  if (i.product_qty > 0) {
+                    data = {
+                      stock_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+                      product_id: i.product_id,
+                      generic_id: i.generic_id,
+                      transaction_type: 'HIS',
+                      document_ref_id: null,
+                      document_ref: null,
+                      in_qty: 0,
+                      in_unit_cost: 0,
+                      out_qty: i.product_qty,
+                      out_unit_cost: i.cost,
+                      balance_qty: balance_qty,
+                      balance_lot_qty: balance_lot_qty,
+                      balance_generic_qty: balance_generic_qty,
+                      balance_unit_cost: balance_unit_cost,
+                      ref_src: i.warehoues_id,
+                      ref_dst: null,
+                      comment: 'ตัดจ่าย HIS',
+                      unit_generic_id: unitId.unit_generic_id,
+                      lot_no: i.lot_no,
+                      lot_time: i.lot_time,
+                      expired_date: i.expired_date,
+                      wm_product_id_out: i.wm_product_id
+                    };
+                    //คนไข้คืนยา
+                  } else if (i.product_qty < 0) {
+                    data = {
+                      stock_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+                      product_id: i.product_id,
+                      generic_id: i.generic_id,
+                      transaction_type: 'HIS',
+                      document_ref_id: null,
+                      document_ref: null,
+                      in_qty: Math.abs(i.product_qty),
+                      in_unit_cost: Math.abs(i.cost),
+                      out_qty: 0,
+                      out_unit_cost: 0,
+                      balance_qty: balance_qty,
+                      balance_lot_qty: balance_lot_qty,
+                      balance_generic_qty: balance_generic_qty,
+                      balance_unit_cost: balance_unit_cost,
+                      ref_src: i.warehoues_id,
+                      ref_dst: null,
+                      comment: 'ตัดจ่าย HIS (คนไข้คืนยา)',
+                      unit_generic_id: unitId.unit_generic_id,
+                      lot_no: i.lot_no,
+                      lot_time: i.lot_time,
+                      expired_date: i.expired_date,
+                      wm_product_id_in: i.wm_product_id
+                    };
+                  }
+                  if (i.product_qty > 0 || i.product_qty < 0) {
+                    // save stockcard
+                    const stockId = await stockCardModel.saveStockHisTransaction(db, data);
+                    await hisTransactionModel.changeStockcardId(db, transactionIds, stockId[0]);
+                  }
+                }
+              }
 
-            //ตัดคงคลัง
-            await hisTransactionModel.decreaseProductQty(db, p.wm_product_id, p.qty);
-
-            //getBalance เพื่อไปลง stockcard
-            let balance = await hisTransactionModel.getBalance(db, p.wm_product_id);
-            balance = balance[0];
-            let balance_qty = balance[0].balance_qty;
-            let balance_lot_qty = balance[0].balance_lot_qty;
-            let balance_generic_qty = balance[0].balance_generic_qty;
-            let balance_unit_cost = balance[0].balance_unit_cost;
-
-            //ทำ data เพื่อไปลง stockcard
-            let data = {}
-            if (h.qty > 0 && HIStype == 1) {
-              data = {
-                stock_date: moment(h.date_serv).format('YYYY-MM-DD HH:mm:ss'),
-                product_id: p.product_id,
-                generic_id: h.generic_id,
-                transaction_type: 'HIS',
-                document_ref_id: h.transaction_id,
-                document_ref: null,
-                in_qty: 0,
-                in_unit_cost: 0,
-                out_qty: cutQty,
-                out_unit_cost: p.cost,
-                balance_qty: balance_qty,
-                balance_lot_qty: balance_lot_qty,
-                balance_generic_qty: balance_generic_qty,
-                balance_unit_cost: balance_unit_cost,
-                ref_src: h.warehouse_id,
-                ref_dst: h.hn,
-                comment: 'ตัดจ่าย HIS',
-                unit_generic_id: unitId[0].unit_generic_id,
-                lot_no: p.lot_no,
-                lot_time: p.lot_time,
-                expired_date: p.expired_date,
-                wm_product_id_out: p.wm_product_id
-              };
-              //คนไข้คืนยา
-            } else if (h.qty < 0 && HIStype == 2) {
-              data = {
-                stock_date: moment(h.date_serv).format('YYYY-MM-DD HH:mm:ss'),
-                product_id: p.product_id,
-                generic_id: h.generic_id,
-                transaction_type: 'HIS',
-                document_ref_id: h.transaction_id,
-                document_ref: null,
-                in_qty: cutQty,
-                in_unit_cost: p.cost,
-                out_qty: 0,
-                out_unit_cost: 0,
-                balance_qty: balance_qty,
-                balance_lot_qty: balance_lot_qty,
-                balance_generic_qty: balance_generic_qty,
-                balance_unit_cost: balance_unit_cost,
-                ref_src: h.warehouse_id,
-                ref_dst: h.hn,
-                comment: 'ตัดจ่าย HIS (คนไข้คืนยา)',
-                unit_generic_id: unitId[0].unit_generic_id,
-                lot_no: p.lot_no,
-                lot_time: p.lot_time,
-                expired_date: p.expired_date,
-                wm_product_id_in: p.wm_product_id
-              };
             }
-            if (cutQty > 0) {
-              stockCards.push(data);
-            }
-            console.log(data);
-            // save stockcard
-            await stockCardModel.saveStockHisTransaction(db, stockCards);
           }
         }
-
-        //เปลี่ยน สถานะ is_cut_stock
-        if (qty === 0) {
-          cutStockIds.push(h.transaction_id);
-          await hisTransactionModel.changeStatusToCut(db, cutStockDate, peopleUserId, h.transaction_id);
-        } else if (qty > 0 || qty < 0) {
-          unCutStockIds.push(h.transaction_id);
-          //ตัดมากกว่าคงเหลือ ตัดแล้วเอามาหักลบ
-          if (h.qty > qty) {
-            let diff = h.qty - cutQty
-            await hisTransactionModel.changeQtyInHisTransaction(db, cutStockDate, peopleUserId, h.transaction_id, diff);
-          }
-        }
+        res.send({ ok: true });
+      } else {
+        res.send({ ok: false, error: 'ไม่มีรายการตัดจ่าย' });
       }
-      res.send({ ok: true, un_cut_stock: unCutStockIds, cut_stock: cutStockIds });
-
     } catch (error) {
       console.log(error);
-
       res.send({ ok: false, error: error.message });
-    } finally {
-      db.destroy();
     }
   } else {
     res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการนำเข้าเพื่อตัดยอด' })
@@ -516,4 +476,48 @@ router.post('/upload-his', async (req, res, next) => {
   };
 });
 
+const allocate = (async (db, warehouseId: any, data: any) => {
+  try {
+    let allocate = [];
+    let rsProducts: any = [];
+    for (const d of data) {
+      rsProducts = await hisTransactionModel.getProductInWarehousesByGeneric(db, d.genericId, warehouseId);
+      for (const p of rsProducts) {
+        const remainQty = p.qty;
+        let qty = d.genericQty;
+        if (qty > remainQty && remainQty == 0) {
+          qty = remainQty;
+        }
+        p.qty -= qty;
+        d.genericQty -= qty;
+        const obj: any = {
+          wm_product_id: p.wm_product_id,
+          unit_generic_id: p.unit_generic_id,
+          conversion_qty: p.conversion_qty,
+          generic_id: p.generic_id,
+          pack_remain_qty: Math.floor(remainQty / p.conversion_qty),
+          small_remain_qty: remainQty,
+          product_name: p.product_name,
+          from_unit_name: p.from_unit_name,
+          to_unit_name: p.to_unit_name,
+          expired_date: p.expired_date,
+          lot_no: p.lot_no,
+          lot_time: p.lot_time,
+          product_id: p.product_id,
+          product_qty: qty,
+          cost: p.cost,
+          transaction_id: d.transaction_id,
+          warehoues_id: p.warehouse_id
+        }
+        // if (remainQty > 0) {
+        allocate.push(obj);
+        // }
+      }
+
+    }
+    return { ok: true, rows: allocate };
+  } catch (error) {
+    return { ok: false, error: error.message }
+  }
+});
 export default router;
