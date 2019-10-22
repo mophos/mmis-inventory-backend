@@ -2358,7 +2358,7 @@ OR sc.ref_src like ?
     receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any, wareHouseId: any, isFree: any, dateSetting = 'stock_date') {
 
         let date = `ws.stock_date as approve_date`;
-        if (dateSetting === 'create_date') date = `ws.create_cate as approve_date`;
+        if (dateSetting === 'create_date') date = `ws.create_date as approve_date`;
 
         let query = knex('view_stock_card_new as ws')
             .select('wr.receive_id', 'wr.receive_code', 'wr.delivery_code', 'g.generic_id', 'g.working_code',

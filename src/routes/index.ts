@@ -3265,7 +3265,7 @@ router.get('/report/receive-where-vender', wrap(async (req, res, next) => {
           v.cost = inventoryReportModel.comma(v.cost);
           v.total_price = inventoryReportModel.comma(v.total_price);
           v.receive_qty = inventoryReportModel.commaQty(v.receive_qty);
-          v.approve_date = dateToDDMMMYY(v.approve_date)
+          v.approve_date = dateToDMMYYYY(v.approve_date)
         }
         total_price_all += totalPrice;
         data.push({ labeler_name: _rs[0].labeler_name, total_price: inventoryReportModel.comma(totalPrice), detail: _rs })
