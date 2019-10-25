@@ -4,7 +4,7 @@ style(type='text/css').
     margin-top: 1.5cm;
     margin-left: 2cm;
     margin-right: 2cm;
- }
+}
 doctype html
 html
   head
@@ -23,7 +23,7 @@ html
         | หน่วยงาน #{hospitalDetail.hospname}
         br
         br
-      | เรียน #{hospitalDetail.managerName}
+      | เรียน ผู้อำนวยการ (#{hospitalDetail.hospname})
       br
       div(style="float:right") #{printDate}
       .fontspace2
@@ -41,9 +41,7 @@ html
           br
       br
       .fontspace2
-      | หน่วยงาน #{warehouseName}
-      br
-      | พิจารณาของแถมดังกล่าว เห็นควร #{note}
+      | หน่วยงาน #{warehouseName} พิจารณาของแถมดังกล่าว เห็นควร #{note}
       br
       br
       div(style="width:50%;margin-left:50%")
@@ -92,4 +90,4 @@ html
               | (................................................)
               br
               | วันที่ ................................................
-          
+
