@@ -956,7 +956,7 @@ router.post('/approve', co(async (req, res, next) => {
         }
       }
     }
-    if (sussApp > 0) {
+    if (sussApp.length > 0) {
       let pickReturn: any = await pick(req, receiveIds);
 
       if (pickReturn.ok) res.send({ ok: true, errDupApprove: errApp });

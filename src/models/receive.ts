@@ -710,7 +710,7 @@ WHERE
       .whereRaw('wp.product_id=rd.product_id and wp.lot_no=rd.lot_no and wp.expired_date=rd.expired_date');
 
     let subLotTime = knex('wm_products')
-      .count('*').as('lot_time')
+      .max('lot_time').as('lot_time')
       .whereRaw('warehouse_id=rd.warehouse_id and product_id=rd.product_id and lot_no=rd.lot_no')
       .groupBy('product_id')
       .groupBy('warehouse_id')

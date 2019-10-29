@@ -209,7 +209,6 @@ export class ToolModel {
       .where('transaction_type', type)
       .where('out_qty', qty)
       .limit(1);
-    console.log(sql.toString());
     return sql;
 
   }
@@ -223,7 +222,6 @@ export class ToolModel {
       .where('transaction_type', type)
       .where('in_qty', qty)
       .limit(1);
-    console.log(sql.toString());
     return sql;
 
   }
@@ -259,17 +257,19 @@ export class ToolModel {
     return sql;
   }
 
-  increasingQty(knex: Knex, productId, lotNo, warehouseId, qty) {
+  increasingQty(knex: Knex, productId, lotNo, lotTime, warehouseId, qty) {
     const sql = `UPDATE wm_products 
     set qty = qty+${qty}
-    WHERE product_id = '${productId}' AND warehouse_id = '${warehouseId}' AND lot_no = '${lotNo}'`
+    WHERE product_id = '${productId}' AND warehouse_id = '${warehouseId}' AND lot_no = '${lotNo}'
+    and lot_time = '${lotTime}'`;
     return knex.raw(sql);
   }
 
-  decreaseQty(knex: Knex, productId, lotNo, warehouseId, qty) {
+  decreaseQty(knex: Knex, productId, lotNo, lotTime, warehouseId, qty) {
     const sql = `UPDATE wm_products 
     set qty = qty-${qty}
-    WHERE product_id = '${productId}' AND warehouse_id = '${warehouseId}' AND lot_no = '${lotNo}'`
+    WHERE product_id = '${productId}' AND warehouse_id = '${warehouseId}' AND lot_no = '${lotNo}'
+    and lot_time = '${lotTime}'`;
     return knex.raw(sql);;
   }
 
@@ -303,16 +303,29 @@ export class ToolModel {
     console.log(sql.toString());
     return knex.raw(sql);
   }
-  changeLotWmProductWM(knex: Knex, lotNoNew, expiredNew, unitGenericId, cost, wmProductId) {
+  changeLotWmProductWM(knex: Knex, lotNoNew, lotTimeNew, expiredNew, unitGenericId, cost, wmProductId) {
     const sql = `UPDATE wm_products 
-    set lot_no = '${lotNoNew}',expired_date = '${expiredNew}',unit_generic_id =${unitGenericId},cost = ${cost},price = ${cost}
+    set lot_no = '${lotNoNew}',lot_time = '${lotTimeNew}',expired_date = '${expiredNew}',unit_generic_id =${unitGenericId},cost = ${cost},price = ${cost}
     WHERE wm_product_id = '${wmProductId}'`
     return knex.raw(sql);
   }
 
-  changeLotStockcardWM(knex: Knex, lotNoNew, expiredNew, wmProductId) {
+  changeLotTimeWmProductWM(knex: Knex, lotTime, wmProductId) {
+    const sql = `UPDATE wm_products 
+    set lot_time = '${lotTime}'
+    WHERE wm_product_id = '${wmProductId}'`
+    return knex.raw(sql);
+  }
+
+  changeLotStockcardWM(knex: Knex, lotNoNew, lotTimeNew, expiredNew, wmProductId) {
     const sql = `UPDATE wm_stock_card 
-    set lot_no = '${lotNoNew}',expired_date = '${expiredNew}'
+    set lot_no = '${lotNoNew}',lot_time = '${lotTimeNew}',expired_date = '${expiredNew}'
+    WHERE wm_product_id_in = '${wmProductId}' or wm_product_id_out = '${wmProductId}' `
+    return knex.raw(sql);
+  }
+  changeLotTimeStockcardWM(knex: Knex, lotTime, wmProductId) {
+    const sql = `UPDATE wm_stock_card 
+    set lot_time = '${lotTime}'
     WHERE wm_product_id_in = '${wmProductId}' or wm_product_id_out = '${wmProductId}' `
     return knex.raw(sql);
   }
@@ -549,5 +562,14 @@ export class ToolModel {
       .where('product_id', productId)
       .where('lot_no', lotNo)
       .where('expired_date', expiredDate)
+  }
+
+  getLotTime(knex: Knex, productId, lotNo, warehouseId) {
+    return knex('wm_products')
+      .max('lot_time as count')
+      .where('warehouse_id', warehouseId)
+      .where('product_id', productId)
+      .where('lot_no', lotNo)
+      .groupBy('product_id')
   }
 }
