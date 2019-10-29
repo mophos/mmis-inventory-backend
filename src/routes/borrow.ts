@@ -255,7 +255,6 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
         }
       }
     }
-    console.log(_generics, 'zm,x.cmnvz,.xmcnvz,x.mcnv,z.xmcnvz,.xmcnv')
     res.send({ ok: true, rows: _generics });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -838,7 +837,6 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       }
 
       // =================================== STOCK CARD IN ========================
-      console.log('zxcvcxvzzxcvzxcvxcvzcvxvczvzxcvxcvzxcvxcvzxcv', v.wpp_unit_generic_id);
 
       let remain_dst = await productModel.getBalance(db, v.product_id, v.dst_warehouse_id, v.lot_no, v.lot_time);
       remain_dst = remain_dst[0]

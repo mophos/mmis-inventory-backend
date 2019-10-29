@@ -225,8 +225,6 @@ export class RequisitionOrderModel {
       order by ro.requisition_code desc
       limit ${limit} offset ${offset}
     `;
-
-    console.log(sqlSrc,sqlDst)
     return srcWarehouseId ? db.raw(sqlSrc) : db.raw(sqlDst);
   }
 
@@ -852,6 +850,7 @@ export class RequisitionOrderModel {
       mu.unit_name AS to_unit_name,
       mu2.unit_name AS from_unit_name,
       ug.qty AS conversion_qty,
+      vr.remain_qty,
       vr.remain_qty AS small_remain_qty,
       vr.remain_qty / ug.qty AS pack_remain_qty,
       wp.unit_generic_id,
