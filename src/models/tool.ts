@@ -50,7 +50,6 @@ export class ToolModel {
       ro.approved = 'Y' 
       AND ro.mark_deleted = 'N' 
       AND ro.borrow_code LIKE '${_query}'`;
-    console.log(sql)
     return db.raw(sql);
   }
 
@@ -240,7 +239,6 @@ export class ToolModel {
       .where('warehouse_id', warehouseId)
       .where('generic_id', genericId)
       .groupBy('product_id');
-    console.log(sql.toString());
 
     return sql;
   }
@@ -292,7 +290,6 @@ export class ToolModel {
     const sql = `UPDATE wm_products 
     set lot_no = '${lotNoNew}',expired_date = '${expiredNew}',unit_generic_id =${unitGenericId}
     WHERE product_id = '${productId}' AND lot_no = '${lotNoOld}' AND expired_date = '${expiredOld}' and unit_generic_id = ${unitGenericIdOld}`
-    console.log(sql.toString());
     return knex.raw(sql);
   }
 
@@ -300,7 +297,6 @@ export class ToolModel {
     const sql = `UPDATE wm_stock_card 
     set lot_no = '${lotNoNew}',expired_date = '${expiredNew}'
     WHERE product_id = '${productId}'  AND lot_no = '${lotNoOld}' AND expired_date = '${expiredOld}'`
-    console.log(sql.toString());
     return knex.raw(sql);
   }
   changeLotWmProductWM(knex: Knex, lotNoNew, lotTimeNew, expiredNew, unitGenericId, cost, wmProductId) {

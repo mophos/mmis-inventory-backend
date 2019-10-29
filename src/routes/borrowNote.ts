@@ -295,8 +295,6 @@ router.put('/update-requisition/:requisitionOrderId', async (req, res, next) => 
       await borrowModel.updateBorrowItems(db, item.borrow_note_detail_id, item.requisition_people_user_id, requisitionOrderId);
       borrowNnoteDetailId.push(item.borrow_note_detail_id)
     }
-    console.log(borrowNnoteDetailId);
-
     await reqModel.updateBorrowNote(db, borrowNnoteDetailId);
 
     res.send({ ok: true });

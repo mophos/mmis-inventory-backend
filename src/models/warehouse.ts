@@ -908,7 +908,7 @@ export class WarehouseModel {
       `;
     return knex.raw(sql);
   }
-  
+
   getTemplateDetail(knex: Knex, templateId: any) {
     return knex(`wm_issue_template_detail`)
       .where('template_id', templateId)
@@ -970,8 +970,6 @@ export class WarehouseModel {
     group by sn.destination_warehouse_id
     order by dst.short_code
     `;
-    console.log(sql, 'dfasdlfhaow;irhghwrkfhaskdjhfakjshdkh');
-
     return knex.raw(sql);
   }
 

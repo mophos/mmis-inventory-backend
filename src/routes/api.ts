@@ -67,9 +67,6 @@ router.post('/issue-jhcis', async (req, res, next) => {
       if (rsAllocate.ok) {
         for (const i of rsAllocate.rows) {
           //-------------- get UnitGeneric --------------
-          console.log('***********************');
-          console.log(i.generic_id)
-
           let unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, i.generic_id);
 
           //เช็ค unitId
@@ -170,10 +167,6 @@ router.post('/issue-jhcis', async (req, res, next) => {
     } else {
       res.send({ ok: false, error: 'ไม่มีรายการตัดจ่าย' });
     }
-
-    // let rs: any = await hisTransactionModel.getNotMappings(db, warehouseId);
-    // console.log(rs[0]);
-
     res.send({ ok: true, rows: 'test' });
   } catch (error) {
     console.log(error);
@@ -257,7 +250,6 @@ router.get('/financial', (async (req, res, next) => {
   const genericTypeId = req.query.genericTypeId;
   try {
     const rs: any = await mainReportModel.financial(db, startDate, endDate, genericTypeId);
-    console.log(rs[0]);
     if (rs[0] == undefined) {
       res.send({ ok: false })
     } else {

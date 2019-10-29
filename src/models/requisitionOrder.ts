@@ -225,8 +225,6 @@ export class RequisitionOrderModel {
       order by ro.requisition_code desc
       limit ${limit} offset ${offset}
     `;
-
-    console.log(sqlSrc, sqlDst)
     return srcWarehouseId ? db.raw(sqlSrc) : db.raw(sqlDst);
   }
 

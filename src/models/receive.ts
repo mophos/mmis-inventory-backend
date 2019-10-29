@@ -1981,7 +1981,6 @@ WHERE
     }
 
     sql += ` limit ${limit} offset ${offset}`;
-    console.log(sql.toString());
     return knex.raw(sql);
   }
 

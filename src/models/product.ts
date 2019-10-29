@@ -224,8 +224,6 @@ export class ProductModel {
         where w.product_id = '${v.product_id}' and w.lot_no = '${v.lot_no}' and w.lot_time = '${v.lot_time}' and w.warehouse_id = '${v.warehouse_id}'
         group by w.product_id)`;
       sqls.push(sql);
-
-      // console.log(sql);
     });
 
     let queries = sqls.join(';');

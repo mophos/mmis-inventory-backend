@@ -269,7 +269,7 @@ export class HisTransactionModel {
     }
 
     getIssueTransactionMappingDataMMIS(db: Knex, uuid: any, warehouseId: any) {
-        let sql = db('tmp_import_issue as t')
+        return db('tmp_import_issue as t')
             .select(db.raw('sum(t.qty) as issue_qty'), 'g.generic_id', 'g.generic_name', 'u.unit_name')
             // .sum('vr.reserve_qty as reserve_qty')
             .sum('vr.remain_qty as remain_qty')
@@ -284,8 +284,6 @@ export class HisTransactionModel {
                 a.generic_id=g.generic_id`)
             .where('uuid', uuid)
             .groupBy('t.icode');
-        console.log(sql.toString());
-        return sql;
 
     }
 

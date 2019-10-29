@@ -456,7 +456,6 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
     });
     let committee: any = []
     for (let peopleId of people) {
-      console.log(peopleId);
       let pe: any = await inventoryReportModel.peopleFullName(db, peopleId)
       committee.push(pe[0])
     }
@@ -502,7 +501,6 @@ router.get('/report/receiveIssueYearGeneric/:year', wrap(async (req, res, next) 
     });
     let committee: any = []
     for (let peopleId of people) {
-      console.log(peopleId);
       let pe: any = await inventoryReportModel.peopleFullName(db, peopleId)
       committee.push(pe[0])
     }
@@ -533,7 +531,6 @@ router.get('/report/adjust-stockcard', wrap(async (req, res, next) => {
     let detailGen: any = [];
     for (let details of adjust) {
       const _detailGen = await inventoryReportModel.getAdjustGenericDetail(db, details.adjust_id)
-      // console.log(_detailGen);
       details.detailGen = _detailGen;
       for (let _dGen of details.detailGen) {
         const _detailPro = await inventoryReportModel.getAdjustProductDetail(db, _dGen.adjust_generic_id);
@@ -942,7 +939,6 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
   let page_re: any = line[0].line;
   const dateApprove = req.decoded.WM_REPORT_DATE_APPROVE; // Y = วันที่อนุมัติ
   let warehouse_id: any = req.decoded.warehouseId
-  // console.log(req.decoded);
 
   try {
     let requisId = req.query.requisId;
@@ -1010,7 +1006,6 @@ router.get('/report/approve/requis3', wrap(async (req, res, next) => {
   let page_re: any = line[0].line;
   const dateApprove = req.decoded.WM_REPORT_DATE_APPROVE; // Y = วันที่อนุมัติ
   let warehouse_id: any = req.decoded.warehouseId
-  // console.log(req.decoded);
 
   try {
     let requisId = req.query.requisId;
@@ -1077,7 +1072,6 @@ router.get('/report/approve/requis2', wrap(async (req, res, next) => {
   let page_re: any = line[0].line;
   const dateApprove = req.decoded.WM_REPORT_DATE_APPROVE; // Y = วันที่อนุมัติ
   let warehouse_id: any = req.decoded.warehouseId
-  // console.log(req.decoded);
 
   try {
     let requisId = req.query.requisId;
@@ -1142,7 +1136,6 @@ router.get('/report/approve/requis4', wrap(async (req, res, next) => {
   let page_re: any = line[0].line;
   const dateApprove = req.decoded.WM_REPORT_DATE_APPROVE; // Y = วันที่อนุมัติ
   let warehouse_id: any = req.decoded.warehouseId
-  // console.log(req.decoded);
 
   try {
     let requisId = req.query.requisId;
@@ -1211,7 +1204,6 @@ router.get('/report/staff/approve/requis', wrap(async (req, res, next) => {
   let page_re: any = line[0].line;
 
   let warehouse_id: any = req.decoded.warehouseId
-  // console.log(req.decoded);
 
   try {
     let requisId = req.query.requisId;
@@ -1570,7 +1562,6 @@ router.get('/report/list/pick', wrap(async (req, res, next) => {
     //   list_requis: _list_requis,
     // });
   } catch (error) {
-    // console.log(error);
     res.send({ ok: false, error: error.message })
   } finally {
     db.destroy();
@@ -2040,7 +2031,6 @@ router.get('/report/issueStraff', wrap(async (req, res, next) => {
   res.render('product_issue', {
     hospitalName: hospitalName, issueBody: issue_body, issueListDetail: issueListDetail, issue_date: issue_date, printDate: printDate(req.decoded.SYS_PRINT_DATE), count: issueListDetail.length
   });
-  // //console.log(issueBody[0].issue_id);
   // res.send({ ok: true, issueBody: issueBody, issueListDetail: issueListDetail, issue_date:issue_date })
 }));
 
@@ -2258,17 +2248,11 @@ router.get('/report/list/receive', wrap(async (req, res, next) => {
     productId.push(value.product_id);
     receiveId.push(value.receive_id);
   })
-  console.log('----');
-
-  console.log(list_receive3);
 
   for (let i = 0; i < productId.length; i++) {
     list_receive2 = await inventoryReportModel.list_receive2(db, productId[i], receiveId[i], wareHouseId);
     list_receive2 = list_receive2[0];
-    //console.log(list_receive2);
-
     array2.push(list_receive2);
-    // //console.log(list_receive2[0].receive_code)
   }
 
   array2.forEach(value => {
@@ -2308,7 +2292,6 @@ router.get('/report/list/receiveCode/:sID/:eID', wrap(async (req, res, next) => 
   for (let i = 0; i < productId.length; i++) {
     list_receive2 = await inventoryReportModel.list_receive2(db, productId[i], receiveId[i], wareHouseId);
     list_receive2 = list_receive2[0];
-    //console.log(list_receive2);
     array2.push(list_receive2);
   }
   array2.forEach(value => {
@@ -2344,7 +2327,6 @@ router.get('/report/list/receiveCodeOther/:sID/:eID', wrap(async (req, res, next
   for (let i = 0; i < productId.length; i++) {
     list_receive2 = await inventoryReportModel._list_receive2(db, productId[i], receiveId[i], wareHouseId);
     list_receive2 = list_receive2[0];
-    //console.log(list_receive2);
     array2.push(list_receive2);
   }
   array2.forEach(value => {
@@ -2527,7 +2509,6 @@ router.get('/report/list/receivePo/:sID/:eID', wrap(async (req, res, next) => {
   for (let i = 0; i < productId.length; i++) {
     list_receive2 = await inventoryReportModel.list_receive2(db, productId[i], receiveId[i], wareHouseId);
     list_receive2 = list_receive2[0];
-    //console.log(list_receive2);
     array2.push(list_receive2);
   }
   array2.forEach(value => {
@@ -2559,12 +2540,9 @@ router.get('/report/list/receiveDate/:sDate/:eDate', wrap(async (req, res, next)
     receiveId.push(value.receive_id);
   })
   if (list_receive3[0] == undefined) res.render('error404');
-  //console.log(receiveId);
-  //console.log(productId);
   for (let i = 0; i < productId.length; i++) {
     list_receive2 = await inventoryReportModel.list_receive2(db, productId[i], receiveId[i], wareHouseId);
     list_receive2 = list_receive2[0];
-    //console.log(list_receive2);
     array2.push(list_receive2);
   }
   array2.forEach(value => {
@@ -2657,12 +2635,9 @@ router.get('/report/list/receiveDateOther/:sDate/:eDate', wrap(async (req, res, 
     receiveId.push(value.receive_other_id);
   })
   if (list_receive3[0] == undefined) res.render('error404');
-  //console.log(receiveId);
-  //console.log(productId);
   for (let i = 0; i < productId.length; i++) {
     list_receive2 = await inventoryReportModel._list_receive2(db, productId[i], receiveId[i], wareHouseId);
     list_receive2 = list_receive2[0];
-    //console.log(list_receive2);
     array2.push(list_receive2);
   }
   array2.forEach(value => {
@@ -2796,8 +2771,6 @@ router.get('/report/tranfers', wrap(async (req, res, next) => {
   const line = await inventoryReportModel.getLine(db, 'AT');
   let page: any = line[0].line;
 
-  // console.log(page);
-
   for (let id in tranferId) {
     tranfer = await inventoryReportModel.tranfer(db, tranferId[id]);
     const _tmp = _.chunk(tranfer[0], page)
@@ -2820,8 +2793,6 @@ router.get('/report/tranfers', wrap(async (req, res, next) => {
     _tranferCounts.push(tranferCount[0])
   }
   res.render('tranfers', { hospitalName: hospitalName, printDate: printDate(req.decoded.SYS_PRINT_DATE), _tmpTranfer: _tmpTranfer, _tranferCounts: _tranferCounts, tranferId: tranferId, _tmpSum: _tmpSum });
-  // console.log('++++++++++++++++++++++++++++++++++++++++', _tmpTranfer);
-  // res.send(_tmpTranfer)
 }));
 
 router.get('/report/tranfers2', wrap(async (req, res, next) => {
