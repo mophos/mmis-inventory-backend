@@ -308,10 +308,14 @@ router.put('/stockcard/receive-others', async (req, res, next) => {
 
       if (v.lot_no != v.lot_no_old || v.expired_date != v.expired_date_old || v.unit_generic_id != v.unit_generic_id_old) {
         const lottime = await toolModel.getLotTime(db, v.product_id, v.lot_no, v.warehouse_id)
-        let _lottime = lottime[0].count || 1;
-
-        if (v.lot_no != v.lot_no_old) {
-          _lottime = +lottime[0].count + 1;
+        let _lottime;
+        if (lottime.length) {
+          _lottime = lottime[0].count;
+          if (v.lot_no != v.lot_no_old) {
+            _lottime = +lottime[0].count + 1;
+          }
+        } else {
+          _lottime = 1;
         }
         await toolModel.changeLotWmProductWM(db, v.lot_no, _lottime, v.expired_date, v.unit_generic_id, costNew, wmProductId)
         await toolModel.changeLotStockcardWM(db, v.lot_no, _lottime, v.expired_date, wmProductId);
