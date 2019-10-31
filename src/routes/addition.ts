@@ -286,8 +286,7 @@ router.get('/print/approve', async (req, res, next) => {
         const rs: any = await additionModel.printAdditionApprove(db, addition_id[i]);
         header.push(rs[0][0])
         const rsd: any = await additionModel.printAdditionApproveDetail(db, addition_id[i]);
-        detail.push(rsd[0])
-        console.log(page_re);
+        detail.push(rsd[0]);
 
         detail[i] = _.chunk(detail[i], page_re)
         _.forEach(detail[i], values => {
@@ -309,8 +308,6 @@ router.get('/print/approve', async (req, res, next) => {
         res.send({ ok: false, error: error.messgae });
       }
     };
-
-    console.log(JSON.stringify(detail));
 
 
     res.render('approve_addition', {

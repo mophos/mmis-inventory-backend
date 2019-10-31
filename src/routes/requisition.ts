@@ -452,8 +452,6 @@ router.get('/generic-requisition/:requisitionId', async (req, res, next) => {
     let rsGenerics: any = await requisitionModel.getGenericsFromRequisition(db, requisitionId);
 
     let _generics = rsGenerics[0];
-    console.log('rs', rs[0]);
-    console.log('generic', rsGenerics[0]);
 
     _generics.forEach(v => {
       genericIds.push(v.generic_id);

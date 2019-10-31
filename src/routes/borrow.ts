@@ -255,7 +255,6 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
         }
       }
     }
-    console.log(_generics, 'zm,x.cmnvz,.xmcnvz,x.mcnv,z.xmcnvz,.xmcnv')
     res.send({ ok: true, rows: _generics });
   } catch (error) {
     res.send({ ok: false, error: error.message });

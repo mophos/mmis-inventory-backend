@@ -3307,8 +3307,7 @@ OR sc.ref_src like ?
         ) as t
         where t.requisition_date BETWEEN '${startDate}' and '${endDate}'
         GROUP BY t.wm_requisition
-       `
-        console.log(sql)
+       `;
         return knex.raw(sql);
     }
 

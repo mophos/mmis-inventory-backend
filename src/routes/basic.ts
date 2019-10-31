@@ -472,7 +472,6 @@ router.get('/get-generic-warehouse-remain/:warehouseId/:genericId', async (req, 
 
   try {
     let rs: any = await genericModel.getRemainQtyInWarehouse(db, warehouseId, genericId);
-    // console.log(rs);
     res.send({ ok: true, remain_qty: rs[0].remain_qty });
   } catch (error) {
     console.log(error);
