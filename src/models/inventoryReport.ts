@@ -2357,12 +2357,15 @@ OR sc.ref_src like ?
 
     receiveWhereVender(knex: Knex, startDate: any, endDate: any, genericTypeId: any, wareHouseId: any, isFree: any, dateSetting = 'stock_date') {
 
+        let date = `ws.stock_date as approve_date`;
+        if (dateSetting === 'create_date') date = `ws.create_cate as approve_date`;
+
         let query = knex('view_stock_card_new as ws')
             .select('wr.receive_id', 'wr.receive_code', 'wr.delivery_code', 'g.generic_id', 'g.working_code',
                 knex.raw(`IF( ws.in_cost <= 0, CONCAT( g.generic_name, ' ', '(ของแถม)' ), g.generic_name ) generic_name`),
                 knex.raw('ws.in_qty / ws.conversion_qty AS receive_qty'), knex.raw('ws.in_unit_cost * ws.conversion_qty AS cost')
                 , 'ws.large_unit AS unit_name',
-                'ws.conversion_qty AS qty', 'ra.approve_date', 'ws.unit_generic_id', 'ws.dst_warehouse_id AS vendor_labeler_id',
+                'ws.conversion_qty AS qty', date, 'ws.unit_generic_id', 'ws.dst_warehouse_id AS vendor_labeler_id',
                 'ws.dst_warehouse_name AS labeler_name')
             .join('wm_receives AS wr', 'wr.receive_id', 'ws.document_ref_id')
             .join('mm_generics AS g', 'g.generic_id', 'ws.generic_id')
@@ -3304,8 +3307,7 @@ OR sc.ref_src like ?
         ) as t
         where t.requisition_date BETWEEN '${startDate}' and '${endDate}'
         GROUP BY t.wm_requisition
-       `
-        console.log(sql)
+       `;
         return knex.raw(sql);
     }
 

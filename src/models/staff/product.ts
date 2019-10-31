@@ -137,11 +137,11 @@ export class ProductModel {
     return knex('wm_products')
       .count('* as total')
       .where('product_id', productId)
-      .andWhere('warehouse_id',warehouseId)
-       .andWhere('lot_id', lotId);
+      .andWhere('warehouse_id', warehouseId)
+      .andWhere('lot_id', lotId);
   }
 
-    saveProducts(knex: Knex, data: any[]) {
+  saveProducts(knex: Knex, data: any[]) {
     let sqls = [];
     data.forEach(v => {
       let sql = `
@@ -157,8 +157,6 @@ export class ProductModel {
     });
 
     let queries = sqls.join(';');
-    console.log("query save or update products");
-    console.log(queries);
     return knex.raw(queries);
   }
 

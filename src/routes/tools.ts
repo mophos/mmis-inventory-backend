@@ -173,11 +173,25 @@ router.put('/stockcard/receives', async (req, res, next) => {
         await toolModel.decreaseQtyWM(db, wmProductId, qty) // ลดลง
       }
       if (v.lot_no != v.lot_no_old || v.expired_date != v.expired_date_old || v.unit_generic_id != v.unit_generic_id_old || costOld != costNew) {
-        await toolModel.changeLotWmProductWM(db, v.lot_no, v.expired_date, v.unit_generic_id, costNew, wmProductId)
-        await toolModel.changeLotStockcardWM(db, v.lot_no, v.expired_date, wmProductId);
+        const lottime = await toolModel.getLotTime(db, v.product_id, v.lot_no, v.warehouse_id);
+        let _lottime;
+        if (lottime.length) {
+          console.log('lottime', lottime);
+          _lottime = lottime[0].count;
+          if (v.lot_no != v.lot_no_old) {
+            _lottime = +lottime[0].count + 1;
+          }
+        } else {
+          _lottime = 1;
+        }
+        // if (v.lot_no != v.lot_no_old) {
+        //   await toolModel.changeLotTimeWmProductWM(db, _lottime, wmProductId);
+        //   await toolModel.changeLotTimeStockcardWM(db, _lottime, wmProductId);
+        // }
+        await toolModel.changeLotWmProductWM(db, v.lot_no, _lottime, v.expired_date, v.unit_generic_id, costNew, wmProductId)
+        await toolModel.changeLotStockcardWM(db, v.lot_no, _lottime, v.expired_date, wmProductId);
       }
       await toolModel.updateReceiveDetail(db, receiveId, v);
-      // const stockCardId = await toolModel.getStockCardId(db, receiveId, v.product_id, v.lot_no_old, 'REV');
       await toolModel.updateStockcard(db, dataStock, rs[0].stock_card_id);
 
       ///////////////save log/////////////////
@@ -278,21 +292,34 @@ router.put('/stockcard/receive-others', async (req, res, next) => {
       const qtyOld = v.receive_qty_old * v.conversion_qty_old;
       const costNew = v.cost / v.conversion_qty;
       const costOld = v.cost_old / v.conversion_qty_old;
+
+      const rs = await toolModel.getWmProductId(db, 'REV_OTHER', receiveOtherId, v.product_id, v.lot_no_old, v.expired_date_old);
+      const wmProductId = rs[0].wm_product_id_in;
       if (qtyNew > qtyOld) {
         qty = qtyNew - qtyOld;
-        await toolModel.increasingQty(db, v.product_id, v.lot_no_old, warehouseId, qty) // เพิ่มขึ้น
+        await toolModel.increasingQtyWM(db, wmProductId, qty) // เพิ่มขึ้น
       } else if (qtyNew < qtyOld) {
         qty = qtyOld - qtyNew;
-        await toolModel.decreaseQty(db, v.product_id, v.lot_no_old, warehouseId, qty) // ลดลง
-      }
-      if (v.lot_no != v.lot_no_old || v.expired_date != v.expired_date_old || v.unit_generic_id != v.unit_generic_id_old) {
-        await toolModel.changeLotWmProduct(db, v.product_id, v.lot_no_old, v.lot_no, v.expired_date_old, v.expired_date, warehouseId, v.unit_generic_id_old, v.unit_generic_id) // เพิ่มขึ้น
-        await toolModel.changeLotStockcard(db, v.product_id, v.lot_no_old, v.lot_no, v.expired_date_old, v.expired_date, warehouseId);
+        await toolModel.decreaseQtyWM(db, wmProductId, qty) // ลดลง
       }
       await toolModel.updateReceiveOtherDetail(db, receiveOtherId, v);
       const stockCardId = await toolModel.getStockCardId(db, receiveOtherId, v.product_id, v.lot_no_old, 'REV_OTHER');
       await toolModel.updateStockcard(db, dataStock, stockCardId[0].stock_card_id);
 
+      if (v.lot_no != v.lot_no_old || v.expired_date != v.expired_date_old || v.unit_generic_id != v.unit_generic_id_old) {
+        const lottime = await toolModel.getLotTime(db, v.product_id, v.lot_no, v.warehouse_id)
+        let _lottime;
+        if (lottime.length) {
+          _lottime = lottime[0].count;
+          if (v.lot_no != v.lot_no_old) {
+            _lottime = +lottime[0].count + 1;
+          }
+        } else {
+          _lottime = 1;
+        }
+        await toolModel.changeLotWmProductWM(db, v.lot_no, _lottime, v.expired_date, v.unit_generic_id, costNew, wmProductId)
+        await toolModel.changeLotStockcardWM(db, v.lot_no, _lottime, v.expired_date, wmProductId);
+      }
       ///////////////save log/////////////////
       if (qtyOld != qtyNew || v.lot_no_old != v.lot_no || v.expired_date_old != v.expired_date) {
         const logs = {
@@ -381,25 +408,24 @@ router.put('/stockcard/requisitions', async (req, res, next) => {
         const qtyOld = i.confirm_qty_old * i.conversion_qty_old;
         const stockCardIdOut = await toolModel.getStockCardIdOut(db, requisitionId, i.product_id, i.lot_no, 'REQ_OUT', qtyOld);
         const stockCardIdIn = await toolModel.getStockCardIdIn(db, requisitionId, i.product_id, i.lot_no, 'REQ_IN', qtyOld);
-        console.log(stockCardIdOut, 'stockCardIdOut', stockCardIdIn, 'stockCardIdIn');
         if (stockCardIdOut.length && stockCardIdIn.length) {
 
           // ############ ปรับคงคลัง ###############
           let qty = 0;
           if (qtyNew > qtyOld) {
             qty = qtyNew - qtyOld;
-            await toolModel.decreaseQty(db, i.product_id, i.lot_no, summary.withdrawWarehouseId, qty) // ลดลง
+            await toolModel.decreaseQty(db, i.product_id, i.lot_no, i.lot_time, summary.withdrawWarehouseId, qty) // ลดลง
           } else if (qtyNew < qtyOld) {
             qty = qtyOld - qtyNew;
-            await toolModel.increasingQty(db, i.product_id, i.lot_no, summary.withdrawWarehouseId, qty) // เพิ่มขึ้น
+            await toolModel.increasingQty(db, i.product_id, i.lot_no, i.lot_time, summary.withdrawWarehouseId, qty) // เพิ่มขึ้น
           }
 
           if (qtyNew > qtyOld) {
             qty = qtyNew - qtyOld;
-            await toolModel.increasingQty(db, i.product_id, i.lot_no, summary.requisitionWarehouseId, qty) // เพิ่มขึ้น
+            await toolModel.increasingQty(db, i.product_id, i.lot_no, i.lot_time, summary.requisitionWarehouseId, qty) // เพิ่มขึ้น
           } else if (qtyNew < qtyOld) {
             qty = qtyOld - qtyNew;
-            await toolModel.decreaseQty(db, i.product_id, i.lot_no, summary.requisitionWarehouseId, qty) // ลดลง
+            await toolModel.decreaseQty(db, i.product_id, i.lot_no, i.lot_time, summary.requisitionWarehouseId, qty) // ลดลง
           }
           // #####################################
           await toolModel.updateRequisitionConfirmItems(db, confirmId, i.wm_product_id, qtyNew);
@@ -411,8 +437,6 @@ router.put('/stockcard/requisitions', async (req, res, next) => {
           const dataStockIn = {
             in_qty: qtyNew
           }
-
-
 
           await toolModel.updateStockcard(db, dataStockOut, stockCardIdOut[0].stock_card_id);
           await toolModel.updateStockcard(db, dataStockIn, stockCardIdIn[0].stock_card_id);
@@ -570,18 +594,18 @@ router.put('/stockcard/transfers', async (req, res, next) => {
         let qty = 0;
         if (qtyNew > qtyOld) {
           qty = qtyNew - qtyOld;
-          await toolModel.decreaseQty(db, i.product_id, i.lot_no, summary.src_warehouse_id, qty) // ลดลง
+          await toolModel.decreaseQty(db, i.product_id, i.lot_no, i.lot_time, summary.src_warehouse_id, qty) // ลดลง
         } else if (qtyNew < qtyOld) {
           qty = qtyOld - qtyNew;
-          await toolModel.increasingQty(db, i.product_id, i.lot_no, summary.src_warehouse_id, qty) // เพิ่มขึ้น
+          await toolModel.increasingQty(db, i.product_id, i.lot_no, i.lot_time, summary.src_warehouse_id, qty) // เพิ่มขึ้น
         }
 
         if (qtyNew > qtyOld) {
           qty = qtyNew - qtyOld;
-          await toolModel.increasingQty(db, i.product_id, i.lot_no, summary.dst_warehouse_id, qty) // เพิ่มขึ้น
+          await toolModel.increasingQty(db, i.product_id, i.lot_no, i.lot_time, summary.dst_warehouse_id, qty) // เพิ่มขึ้น
         } else if (qtyNew < qtyOld) {
           qty = qtyOld - qtyNew;
-          await toolModel.decreaseQty(db, i.product_id, i.lot_no, summary.dst_warehouse_id, qty) // ลดลง
+          await toolModel.decreaseQty(db, i.product_id, i.lot_no, i.lot_time, summary.dst_warehouse_id, qty) // ลดลง
         }
         // #####################################
         await toolModel.updateTransferProduct(db, i.transfer_product_id, qtyNew);

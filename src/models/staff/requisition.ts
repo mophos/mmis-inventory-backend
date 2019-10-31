@@ -67,8 +67,6 @@ sum(wp.qty) as amtqty
   }
 
   searchall(knex: Knex, warehouseid) {
-    console.log("warehouseid");
-    console.log(warehouseid)
     let sql = `
     select p.product_id,p.product_name,
     sum(wp.qty) as amtqty

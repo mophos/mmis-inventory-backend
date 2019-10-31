@@ -75,7 +75,6 @@ router.post('/upload', upload.single('file'), co(async (req, res, next) => {
         if (idx > -1 && excelData[x][1] && excelData[x][2] && excelData[x][3] && excelData[x][4] != 0 && excelData[x][5]) {
           let conversion = await hisTransactionModel.getConversionHis(db, hospcode, excelData[x][3]);
           let qty;
-          console.log(conversion);
           if (conversion.length) {
             if (excelData[x][4] > 0) {
               qty = Math.ceil(excelData[x][4] / conversion[0].conversion);
@@ -427,8 +426,6 @@ router.get('/get-not-mappings', async (req, res, next) => {
 
   try {
     let rs: any = await hisTransactionModel.getNotMappings(db, warehouseId);
-    console.log(rs[0]);
-
     res.send({ ok: true, rows: rs[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -465,8 +462,6 @@ router.post('/upload-his', async (req, res, next) => {
     }
 
     let rs: any = await hisTransactionModel.saveHistransactionHis(db, _data);
-    // let rs: any = await hisTransactionModel.getNotMappings(db, warehouseId);
-    // console.log(rs[0]);
 
     res.send({ ok: true, rows: 'test' });
   } catch (error) {
