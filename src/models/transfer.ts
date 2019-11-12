@@ -414,8 +414,8 @@ ORDER BY
     let sql = `SELECT
     tp.*,
     tp.product_qty / ug.qty as product_qty,
-    FLOOR((wp.qty+tp.product_qty) / ug.qty) as pack_remain_qty,
-    wp.qty+tp.product_qty AS small_remain_qty,
+    FLOOR((vr.remain_qty+tp.product_qty) / ug.qty) as pack_remain_qty,
+    vr.remain_qty+tp.product_qty AS small_remain_qty,
     wp.lot_no,
     wp.lot_time,
     wp.expired_date,
@@ -427,6 +427,7 @@ ORDER BY
   FROM
     wm_transfer_product AS tp
     JOIN wm_products AS wp ON wp.wm_product_id = tp.wm_product_id
+    JOIN view_product_reserve as vr on vr.wm_product_id = tp.wm_product_id
     JOIN mm_unit_generics AS ug ON ug.unit_generic_id = wp.unit_generic_id
     JOIN mm_products AS mp ON mp.product_id = wp.product_id
     JOIN mm_units AS fu ON fu.unit_id = ug.from_unit_id
