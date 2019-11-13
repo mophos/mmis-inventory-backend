@@ -444,9 +444,8 @@ ORDER BY
   getGenericInfo(knex: Knex, transferId: any, srcWarehouseId: any) {
     let sql = `
     select tg.*
-    , tg.transfer_qty as transfer_qty
     , mg.working_code, mg.generic_name
-    , sg.remain_qty
+    , sg.remain_qty+tg.transfer_qty as remain_qty
     , mg.primary_unit_id, mu.unit_name as primary_unit_name
     from wm_transfer_generic as tg
     left join mm_unit_generics as ug on ug.unit_generic_id = tg.unit_generic_id
