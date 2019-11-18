@@ -164,7 +164,6 @@ router.put('/stockcard/receives', async (req, res, next) => {
       const rs = await toolModel.getWmProductId(db, 'REV', receiveId, v.product_id, v.lot_no_old, v.expired_date_old);
       const wmProductId = rs[0].wm_product_id_in;
 
-      ////////////////////////////////////
       if (qtyNew > qtyOld) {
         qty = qtyNew - qtyOld;
         await toolModel.increasingQtyWM(db, wmProductId, qty) // เพิ่มขึ้น
@@ -176,18 +175,14 @@ router.put('/stockcard/receives', async (req, res, next) => {
         const lottime = await toolModel.getLotTime(db, v.product_id, v.lot_no, v.warehouse_id);
         let _lottime;
         if (lottime.length) {
-          console.log('lottime', lottime);
-          _lottime = lottime[0].count;
           if (v.lot_no != v.lot_no_old) {
             _lottime = +lottime[0].count + 1;
+          } else {
+            _lottime = lottime[0].count;
           }
         } else {
           _lottime = 1;
         }
-        // if (v.lot_no != v.lot_no_old) {
-        //   await toolModel.changeLotTimeWmProductWM(db, _lottime, wmProductId);
-        //   await toolModel.changeLotTimeStockcardWM(db, _lottime, wmProductId);
-        // }
         await toolModel.changeLotWmProductWM(db, v.lot_no, _lottime, v.expired_date, v.unit_generic_id, costNew, wmProductId)
         await toolModel.changeLotStockcardWM(db, v.lot_no, _lottime, v.expired_date, wmProductId);
       }
@@ -310,9 +305,10 @@ router.put('/stockcard/receive-others', async (req, res, next) => {
         const lottime = await toolModel.getLotTime(db, v.product_id, v.lot_no, v.warehouse_id)
         let _lottime;
         if (lottime.length) {
-          _lottime = lottime[0].count;
           if (v.lot_no != v.lot_no_old) {
             _lottime = +lottime[0].count + 1;
+          } else {
+            _lottime = lottime[0].count;
           }
         } else {
           _lottime = 1;
