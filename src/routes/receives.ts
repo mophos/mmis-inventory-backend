@@ -1046,85 +1046,87 @@ router.post('/other/approve', co(async (req, res, next) => {
           }
           await receiveModel.updateReceiveDetailSummary(db, v.receive_detail_id, { 'wm_product_id': id });
           let obj_adjust: any = {};
-          let qty = v.receive_qty * v.conversion_qty;
-          let expiredDate = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date, 'YYYY-MM-DD').format('YYYY-MM-DD') : null;
-          let obj: any = {
-            wm_product_id: id,
-            warehouse_id: v.warehouse_id,
-            receive_other_id: v.receive_other_id,
-            product_id: v.product_id,
-            generic_id: v.generic_id,
-            balance: v.balance,
-            receive_code: v.receive_code,
-            donator_id: v.donator_id,
-            qty: qty,
-            price: (v.cost * v.receive_qty) / qty,
-            cost: (v.cost * v.receive_qty) / qty,
-            lot_no: v.lot_no,
-            expired_date: expiredDate,
-            unit_generic_id: v.unit_generic_id,
-            location_id: +v.location_id,
-            people_user_id: req.decoded.people_user_id,
-            created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
-            lot_time: lotTime
-          };
-          // add product
-          products.push(obj);
+          if (+v.receive_qty > 0) {
+            let qty = v.receive_qty * v.conversion_qty;
+            let expiredDate = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date, 'YYYY-MM-DD').format('YYYY-MM-DD') : null;
+            let obj: any = {
+              wm_product_id: id,
+              warehouse_id: v.warehouse_id,
+              receive_other_id: v.receive_other_id,
+              product_id: v.product_id,
+              generic_id: v.generic_id,
+              balance: v.balance,
+              receive_code: v.receive_code,
+              donator_id: v.donator_id,
+              qty: qty,
+              price: (v.cost * v.receive_qty) / qty,
+              cost: (v.cost * v.receive_qty) / qty,
+              lot_no: v.lot_no,
+              expired_date: expiredDate,
+              unit_generic_id: v.unit_generic_id,
+              location_id: +v.location_id,
+              people_user_id: req.decoded.people_user_id,
+              created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+              lot_time: lotTime
+            };
+            // add product
+            products.push(obj);
 
-          // new version ////////////////////////////////////////
+            // new version ////////////////////////////////////////
 
-          // save to wm_products
-          await receiveModel.saveProducts(db, obj);
+            // save to wm_products
+            await receiveModel.saveProducts(db, obj);
 
-          // get cost from wm_product
-          const cost = await receiveModel.getCostProduct(db, obj);
-          let _cost = cost[0].cost
+            // get cost from wm_product
+            const cost = await receiveModel.getCostProduct(db, obj);
+            let _cost = cost[0].cost
 
-          let objS: any = {};
-          objS.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-          objS.product_id = v.product_id;
-          objS.generic_id = v.generic_id;
-          objS.unit_generic_id = v.unit_generic_id;
-          objS.transaction_type = TransactionType.RECEIVE_OTHER;
-          objS.document_ref_id = v.receive_other_id;
-          objS.document_ref = v.receive_code;
-          objS.in_qty = qty;
-          objS.in_unit_cost = (v.cost * v.receive_qty) / qty;
+            let objS: any = {};
+            objS.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
+            objS.product_id = v.product_id;
+            objS.generic_id = v.generic_id;
+            objS.unit_generic_id = v.unit_generic_id;
+            objS.transaction_type = TransactionType.RECEIVE_OTHER;
+            objS.document_ref_id = v.receive_other_id;
+            objS.document_ref = v.receive_code;
+            objS.in_qty = qty;
+            objS.in_unit_cost = (v.cost * v.receive_qty) / qty;
 
-          let balance = 0;
-          let balance_generic = 0;
-          let balanceLot = 0;
-          let idxB = _.findIndex(balances, {
-            product_id: v.product_id,
-            warehouse_id: v.warehouse_id
-          });
+            let balance = 0;
+            let balance_generic = 0;
+            let balanceLot = 0;
+            let idxB = _.findIndex(balances, {
+              product_id: v.product_id,
+              warehouse_id: v.warehouse_id
+            });
 
-          if (idxB > -1) {
-            balance = balances[idxB].balance + qty;
-            balance_generic = balances[idxB].balance_generic + qty;
-            balances[idxB].balance += qty;
-            balances[idxB].balance_generic += qty;
+            if (idxB > -1) {
+              balance = balances[idxB].balance + qty;
+              balance_generic = balances[idxB].balance_generic + qty;
+              balances[idxB].balance += qty;
+              balances[idxB].balance_generic += qty;
+            }
+
+            const bl = await receiveModel.getBalanceLot(db, v.warehouse_id, v.product_id, v.lot_no, obj.lot_time);
+            balanceLot = bl[0].length == 0 ? qty : bl[0][0].balanceLot;
+
+            objS.balance_lot_qty = balanceLot;
+            objS.balance_qty = balance;
+            objS.balance_generic_qty = balance_generic;
+            objS.balance_unit_cost = _cost;
+            objS.ref_src = v.donator_id;
+            objS.ref_dst = v.warehouse_id;
+            objS.comment = 'รับเข้าคลังแบบอื่นๆ';
+            objS.lot_no = v.lot_no;
+            objS.lot_time = lotTime;
+            objS.expired_date = expiredDate;
+            objS.wm_product_id_in = id;
+            // data.push(objS);
+
+            //////////////////////////////////////////
+            // await receiveModel.saveProducts(db, products);
+            await stockcard.saveFastStockTransaction(db, objS);
           }
-
-          const bl = await receiveModel.getBalanceLot(db, v.warehouse_id, v.product_id, v.lot_no, obj.lot_time);
-          balanceLot = bl[0].length == 0 ? qty : bl[0][0].balanceLot;
-
-          objS.balance_lot_qty = balanceLot;
-          objS.balance_qty = balance;
-          objS.balance_generic_qty = balance_generic;
-          objS.balance_unit_cost = _cost;
-          objS.ref_src = v.donator_id;
-          objS.ref_dst = v.warehouse_id;
-          objS.comment = 'รับเข้าคลังแบบอื่นๆ';
-          objS.lot_no = v.lot_no;
-          objS.lot_time = lotTime;
-          objS.expired_date = expiredDate;
-          objS.wm_product_id_in = id;
-          // data.push(objS);
-
-          //////////////////////////////////////////
-          // await receiveModel.saveProducts(db, products);
-          await stockcard.saveFastStockTransaction(db, objS);
         }
         res.send({ ok: true });
       } else {
