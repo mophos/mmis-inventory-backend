@@ -76,6 +76,7 @@ router.get('/listall', (req, res, next) => {
 });
 
 router.post('/', wrap(async (req, res, next) => {
+  let warehouseDesc = req.body.warehouseDesc;
   let warehouseName = req.body.warehouseName;
   let shortCode = req.body.shortCode;
   let location = req.body.location;
@@ -90,6 +91,7 @@ router.post('/', wrap(async (req, res, next) => {
 
   if (warehouseName && hospcode && depCode) {
     let datas: any = {
+      warehouse_desc: warehouseDesc,
       warehouse_name: warehouseName,
       short_code: shortCode,
       location: location,
@@ -135,6 +137,7 @@ router.post('/', wrap(async (req, res, next) => {
 router.put('/:warehouseId', wrap(async (req, res, next) => {
   let warehouseId = req.params.warehouseId;
   let warehouseName = req.body.warehouseName;
+  let warehouseDesc = req.body.warehouseDesc;
   let shortCode = req.body.shortCode;
   let location = req.body.location;
   let isActived = req.body.isActived;
@@ -148,6 +151,7 @@ router.put('/:warehouseId', wrap(async (req, res, next) => {
 
   let datas: any = {
     warehouse_name: warehouseName,
+    warehouse_desc: warehouseDesc,
     short_code: shortCode,
     location: location,
     is_actived: isActived,

@@ -1327,7 +1327,7 @@ router.post('/purchases/list', co(async (req, res, nex) => {
       hosp_code: hospcode
     }
     // --------------------
-
+    
     for (const r of rows[0]) {
       if (r.is_edi == 'Y') {
         data.po_no = r.purchase_order_number
