@@ -227,17 +227,19 @@ export class ReturnBudgetModel {
   insertBudgetTransaction(db: Knex, purchaseId: any, returnPrice: any) {
     let sql = `
     insert into pc_budget_transection(
-      purchase_order_id, view_bgdetail_id, incoming_balance, amount, balance
-      , date_time, transaction_status, remark)
+      purchase_order_id, view_bgdetail_id, bgdetail_id, incoming_balance, amount, balance
+      , date_time, transaction_status, remark, appropriation_budget )
     select 
       pc.purchase_order_id
-      , pc.budget_detail_id
+      , trx.view_bgdetail_id
+      , trx.bgdetail_id
       , IFNULL(trx.balance, 0) as incoming
       , ?
       , IFNULL(trx.balance, 0) - ?
       , current_timestamp() as date_time
       , 'SPEND'
       , 'คืนงบจากการปิดรับ'
+      , trx.appropriation_budget
     from pc_purchasing_order pc
     left join pc_budget_transection trx on trx.transection_id = (
     select max(transection_id)
