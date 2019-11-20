@@ -76,11 +76,12 @@ router.get('/listall', (req, res, next) => {
 });
 
 router.post('/', wrap(async (req, res, next) => {
+  let warehouseDesc = req.body.warehouseDesc;
   let warehouseName = req.body.warehouseName;
+  let telDept = req.body.telDept;
   let shortCode = req.body.shortCode;
   let location = req.body.location;
   let isActived = req.body.isActived;
-  let isReceive = req.body.isReceive;
   let isUnitIssue = req.body.isUnitIssue;
   let hospcode = req.body.hospcode;
   let depCode = req.body.depCode;
@@ -90,6 +91,8 @@ router.post('/', wrap(async (req, res, next) => {
 
   if (warehouseName && hospcode && depCode) {
     let datas: any = {
+      tel: telDept,
+      warehouse_desc: warehouseDesc,
       warehouse_name: warehouseName,
       short_code: shortCode,
       location: location,
@@ -99,7 +102,7 @@ router.post('/', wrap(async (req, res, next) => {
       warehouse_book: book,
       created_at: moment().format('YYYY-MM-DD HH:mm:ss')
     };
-    
+
     try {
       let rs: any = await warehouseModel.save(db, datas);
       let warehouseId = rs[0];
@@ -135,10 +138,11 @@ router.post('/', wrap(async (req, res, next) => {
 router.put('/:warehouseId', wrap(async (req, res, next) => {
   let warehouseId = req.params.warehouseId;
   let warehouseName = req.body.warehouseName;
+  let warehouseDesc = req.body.warehouseDesc;
+  let telDept = req.body.telDept;
   let shortCode = req.body.shortCode;
   let location = req.body.location;
   let isActived = req.body.isActived;
-  let isReceive = req.body.isReceive;
   let isUnitIssue = req.body.isUnitIssue;
   let hospcode = req.body.hospcode;
   let depCode = req.body.depCode;
@@ -147,18 +151,20 @@ router.put('/:warehouseId', wrap(async (req, res, next) => {
   let db = req.db;
 
   let datas: any = {
+    tel: telDept,
     warehouse_name: warehouseName,
+    warehouse_desc: warehouseDesc,
     short_code: shortCode,
     location: location,
     is_actived: isActived,
     is_unit_issue: isUnitIssue,
     his_hospcode: hospcode,
     warehouse_book: book,
-    his_dep_code:depCode
+    his_dep_code: depCode
   }
 
   let dataWarehouse = [];
-  
+
   let _depCode = [];
   if (depCode) {
     _depCode = depCode.split(',');
