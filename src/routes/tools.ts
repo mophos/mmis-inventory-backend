@@ -868,7 +868,8 @@ router.get('/stockcard/history', async (req, res, next) => {
 
 router.get('/calculate/stockcard', async (req, res, next) => {
   let db = req.db;
-  let warehouseId = req.decoded.warehouseId;
+  let warehouseId = req.query.warehouseId;
+  console.log(warehouseId);
   try {
     let generics = await toolModel.adjustStock1(db, warehouseId);
     for (const g of generics[0]) {
