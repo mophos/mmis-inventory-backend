@@ -2901,6 +2901,7 @@ OR sc.ref_src like ?
         LEFT JOIN mm_units AS ut ON ut.unit_id = mug.to_unit_id
         WHERE
         wis.issue_id=?
+        AND wip.qty > 0
         `;
 
         return knex.raw(sql, [issueId]);
