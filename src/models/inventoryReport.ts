@@ -4617,7 +4617,7 @@ ORDER BY mg.generic_name
             .join('wm_warehouses as ww', 'ww.warehouse_id', 'sc.ref_dst')
             .where('sc.out_qty', '>', 0)
             .where('sc.warehouse_id', warehouseId)
-            .whereBetween('sc.stock_date', [startDate, endDate])
+            .whereBetween('sc.stock_date', [startDate + ' 00:00:00', endDate + ' 23:59:59'])
             .whereIn('mg.generic_type_id', genericTypeId)
             .groupBy('sc.ref_dst');
         return sql;
