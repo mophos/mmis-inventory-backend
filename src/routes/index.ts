@@ -6361,13 +6361,13 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
         ws.cell(cell, 1, cell, 2, true).string('จ่ายให้');
         ws.cell(cell, 3, cell, 8, true).string(h.warehouse_name);
 
-        const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting)
+        const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting, warehouseId)
         if (type) {
           for (const t of type) {
             cell++;
             ws.cell(cell, 1, cell, 8, true).string(t.generic_type_name);
             let priceGenericType = 0;
-            const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting)
+            const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting, warehouseId)
             if (detail) {
               for (const d of detail) {
                 cell++;
@@ -6502,13 +6502,13 @@ router.get('/report/requisition/generic/excel/sum', wrap(async (req, res, next) 
 
         // cell++;
 
-        const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting)
+        const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting, warehouseId)
         if (type) {
           for (const t of type) {
             // cell++;
             // ws.cell(cell, 1, cell, 8, true).string(t.generic_type_name);
             let priceGenericType = 0;
-            const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting)
+            const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting, warehouseId)
             if (detail) {
               for (const d of detail) {
                 cell++;
@@ -6593,12 +6593,12 @@ router.get('/report/requisition/generic', wrap(async (req, res, next) => {
         let priceWarehouse = 0;
         let no = 0;
 
-        const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting)
+        const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting, warehouseId)
         if (type) {
           for (const t of type) {
             let _detail: any = []
             let priceGenericType = 0;
-            const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting)
+            const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting, warehouseId)
             if (detail) {
               for (const d of detail) {
                 priceWarehouse += d.cost;
