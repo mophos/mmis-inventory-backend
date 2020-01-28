@@ -1,0 +1,79 @@
+include css.pug
+style(media='print').
+style(type='text/css').
+  @page{
+    margin-top: 1.5cm;
+    margin-left: 0.3cm;
+    margin-right: 0.3cm;
+ }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success(onclick='window.print()') Print
+    table.table
+      thead
+        tr
+          td.center.bold(colspan='12') #{hospitalName}
+        tr
+          td.center.bold(colspan='12') รายงานสรุปงานคลัง แยกรายการ
+        tr
+          td.center(colspan='12') ตั้งแต่วันที่ #{startDate} ถึงวันที่ #{endDate}
+        tr
+          td.left(colspan='12') ณ คลังสินค้า #{warehouseName}
+        tr
+          td.left(colspan='12') #{printDate}
+        tr
+          th(style="border-style: solid;border-width: 2px 1px 2px 1px;" rowspan="2") ลำดับ
+          th(style="border-style: solid;border-width: 2px 1px 2px 1px;" rowspan="2") รายการ
+          th(style="border-style: solid;border-width: 2px 1px 2px 1px;" colspan="2") ยอดยกมา
+          th(style="border-style: solid;border-width: 2px 1px 2px 1px;" colspan="2") รับเข้า
+          th(style="border-style: solid;border-width: 2px 1px 2px 1px;" colspan="2") จ่ายออก
+          th(style="border-style: solid;border-width: 2px 1px 2px 1px;" rowspan="2") กลุ่มยา 1
+          th(style="border-style: solid;border-width: 2px 1px 2px 1px;" rowspan="2") กลุ่มยา 2
+          th(style="border-style: solid;border-width: 2px 1px 2px 1px;" rowspan="2") กลุ่มยา 3
+          th(style="border-style: solid;border-width: 2px 1px 2px 1px;" rowspan="2") กลุ่มยา 4
+        tr
+          td.center(style="border-style: solid;border-width: 2px 1px 2px 1px;") จำนวน
+          td.center(style="border-style: solid;border-width: 2px 1px 2px 1px;") รวมมูลค่า
+          td.center(style="border-style: solid;border-width: 2px 1px 2px 1px;") จำนวน
+          td.center(style="border-style: solid;border-width: 2px 1px 2px 1px;") รวมมูลค่า
+          td.center(style="border-style: solid;border-width: 2px 1px 2px 1px;") จำนวน
+          td.center(style="border-style: solid;border-width: 2px 1px 2px 1px;") รวมมูลค่า
+      tbody
+        - var y = 0
+        - for(var b of data)
+          - y++
+          tr
+            td.center(style="border:1px solid;") #{y}
+            td.left(style="border:1px solid;") #{b.generic_name}
+            td.right(style="border:1px solid;") #{b.remain_qty}
+            td.right(style="border:1px solid;") #{b.remain_cost}
+            td.right(style="border:1px solid;") #{b.in_qty}
+            td.right(style="border:1px solid;") #{b.in_cost}
+            td.right(style="border:1px solid;") #{b.out_qty}
+            td.right(style="border:1px solid;") #{b.out_cost}
+            td.left(style="border:1px solid;") 
+              if(b.group_name_1)
+                | #{b.group_name_1}
+              else
+                | -
+            td.left(style="border:1px solid;") 
+              if(b.group_name_2)
+                | #{b.group_name_2}
+              else
+                | -
+            td.left(style="border:1px solid;") 
+              if(b.group_name_3)
+                | #{b.group_name_3}
+              else
+                | -
+            td.left(style="border:1px solid;") 
+              if(b.group_name_4)
+                | #{b.group_name_4}
+              else
+                | -
+      tfooter 
+        tr
