@@ -179,9 +179,9 @@ export class MainReportModel {
       where 
         r.receive_date between ? and ?
         `
-        if(genericTypeId != 0) sql +=`and gt.generic_type_id = ?`
-        else sql +=`and gt.generic_type_id != ?`
-      sql += `group by
+    if (genericTypeId != 0) sql += `and gt.generic_type_id = ?`
+    else sql += `and gt.generic_type_id != ?`
+    sql += `group by
         r.receive_id,
         l.labeler_id,
         gt.generic_type_id
@@ -191,5 +191,79 @@ export class MainReportModel {
     return knex.raw(sql, [startDate, endDate, genericTypeId]);
 
   }
+
+  monthlyReportGeneric(knex: Knex, startDate: any, endDate: any, genericTypeId: any, warehouseId: any, dateSetting: any) {
+    var sql = `
+    SELECT
+      a.generic_id,
+      mg.working_code AS generic_code,
+      a.generic_name,
+      a.remain_qty,
+      a.remain_cost,
+      b.in_qty,
+      b.in_cost,
+      b.out_qty,
+      b.out_cost,
+      mgg1.group_name_1,
+      mgg2.group_name_2,
+      mgg3.group_name_3,
+      mgg4.group_name_4
+      FROM
+        (
+      SELECT
+        vscn.generic_id,
+        vscn.generic_name,
+        sum( vscn.in_qty - vscn.out_qty ) AS remain_qty,
+        sum( vscn.in_cost - vscn.out_cost ) AS remain_cost 
+      FROM
+        view_stock_card_new AS vscn 
+      WHERE
+        vscn.src_warehouse_id = ? `
+    if (dateSetting == 'stock_date') {
+      sql += `AND vscn.stock_date <= ?`
+    } else if (dateSetting == 'create_date') {
+      sql += `AND vscn.create_date <= ?`
+    }
+    sql += `
+      GROUP BY
+        vscn.generic_id 
+        ) AS a
+        LEFT JOIN (
+      SELECT
+        vscn.generic_id,
+        sum( vscn.in_qty ) AS in_qty,
+        sum( vscn.out_qty ) AS out_qty,
+        sum( vscn.in_cost ) AS in_cost,
+        sum( vscn.out_cost ) AS out_cost 
+      FROM
+        view_stock_card_new AS vscn 
+      WHERE
+        vscn.src_warehouse_id = ?`
+    if (dateSetting == 'stock_date') {
+      sql += `AND vscn.stock_date BETWEEN ? 
+      AND ?`
+    } else if (dateSetting == 'create_date') {
+      sql += `AND vscn.create_date BETWEEN ? 
+      AND ?`
+    }
+    sql += ` GROUP BY
+        vscn.generic_id 
+        ) AS b ON a.generic_id = b.generic_id
+      JOIN mm_generics AS mg ON mg.generic_id = a.generic_id
+      LEFT JOIN mm_generic_group_1 as mgg1 ON mgg1.group_code_1 = mg.group_code_1
+      LEFT JOIN mm_generic_group_2 as mgg2 ON mgg2.group_code_2 = mg.group_code_2 AND mgg2.group_code_1 = mg.group_code_1
+      LEFT JOIN mm_generic_group_3 as mgg3 ON mgg3.group_code_3 = mg.group_code_3 AND mgg3.group_code_1 = mg.group_code_1 AND mgg3.group_code_2 = mg.group_code_2
+      LEFT JOIN mm_generic_group_4 as mgg4 ON mgg4.group_code_4 = mg.group_code_4 AND mgg3.group_code_1 = mg.group_code_1 AND mgg3.group_code_2 = mg.group_code_2 AND mgg3.group_code_3 = mg.group_code_3
+      WHERE
+        mg.generic_type_id IN ( ? ) 
+      ORDER BY
+        mg.generic_type_id,
+        mg.generic_name
+  `
+    return knex.raw(sql, [warehouseId, startDate, warehouseId, startDate, endDate, genericTypeId]);
+
+  }
+
+
 
 }

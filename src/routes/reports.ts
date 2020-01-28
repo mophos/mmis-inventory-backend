@@ -764,7 +764,121 @@ router.get('/exports/financialData', wrap(async (req, res, next) => {
   } catch (error) {
     res.send({ ok: false, error: error.message });
   }
+}));
+
+router.get('/monthly-report-generic', wrap(async (req, res, next) => {
+  const db = req.db;
+  const hospitalDetail = await mainReportModel.hospital(db);
+  const warehouseId = req.query.warehouseId;
+  const warehouseName = req.query.warehouseName
+  let startDate = req.query.startDate
+  let endDate = req.query.endDate
+  let genericType = req.query.genericTypes
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
+  let data: any = [];
+  genericType = Array.isArray(genericType) ? genericType : [genericType];
+
+  startDate = startDate + ' 00:00:00'
+  endDate = endDate + ' 23:59:59'
+
+  try {
+    let rs: any = await mainReportModel.monthlyReportGeneric(db, startDate, endDate, genericType, warehouseId, dateSetting);
+    rs = rs[0]
+
+    for (const i of rs) {
+      i.remain_qty = inventoryReportModel.commaQty(i.remain_qty)
+      i.remain_cost = inventoryReportModel.comma(i.remain_cost)
+      i.in_qty = inventoryReportModel.commaQty(i.in_qty)
+      i.in_cost = inventoryReportModel.comma(i.in_cost)
+      i.out_qty = inventoryReportModel.commaQty(i.out_qty)
+      i.out_cost = inventoryReportModel.comma(i.out_cost)
+      if (i.remain_qty != 0 || i.in_qty != 0 || i.out_qty != 0) {
+        data.push(i)
+      }
+    }
+    startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
+    endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+
+    res.render('monthlyReportGeneric', {
+      hospitalDetail: hospitalDetail,
+      printDate: printDate(req.decoded.SYS_PRINT_DATE),
+      data: data,
+      startDate: startDate,
+      endDate: endDate,
+      warehouseName: warehouseName,
+    });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
 
 }));
+
+router.get('/exports/monthly-report-generic', wrap(async (req, res, next) => {
+  const db = req.db;
+  const hospitalDetail = await mainReportModel.hospital(db);
+  const warehouseId = req.query.warehouseId;
+  const warehouseName = req.query.warehouseName
+  let startDate = req.query.startDate
+  let endDate = req.query.endDate
+  let genericType = req.query.genericTypes
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
+  let data: any = [];
+  genericType = Array.isArray(genericType) ? genericType : [genericType];
+
+  startDate = startDate + ' 00:00:00'
+  endDate = endDate + ' 23:59:59'
+
+  try {
+    let rs: any = await mainReportModel.monthlyReportGeneric(db, startDate, endDate, genericType, warehouseId, dateSetting);
+    rs = rs[0]
+    for (const i of rs) {
+      i.remain_qty = inventoryReportModel.commaQty(i.remain_qty)
+      i.remain_cost = inventoryReportModel.comma(i.remain_cost)
+      i.in_qty = inventoryReportModel.commaQty(i.in_qty)
+      i.in_cost = inventoryReportModel.comma(i.in_cost)
+      i.out_qty = inventoryReportModel.commaQty(i.out_qty)
+      i.out_cost = inventoryReportModel.comma(i.out_cost)
+      if (i.remain_qty != 0 || i.in_qty != 0 || i.out_qty != 0) {
+        data.push(i)
+      }
+    }
+    startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
+    endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
+
+    let json = []
+    let y: any = 0
+    _.forEach(data, (v: any) => {
+      y++;
+      json.push({
+        'ลำดับ': y,
+        'รายการ': v.generic_name,
+        'จำนวนยอดยกมา': v.remain_qty,
+        'มูลค่ายอดยกมา': v.remain_cost,
+        'จำนวนรับเข้า': v.in_qty,
+        'มูลค่ารับเข้า': v.in_cost,
+        'จำนวนจ่ายออก': v.out_qty,
+        'มูลค่าจ่ายออก': v.out_cost,
+        'กลุ่มยา 1': v.group_name_1 || '-',
+        'กลุ่มยา 2': v.group_name_2 || '-',
+        'กลุ่มยา 3': v.group_name_3 || '-',
+        'กลุ่มยา 4': v.group_name_4 || '-',
+      })
+    });
+
+    const xls = json2xls(json);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'รายงานสรุปงานคลัง แยกรายการ' + startDate + '-' + endDate + '.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'รายงานสรุปงานคลัง แยกรายการ' + startDate + '-' + endDate + '.xlsx');
+
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+}));
+
+
 
 export default router;
