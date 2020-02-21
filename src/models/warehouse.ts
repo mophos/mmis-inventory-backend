@@ -703,12 +703,6 @@ export class WarehouseModel {
   }
 
 
-  deleteTemplate(knex: Knex, templateId: string) {
-    return knex('wm_requisition_template')
-      .where('template_id', templateId)
-      .del();
-  }
-
   deleteTemplateItemsIssue(knex: Knex, templateId: string) {
     return knex('wm_issue_template_detail')
       .where('template_id', templateId)

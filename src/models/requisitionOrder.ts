@@ -944,7 +944,8 @@ export class RequisitionOrderModel {
     return db('wm_requisition_template')
       .select('template_id', 'template_subject')
       .where('dst_warehouse_id', dstWarehouseId)
-      .where('src_warehouse_id', srcWarehouseId);
+      .where('src_warehouse_id', srcWarehouseId)
+      .where('mark_deleted', 'N');
   }
 
   getTemplateItems(db: Knex, templateId: any) {
