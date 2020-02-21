@@ -540,7 +540,8 @@ mgt.generic_type_id `
     AND vscw.stock_date < '${endDate} 23:59:59'
     GROUP BY
         vscw.unit_generic_id,
-        vscw.lot_no`
+        vscw.lot_no,
+        vscw.expired_date`
         return knex.raw(sql)
     }
 
@@ -4694,6 +4695,31 @@ ORDER BY mg.generic_name
             .groupBy('sc.generic_id', 'sc.document_ref', 'sc.document_ref_id', 'sc.transaction_type');
         return sql
     }
+
+    payToWarehouseGenericTypeDetail2(knex: Knex, startDate, endDate, genericTypeId, dateSetting, warehousePay) {
+        let view = dateSetting ? 'view_stock_card_warehouse AS sc' : 'view_stock_card_warehouse_date AS sc'
+        let sql = knex(view)
+            .select('ww.warehouse_id', 'ww.warehouse_name')
+            .select('mgt.generic_type_id', 'mgt.generic_type_name')
+            .select('g1.group_name_1', 'g2.group_name_2', 'g3.group_name_3', 'g4.group_name_4', 'mg.generic_id', 'mg.generic_name', 'sc.document_ref as requisition_code', 'sc.stock_date as approve_date', 'mu.unit_name',
+                knex.raw('sum(sc.out_qty) as qty'), knex.raw('avg(sc.out_unit_cost) as unit_cost'), knex.raw('sum(sc.out_qty * sc.out_unit_cost) as cost'))
+            .join('mm_generics as mg', 'sc.generic_id', 'mg.generic_id')
+            .join('wm_warehouses as ww', 'ww.warehouse_id', 'sc.ref_dst')
+            .join('mm_generic_types as mgt', 'mgt.generic_type_id', 'mg.generic_type_id')
+
+            .joinRaw('LEFT JOIN mm_generic_group_1 AS g1 ON g1.group_code_1 = mg.group_code_1 LEFT JOIN mm_generic_group_2 AS g2 ON g2.group_code_2 = mg.group_code_2 and g1.group_code_1 = g2.group_code_1 LEFT JOIN mm_generic_group_3 AS g3 ON g3.group_code_3 = mg.group_code_3 and g1.group_code_1 = g3.group_code_1  and g2.group_code_2 = g3.group_code_2 LEFT JOIN mm_generic_group_4 AS g4 ON g4.group_code_4 = mg.group_code_4 and g1.group_code_1 = g4.group_code_1  and g2.group_code_2 = g4.group_code_2 and g3.group_code_3 = g4.group_code_3 INNER JOIN mm_units AS mu ON mg.primary_unit_id = mu.unit_id')
+            // .join('wm_warehouses as ww', 'ww.warehouse_id', 'sc.ref_dst')
+            .where('sc.out_qty', '>', 0)
+            // .where('sc.ref_dst', warehouseId)
+
+            .where('sc.warehouse_id', warehousePay)
+            .whereBetween('sc.stock_date', [startDate + ' 00:00:00', endDate + ' 23:59:59'])
+            .whereIn('mg.generic_type_id', genericTypeId)
+            .groupBy('sc.generic_id', 'sc.document_ref', 'sc.document_ref_id', 'sc.transaction_type').groupBy('sc.ref_dst')
+            .orderBy('sc.ref_dst').orderBy('mgt.generic_type_id').orderBy('sc.generic_id')
+        return sql
+    }
+    
     saveProcess(knex: Knex, data) {
         return knex('rp_report_process')
             .insert(data, 'id');

@@ -6290,7 +6290,39 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
     res.send({ ok: false, error: error.message })
   }
 }));
+async function setData(rs: any) {
+  return _.map(_.groupBy(rs, (v) => { return v.warehouse_id }), (v: any) => {
+    return {
+      warehouse_id: v[0].warehouse_id,
+      warehouse_name: v[0].warehouse_name,
+      price: _.sumBy(v, 'cost'),
+      priceWarehouse: _.sumBy(v, 'cost'),
+      data: _.map(_.groupBy(v, (_v) => { return _v.generic_type_id }), (dt: any) => {
+        return {
+          generic_type_id: dt[0].generic_type_id,
+          generic_type_name: dt[0].generic_type_name,
+          priceGenericType: _.sumBy(dt, 'cost'),
+          detail: _.map(dt, (d: any) => {
+            return {
+              generic_name: d.generic_name || '-',
+              approve_date: moment(d.approve_date).format('YYYY-MM-DD') || '-',
+              requisition_code: d.requisition_code || '-',
+              unit_cost: d.unit_cost || 0,
+              unit_name: d.unit_name || '-',
+              qty: d.qty || 0,
+              cost: d.cost || 0,
+              group_name_1: d.group_name_1 || '-',
+              group_name_2: d.group_name_2 || '-',
+              group_name_3: d.group_name_3 || '-',
+              group_name_4: d.group_name_4 || '-'
 
+            }
+          })
+        }
+      })
+    }
+  })
+}
 router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
   const db = req.db;
   const startDate = req.query.startDate;
@@ -6307,8 +6339,13 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
   const ws = wb.addWorksheet('Sheet 1');
   try {
     // const gn: any = await inventoryReportModel.getGenericType(db, genericTypeId);
-    const rs: any = await inventoryReportModel.payToWarehouse(db, startDate, endDate, genericTypeId, warehouseId, dateSetting)
+    // const rs: any = await inventoryReportModel.payToWarehouse(db, startDate, endDate, genericTypeId, warehouseId, dateSetting)
+    const rs: any = await inventoryReportModel.payToWarehouseGenericTypeDetail2(db, startDate, endDate, genericTypeId, dateSetting, warehouseId)
+
     if (rs) {
+
+      let _data: any = await setData(rs);
+      // if (rs) {
 
       var textBold = wb.createStyle({
         font: {
@@ -6353,7 +6390,7 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
       let cell = 2;
 
       let priceAll = 0;
-      for (const h of rs) {
+      for (const h of _data) {
         let priceWarehouse = 0;
         let no = 0;
 
@@ -6361,15 +6398,15 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
         ws.cell(cell, 1, cell, 2, true).string('จ่ายให้');
         ws.cell(cell, 3, cell, 8, true).string(h.warehouse_name);
 
-        const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting, warehouseId)
-        if (type) {
-          for (const t of type) {
+        // const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting, warehouseId)
+        if (h) {
+          for (const t of h.data) {
             cell++;
             ws.cell(cell, 1, cell, 8, true).string(t.generic_type_name);
             let priceGenericType = 0;
-            const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting, warehouseId)
-            if (detail) {
-              for (const d of detail) {
+            // const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting, warehouseId)
+            if (t.detail) {
+              for (const d of t.detail) {
                 cell++;
                 ws.cell(cell, 1).number(no++);
                 ws.cell(cell, 2, cell, 4, true).string(d.generic_name);
@@ -6445,9 +6482,10 @@ router.get('/report/requisition/generic/excel/sum', wrap(async (req, res, next) 
   const ws = wb.addWorksheet('Sheet 1');
   try {
     // const gn: any = await inventoryReportModel.getGenericType(db, genericTypeId);
-    const rs: any = await inventoryReportModel.payToWarehouse(db, startDate, endDate, genericTypeId, warehouseId, dateSetting)
+    // const rs: any = await inventoryReportModel.payToWarehouse(db, startDate, endDate, genericTypeId, warehouseId, dateSetting)
+    const rs: any = await inventoryReportModel.payToWarehouseGenericTypeDetail2(db, startDate, endDate, genericTypeId, dateSetting, warehouseId)
     if (rs) {
-
+      let _data: any = await setData(rs);
       var textBold = wb.createStyle({
         font: {
           // color: '#FF0800',
@@ -6496,21 +6534,21 @@ router.get('/report/requisition/generic/excel/sum', wrap(async (req, res, next) 
       let cell = 2;
 
       let priceAll = 0;
-      for (const h of rs) {
+      for (const h of _data) {
         let priceWarehouse = 0;
         let no = 1;
 
         // cell++;
 
-        const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting, warehouseId)
-        if (type) {
-          for (const t of type) {
+        // const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting, warehouseId)
+        if (h.data) {
+          for (const t of h.data) {
             // cell++;
             // ws.cell(cell, 1, cell, 8, true).string(t.generic_type_name);
             let priceGenericType = 0;
-            const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting, warehouseId)
-            if (detail) {
-              for (const d of detail) {
+            // const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting, warehouseId)
+            if (t.detail) {
+              for (const d of t.detail) {
                 cell++;
                 ws.cell(cell, 1).number(no++);
                 ws.cell(cell, 2, cell, 4, true).string(d.generic_name);
@@ -6562,6 +6600,91 @@ router.get('/report/requisition/generic/excel/sum', wrap(async (req, res, next) 
   }
 }))
 
+// router.get('/report/requisition/generic2', wrap(async (req, res, next) => {
+//   const db = req.db;
+//   const startDate = req.query.startDate;
+//   const endDate = req.query.endDate;
+//   let genericTypeId = req.query.genericTypes;
+//   const warehouseName = req.query.warehouseName;
+//   genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
+//   const warehouseId = req.query.warehouseId;
+//   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
+//   let total_price = 0
+//   try {
+//     // const gn: any = await inventoryReportModel.getGenericType(db, genericTypeId);
+//     const rs: any = await inventoryReportModel.payToWarehouse(db, startDate, endDate, genericTypeId, warehouseId, dateSetting)
+
+//     if (rs) {
+
+//       // ws.cell(1, 1, 1, 6, true).string('สรุปยอดจ่ายระหว่างวันที่ ' + dateToDDMMMMYYYY(startDate) + ' ถึง ' + dateToDDMMMMYYYY(endDate)).style(textBold);
+//       // ws.cell(1, 7, 1, 8, true).string(gn[0].generic_type_name);
+
+//       // data.generic_type_name = gn[0].generic_type_name || '-'
+
+//       let data: any = []
+//       let priceAll = 0;
+
+//       for (const h of rs) {
+//         let _data: any = []
+//         let _rs: any = {}
+
+//         let priceWarehouse = 0;
+//         let no = 0;
+
+//         const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting, warehouseId)
+//         if (type) {
+//           for (const t of type) {
+//             let _detail: any = []
+//             let priceGenericType = 0;
+//             const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting, warehouseId)
+//             if (detail) {
+//               for (const d of detail) {
+//                 priceWarehouse += d.cost;
+//                 priceAll += d.cost;
+//                 priceGenericType += d.cost;
+//                 _detail.push({
+//                   no: inventoryReportModel.commaQty(no++) || '-',
+//                   generic_name: d.generic_name || '-',
+//                   date: moment(d.approve_date).format('YYYY-MM-DD') || '-',
+//                   requisition_code: d.requisition_code || '-',
+//                   unit_cost: inventoryReportModel.comma(d.unit_cost) || '-',
+//                   unit_name: d.unit_name || '-',
+//                   qty: inventoryReportModel.commaQty(d.qty) || '-',
+//                   cost: inventoryReportModel.comma(d.cost) || '-'
+//                 })
+//               }
+//             }
+//             _data.push({
+//               detail: _detail,
+//               generic_type_name: t.generic_type_name || '-',
+//               generic_type_id: t.generic_type_id || '',
+//               priceGenericType: inventoryReportModel.comma(priceGenericType) || '-'
+//             })
+//           }
+//         }
+//         data.push({
+//           data: _.orderBy(_data, 'generic_type_id'),
+//           payWith: h.warehouse_name || '-',
+//           priceWarehouse: inventoryReportModel.comma(priceWarehouse) || '-'
+//         })
+//         total_price += priceWarehouse
+//       }
+//       // res.send(_.orderBy(data,'warehouse_name'))
+//       res.render('pay_product', {
+//         warehouseName: warehouseName,
+//         startdate: dateToDDMMMMYYYY(startDate),
+//         enddate: dateToDDMMMMYYYY(endDate),
+//         data: _.orderBy(data, 'warehouse_name'),
+//         total_price: inventoryReportModel.comma(total_price)
+//       });
+
+//     } else {
+//       res.send({ ok: false, error: 'data error!!' })
+//     }
+//   } catch (error) {
+//     res.send({ ok: false, error: error.message })
+//   }
+// }))
 router.get('/report/requisition/generic', wrap(async (req, res, next) => {
   const db = req.db;
   const startDate = req.query.startDate;
@@ -6573,39 +6696,22 @@ router.get('/report/requisition/generic', wrap(async (req, res, next) => {
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
   let total_price = 0
   try {
-    // const gn: any = await inventoryReportModel.getGenericType(db, genericTypeId);
-    const rs: any = await inventoryReportModel.payToWarehouse(db, startDate, endDate, genericTypeId, warehouseId, dateSetting)
+    const rs: any = await inventoryReportModel.payToWarehouseGenericTypeDetail2(db, startDate, endDate, genericTypeId, dateSetting, warehouseId)
 
     if (rs) {
-
-      // ws.cell(1, 1, 1, 6, true).string('สรุปยอดจ่ายระหว่างวันที่ ' + dateToDDMMMMYYYY(startDate) + ' ถึง ' + dateToDDMMMMYYYY(endDate)).style(textBold);
-      // ws.cell(1, 7, 1, 8, true).string(gn[0].generic_type_name);
-
-      // data.generic_type_name = gn[0].generic_type_name || '-'
-
-      let data: any = []
-      let priceAll = 0;
-
-      for (const h of rs) {
-        let _data: any = []
-        let _rs: any = {}
-
-        let priceWarehouse = 0;
-        let no = 0;
-
-        const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting, warehouseId)
-        if (type) {
-          for (const t of type) {
-            let _detail: any = []
-            let priceGenericType = 0;
-            const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting, warehouseId)
-            if (detail) {
-              for (const d of detail) {
-                priceWarehouse += d.cost;
-                priceAll += d.cost;
-                priceGenericType += d.cost;
-                _detail.push({
-                  no: inventoryReportModel.commaQty(no++) || '-',
+      let _data = _.map(_.groupBy(rs, (v) => { return v.warehouse_id }), (v: any) => {
+        return {
+          warehouse_id: v[0].warehouse_id,
+          payWith: v[0].warehouse_name,
+          price: _.sumBy(v, 'cost'),
+          priceWarehouse: inventoryReportModel.comma(_.sumBy(v, 'cost')),
+          data: _.map(_.groupBy(v, (_v) => { return _v.generic_type_id }), (dt: any) => {
+            return {
+              generic_type_id: dt[0].generic_type_id,
+              generic_type_name: dt[0].generic_type_name,
+              priceGenericType: inventoryReportModel.comma(_.sumBy(dt, 'cost')),
+              detail: _.map(dt, (d: any) => {
+                return {
                   generic_name: d.generic_name || '-',
                   date: moment(d.approve_date).format('YYYY-MM-DD') || '-',
                   requisition_code: d.requisition_code || '-',
@@ -6613,33 +6719,70 @@ router.get('/report/requisition/generic', wrap(async (req, res, next) => {
                   unit_name: d.unit_name || '-',
                   qty: inventoryReportModel.commaQty(d.qty) || '-',
                   cost: inventoryReportModel.comma(d.cost) || '-'
-                })
-              }
+                }
+              })
             }
-            _data.push({
-              detail: _detail,
-              generic_type_name: t.generic_type_name || '-',
-              generic_type_id: t.generic_type_id || '',
-              priceGenericType: inventoryReportModel.comma(priceGenericType) || '-'
-            })
-          }
+          })
         }
-        data.push({
-          data: _.orderBy(_data, 'generic_type_id'),
-          payWith: h.warehouse_name || '-',
-          priceWarehouse: inventoryReportModel.comma(priceWarehouse) || '-'
-        })
-        total_price += priceWarehouse
-      }
-      // res.send(_.orderBy(data,'warehouse_name'))
+      })
+      /*
+            let data: any = []
+            let priceAll = 0;
+      
+            for (const h of rs) {
+              let _data: any = []
+              let _rs: any = {}
+      
+              let priceWarehouse = 0;
+              let no = 0;
+      
+              const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting, warehouseId)
+              if (type) {
+                for (const t of type) {
+                  let _detail: any = []
+                  let priceGenericType = 0;
+                  const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail2(db, startDate, endDate, genericTypeId, dateSetting, warehouseId)
+                  if (detail) {
+                    for (const d of detail) {
+                      priceWarehouse += d.cost;
+                      priceAll += d.cost;
+                      priceGenericType += d.cost;
+                      _detail.push({
+                        no: inventoryReportModel.commaQty(no++) || '-',
+                        generic_name: d.generic_name || '-',
+                        date: moment(d.approve_date).format('YYYY-MM-DD') || '-',
+                        requisition_code: d.requisition_code || '-',
+                        unit_cost: inventoryReportModel.comma(d.unit_cost) || '-',
+                        unit_name: d.unit_name || '-',
+                        qty: inventoryReportModel.commaQty(d.qty) || '-',
+                        cost: inventoryReportModel.comma(d.cost) || '-'
+                      })
+                    }
+                  }
+                  _data.push({
+                    detail: _detail,
+                    generic_type_name: t.generic_type_name || '-',
+                    generic_type_id: t.generic_type_id || '',
+                    priceGenericType: inventoryReportModel.comma(priceGenericType) || '-'
+                  })
+                }
+              }
+              data.push({
+                data: _.orderBy(_data, 'generic_type_id'),
+                payWith: h.warehouse_name || '-',
+                priceWarehouse: inventoryReportModel.comma(priceWarehouse) || '-'
+              })
+              total_price += priceWarehouse
+            }
+            */
       res.render('pay_product', {
         warehouseName: warehouseName,
         startdate: dateToDDMMMMYYYY(startDate),
         enddate: dateToDDMMMMYYYY(endDate),
-        data: _.orderBy(data, 'warehouse_name'),
-        total_price: inventoryReportModel.comma(total_price)
+        data: _.orderBy(_data, 'payWith'),
+        total_price: inventoryReportModel.comma(_.sumBy(_data, 'price'))
       });
-
+      // res.send(_data)
     } else {
       res.send({ ok: false, error: 'data error!!' })
     }
