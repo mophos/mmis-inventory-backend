@@ -346,7 +346,7 @@ router.post('/warehouse/save-minmax', co(async (req, res, next) => {
     let _items = [];
     items.forEach(v => {
       let obj: any = {};
-      obj.warehouse_id = warehouseId;
+      // obj.warehouse_id = warehouseId;
       obj.generic_id = v.generic_id;
       obj.primary_unit_id = v.primary_unit_id;
       obj.min_qty = +v.min_qty;
@@ -360,8 +360,8 @@ router.post('/warehouse/save-minmax', co(async (req, res, next) => {
     });
 
     try {
-      await warehouseModel.removeGenericPlanningMinMax(db, warehouseId);
-      await warehouseModel.saveGenericPlanningMinMax(db, _items);
+      // await warehouseModel.removeGenericPlanningMinMax(db, warehouseId);
+      await warehouseModel.saveGenericPlanningMinMax(db, _items, warehouseId);
       res.send({ ok: true });
     } catch (error) {
       console.log(error);

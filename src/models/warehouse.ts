@@ -635,9 +635,10 @@ export class WarehouseModel {
 
     return sql;
   }
-  saveGenericPlanningMinMax(db: Knex, items: any[]) {
+  saveGenericPlanningMinMax(db: Knex, items: any[], warehouseId: any) {
     return db('mm_generic_planning')
-      .insert(items);
+      .update(items)
+      .where('warehouse_id', warehouseId);
   }
 
   removeGenericPlanningMinMax(db: Knex, warehouseId: any) {
