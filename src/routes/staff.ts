@@ -361,7 +361,7 @@ router.post('/warehouse/save-minmax', co(async (req, res, next) => {
 
     try {
       // await warehouseModel.removeGenericPlanningMinMax(db, warehouseId);
-      await warehouseModel.saveGenericPlanningMinMax(db, _items, warehouseId);
+      await warehouseModel.updateGenericPlanningMinMax(db, _items, warehouseId);
       res.send({ ok: true });
     } catch (error) {
       console.log(error);
