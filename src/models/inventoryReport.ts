@@ -3431,6 +3431,8 @@ OR sc.ref_src like ?
     GROUP BY
         ws.product_id,
         ws.lot_no
+    HAVING
+        qty > 0
     ORDER BY
         mg.generic_type_id,
         mg.generic_name`
