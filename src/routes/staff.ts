@@ -340,12 +340,14 @@ router.post('/warehouse/save-minmax', co(async (req, res, next) => {
   let db = req.db;
 
   let items = req.body.items;
+  let rs = await warehouseModel.getGenericPlanning(db, warehouseId);
 
   try {
     if (items.length) {
-      let rs = await warehouseModel.getGenericPlanning(db, warehouseId);
-      let _items = [];
+      // let _items = [];
       for (const v of items) {
+        console.log(v);
+
         let idx = _.findIndex(rs, { generic_id: v.generic_id });
         if (idx > -1) {
           let obj: any = {};
@@ -360,7 +362,7 @@ router.post('/warehouse/save-minmax', co(async (req, res, next) => {
           obj.use_total = +v.use_total;
           obj.process_date = moment(_processDate).format('YYYY-MM-DD');
           // _items.push(obj);
-          await warehouseModel.updateGenericPlanningMinMax(db, _items, rs[idx].generic_planning_id);
+          await warehouseModel.updateGenericPlanningMinMax(db, obj, rs[idx].generic_planning_id);
         }
       }
 
