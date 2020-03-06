@@ -939,12 +939,14 @@ export class RequisitionOrderModel {
       .select('rt.template_id', 'rt.template_subject', 'wm.warehouse_name')
       .join('wm_warehouses as wm', 'wm.warehouse_id', 'rt.src_warehouse_id')
       .where('dst_warehouse_id', dstWarehouseId)
+      .where('mark_deleted', 'N');
   }
   getTemplate(db: Knex, srcWarehouseId: any, dstWarehouseId: any) {
     return db('wm_requisition_template')
       .select('template_id', 'template_subject')
       .where('dst_warehouse_id', dstWarehouseId)
-      .where('src_warehouse_id', srcWarehouseId);
+      .where('src_warehouse_id', srcWarehouseId)
+      .where('mark_deleted', 'N');
   }
 
   getTemplateItems(db: Knex, templateId: any) {
