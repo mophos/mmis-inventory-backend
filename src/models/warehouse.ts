@@ -1242,6 +1242,11 @@ export class WarehouseModel {
       .del();
   }
 
+  getGenericPlanning(knex: Knex, warehouseId: any) {
+    return knex('mm_generic_planning')
+      .where('warehouse_id', warehouseId)
+  }
+
   getWarehouseProductImport(knex: Knex, warehouseId: any) {
     return knex('import')
       .where('warehouse', warehouseId)
