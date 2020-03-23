@@ -219,7 +219,6 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
             to_unit_name: v.to_unit_name,
             unit_generic_id: v.unit_generic_id
           });
-          console.log(v.product_qty, 'xczxmc,nz.x,cvmnz.,xmcvnz.xm,cnvz,xcnv,zxcmnv');
         }
       } else {
         let idx: number = 0;
@@ -254,6 +253,47 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
               idx++;
             }
           }
+        }
+      }
+    }
+    res.send({ ok: true, rows: _generics });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/info-detail/stockcard/:borrowId', co(async (req, res, next) => {
+  let db = req.db;
+  let borrowId = req.params.borrowId;
+  let srcWarehouseId = req.decoded.warehouseId;
+
+  try {
+    const rsGenerics = await borrowModel.getGenericInfo(db, borrowId, srcWarehouseId);
+    let _generics = rsGenerics[0];
+    for (const g of _generics) {
+      g.products = [];
+      const detail = await borrowModel.getProductStockcardInfo(db, borrowId, g.borrow_generic_id);
+      if (detail[0].length) {
+        for (const v of detail[0]) {
+          g.products.push({
+            wm_product_id: v.wm_product_id,
+            product_id: v.product_id,
+            product_qty: v.product_qty > v.pack_remain_qty ? v.pack_remain_qty : v.product_qty,
+            generic_id: v.generic_id,
+            conversion_qty: v.conversion_qty,
+            product_name: v.product_name,
+            pack_remain_qty: v.pack_remain_qty,
+            small_remain_qty: v.small_remain_qty,
+            lot_no: v.lot_no,
+            lot_time: v.lot_time,
+            expired_date: v.expired_date,
+            from_unit_name: v.from_unit_name,
+            to_unit_name: v.to_unit_name,
+            unit_generic_id: v.unit_generic_id
+          });
         }
       }
     }
