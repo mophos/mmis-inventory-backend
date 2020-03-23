@@ -348,6 +348,14 @@ export class ToolModel {
       });
   }
 
+  updateBorrows(knex: Knex, borrowId, data) {
+    return knex('wm_borrow')
+      .where('borrow_id', borrowId)
+      .update({
+        'borrow_date': data.borrowDate
+      });
+  }
+
   updateRequisitionOrderItems(knex: Knex, requisitionId, genericId, unitGenericId, qty) {
     return knex('wm_requisition_order_items')
       .where('requisition_order_id', requisitionId)
@@ -358,11 +366,31 @@ export class ToolModel {
       })
   }
 
+  updateBorrowGenerics(knex: Knex, borrowId, genericId, unitGenericId, qty) {
+    return knex('wm_borrow_generic')
+      .where('borrow_id', borrowId)
+      .where('generic_id', genericId)
+      .update({
+        'unit_generic_id': unitGenericId,
+        'qty': qty
+      })
+  }
+
   updateRequisitionConfirmItems(knex: Knex, confirmId, wmProductId, qty) {
     return knex('wm_requisition_confirm_items')
       .where('confirm_id', confirmId)
       .where('wm_product_id', wmProductId)
       .update({
+        'confirm_qty': qty
+      })
+  }
+
+  updateBorrowProducts(knex: Knex, borrowGenericId, wmProductId, qty) {
+    return knex('wm_borrow_product')
+      .where('borrow_generic_id', borrowGenericId)
+      .where('wm_product_id', wmProductId)
+      .update({
+        'qty': qty,
         'confirm_qty': qty
       })
   }

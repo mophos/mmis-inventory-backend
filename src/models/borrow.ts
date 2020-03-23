@@ -357,13 +357,14 @@ export class BorrowModel {
 		b.borrow_id,
 		bg.borrow_generic_id,
 		bg.qty/ug.qty as qty,
-		FLOOR(bg.qty/ug.qty) as product_pack_qty,
+    FLOOR(bg.qty/ug.qty) as product_pack_qty,
+    (SELECT SUM(qty) FROM wm_borrow_product WHERE borrow_generic_id = bg.borrow_generic_id) as confirm_qty,
     mp.product_name, mg.generic_name, 
     fu.unit_name as from_unit_name, 
     ug.qty as conversion_qty, 
     tu.unit_name as to_unit_name
     from wm_borrow_generic as bg
-		join wm_borrow b on b.borrow_id = bg.borrow_id
+    join wm_borrow b on b.borrow_id = bg.borrow_id
 		join mm_products as mp on mp.generic_id = bg.generic_id
 		join mm_generics as mg on mg.generic_id = mp.generic_id
     join mm_unit_generics as ug on ug.unit_generic_id = bg.unit_generic_id
@@ -634,33 +635,66 @@ export class BorrowModel {
 
   getProductsInfo(knex: Knex, borrowId: any, borrowGenericId: any) {
     let sql = `SELECT
-    bp.*,
-    CEIL(bp.qty/ ug.qty) as product_qty,
-    FLOOR(wp.qty/ ug.qty) as pack_remain_qty,
-    wp.qty AS small_remain_qty,
-    wp.lot_no,
-    wp.lot_time,
-    wp.expired_date,
-    mp.product_name,
-    fu.unit_name AS from_unit_name,
-    ug.qty AS conversion_qty,
-    tu.unit_name AS to_unit_name,
-    ug.unit_generic_id
-  FROM
-    wm_borrow_product AS bp
-		JOIN wm_borrow_generic AS bg ON bg.borrow_generic_id = bp.borrow_generic_id
-    JOIN wm_products AS wp ON wp.wm_product_id = bp.wm_product_id
-    JOIN mm_unit_generics AS ug ON ug.unit_generic_id = wp.unit_generic_id
-    JOIN mm_products AS mp ON mp.product_id = wp.product_id
-    JOIN mm_units AS fu ON fu.unit_id = ug.from_unit_id
-    JOIN mm_units AS tu ON tu.unit_id = ug.to_unit_id 
-    LEFT JOIN view_product_reserve vr 
-    ON vr.wm_product_id = wp.wm_product_id 
-    AND vr.lot_no = wp.lot_no
-    WHERE
-    bp.borrow_id = ?
-    and bg.borrow_generic_id = ?
-    `;
+      bp.*,
+      CEIL(bp.qty/ ug.qty) as product_qty,
+      FLOOR(wp.qty/ ug.qty) as pack_remain_qty,
+      wp.qty AS small_remain_qty,
+      wp.lot_no,
+      wp.lot_time,
+      wp.expired_date,
+      mp.product_name,
+      fu.unit_name AS from_unit_name,
+      ug.qty AS conversion_qty,
+      tu.unit_name AS to_unit_name,
+      ug.unit_generic_id
+    FROM
+      wm_borrow_product AS bp
+      JOIN wm_borrow_generic AS bg ON bg.borrow_generic_id = bp.borrow_generic_id
+      JOIN wm_products AS wp ON wp.wm_product_id = bp.wm_product_id
+      JOIN mm_unit_generics AS ug ON ug.unit_generic_id = wp.unit_generic_id
+      JOIN mm_products AS mp ON mp.product_id = wp.product_id
+      JOIN mm_units AS fu ON fu.unit_id = ug.from_unit_id
+      JOIN mm_units AS tu ON tu.unit_id = ug.to_unit_id 
+      LEFT JOIN view_product_reserve vr 
+      ON vr.wm_product_id = wp.wm_product_id 
+      AND vr.lot_no = wp.lot_no
+      WHERE
+      bp.borrow_id = ?
+      and bg.borrow_generic_id = ?
+      `;
+    return knex.raw(sql, [borrowId, borrowGenericId]);
+  }
+
+  getProductStockcardInfo(knex: Knex, borrowId: any, borrowGenericId: any) {
+    let sql = `SELECT
+      bp.*,
+      CEIL(bp.qty/ ug.qty) as product_qty,
+      FLOOR(bp.confirm_qty/ ug.qty) as pack_remain_qty,
+      bp.confirm_qty AS small_remain_qty,
+      wp.lot_no,
+      wp.lot_time,
+      wp.expired_date,
+      wp.product_id,
+      mp.product_name,
+      fu.unit_name AS from_unit_name,
+      ug.qty AS conversion_qty,
+      tu.unit_name AS to_unit_name,
+      ug.unit_generic_id
+    FROM
+      wm_borrow_product AS bp
+      JOIN wm_borrow_generic AS bg ON bg.borrow_generic_id = bp.borrow_generic_id
+      JOIN wm_products AS wp ON wp.wm_product_id = bp.wm_product_id
+      JOIN mm_unit_generics AS ug ON ug.unit_generic_id = wp.unit_generic_id
+      JOIN mm_products AS mp ON mp.product_id = wp.product_id
+      JOIN mm_units AS fu ON fu.unit_id = ug.from_unit_id
+      JOIN mm_units AS tu ON tu.unit_id = ug.to_unit_id 
+      LEFT JOIN view_product_reserve vr 
+      ON vr.wm_product_id = wp.wm_product_id 
+      AND vr.lot_no = wp.lot_no
+      WHERE
+      bp.borrow_id = ?
+      and bg.borrow_generic_id = ?
+      `;
     return knex.raw(sql, [borrowId, borrowGenericId]);
   }
 
