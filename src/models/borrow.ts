@@ -357,13 +357,14 @@ export class BorrowModel {
 		b.borrow_id,
 		bg.borrow_generic_id,
 		bg.qty/ug.qty as qty,
-		FLOOR(bg.qty/ug.qty) as product_pack_qty,
+    FLOOR(bg.qty/ug.qty) as product_pack_qty,
+    (SELECT SUM(qty) FROM wm_borrow_product WHERE borrow_generic_id = bg.borrow_generic_id) as confirm_qty,
     mp.product_name, mg.generic_name, 
     fu.unit_name as from_unit_name, 
     ug.qty as conversion_qty, 
     tu.unit_name as to_unit_name
     from wm_borrow_generic as bg
-		join wm_borrow b on b.borrow_id = bg.borrow_id
+    join wm_borrow b on b.borrow_id = bg.borrow_id
 		join mm_products as mp on mp.generic_id = bg.generic_id
 		join mm_generics as mg on mg.generic_id = mp.generic_id
     join mm_unit_generics as ug on ug.unit_generic_id = bg.unit_generic_id

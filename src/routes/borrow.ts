@@ -205,7 +205,8 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
         for (const v of detail[0]) {
           g.products.push({
             wm_product_id: v.wm_product_id,
-            product_qty: v.product_qty,
+            old_product_qty: v.product_qty,
+            product_qty: v.product_qty > v.pack_remain_qty ? v.pack_remain_qty : v.product_qty,
             generic_id: v.generic_id,
             conversion_qty: v.conversion_qty,
             product_name: v.product_name,
@@ -218,6 +219,7 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
             to_unit_name: v.to_unit_name,
             unit_generic_id: v.unit_generic_id
           });
+          console.log(v.product_qty, 'xczxmc,nz.x,cvmnz.,xmcvnz.xm,cnvz,xcnv,zxcmnv');
         }
       } else {
         let idx: number = 0;
@@ -513,6 +515,7 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
               borrow_generic_id: rsBorrowGeneric[0],
               wm_product_id: p.wm_product_id ? p.wm_product_id : '',
               qty: p.product_qty * p.conversion_qty,
+              confirm_qty: p.product_qty * p.conversion_qty,
               create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
               create_by: req.decoded.people_user_id
             });
@@ -837,7 +840,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       }
 
       // =================================== STOCK CARD IN ========================
-      
+
       let remain_dst = await productModel.getBalance(db, v.product_id, v.dst_warehouse_id, v.lot_no, v.lot_time);
       remain_dst = remain_dst[0]
       let stockIn: any = {};
@@ -895,7 +898,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       await borrowModel.updateConfirm(db, obj);
     }
   }
-  await borrowModel.changeApproveStatusIds(db, borrowIds, peopleUserId);
+  // await borrowModel.changeApproveStatusIds(db, borrowIds, peopleUserId);
 
   return returnData;
 });
