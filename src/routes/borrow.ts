@@ -794,7 +794,10 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       }
     } else if (v.borrow_product_id === null) {
       const idx = _.findIndex(returnData, { 'src_warehouse_id': v.src_warehouse_id, 'dst_warehouse_id': v.dst_warehouse_id });
+      let generic = await borrowModel.getBorrowGeneric(db, v.borrow_generic_id);
 
+      console.log(generic, 'asdasdasdjskdfhaskldfjhaksdjfhaklsdhjf');
+      
       let product = [];
 
       if (idx > -1) {
@@ -938,7 +941,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       await borrowModel.updateConfirm(db, obj);
     }
   }
-  // await borrowModel.changeApproveStatusIds(db, borrowIds, peopleUserId);
+  await borrowModel.changeApproveStatusIds(db, borrowIds, peopleUserId);
 
   return returnData;
 });

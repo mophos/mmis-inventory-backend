@@ -355,7 +355,8 @@ export class BorrowModel {
     let sql = `select 
     b.approved,
 		b.borrow_id,
-		bg.borrow_generic_id,
+    bg.borrow_generic_id,
+    bg.qty as generic_qty,
 		bg.qty/ug.qty as qty,
     FLOOR(bg.qty/ug.qty) as product_pack_qty,
     (SELECT SUM(qty) FROM wm_borrow_product WHERE borrow_generic_id = bg.borrow_generic_id) as confirm_qty,
@@ -1062,5 +1063,10 @@ export class BorrowModel {
   getConversion(knex: Knex, unitGenericId: any) {
     return knex('mm_unit_generics')
       .where('unit_generic_id', unitGenericId);
+  }
+
+  getBorrowGeneric(knex: Knex, borrowGenericId) {
+    return knex('wm_borrow_generic as b')
+      .where('borrow_generic_id', borrowGenericId);
   }
 }
