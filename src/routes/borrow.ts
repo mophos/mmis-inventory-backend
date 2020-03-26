@@ -222,7 +222,7 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
         }
       } else {
         let idx: number = 0;
-        rsProducts = await borrowModel.getGenericQty(db, g.generic_id, srcWarehouseId);
+        rsProducts = await borrowModel.getGenericQty(db, g.borrow_generic_id, g.generic_id, srcWarehouseId);
         if (rsProducts[0].length) {
           for (const p of rsProducts[0]) {
             if (g.generic_id === p.generic_id) {
@@ -797,7 +797,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       let generic = await borrowModel.getBorrowGeneric(db, v.borrow_generic_id);
 
       console.log(generic, 'asdasdasdjskdfhaskldfjhaksdjfhaklsdhjf');
-      
+
       let product = [];
 
       if (idx > -1) {
