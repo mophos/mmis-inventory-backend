@@ -6331,6 +6331,7 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
   genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
   const warehouseId = req.query.warehouseId;
   const warehouseName = req.query.warehouseName;
+  let peopleId = req.decoded.peopleId
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
 
 
@@ -6343,10 +6344,10 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
     const rs: any = await inventoryReportModel.payToWarehouseGenericTypeDetail2(db, startDate, endDate, genericTypeId, dateSetting, warehouseId)
 
     if (rs) {
-
+      console.log('ssetData')
       let _data: any = await setData(rs);
       // if (rs) {
-
+      console.log('create excel')
       var textBold = wb.createStyle({
         font: {
           // color: '#FF0800',
@@ -6441,20 +6442,17 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
       // create directory
       fse.ensureDirSync(process.env.MMIS_TMP);
 
-      let filename = `สรุปยอดจ่าย${startDate}ถึง${endDate}.xlsx`;
-      filename = path.join(process.env.MMIS_TMP, filename);
-      wb.write(filename, function (err, stats) {
+      let filename = this.peopleId + `pay_product`+ moment().format('x');
+      let filenamePath = path.join(process.env.MMIS_TMP, filename + '.xlsx');
+
+      wb.write(filenamePath, function (err, stats) {
         if (err) {
           console.error(err);
           res.send({ ok: false, error: err })
         } else {
-          res.download(filename, (err) => {
-            if (err) {
-              res.send({ ok: false, message: err })
-            } else {
-              fse.removeSync(filename);
-            }
-          });
+          res.setHeader('Content-Type', 'application/vnd.openxmlformats');
+          res.setHeader("Content-Disposition", "attachment; filename=" + filename);
+          res.sendfile(filenamePath);
         }
       });
 
@@ -6485,7 +6483,10 @@ router.get('/report/requisition/generic/excel/sum', wrap(async (req, res, next) 
     // const rs: any = await inventoryReportModel.payToWarehouse(db, startDate, endDate, genericTypeId, warehouseId, dateSetting)
     const rs: any = await inventoryReportModel.payToWarehouseGenericTypeDetail2(db, startDate, endDate, genericTypeId, dateSetting, warehouseId)
     if (rs) {
+      console.log('ssetData')
       let _data: any = await setData(rs);
+      console.log('create excel')
+
       var textBold = wb.createStyle({
         font: {
           // color: '#FF0800',
@@ -6575,20 +6576,17 @@ router.get('/report/requisition/generic/excel/sum', wrap(async (req, res, next) 
       }
       fse.ensureDirSync(process.env.MMIS_TMP);
 
-      let filename = `สรุปยอดจ่าย${startDate}ถึง${endDate}.xlsx`;
-      filename = path.join(process.env.MMIS_TMP, filename);
-      wb.write(filename, function (err, stats) {
+      let filename = this.peopleId + `pay_product`+ moment().format('x');
+      let filenamePath = path.join(process.env.MMIS_TMP, filename + '.xlsx');
+
+      wb.write(filenamePath, function (err, stats) {
         if (err) {
           console.error(err);
           res.send({ ok: false, error: err })
         } else {
-          res.download(filename, (err) => {
-            if (err) {
-              res.send({ ok: false, message: err })
-            } else {
-              fse.removeSync(filename);
-            }
-          });
+          res.setHeader('Content-Type', 'application/vnd.openxmlformats');
+          res.setHeader("Content-Disposition", "attachment; filename=" + filename);
+          res.sendfile(filenamePath);
         }
       });
 
