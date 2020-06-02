@@ -3911,7 +3911,7 @@ router.get('/report/product/all', wrap(async (req, res, next) => {
   const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
   const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
   const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
-  let query = req.query.query;
+  let query: any = req.query.query;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let productAll = await inventoryReportModel.productAll(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, query);
@@ -3925,7 +3925,7 @@ router.get('/report/product/all/excel', wrap(async (req, res, next) => {
   const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
   const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
   const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
-  let query = req.query.query;
+  let query: any = req.query.query;
   let db = req.db;
 
   fse.ensureDirSync(process.env.MMIS_TMP);

@@ -49,7 +49,7 @@ router.get('/warehouse', wrap(async (req, res, next) => {
 router.get('/search', wrap(async (req, res, next) => {
 
   let db = req.db;
-  let query = req.query.query || '';
+  let query: any = req.query.query || '';
   try {
     let rs: any = await warehouseModel.listSearch(db, query);
     res.send({ ok: true, rows: rs });
@@ -549,7 +549,7 @@ router.get('/warehouseproducttemplate-issue', wrap(async (req, res, next) => {
 }));
 router.get('/warehouseproducttemplate/search', wrap(async (req, res, next) => {
   let db = req.db;
-  let query = req.query.query;
+  let query: any = req.query.query;
   try {
     let reqult = await warehouseModel.getallRequisitionTemplateSearch(db, query);
     res.send({ ok: true, rows: reqult[0] });
@@ -562,7 +562,7 @@ router.get('/warehouseproducttemplate/search', wrap(async (req, res, next) => {
 }));
 router.get('/warehouseproducttemplate-issue/search', wrap(async (req, res, next) => {
   let db = req.db;
-  let query = req.query.query;
+  let query: any = req.query.query;
   try {
     let reqult = await warehouseModel.getallRequisitionTemplateSearchIssue(db, query);
     res.send({ ok: true, rows: reqult[0] });
@@ -848,7 +848,7 @@ router.get('/alltemplateinwarehouse/search', wrap(async (req, res, next) => {
   let db = req.db;
   try {
     let warehouseId = req.query.warehouseId;
-    let query = req.query.query;
+    let query: any = req.query.query;
     let reqult = await warehouseModel.getallRequisitionTemplateInwarehouseSearch(db, warehouseId, query);
     res.send({ ok: true, rows: reqult[0] });
   } catch (error) {
@@ -1193,7 +1193,7 @@ router.post('/products/change-cost', async (req, res, next) => {
 });
 
 router.get('/export/excel', wrap(async (req, res, next) => {
-  let templateId = req.query.templateId;
+  let templateId: any = req.query.templateId;
   let db = req.db;
 
   const pathTmp = path.join(process.env.MMIS_DATA, 'temp');

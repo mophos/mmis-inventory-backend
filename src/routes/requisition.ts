@@ -233,8 +233,8 @@ router.get('/orders/waiting', async (req, res, next) => {
   let db = req.db;
   let limit = +req.query.limit || 15;
   let offset = +req.query.offset || 0;
-  let query = req.query.query;
-  let fillterCancel = req.query.fillterCancel;
+  let query: any = req.query.query;
+  let fillterCancel: any = req.query.fillterCancel;
   let warehouseId = req.decoded.warehouseId;
   try {
     let rs: any = await orderModel.getListWaiting(db, null, warehouseId, limit, offset, query, fillterCancel);
@@ -253,9 +253,9 @@ router.get('/orders/waiting-approve', async (req, res, next) => {
   let db = req.db;
   let limit = +req.query.limit || 15;
   let offset = +req.query.offset || 0;
-  let query = req.query.query;
+  let query: any = req.query.query;
   let warehouseId = req.decoded.warehouseId;
-  let fillterCancel = req.query.fillterCancel;
+  let fillterCancel: any = req.query.fillterCancel;
 
   try {
     let rs: any = await orderModel.getListWaitingApprove(db, null, warehouseId, limit, offset, query, fillterCancel);
@@ -274,9 +274,9 @@ router.get('/orders/approved', async (req, res, next) => {
   let db = req.db;
   let limit = +req.query.limit || 15;
   let offset = +req.query.offset || 0;
-  let query = req.query.query;
+  let query: any = req.query.query;
   let warehouseId = req.decoded.warehouseId;
-  let fillterCancel = req.query.fillterCancel;
+  let fillterCancel: any = req.query.fillterCancel;
 
   try {
     let rs: any = await orderModel.getListApproved(db, null, warehouseId, limit, offset, query);
@@ -295,7 +295,7 @@ router.get('/orders/keep', async (req, res, next) => {
   let db = req.db;
   let limit = +req.query.limit || 15;
   let offset = +req.query.offset || 0;
-  let query = req.query.query;
+  let query: any = req.query.query;
   let warehouseId = req.decoded.warehouseId;
 
   try {
@@ -654,9 +654,9 @@ router.get('/orders/unpaid', async (req, res, next) => {
   let db = req.db;
   let limit = +req.query.limit || 15;
   let offset = +req.query.offset || 0;
-  let query = req.query.query;
+  let query: any = req.query.query;
   let warehouseId = req.decoded.warehouseId;
-  let fillterCancel = req.query.fillterCancel;
+  let fillterCancel: any = req.query.fillterCancel;
 
   try {
     let rs: any = await orderModel.getUnPaidOrders(db, null, warehouseId, limit, offset, query, fillterCancel);

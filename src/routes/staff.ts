@@ -1642,8 +1642,8 @@ router.get('/requisition/orders/waiting', async (req, res, next) => {
   let db = req.db;
   let limit = +req.query.limit || 15;
   let offset = +req.query.offset || 0;
-  let query = req.query.query;
-  let fillterCancel = req.query.fillterCancel;
+  let query: any = req.query.query;
+  let fillterCancel: any = req.query.fillterCancel;
   let warehouseId = req.decoded.warehouseId;
 
   try {
@@ -1665,9 +1665,9 @@ router.get('/requisition/orders/waiting-approve', async (req, res, next) => {
   let db = req.db;
   let limit = +req.query.limit || 15;
   let offset = +req.query.offset || 0;
-  let query = req.query.query;
+  let query: any = req.query.query;
   let warehouseId = req.decoded.warehouseId;
-  let fillterCancel = req.query.fillterCancel;
+  let fillterCancel: any = req.query.fillterCancel;
 
   try {
     let rs: any = await orderModel.getListWaitingApprove(db, warehouseId, null, limit, offset, query, fillterCancel);
@@ -1687,7 +1687,7 @@ router.get('/requisition/orders/approved', async (req, res, next) => {
   let limit = +req.query.limit || 15;
   let offset = +req.query.offset || 0;
   let warehouseId = req.decoded.warehouseId;
-  let query = req.query.query;
+  let query: any = req.query.query;
 
   try {
     let rs: any = await orderModel.getListApproved(db, warehouseId, null, limit, offset, query);
@@ -1841,9 +1841,9 @@ router.get('/requisition/orders/unpaid', async (req, res, next) => {
   let db = req.db;
   let limit = +req.query.limit || 15;
   let offset = +req.query.offset || 0;
-  let query = req.query.query;
+  let query: any = req.query.query;
   let warehouseId = req.decoded.warehouseId;
-  let fillterCancel = req.query.fillterCancel;
+  let fillterCancel: any = req.query.fillterCancel;
 
   try {
     let rs: any = await orderModel.getUnPaidOrders(db, warehouseId, null, limit, offset, query, fillterCancel);
@@ -3442,7 +3442,7 @@ router.get('/period/status', (async (req, res, next) => {
 }));
 
 router.get('/warehouses/export', async (req, res, next) => {
-  let templateId = req.query.templateId;
+  let templateId: any = req.query.templateId;
   let warehouseId = req.query.warehouseId;
   let db = req.db;
   const printDate = 'วันที่พิมพ์ ' + moment().format('D MMMM ') + (moment().get('year') + 543) + moment().format(', HH:mm:ss น.');
@@ -3480,7 +3480,7 @@ router.get('/warehouses/export', async (req, res, next) => {
 });
 
 router.get('/warehouses/export/excel', async (req, res, next) => {
-  let templateId = req.query.templateId;
+  let templateId: any = req.query.templateId;
   let warehouseId = req.query.warehouseId;
   let db = req.db;
 
@@ -3598,7 +3598,7 @@ router.post('/min-max/calculate', co(async (req, res, next) => {
 }));
 
 router.get('/warehouses/export-issue', async (req, res, next) => {
-  let templateId = req.query.templateId;
+  let templateId: any = req.query.templateId;
   let warehouseId = req.query.warehouseId;
   let db = req.db;
   const printDate = 'วันที่พิมพ์ ' + moment().format('D MMMM ') + (moment().get('year') + 543) + moment().format(', HH:mm:ss น.');
@@ -3636,7 +3636,7 @@ router.get('/warehouses/export-issue', async (req, res, next) => {
 });
 
 router.get('/warehouses/export-issue/excel', async (req, res, next) => {
-  let templateId = req.query.templateId;
+  let templateId: any = req.query.templateId;
   let warehouseId = req.query.warehouseId;
   let db = req.db;
 
@@ -3939,7 +3939,7 @@ router.get('/warehouses/warehousetemplate-issue/:templateId', co(async (req, res
 }));
 router.get('/warehouses/warehouseproducttemplate-issue/search', co(async (req, res, next) => {
   let db = req.db;
-  let query = req.query.query;
+  let query: any = req.query.query;
   let warehouse_id = req.decoded.warehouseId
   try {
     let reqult = await warehouseModel.getallRequisitionTemplateSearchIssueStaff(db, query, warehouse_id);
