@@ -2345,7 +2345,7 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
       const rs = await hisTransactionModel.getGroupTransactionFromTransactionId(db, transactionIds);
       if (rs.length) {
         for (const r of rs) {
-          const rsAllocate = await allocate(db, r.warehouse_id, [r]);
+          const rsAllocate = await allocateHIS(db, r.warehouse_id, [r]);
           if (rsAllocate.ok) {
             for (const i of rsAllocate.rows) {
               //-------------- get UnitGeneric --------------
@@ -2370,11 +2370,14 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
               }
               //----------------------------------------
               //--------------ตัดคงคลัง--------------
+              console.log('  //--------------ตัดคงคลัง--------------');
+            
+              console.log(i.small_remain_qty, i.product_qty);
               if (i.small_remain_qty - i.product_qty >= 0 && i.small_remain_qty > 0) {
                 const transactionIds = r.transaction_id.split(',');
                 if (transactionIds.length == r.count) {
                   await hisTransactionModel.decreaseProductQty(db, i.wm_product_id, i.small_remain_qty - i.product_qty);
-                  await hisTransactionModel.changeStatusToCut(db, moment().format('YYYY-MM-DD hh:mm:ss'), req.decoded.people_user_id, transactionIds);
+                  await hisTransactionModel.changeStatusToCut(db, moment().format('YYYY-MM-DD HH:mm:ss'), req.decoded.people_user_id, transactionIds);
                   //getBalance เพื่อไปลง stockcard
                   let balance: any = await hisTransactionModel.getBalance(db, i.wm_product_id);
                   balance = balance[0];
@@ -4082,6 +4085,52 @@ const allocate = (async (db, warehouseId: any, data: any) => {
         const remainQty = p.qty;
         let qty = d.genericQty;
         if (qty > remainQty || remainQty == 0) {
+          qty = remainQty;
+        }
+        p.qty -= qty;
+        d.genericQty -= qty;
+        const obj: any = {
+          wm_product_id: p.wm_product_id,
+          unit_generic_id: p.unit_generic_id,
+          conversion_qty: p.conversion_qty,
+          generic_id: p.generic_id,
+          pack_remain_qty: Math.floor(remainQty / p.conversion_qty),
+          small_remain_qty: remainQty,
+          product_name: p.product_name,
+          from_unit_name: p.from_unit_name,
+          to_unit_name: p.to_unit_name,
+          expired_date: p.expired_date,
+          lot_no: p.lot_no,
+          lot_time: p.lot_time,
+          product_id: p.product_id,
+          product_qty: qty,
+          cost: p.cost,
+          transaction_id: d.transaction_id,
+          warehoues_id: p.warehouse_id
+        }
+        // if (remainQty > 0) {
+        allocate.push(obj);
+        // }
+      }
+
+    }
+    return { ok: true, rows: allocate };
+  } catch (error) {
+    return { ok: false, error: error.message }
+  }
+});
+
+
+const allocateHIS = (async (db, warehouseId: any, data: any) => {
+  try {
+    let allocate = [];
+    let rsProducts: any = [];
+    for (const d of data) {
+      rsProducts = await hisTransactionModel.getProductInWarehousesByGeneric(db, d.genericId, warehouseId);
+      for (const p of rsProducts) {
+        const remainQty = p.qty;
+        let qty = d.genericQty;
+        if (qty > remainQty && remainQty == 0) {
           qty = remainQty;
         }
         p.qty -= qty;
