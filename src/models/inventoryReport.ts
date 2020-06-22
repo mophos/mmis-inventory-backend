@@ -2632,7 +2632,7 @@ OR sc.ref_src like ?
             .orderBy('pc.committee_id');
     }
     getStaff(knex: Knex, officerId) {
-        return knex.select('t.title_name as title', 'p.fname', 'p.lname', knex.raw(`concat(t.title_name,p.fname,' ',p.lname) as fullname`), 'upos.position_name', 'upo.type_name as position')
+        return knex.select('t.title_name as title_name', 'p.fname', 'p.lname', knex.raw(`concat(t.title_name,p.fname,' ',p.lname) as fullname`), 'upos.position_name', 'upo.type_name as position')
             .from('um_purchasing_officer as upo')
             .join('um_people as p', 'upo.people_id', 'p.people_id')
             .join('um_titles as t', 't.title_id', 'p.title_id')
@@ -3431,6 +3431,8 @@ OR sc.ref_src like ?
     GROUP BY
         ws.product_id,
         ws.lot_no
+    HAVING
+        qty > 0
     ORDER BY
         mg.generic_type_id,
         mg.generic_name`

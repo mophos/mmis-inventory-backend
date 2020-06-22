@@ -533,6 +533,13 @@ router.get('/dst-borrow/detail/:borrowId', co(async (req, res, next) => {
   try {
     let rs = await borrowModel.getDetailDst(db, borrowId);
     let rows = await borrowModel.detailBorrow(db, borrowId, rs[0].src_warehouse_id);
+    for (const v of rows[0]) {
+      if (v.confirm_qty === null) {
+        v.confirm_qty = v.generic_qty
+      }
+    }
+    console.log(rows[0]);
+    
     res.send({ ok: true, rows: rows[0] });
   } catch (error) {
     res.send({ ok: false, error: error.message });
