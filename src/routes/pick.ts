@@ -96,7 +96,7 @@ router.post('/approvePick', async (req, res, next) => {
 
 router.get('/gerProductReceiveNotPO', async (req, res, next) => {
   let db = req.db;
-  let query = req.query.query
+  let query: any = req.query.query
   try {
     let rs: any = await pickModel.gerProductReceiveNotPO(db, query);
     res.send({ ok: true, rows: rs });
@@ -109,7 +109,7 @@ router.get('/gerProductReceiveNotPO', async (req, res, next) => {
 
 router.get('/gerReceiveItem', async (req, res, next) => {
   let db = req.db;
-  let receiveId = req.query.receiveId;
+  let receiveId: any = req.query.receiveId;
   if (receiveId) {
     try {
       let results = await pickModel.getReceiveProducts(db, receiveId);

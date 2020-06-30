@@ -435,7 +435,7 @@ router.get('/', co(async (req, res, next) => {
   let db = req.db;
   let limit = +req.query.limit || 20;
   let offset = +req.query.offset || 0;
-  let status = req.query.status || null;
+  let status: any = req.query.status || null;
 
   let warehouseId = req.decoded.warehouseId;
   try {
@@ -452,7 +452,7 @@ router.get('/', co(async (req, res, next) => {
 
 router.get('/info/products', co(async (req, res, next) => {
   let db = req.db;
-  let issueId = req.query.issueId;
+  let issueId: any = req.query.issueId;
 
   try {
     let rs = await issueModel.getProductDetail(db, issueId);
@@ -465,7 +465,7 @@ router.get('/info/products', co(async (req, res, next) => {
 }));
 router.get('/info/generics', co(async (req, res, next) => {
   let db = req.db;
-  let issueId = req.query.issueId;
+  let issueId: any = req.query.issueId;
 
   try {
     let rs = await issueModel.getGenericsDetail(db, issueId);
@@ -479,7 +479,7 @@ router.get('/info/generics', co(async (req, res, next) => {
 
 router.get('/info/summary', co(async (req, res, next) => {
   let db = req.db;
-  let issueId = req.query.issueId;
+  let issueId: any = req.query.issueId;
 
   try {
     let rs = await issueModel.getSummaryDetail(db, issueId);

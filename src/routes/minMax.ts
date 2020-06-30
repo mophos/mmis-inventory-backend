@@ -59,7 +59,7 @@ router.get('/header', co(async (req, res, next) => {
 router.get('/header-group', co(async (req, res, next) => {
 
   let db = req.db;
-  let groupId = req.query.groupId;
+  let groupId: any = req.query.groupId;
 
   try {
     let rs: any = await model.getHeaderGroup(db, groupId);

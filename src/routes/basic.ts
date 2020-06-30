@@ -119,7 +119,7 @@ router.get('/generic-warehouses/:genericId', co(async (req, res, next) => {
 router.get('/warehouse-location', co(async (req, res, next) => {
 
   let db = req.db;
-  let warehouseId = req.query.warehouseId;
+  let warehouseId: any = req.query.warehouseId;
 
   try {
     let rows = await basicModel.getWarehouseLocation(db, warehouseId);
@@ -135,7 +135,7 @@ router.get('/warehouse-location', co(async (req, res, next) => {
 router.get('/product-location', co(async (req, res, next) => {
 
   let db = req.db;
-  let productId = req.query.productId;
+  let productId: any = req.query.productId;
 
   try {
     let rows = await basicModel.getProductLastLocation(db, productId);
@@ -152,7 +152,7 @@ router.get('/product-location', co(async (req, res, next) => {
 router.get('/search-manufacture', co(async (req, res, next) => {
 
   let db = req.db;
-  let query = req.query.q;
+  let query: any = req.query.q;
 
   try {
     let rows = await basicModel.searchManufacture(db, query);
@@ -168,7 +168,7 @@ router.get('/search-manufacture', co(async (req, res, next) => {
 router.get('/search-vendor', co(async (req, res, next) => {
 
   let db = req.db;
-  let query = req.query.q;
+  let query: any = req.query.q;
 
   try {
     let rows = await basicModel.searchVendor(db, query);
@@ -199,7 +199,7 @@ router.get('/people-list', co(async (req, res, next) => {
 router.get('/search-people-autocomplete', co(async (req, res, next) => {
 
   let db = req.db;
-  let query = req.query.q;
+  let query: any = req.query.q;
 
   try {
     let rs = await basicModel.searchAutocomplete(db, query);
@@ -259,7 +259,7 @@ router.get('/transaction-issues', co(async (req, res, next) => {
 router.get('/search-donator', co(async (req, res, next) => {
 
   let db = req.db;
-  let query = req.query.q;
+  let query: any = req.query.q;
 
   try {
     let rows = await basicModel.searchDonator(db, query);
@@ -317,7 +317,7 @@ router.get('/generic-types/lv1', co(async (req, res, next) => {
 }));
 router.get('/generic-types/lv2', co(async (req, res, next) => {
   let db = req.db;
-  const genericTypeLV1Id = req.query.genericTypeLV1Id == 'null' ? null : req.query.genericTypeLV1Id;
+  const genericTypeLV1Id: any = req.query.genericTypeLV1Id == 'null' ? null : req.query.genericTypeLV1Id;
   try {
     let _genericTypeLV1Id = req.decoded.generic_type_id;
     let _genericTypeLV2Id = req.decoded.generic_type_lv2_id;
@@ -348,8 +348,8 @@ router.get('/generic-types/lv2', co(async (req, res, next) => {
 }));
 router.get('/generic-types/lv3', co(async (req, res, next) => {
   let db = req.db;
-  const genericTypeLV1Id = req.query.genericTypeLV1Id == 'null' ? null : req.query.genericTypeLV1Id;
-  const genericTypeLV2Id = req.query.genericTypeLV2Id == 'null' ? null : req.query.genericTypeLV2Id;
+  const genericTypeLV1Id: any = req.query.genericTypeLV1Id == 'null' ? null : req.query.genericTypeLV1Id;
+  const genericTypeLV2Id: any = req.query.genericTypeLV2Id == 'null' ? null : req.query.genericTypeLV2Id;
   try {
     let _genericTypeLV1Id = req.decoded.generic_type_id;
     let _genericTypeLV2Id = req.decoded.generic_type_lv2_id;
@@ -402,7 +402,7 @@ router.get('/generic-group-list', co(async (req, res, next) => {
 
 // router.get('/product-in-group', co(async(req, res, next) => {
 //   let db = req.db;
-//   let groupId = req.query.groupId;
+//   let groupId: any = req.query.groupId;
 
 //   try {
 //     let rs = await basicModel.getProductInGroups(db, groupId);
@@ -418,7 +418,7 @@ router.get('/generic-group-list', co(async (req, res, next) => {
 
 router.get('/generic-in-group', co(async (req, res, next) => {
   let db = req.db;
-  let groupId = req.query.groupId;
+  let groupId: any = req.query.groupId;
 
   try {
     let rs = await basicModel.getGenericInGroups(db, groupId);
