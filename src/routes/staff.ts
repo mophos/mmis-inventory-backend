@@ -2576,7 +2576,7 @@ router.delete('/requisition/temp/remove/:requisitionId', async (req, res, next) 
 });
 
 router.get('/report/issue', async (req, res, next) => {
-  let issue_id = req.query.issue_id
+  let issue_id: any = req.query.issue_id
   let db = req.db;
   let isArray = true
   let length: any
@@ -4080,7 +4080,7 @@ const allocate = (async (db, warehouseId: any, data: any) => {
     let allocate = [];
     let rsProducts: any = [];
     for (const d of data) {
-      rsProducts: any = await hisTransactionModel.getProductInWarehousesByGeneric(db, d.genericId, warehouseId);
+      rsProducts = await hisTransactionModel.getProductInWarehousesByGeneric(db, d.genericId, warehouseId);
       for (const p of rsProducts) {
         const remainQty = p.qty;
         let qty = d.genericQty;
@@ -4126,7 +4126,7 @@ const allocateHIS = (async (db, warehouseId: any, data: any) => {
     let allocate = [];
     let rsProducts: any = [];
     for (const d of data) {
-      rsProducts: any = await hisTransactionModel.getProductInWarehousesByGeneric(db, d.genericId, warehouseId);
+      rsProducts = await hisTransactionModel.getProductInWarehousesByGeneric(db, d.genericId, warehouseId);
       for (const p of rsProducts) {
         const remainQty = p.qty;
         let qty = d.genericQty;
