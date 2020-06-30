@@ -165,7 +165,7 @@ router.get('/:borrowNoteId/detail-edit', async (req, res, next) => {
 
 router.get('/report', async (req, res, next) => {
   let db = req.db;
-  let id= req.query.id;
+  let id: any = req.query.id;
   let warehouse = req.decoded.warehouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
