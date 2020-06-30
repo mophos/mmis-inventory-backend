@@ -214,7 +214,7 @@ router.put('/finalclose', (req, res, next) => {
 });
 router.get('/status', (async (req, res, next) => {
   let db = req.db;
-  let date = req.query.date;
+  let date: any = req.query.date;
   const month = moment(date, 'YYYY-MM-dd').get('month') + 1;
   let year = moment(date, 'YYYY-MM-dd').get('year');
   if (month >= 10) {

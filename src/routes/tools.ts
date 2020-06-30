@@ -1051,7 +1051,7 @@ router.get('/stockcard/history', async (req, res, next) => {
 
 router.get('/calculate/stockcard', async (req, res, next) => {
   let db = req.db;
-  let warehouseId = req.query.warehouseId;
+  let warehouseId: any = req.query.warehouseId;
   console.log(warehouseId);
   try {
     let generics = await toolModel.adjustStock1(db, warehouseId);
@@ -1166,7 +1166,7 @@ router.post('/removestockcard', async (req, res, next) => {
 router.get('/calculate/balanceunitcost', async (req, res, next) => {
 
   let db = req.db;
-  let warehouseId = req.query.warehouseId;
+  let warehouseId: any = req.query.warehouseId;
   try {
     let copyOblect = [];
     let products = [];
@@ -1245,7 +1245,7 @@ router.get('/calculate/balanceunitcost', async (req, res, next) => {
 
 router.get('/calculate/stockcard/lot', async (req, res, next) => {
   let db = req.db;
-  let warehouseId = req.query.warehouseId;
+  let warehouseId: any = req.query.warehouseId;
   try {
     let generics = await toolModel.adjustStock1(db, warehouseId);
     for (const g of generics[0]) {

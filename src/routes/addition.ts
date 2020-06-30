@@ -21,7 +21,7 @@ const serialModel = new SerialModel();
 router.get('/warehouse', async (req, res, next) => {
 
   let db = req.db;
-  let query = req.query.query == 'undefined' ? null : req.query.query;
+  let query: any = req.query.query == 'undefined' ? null : req.query.query;
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
@@ -96,7 +96,7 @@ router.get('/generic/warehouse/:genericId', async (req, res, next) => {
 router.get('/generic', async (req, res, next) => {
 
   let db = req.db;
-  let query = req.query.query == 'undefined' ? null : req.query.query;
+  let query: any = req.query.query == 'undefined' ? null : req.query.query;
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
@@ -125,7 +125,7 @@ router.get('/generic', async (req, res, next) => {
 router.get('/history', async (req, res, next) => {
 
   let db = req.db;
-  let query = req.query.query == 'undefined' ? null : req.query.query;
+  let query: any = req.query.query == 'undefined' ? null : req.query.query;
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
@@ -143,7 +143,7 @@ router.get('/list/:status', async (req, res, next) => {
 
   let db = req.db;
   let status = req.params.status;
-  let query = req.query.query == 'undefined' ? null : req.query.query;
+  let query: any = req.query.query == 'undefined' ? null : req.query.query;
   let srcWarehouseId = req.decoded.warehouseId;
 
   try {
@@ -212,7 +212,7 @@ router.get('/print/transaction/:transactionId', async (req, res, next) => {
 router.get('/print/transactions', async (req, res, next) => {
 
   let db = req.db;
-  let addition_id = req.query.addition_id;
+  let addition_id= req.query.addition_id;
   let rs: any = []
   let header: any = []
   let detail: any = []
@@ -269,7 +269,7 @@ router.get('/print/transactions', async (req, res, next) => {
 router.get('/print/approve', async (req, res, next) => {
 
   let db = req.db;
-  let addition_id = req.query.addition_id;
+  let addition_id: any = req.query.addition_id;
   let page_re: any = req.decoded.WM_TRANSFER_REPORT_APPROVE;
 
   try {

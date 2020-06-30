@@ -293,7 +293,7 @@ router.put('/conversion/:unitGenericId/:genericId', wrap(async (req, res, next) 
 router.get('/conversion/:genericId', wrap(async (req, res, next) => {
   let genericId = req.params.genericId;
   let db = req.db;
-  let orderBy = req.query.orderBy || 'ASC';
+  let orderBy: any = req.query.orderBy || 'ASC';
 
   try {
     const rows = await unitModel.getConversionList(db, genericId, orderBy);
