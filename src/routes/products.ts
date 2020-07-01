@@ -615,12 +615,13 @@ router.get('/mapping/search-product-tmt', async (req, res, next) => {
 
 });
 
-router.get('/mapping/search-product/:query', async (req, res, next) => {
+router.post('/mapping/search-product/:query', async (req, res, next) => {
   let db = req.db;
   let query = req.params.query || '';
+  let genericType: any = req.body.genericType;
 
   try {
-    let rs: any = await productModel.getSearchProduct(db, query);
+    let rs: any = await productModel.getSearchProduct(db, query, genericType);
 
     let mappings = [];
     rs.forEach(v => {
@@ -643,11 +644,11 @@ router.get('/mapping/search-product/:query', async (req, res, next) => {
   }
 });
 
-router.get('/mapping/all-product', async (req, res, next) => {
+router.post('/mapping/all-product', async (req, res, next) => {
   let db = req.db;
-
+  let genericType: any = req.body.genericType;
   try {
-    let rs: any = await productModel.getAllProduct(db);
+    let rs: any = await productModel.getAllProduct(db, genericType);
 
     let mappings = [];
     rs.forEach(v => {
