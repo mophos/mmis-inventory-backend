@@ -6147,8 +6147,8 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
   let genericType = req.query.genericTypes
   genericType = Array.isArray(genericType) ? genericType : [genericType];
-  let transactionIn = ['SUMMIT', 'REV', 'REV_OTHER', 'REQ_IN', 'TRN_IN', 'ADD_IN', 'BORROW_IN', 'BORROW_OTHER_IN', 'RETURNED_IN', 'REP_IN', 'ADJUST', 'HIS']
-  let transactionOut = ['REQ_OUT', 'TRN_OUT', 'ADD_OUT', 'BORROW_OUT', 'BORROW_OTHER_OUT', 'RETURNED_OUT', 'REP_OUT', 'IST', 'ADJUST', 'HIS']
+  let transactionIn = [`'SUMMIT'`, `'REV'`, `'REV_OTHER'`, `'REQ_IN'`, `'TRN_IN'`, `'ADD_IN'`, `'BORROW_IN'`, `'BORROW_OTHER_IN'`, `'RETURNED_IN'`, `'REP_IN'`, `'ADJUST'`, `'HIS'`]
+  let transactionOut = [`'REQ_OUT'`, `'TRN_OUT'`, `'ADD_OUT'`, `'BORROW_OUT'`, `'BORROW_OTHER_OUT'`, `'RETURNED_OUT'`, `'REP_OUT'`, `'IST'`, `'ADJUST'`, `'HIS'`]
   let dataIn = []
   let dataOut = []
 
@@ -6175,88 +6175,86 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
 
     // มูลค่ารับเข้า --------------------------------------
     let sumInCost: any = 0;
-    for (let In in transactionIn) {
-      var totalIn: any = 0;
-      let comment = ''
-      let rs = await inventoryReportModel.monthlyReportCost(db, warehouseId, genericType, startDate, endDate, dateSetting, transactionIn[In])
-      rs = rs[0];
-      if (rs.length) {
-        for (const v of rs) {
-          totalIn += v.in_cost
-          v.in_cost = inventoryReportModel.comma(v.in_cost)
-        }
-        if (transactionIn[In] === 'SUMMIT') {
-          comment = 'ยอดยกมา'
-        } else if (transactionIn[In] === 'REV') {
-          comment = 'รับจากการซื้อ'
-        } else if (transactionIn[In] === 'REV_OTHER') {
-          comment = 'รับอื่นๆ'
-        } else if (transactionIn[In] === 'REQ_IN') {
-          comment = 'เบิก'
-        } else if (transactionIn[In] === 'TRN_IN') {
-          comment = 'รับโอน'
-        } else if (transactionIn[In] === 'ADD_IN') {
-          comment = 'รับเติม'
-        } else if (transactionIn[In] === 'BORROW_IN') {
-          comment = 'ยืม'
-        } else if (transactionIn[In] === 'BORROW_OTHER_IN') {
-          comment = 'รับคืนนอกหน่วยงาน'
-        } else if (transactionIn[In] === 'RETURNED_IN') {
-          comment = 'รับคืน'
-        } else if (transactionIn[In] === 'REP_IN') {
-          comment = 'ปรับ package'
-        } else if (transactionIn[In] === 'ADJUST') {
-          comment = 'ปรับยอด'
-        } else if (transactionIn[In] === 'HIS') {
-          comment = 'ตัดจ่าย HIS(คนไข้คืนยา)'
+    let rsIn = await inventoryReportModel.monthlyReportCosts(db, warehouseId, genericType, startDate, endDate, dateSetting, transactionIn)
+    rsIn = rsIn[0];
+    if (rsIn.length) {
+      for (const v of rsIn) {
+        var totalIn: any = 0;
+        let commentIn = ''
+        totalIn += v.in_cost
+        v.in_cost = inventoryReportModel.comma(v.in_cost)
+        if (v.transaction_type === 'SUMMIT') {
+          commentIn = 'ยอดยกมา'
+        } else if (v.transaction_type === 'REV') {
+          commentIn = 'รับจากการซื้อ'
+        } else if (v.transaction_type === 'REV_OTHER') {
+          commentIn = 'รับอื่นๆ'
+        } else if (v.transaction_type === 'REQ_IN') {
+          commentIn = 'เบิก'
+        } else if (v.transaction_type === 'TRN_IN') {
+          commentIn = 'รับโอน'
+        } else if (v.transaction_type === 'ADD_IN') {
+          commentIn = 'รับเติม'
+        } else if (v.transaction_type === 'BORROW_IN') {
+          commentIn = 'ยืม'
+        } else if (v.transaction_type === 'BORROW_OTHER_IN') {
+          commentIn = 'รับคืนนอกหน่วยงาน'
+        } else if (v.transaction_type === 'RETURNED_IN') {
+          commentIn = 'รับคืน'
+        } else if (v.transaction_type === 'REP_IN') {
+          commentIn = 'ปรับ package'
+        } else if (v.transaction_type === 'ADJUST') {
+          commentIn = 'ปรับยอด'
+        } else if (v.transaction_type === 'HIS') {
+          commentIn = 'ตัดจ่าย HIS(คนไข้คืนยา)'
         }
         sumInCost += totalIn
         totalIn = inventoryReportModel.comma(totalIn)
-        dataIn.push({ transactionIn: comment, totalIn: totalIn, detail: rs })
+        dataIn.push({ transactionIn: commentIn, totalIn: totalIn, detail: rsIn })
       }
+      console.log(sumInCost, ',falsdkjfa;lkdjf;lasjdf;lajdf;klajsdfla');
+      
+      sumInCost = inventoryReportModel.comma(sumInCost)
     }
-    sumInCost = inventoryReportModel.comma(sumInCost)
     // ------------------------------------------------
 
     // มูลค่ารับจ่ายออก -----------------------------------
     let sumOutCost: any = 0;
-    for (let out in transactionOut) {
-      var totalOut: any = 0;
-      let comment = ''
-      let rs = await inventoryReportModel.monthlyReportCost(db, warehouseId, genericType, startDate, endDate, dateSetting, transactionOut[out])
-      rs = rs[0];
-      if (rs.length) {
-        for (const v of rs) {
-          totalOut += v.out_cost
-          v.out_cost = inventoryReportModel.comma(v.out_cost)
-        }
-        if (transactionOut[out] === 'REQ_OUT') {
-          comment = 'ให้เบิก'
-        } else if (transactionOut[out] === 'TRN_OUT') {
-          comment = 'โอน'
-        } else if (transactionOut[out] === 'ADD_OUT') {
-          comment = 'เติม'
-        } else if (transactionOut[out] === 'BORROW_OUT') {
-          comment = 'ให้ยืม'
-        } else if (transactionOut[out] === 'BORROW_OTHER_OUT') {
-          comment = 'ให้ยืมนอกหน่วยงาน'
-        } else if (transactionOut[out] === 'RETURNED_OUT') {
-          comment = 'คืน'
-        } else if (transactionOut[out] === 'REP_OUT') {
-          comment = 'ปรับ package'
-        } else if (transactionOut[out] === 'IST') {
-          comment = 'ตัดจ่าย'
-        } else if (transactionOut[out] === 'ADJUST') {
-          comment = 'ปรับยอด'
-        } else if (transactionOut[out] === 'HIS') {
-          comment = 'ตัดจ่าย HIS'
+    let rsOut = await inventoryReportModel.monthlyReportCosts(db, warehouseId, genericType, startDate, endDate, dateSetting, transactionOut)
+    rsOut = rsOut[0];
+    if (rsOut.length) {
+      for (const v of rsOut) {
+        var totalOut: any = 0;
+        let commentOut = ''
+        totalOut += v.out_cost
+        v.out_cost = inventoryReportModel.comma(v.out_cost)
+        if (v.transaction_type === 'REQ_OUT') {
+          commentOut = 'ให้เบิก'
+        } else if (v.transaction_type === 'TRN_OUT') {
+          commentOut = 'โอน'
+        } else if (v.transaction_type === 'ADD_OUT') {
+          commentOut = 'เติม'
+        } else if (v.transaction_type === 'BORROW_OUT') {
+          commentOut = 'ให้ยืม'
+        } else if (v.transaction_type === 'BORROW_OTHER_OUT') {
+          commentOut = 'ให้ยืมนอกหน่วยงาน'
+        } else if (v.transaction_type === 'RETURNED_OUT') {
+          commentOut = 'คืน'
+        } else if (v.transaction_type === 'REP_OUT') {
+          commentOut = 'ปรับ package'
+        } else if (v.transaction_type === 'IST') {
+          commentOut = 'ตัดจ่าย'
+        } else if (v.transaction_type === 'ADJUST') {
+          commentOut = 'ปรับยอด'
+        } else if (v.transaction_type === 'HIS') {
+          commentOut = 'ตัดจ่าย HIS'
         }
         sumOutCost += totalOut
         totalOut = inventoryReportModel.comma(totalOut)
-        dataOut.push({ transactionOut: comment, totalOut: totalOut, detail: rs })
+        dataOut.push({ transactionOut: commentOut, totalOut: totalOut, detail: rsOut })
       }
+      sumOutCost = inventoryReportModel.comma(sumOutCost)
     }
-    sumOutCost = inventoryReportModel.comma(sumOutCost)
     // ------------------------------------------------
 
     // มูลค่าคงเหลือ -------------------------------------
@@ -6290,6 +6288,7 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
     res.send({ ok: false, error: error.message })
   }
 }));
+
 async function setData(rs: any) {
   return _.map(_.groupBy(rs, (v) => { return v.warehouse_id }), (v: any) => {
     return {

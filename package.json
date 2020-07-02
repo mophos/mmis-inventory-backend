@@ -13,6 +13,7 @@
     "@types/uuid": "^3.4.3",
     "body-parser": "^1.17.1",
     "co-express": "^2.0.0",
+    "connect-timeout": "^1.9.0",
     "cookie-parser": "^1.4.3",
     "cors": "^2.8.4",
     "dotenv": "^6.0.0",

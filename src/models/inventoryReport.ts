@@ -4597,6 +4597,35 @@ ORDER BY mg.generic_name
         return (knex.raw(sql))
     }
 
+    monthlyReportCosts(knex: Knex, warehouseId: any, genericType: any, startDate: any, endDate: any, dateSetting: any, transactionIn: any) {
+        let sql = `SELECT
+        ws.transaction_type,
+	    mgt.generic_type_name,
+	    mga.account_name,
+        sum( ws.in_cost ) AS in_cost,
+        sum( ws.out_cost ) AS out_cost
+    FROM
+        view_stock_card_new AS ws
+	    JOIN mm_generics AS mg ON mg.generic_id = ws.generic_id
+	    LEFT JOIN mm_generic_types AS mgt ON mgt.generic_type_id = mg.generic_type_id
+	    LEFT JOIN mm_generic_accounts AS mga ON mga.account_id = mg.account_id 
+    WHERE
+        ws.${dateSetting} BETWEEN '${startDate} 00:00:00' 
+        AND '${endDate} 23:59:59' 
+        AND ws.transaction_type IN ( ${transactionIn} )
+        AND mg.generic_type_id IN ( ${genericType} ) `
+        if (warehouseId != 'all') {
+            sql += `AND ws.src_warehouse_id = '${warehouseId}'`
+        }
+        sql += ` GROUP BY
+        mg.generic_type_id,
+        mg.account_id 
+    ORDER BY
+        mgt.generic_type_id,
+        mga.account_id`
+        return (knex.raw(sql))
+    }
+
     payToWarehouse(knex: Knex, startDate, endDate, genericTypeId, warehouseId, dateSetting) {
         // let sql = knex('wm_requisition_orders as ro')
         //     .select('ro.wm_requisition as warehouse_id', 'ww.warehouse_name ')
