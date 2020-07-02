@@ -1331,7 +1331,7 @@ group by mpp.product_id
   }
 
   getSearchProduct(db: Knex, query: any, genericType: any = {}) {
-    let _query = `% ${query}% `;
+    let _query = `%${query}%`;
     let sql: any = db('mm_products as mp')
       .select('mp.working_code', 'mp.product_name', 'tpu.TMTID', 'tpu.FSN', 'mp.product_id', 'mg.generic_name', 'ml.labeler_name as v_labeler_name', 'ml2.labeler_name as m_labeler_name')
       .join('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
@@ -1342,7 +1342,11 @@ group by mpp.product_id
       .where('mp.mark_deleted','N')
       .orWhere(w => {
         w.where('mp.product_name', 'like', _query)
+        w.where('mg.generic_name', 'like', _query)
           .orWhere('mp.keywords', 'like', _query)
+          .orWhere('mp.working_code', 'like', _query)
+          .orWhere('mg.working_code', 'like', _query)
+          .orWhere('tpu.TMTID', 'like', _query)
       })
     if (genericType) {
       if (genericType.generic_type_lv1_id.length) {
