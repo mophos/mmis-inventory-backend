@@ -818,10 +818,11 @@ export class ProductModel {
   searchProductTMT(knex: Knex, query: any) {
     let _query = `%${query}%`
     return knex('tmt_tpu as tpu')
-      .select('tpu.TMTID', 'tpu.FSN')
+      .select('tpu.TMTID', 'tpu.FSN', 'tpu.MANUFACTURER')
       .where(w => {
         w.where('tpu.TMTID', 'like', _query)
           .orWhere('tpu.FSN', 'like', _query)
+          .orWhere('tpu.MANUFACTURER', 'like', _query)
       })
       .limit(10);
   }
@@ -1304,24 +1305,61 @@ group by mpp.product_id
     return sql;
   }
 
-  getAllProduct(db: Knex) {
-    return db('mm_products as mp')
-      .select('mp.working_code', 'mp.product_name', 'tpu.TMTID', 'tpu.FSN', 'mp.product_id')
+  getAllProduct(db: Knex, genericType: any = {}) {
+    let sql = db('mm_products as mp')
+      .select('mp.working_code', 'mp.product_name', 'tpu.TMTID', 'tpu.FSN', 'mp.product_id', 'mg.generic_name', 'ml.labeler_name as v_labeler_name', 'ml2.labeler_name as m_labeler_name')
+      .join('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
+      .leftJoin('mm_labelers as ml', 'ml.labeler_id', 'mp.v_labeler_id')
+      .leftJoin('mm_labelers as ml2', 'ml2.labeler_id', 'mp.m_labeler_id')
       .leftJoin('tmt_tpu as tpu', 'tpu.TMTID', 'mp.tmt_id')
-      .orderBy('mp.product_name', 'DESC');
+      .where('mp.mark_deleted','N')
+    if (genericType) {
+      if (genericType.generic_type_lv1_id.length) {
+        sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id)
+      }
+      if (genericType.generic_type_lv2_id.length) {
+        sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id)
+      }
+      if (genericType.generic_type_lv3_id.length) {
+        sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv3_id)
+      }
+    }
+
+    sql.orderBy('mp.product_name', 'DESC');
+
+    return sql;
   }
 
-  getSearchProduct(db: Knex, query: any) {
+  getSearchProduct(db: Knex, query: any, genericType: any = {}) {
     let _query = `% ${query}% `;
-    return db('mm_products as mp')
-      .select('mp.working_code', 'mp.product_name', 'tpu.TMTID', 'tpu.FSN', 'mp.product_id')
+    let sql: any = db('mm_products as mp')
+      .select('mp.working_code', 'mp.product_name', 'tpu.TMTID', 'tpu.FSN', 'mp.product_id', 'mg.generic_name', 'ml.labeler_name as v_labeler_name', 'ml2.labeler_name as m_labeler_name')
+      .join('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
+      .leftJoin('mm_labelers as ml', 'ml.labeler_id', 'mp.v_labeler_id')
+      .leftJoin('mm_labelers as ml2', 'ml2.labeler_id', 'mp.m_labeler_id')
       .leftJoin('tmt_tpu as tpu', 'tpu.TMTID', 'mp.tmt_id')
       .where('mp.working_code', query)
+      .where('mp.mark_deleted','N')
       .orWhere(w => {
         w.where('mp.product_name', 'like', _query)
           .orWhere('mp.keywords', 'like', _query)
       })
-      .orderBy('mp.product_name', 'DESC');
+    if (genericType) {
+      if (genericType.generic_type_lv1_id.length) {
+        sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id)
+      }
+      if (genericType.generic_type_lv2_id.length) {
+        sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id)
+      }
+      if (genericType.generic_type_lv3_id.length) {
+        sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv3_id)
+      }
+    }
+
+    sql.orderBy('mp.product_name', 'DESC');
+
+    return sql;
+
   }
 
   updateTMT(db: Knex, productUpdate: any) {

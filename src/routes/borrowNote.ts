@@ -99,7 +99,7 @@ router.get('/:borrowNoteId/detail-list', async (req, res, next) => {
 router.get('/getall-remain', async (req, res, next) => {
   let db = req.db;
   let warehouseId = req.decoded.warehouseId;
-  let dstWarehouseId = req.query.dstWarehouseId;
+  let dstWarehouseId: any = req.query.dstWarehouseId;
 
   try {
     let rs: any = await borrowModel.getAllGeneric(db, warehouseId, dstWarehouseId);
@@ -165,7 +165,7 @@ router.get('/:borrowNoteId/detail-edit', async (req, res, next) => {
 
 router.get('/report', async (req, res, next) => {
   let db = req.db;
-  let id = req.query.id;
+  let id: any = req.query.id;
   let warehouse = req.decoded.warehouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
@@ -207,7 +207,7 @@ router.get('/report', async (req, res, next) => {
 
 router.get('/', async (req, res, next) => {
   let db = req.db;
-  let query = req.query.query;
+  let query: any = req.query.query;
   let limit = +req.query.limit || 20;
   let offset = +req.query.offset || 0;
   let accessRight = req.decoded.accessRight;
@@ -232,7 +232,7 @@ router.get('/', async (req, res, next) => {
 });
 router.get('/admin', async (req, res, next) => {
   let db = req.db;
-  let query = req.query.query;
+  let query: any = req.query.query;
   let limit = +req.query.limit || 20;
   let offset = +req.query.offset || 0;
   let accessRight = req.decoded.accessRight;

@@ -536,7 +536,7 @@ router.post('/other/expired/list', co(async (req, res, next) => {
 
 router.get('/other/expired/search', co(async (req, res, next) => {
   let db = req.db;
-  const q = req.query.q;
+  const q: any = req.query.q;
   const _q = '%' + q + '%';
   try {
     let rs = await receiveModel.getOtherExpiredSearch(db, _q);
@@ -567,7 +567,7 @@ router.post('/expired/list', co(async (req, res, next) => {
 
 router.get('/expired/search', co(async (req, res, next) => {
   let db = req.db;
-  const q = req.query.q;
+  const q: any = req.query.q;
   const _q = '%' + q + '%';
   try {
     let rs = await receiveModel.getExpiredSearch(db, _q);
@@ -1143,7 +1143,7 @@ router.post('/other/approve', co(async (req, res, next) => {
 router.get('/info', co(async (req, res, next) => {
   let db = req.db;
   try {
-    let receiveId = req.query.receiveId;
+    let receiveId: any = req.query.receiveId;
     const result = await receiveModel.getReceiveInfo(db, receiveId);
     res.send({ ok: true, rows: result[0] });
   } catch (error) {
@@ -1255,7 +1255,7 @@ router.get('/people/list', (req, res, next) => {
 
 router.get('/products', co(async (req, res, next) => {
   let db = req.db;
-  let receiveId = req.query.receiveId;
+  let receiveId: any = req.query.receiveId;
   if (receiveId) {
     try {
       let results = await receiveModel.getReceiveProducts(db, receiveId);
@@ -1272,8 +1272,8 @@ router.get('/products', co(async (req, res, next) => {
 
 router.delete('/remove', co(async (req, res, next) => {
   let db = req.db;
-  let receiveId = req.query.receiveId;
-  let purchaseOrderId = req.query.purchaseOrderId;
+  let receiveId: any = req.query.receiveId;
+  let purchaseOrderId: any = req.query.purchaseOrderId;
 
   if (receiveId) {
     try {
@@ -1443,8 +1443,8 @@ router.get('/purchases/info/:purchaseOrderId', co(async (req, res, nex) => {
 router.get('/purchases/get-last-location', co(async (req, res, nex) => {
 
   let db = req.db;
-  let productId: any = req.query.productId;
-  let warehouseId: any = req.query.warehouseId
+  let productId= req.query.productId;
+  let warehouseId= req.query.warehouseId
   try {
     const rows = await receiveModel.getLastLocation(db, warehouseId, productId);
     if (rows[0]) {
@@ -1463,8 +1463,8 @@ router.get('/purchases/get-last-location', co(async (req, res, nex) => {
 router.get('/purchases/get-last-location-other', co(async (req, res, nex) => {
 
   let db = req.db;
-  let productId: any = req.query.productId;
-  let warehouseId: any = req.query.warehouseId
+  let productId= req.query.productId;
+  let warehouseId= req.query.warehouseId
   try {
     const rows = await receiveModel.getLastLocationOther(db, warehouseId, productId);
     if (rows[0]) {
@@ -1483,7 +1483,7 @@ router.get('/purchases/get-last-location-other', co(async (req, res, nex) => {
 router.get('/purchases/product-list', co(async (req, res, nex) => {
 
   let db = req.db;
-  let purchaseOrderId = req.query.purchaseOrderId;
+  let purchaseOrderId: any = req.query.purchaseOrderId;
   if (purchaseOrderId) {
     try {
       const rows = await receiveModel.getPurchaseProductList(db, purchaseOrderId);
@@ -1499,7 +1499,7 @@ router.get('/purchases/product-list', co(async (req, res, nex) => {
 
 }));
 router.get('/purchases/check-holiday', co(async (req, res, nex) => {
-  let date = req.query.date
+  let date: any = req.query.date
   let db = req.db;
   date = moment(date).format('YYYY-MM-DD');
   let dateNotYear = '2000' + moment(date).format('-MM-DD');
@@ -1531,8 +1531,8 @@ router.get('/purchases/check-holiday', co(async (req, res, nex) => {
   }
 }));
 router.get('/purchases/check-expire', co(async (req, res, nex) => {
-  let genericId: any = req.query.genericId  //[{product_id:product_id,expired_date:expired_date}]
-  let expiredDate: any = req.query.expiredDate
+  let genericId= req.query.genericId  //[{product_id:product_id,expired_date:expired_date}]
+  let expiredDate= req.query.expiredDate
 
   let db = req.db;
   let i = 0;
@@ -1711,7 +1711,7 @@ router.post('/status/search', co(async (req, res, next) => {
 
 router.get('/getUnitGeneric', co(async (req, res, nex) => {
   let db = req.db;
-  let unitGenericId = req.query.unitGenericId;
+  let unitGenericId: any = req.query.unitGenericId;
   console.log(unitGenericId);
 
   try {
@@ -1728,7 +1728,7 @@ router.get('/getUnitGeneric', co(async (req, res, nex) => {
 
 router.get('/asn', co(async (req, res, nex) => {
   let db = req.db;
-  let purchaseOrderId = req.query.purchaseOrderId;
+  let purchaseOrderId: any = req.query.purchaseOrderId;
   try {
     let sys_hospital = req.decoded.SYS_HOSPITAL;
     const hospcode = JSON.parse(sys_hospital).hospcode
@@ -1758,7 +1758,7 @@ router.get('/asn', co(async (req, res, nex) => {
 
 router.get('/asn-detail', co(async (req, res, nex) => {
   let db = req.db;
-  let tradeCode = req.query.tradeCode;
+  let tradeCode: any = req.query.tradeCode;
   try {
     const rs: any = await receiveModel.getASNDetail(db, tradeCode);
     res.send({ ok: true, rows: rs[0] });

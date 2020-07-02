@@ -54,10 +54,10 @@ router.get('/', async (req, res, next) => {
 router.get('/search-autocomplete', async (req, res, next) => {
 
   let db = req.db;
-  const query = req.query2.q;
-  const labelerId = req.query.labelerId;
+  const query: any = req.query2.q;
+  const labelerId: any = req.query.labelerId;
   let genericTypes = req.decoded.generic_type_id;
-  let limit = req.query.limit === 'Y' ? false : true;
+  let limit: any = req.query.limit === 'Y' ? false : true;
   try {
     let rs: any;
     if (labelerId && limit) {
@@ -86,7 +86,7 @@ router.get('/search-autocomplete', async (req, res, next) => {
 router.get('/search-generic-autocomplete', async (req, res, next) => {
 
   let db = req.db;
-  const query = req.query.query;
+  const query: any = req.query.query;
 
   try {
     let rs: any = await productModel.adminSearchGenerics(db, query);
@@ -106,8 +106,8 @@ router.get('/search-generic-autocomplete', async (req, res, next) => {
 router.get('/search-warehouse-autocomplete', async (req, res, next) => {
 
   let db = req.db;
-  let query = req.query.q;
-  let warehouseId = req.query.warehouseId;
+  let query: any = req.query.q;
+  let warehouseId: any = req.query.warehouseId;
 
   try {
     let rs = await productModel.adminSearchAllProductsWarehouse(db, query, warehouseId);
@@ -174,7 +174,7 @@ router.post('/remain/warehouse', async (req, res, next) => {
 router.get('/remain/warehouse', async (req, res, next) => {
 
   let db = req.db;
-  let productId = req.query.productId;
+  let productId: any = req.query.productId;
   let warehouseId = req.decoded.warehouseId;
 
   try {
@@ -207,7 +207,7 @@ router.get('/listall', async (req, res, next) => {
 router.get('/in/warehouse', async (req, res, next) => {
 
   let db = req.db;
-  const genericId = req.query.genericId;
+  const genericId: any = req.query.genericId;
   const warehouseId = req.decoded.warehouseId;
 
   try {
@@ -589,7 +589,7 @@ router.get('/getwarehouseproductremain/:warehouseId/:productId', async (req, res
 router.get('/mapping/search-product-tmt', async (req, res, next) => {
 
   let db = req.db;
-  const query = req.query.q;
+  const query: any = req.query.q;
 
   try {
     let rs: any = await productModel.searchProductTMT(db, query);
@@ -599,6 +599,7 @@ router.get('/mapping/search-product-tmt', async (req, res, next) => {
         let obj: any = {};
         obj.fsn = v.FSN;
         obj.tmtid = v.TMTID;
+        obj.manufacturer = v.MANUFACTURER;
         items.push(obj);
       });
       res.send(items);
@@ -614,12 +615,13 @@ router.get('/mapping/search-product-tmt', async (req, res, next) => {
 
 });
 
-router.get('/mapping/search-product/:query', async (req, res, next) => {
+router.post('/mapping/search-product/:query', async (req, res, next) => {
   let db = req.db;
-  let query = req.params.query;
+  let query = req.params.query || '';
+  let genericType: any = req.body.genericType;
 
   try {
-    let rs: any = await productModel.getSearchProduct(db, query);
+    let rs: any = await productModel.getSearchProduct(db, query, genericType);
 
     let mappings = [];
     rs.forEach(v => {
@@ -627,6 +629,9 @@ router.get('/mapping/search-product/:query', async (req, res, next) => {
       obj.working_code = v.working_code;
       obj.product_name = v.product_name;
       obj.product_id = v.product_id;
+      obj.generic_name = v.generic_name;
+      obj.m_labeler_name = v.m_labeler_name;
+      obj.v_labeler_name = v.v_labeler_name;
       obj.tmtid = v.TMTID;
       // obj.fsn = v.FSN;
       mappings.push(obj);
@@ -639,11 +644,11 @@ router.get('/mapping/search-product/:query', async (req, res, next) => {
   }
 });
 
-router.get('/mapping/all-product', async (req, res, next) => {
+router.post('/mapping/all-product', async (req, res, next) => {
   let db = req.db;
-
+  let genericType: any = req.body.genericType;
   try {
-    let rs: any = await productModel.getAllProduct(db);
+    let rs: any = await productModel.getAllProduct(db, genericType);
 
     let mappings = [];
     rs.forEach(v => {
@@ -651,6 +656,10 @@ router.get('/mapping/all-product', async (req, res, next) => {
       obj.working_code = v.working_code;
       obj.product_name = v.product_name;
       obj.product_id = v.product_id;
+      obj.generic_name = v.generic_name;
+      obj.m_labeler_name = v.m_labeler_name;
+      obj.v_labeler_name = v.v_labeler_name;
+
       obj.tmtid = v.TMTID;
       // obj.fsn = v.FSN;
       mappings.push(obj);

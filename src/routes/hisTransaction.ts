@@ -332,7 +332,7 @@ router.post('/import', co(async (req, res, next) => {
                 const transactionIds = r.transaction_id.split(',');
                 if (transactionIds.length == r.count) {
                   await hisTransactionModel.decreaseProductQty(db, i.wm_product_id, i.small_remain_qty - i.product_qty);
-                  await hisTransactionModel.changeStatusToCut(db, moment().format('YYYY-MM-DD hh:mm:ss'), req.decoded.people_user_id, transactionIds);
+                  await hisTransactionModel.changeStatusToCut(db, moment().format('YYYY-MM-DD HH:mm:ss'), req.decoded.people_user_id, transactionIds);
                   //getBalance เพื่อไปลง stockcard
                   let balance: any = await hisTransactionModel.getBalance(db, i.wm_product_id);
                   balance = balance[0];
@@ -454,9 +454,9 @@ router.post('/upload-his', async (req, res, next) => {
         mmis_warehouse: warehouseId,
         people_user_id: req.decoded.peopleUserId,
         is_cut_stock: 'Y',
-        cut_stock_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+        cut_stock_date: moment().format('YYYY-MM-DD hh:mm:ss'),
         cut_stock_people_user_id: req.decoded.peopleUserId,
-        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        created_at: moment().format('YYYY-MM-DD hh:mm:ss'),
         is_duplicate: 'N'
       });
     }

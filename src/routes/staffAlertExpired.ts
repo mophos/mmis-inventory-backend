@@ -28,7 +28,7 @@ router.post('/generics', async (req, res, next) => {
 
 router.get('/genericSelec', async (req, res, next) => {
   const db = req.db;
-  let _data = req.query.id
+  let _data: any = req.query.id
   try {
     if (typeof _data === 'string') {
       _data = [_data];

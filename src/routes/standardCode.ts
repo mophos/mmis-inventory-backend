@@ -173,7 +173,7 @@ router.get('/generic-dosages', (req, res, next) => {
 });
 
 router.get('/report', (req, res, next) => {
-  let type = req.query.type;
+  let type: any = req.query.type;
   let db = req.db;
 
   stdCode.getReport(db, type)

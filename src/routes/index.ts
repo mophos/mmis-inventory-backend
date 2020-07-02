@@ -214,15 +214,15 @@ router.get('/report/getBudgetYear', wrap(async (req, res, next) => {
 }))
 router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
   const db = req.db;
-  let warehouseId: any = req.query.warehouseId
-  let warehouseName = req.query.warehouseName;
+  let warehouseId= req.query.warehouseId
+  let warehouseName: any = req.query.warehouseName;
   if (!warehouseId) {
     warehouseId = req.decoded.warehouseId;
   }
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
-  const month = req.query.month
-  const year = req.query.year
-  let genericType = req.query.genericTypes
+  const month: any = req.query.month
+  const year: any = req.query.year
+  let genericType: any = req.query.genericTypes
   let _tableName = "สรุปงานคลังเวชภัณฑ์"
   genericType = Array.isArray(genericType) ? genericType : [genericType];
 
@@ -278,15 +278,15 @@ router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
 
 router.get('/report/monthlyReport', wrap(async (req, res, next) => {
   const db = req.db;
-  let warehouseId: any = req.query.warehouseId;
-  let warehouseName = req.query.warehouseName;
+  let warehouseId= req.query.warehouseId;
+  let warehouseName: any = req.query.warehouseName;
   if (!warehouseId) {
     warehouseId = req.decoded.warehouseId;
   }
-  const month = req.query.month
-  const year = req.query.year
+  const month: any = req.query.month
+  const year: any = req.query.year
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
-  let genericType = req.query.genericTypes
+  let genericType: any = req.query.genericTypes
   genericType = Array.isArray(genericType) ? genericType : [genericType];
 
   try {
@@ -340,13 +340,13 @@ router.get('/report/purchase-bit-type', wrap(async (req, res, next) => {
   const db = req.db;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
-  let startdate = req.query.startDate
-  let enddate = req.query.endDate
-  let genericTypeId = req.query.genericType
+  let startdate: any = req.query.startDate
+  let enddate: any = req.query.endDate
+  let genericTypeId: any = req.query.genericType
   genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
-  let warehouseId: any = req.query.warehouseId;
+  let warehouseId= req.query.warehouseId;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
-  let getFrom = req.query.getFrom
+  let getFrom: any = req.query.getFrom
   if (!warehouseId) {
     warehouseId = req.decoded.warehouseId;
   }
@@ -434,10 +434,10 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
   const year = req.params.year - 543
   const warehouseId: any = req.decoded.warehouseId
   const warehouseName: any = req.decoded.warehouseName
-  const genericType = req.query.genericType
-  const people1 = req.query.people1
-  const people2 = req.query.people2
-  const people3 = req.query.people3
+  const genericType: any = req.query.genericType
+  const people1: any = req.query.people1
+  const people2: any = req.query.people2
+  const people3: any = req.query.people3
   let people = [people1, people2, people3]
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
@@ -479,10 +479,10 @@ router.get('/report/receiveIssueYearGeneric/:year', wrap(async (req, res, next) 
   const year = req.params.year - 543
   const warehouseId: any = req.decoded.warehouseId
   const warehouseName: any = req.decoded.warehouseName
-  const genericType = req.query.genericType
-  const people1 = req.query.people1
-  const people2 = req.query.people2
-  const people3 = req.query.people3
+  const genericType: any = req.query.genericType
+  const people1: any = req.query.people1
+  const people2: any = req.query.people2
+  const people3: any = req.query.people3
   let people = [people1, people2, people3]
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
@@ -520,7 +520,7 @@ router.get('/report/receiveIssueYearGeneric/:year', wrap(async (req, res, next) 
 
 router.get('/report/adjust-stockcard', wrap(async (req, res, next) => {
   const db = req.db;
-  let adjustId = req.query.adjustId;
+  let adjustId: any = req.query.adjustId;
   adjustId = Array.isArray(adjustId) ? adjustId : [adjustId];
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
@@ -601,10 +601,10 @@ router.get('/report/receiveOrthorCost/:startDate/:endDate/:warehouseId/:warehous
 
 router.get('/report/receiveOrthorCostAccount', wrap(async (req, res, next) => {
   const db = req.db;
-  let startDate = req.query.startDate;
-  let endDate = req.query.endDate;
-  let warehouseId = req.query.warehouseId;
-  let warehouseName = req.query.warehouseName;
+  let startDate: any = req.query.startDate;
+  let endDate: any = req.query.endDate;
+  let warehouseId: any = req.query.warehouseId;
+  let warehouseName: any = req.query.warehouseName;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let receiveTpyeId = Array.isArray(req.query.receiveTpyeId) ? req.query.receiveTpyeId : [req.query.receiveTpyeId];
   // warehouseId = warehouseId ? +warehouseId : 'ทุกคลังสินค้า'
@@ -941,7 +941,7 @@ router.get('/report/approve/requis', wrap(async (req, res, next) => {
   let warehouse_id: any = req.decoded.warehouseId
 
   try {
-    let requisId = req.query.requisId;
+    let requisId: any = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
@@ -1008,7 +1008,7 @@ router.get('/report/approve/requis3', wrap(async (req, res, next) => {
   let warehouse_id: any = req.decoded.warehouseId
 
   try {
-    let requisId = req.query.requisId;
+    let requisId: any = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
@@ -1074,7 +1074,7 @@ router.get('/report/approve/requis2', wrap(async (req, res, next) => {
   let warehouse_id: any = req.decoded.warehouseId
 
   try {
-    let requisId = req.query.requisId;
+    let requisId: any = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
@@ -1138,7 +1138,7 @@ router.get('/report/approve/requis4', wrap(async (req, res, next) => {
   let warehouse_id: any = req.decoded.warehouseId
 
   try {
-    let requisId = req.query.requisId;
+    let requisId: any = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
@@ -1206,7 +1206,7 @@ router.get('/report/staff/approve/requis', wrap(async (req, res, next) => {
   let warehouse_id: any = req.decoded.warehouseId
 
   try {
-    let requisId = req.query.requisId;
+    let requisId: any = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
@@ -1258,7 +1258,7 @@ router.get('/report/approve2/requis', wrap(async (req, res, next) => {
   const line = await inventoryReportModel.getLine(db, 'AR');
   let page_re: any = line[0].line;
   try {
-    let requisId = req.query.requisId;
+    let requisId: any = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
@@ -1305,7 +1305,7 @@ router.get('/report/UnPaid/requis', wrap(async (req, res, next) => {
   let unPaid: any = []
   try {
     let warehouseId = req.decoded.warehouseId;
-    let requisId = req.query.requisId;
+    let requisId: any = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let rs: any = await inventoryReportModel.getUnPaidOrders(db, warehouseId, null);
     let hosdetail = await inventoryReportModel.hospital(db);
@@ -1353,7 +1353,7 @@ router.get('/report/staff/UnPaid/requis', wrap(async (req, res, next) => {
   let unPaid: any = []
   try {
     let warehouseId = req.decoded.warehouseId;
-    let requisId = req.query.requisId;
+    let requisId: any = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let rs: any = await inventoryReportModel.getUnPaidOrders(db, null, warehouseId);
     let hosdetail = await inventoryReportModel.hospital(db);
@@ -1402,7 +1402,7 @@ router.get('/report/staff/pay/UnPaid/requis', wrap(async (req, res, next) => {
   let unPaid: any = []
   try {
     let warehouseId = req.decoded.warehouseId;
-    let requisId = req.query.requisId;
+    let requisId: any = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let rs: any = await inventoryReportModel.getUnPaidOrders(db, warehouseId, null);
     let hosdetail = await inventoryReportModel.hospital(db);
@@ -1448,7 +1448,7 @@ router.get('/report/staff/pay/UnPaid/requis', wrap(async (req, res, next) => {
 router.get('/report/list/pick', wrap(async (req, res, next) => {
   let db = req.db;
   try {
-    // let pickId = req.query.pickId;
+    // let pickId: any = req.query.pickId;
     // pickId = Array.isArray(pickId) ? pickId : [pickId]
     // console.log(pickId);
 
@@ -1572,7 +1572,7 @@ router.get('/report/staff/list/requis', wrap(async (req, res, next) => {
   let db = req.db;
   try {
     let test;
-    let requisId = req.query.requisId;
+    let requisId: any = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
@@ -1691,7 +1691,7 @@ router.get('/report/list/requis', wrap(async (req, res, next) => {
   let db = req.db;
   try {
     let test;
-    let requisId = req.query.requisId;
+    let requisId: any = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
@@ -1994,7 +1994,7 @@ router.get('/report/count/requis/:date', wrap(async (req, res, next) => {
 }));//ทำFrontEndแล้ว  //ตรวจสอบแล้ว 14-9-60  // ตรวจสอบแล้ว 27/9/60
 
 router.get('/report/issueStraff', wrap(async (req, res, next) => {
-  let issue_id: any = req.query.issue_id
+  let issue_id= req.query.issue_id
   let db = req.db;
   let isArray = true
   let issue_date: any = []
@@ -2036,7 +2036,7 @@ router.get('/report/issueStraff', wrap(async (req, res, next) => {
 
 router.get('/report/issue', wrap(async (req, res, next) => {
   try {
-    let issue_id: any = req.query.issue_id;
+    let issue_id= req.query.issue_id;
     let db = req.db;
     let isArray = true;
     let issueBody: any = [];
@@ -2082,7 +2082,7 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
   let endDate = req.params.endDate;
   let wareHouse = req.params.wareHouse;
   let genericId = req.params.genericId;
-  let genericTypeId = req.query.genericTypeId;
+  let genericTypeId: any = req.query.genericTypeId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
@@ -2130,7 +2130,7 @@ router.get('/report/product/expired/:startDate/:endDate/:wareHouse/:genericId', 
 router.get('/report/check/receive/issue', wrap(async (req, res, next) => {
   let db = req.db;
 
-  let year = req.query.year;
+  let year: any = req.query.year;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let startDate = (year - 1) + '-10-1'
@@ -2157,9 +2157,9 @@ router.get('/report/check/receive/issue', wrap(async (req, res, next) => {
 
 router.get('/report/list/cost/type', wrap(async (req, res, next) => {
   let db = req.db;
-  let startDate = req.query.startDate
-  let warehouseId = req.query.warehouseId
-  let warehouseName = req.query.warehouseName
+  let startDate: any = req.query.startDate
+  let warehouseId: any = req.query.warehouseId
+  let warehouseName: any = req.query.warehouseName
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
   let genericTypeId = Array.isArray(req.query.genericType) ? req.query.genericType : [req.query.genericType];
   let hosdetail = await inventoryReportModel.hospital(db);
@@ -2191,7 +2191,7 @@ router.get('/report/list/cost/type', wrap(async (req, res, next) => {
 
 router.get('/report/list/receiveOther', wrap(async (req, res, next) => {
   let db = req.db;
-  let receiveID = req.query.receiveOtherID;
+  let receiveID: any = req.query.receiveOtherID;
   const wareHouseId = req.decoded.warehouseId
   let list_receive2;
   let productId = [];
@@ -2230,7 +2230,7 @@ router.get('/report/list/receiveOther', wrap(async (req, res, next) => {
 
 router.get('/report/list/receive', wrap(async (req, res, next) => {
   let db = req.db;
-  let receiveID = req.query.receiveID;
+  let receiveID: any = req.query.receiveID;
   let list_receive2;
   const wareHouseId = req.decoded.warehouseId
 
@@ -2658,7 +2658,7 @@ router.get('/report/list/receiveDateOther/:sDate/:eDate', wrap(async (req, res, 
 
 router.get('/report/receive', wrap(async (req, res, next) => {
   let db = req.db;
-  let receiveId = req.query.receiveId;
+  let receiveId: any = req.query.receiveId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let book_prefix = `${req.decoded.BOOK_PREFIX}${req.decoded.warehouseBook ? req.decoded.warehouseBook : ''}`;
@@ -2710,8 +2710,8 @@ router.get('/report/requis/day/:date', wrap(async (req, res, next) => {
 
 router.get('/report/un-receive', wrap(async (req, res, next) => {
   let db = req.db;
-  let startdate = req.query.startdate
-  let enddate = req.query.enddate
+  let startdate: any = req.query.startdate
+  let enddate: any = req.query.enddate
   let warehouseId = req.decoded.warehouseId
 
   let hosdetail = await inventoryReportModel.hospital(db);
@@ -2755,7 +2755,7 @@ router.get('/report/tranfer/:tranferId', wrap(async (req, res, next) => {
 
 router.get('/report/tranfers', wrap(async (req, res, next) => {
   let db = req.db;
-  let tranferId = req.query.tranferId;
+  let tranferId: any = req.query.tranferId;
   if (typeof tranferId === 'string') tranferId = [tranferId]
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
@@ -2797,7 +2797,7 @@ router.get('/report/tranfers', wrap(async (req, res, next) => {
 
 router.get('/report/tranfers2', wrap(async (req, res, next) => {
   let db = req.db;
-  let tranferId = req.query.tranferId;
+  let tranferId: any = req.query.tranferId;
   if (typeof tranferId === 'string') tranferId = [tranferId]
   console.log(tranferId);
   let hosdetail = await inventoryReportModel.hospital(db);
@@ -2857,7 +2857,7 @@ router.get('/report/stockcard2/:productId/:startDate/:endDate', wrap(async (req,
   let productId = req.params.productId;
   let startDate = req.params.startDate;
   let endDate = req.params.endDate;
-  let wareHouseId = req.query.wareHouseId;
+  let wareHouseId: any = req.query.wareHouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
 
@@ -2889,7 +2889,7 @@ router.get('/report/stockcard2/:productId/:startDate/:endDate', wrap(async (req,
 router.get('/report/stockcard2/:productId', wrap(async (req, res, next) => {
   let db = req.db;
   let productId = req.params.productId;
-  let wareHouseId = req.query.wareHouseId;
+  let wareHouseId: any = req.query.wareHouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   if (wareHouseId == null) {
@@ -2943,7 +2943,7 @@ router.get('/report/productDisbursement/:internalissueId', wrap(async (req, res,
 
 router.get('/report/check/receive', wrap(async (req, res, next) => {
   let db = req.db;
-  let receiveID = req.query.receiveID
+  let receiveID: any = req.query.receiveID
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
   let hospitalDetail = await inventoryReportModel.hospitalNew(db);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
@@ -2991,7 +2991,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
 
 router.get('/report/check/receive/singburi', wrap(async (req, res, next) => {
   let db = req.db;
-  let receiveID = req.query.receiveID
+  let receiveID: any = req.query.receiveID
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
   let hosdetail = await inventoryReportModel.hospital(db);
   // let master = hosdetail[0].managerName;
@@ -3042,7 +3042,7 @@ router.get('/report/check/receive/singburi', wrap(async (req, res, next) => {
 
 router.get('/report/check/receive/4', wrap(async (req, res, next) => {
   let db = req.db;
-  let receiveID = req.query.receiveID
+  let receiveID: any = req.query.receiveID
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
   let hospitalDetail = await inventoryReportModel.hospitalNew(db);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
@@ -3094,13 +3094,13 @@ router.get('/report/check/receive/4', wrap(async (req, res, next) => {
 
 router.get('/report/receive-where-vender/excel', wrap(async (req, res, next) => {
   let db = req.db
-  let startDate = req.query.startDate
-  let endDate = req.query.endDate
-  let genericTypeId = req.query.genericType
-  let genericTypeName = req.query.genericTypeName
-  let wareHouseId = req.query.warehouseId
+  let startDate: any = req.query.startDate
+  let endDate: any = req.query.endDate
+  let genericTypeId: any = req.query.genericType
+  let genericTypeName: any = req.query.genericTypeName
+  let wareHouseId: any = req.query.warehouseId
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
-  let isFree = req.query.isFree
+  let isFree: any = req.query.isFree
   var wb = new excel4node.Workbook();
   // Add Worksheets to the workbook
   var ws = wb.addWorksheet('Sheet 1');
@@ -3214,13 +3214,13 @@ router.get('/report/receive-where-vender/excel', wrap(async (req, res, next) => 
 
 router.get('/report/receive-where-vender', wrap(async (req, res, next) => {
   let db = req.db
-  let startDate = req.query.startDate
-  let endDate = req.query.endDate
-  let genericTypeId = req.query.genericType
-  let genericTypeName = req.query.genericTypeName
-  let wareHouseId = req.query.warehouseId
+  let startDate: any = req.query.startDate
+  let endDate: any = req.query.endDate
+  let genericTypeId: any = req.query.genericType
+  let genericTypeName: any = req.query.genericTypeName
+  let wareHouseId: any = req.query.warehouseId
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
-  let isFree = req.query.isFree
+  let isFree: any = req.query.isFree
   try {
     genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
     var rs: any = await inventoryReportModel.receiveWhereVender(db, startDate, endDate, genericTypeId, wareHouseId, isFree, dateSetting)
@@ -3262,7 +3262,7 @@ router.get('/report/receive-where-vender', wrap(async (req, res, next) => {
 
 router.get('/report/check/receive3', wrap(async (req, res, next) => {
   let db = req.db;
-  let receiveID = req.query.receiveID
+  let receiveID: any = req.query.receiveID
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
   let hospitalDetail = await inventoryReportModel.hospitalNew(db);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
@@ -3321,7 +3321,7 @@ router.get('/report/check/receive3', wrap(async (req, res, next) => {
 
 router.get('/report/check/receive/2', wrap(async (req, res, next) => {
   let db = req.db;
-  let receiveID = req.query.receiveID
+  let receiveID: any = req.query.receiveID
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
   let hosdetail = await inventoryReportModel.hospital(db);
   let master = hosdetail[0].managerName;
@@ -3384,7 +3384,7 @@ router.get('/report/check/receive2', wrap(async (req, res, next) => {
   let db = req.db;
   let hospitalDetail = await inventoryReportModel.hospitalNew(db);
   hospitalDetail.book_prefix = `${req.decoded.BOOK_PREFIX}${req.decoded.warehouseBook ? req.decoded.warehouseBook : ''}`;
-  let receiveID = req.query.receiveID
+  let receiveID: any = req.query.receiveID
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
   try {
     const data = [];
@@ -3509,7 +3509,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
 
 router.get('/report/check/receives/singburi', wrap(async (req, res, next) => {
   let db = req.db;
-  let rc_ID = req.query.receiveID
+  let rc_ID: any = req.query.receiveID
   let receiveID: any = []
   let hosdetail = await inventoryReportModel.hospital(db);
   let master = hosdetail[0].managerName;
@@ -3593,8 +3593,8 @@ router.get('/report/check/receives/singburi', wrap(async (req, res, next) => {
 
 router.get('/report/balance', wrap(async (req, res, next) => {
   let db = req.db;
-  let productId = req.query.productId
-  let warehouseId = req.query.warehouseId
+  let productId: any = req.query.productId
+  let warehouseId: any = req.query.warehouseId
   let warehouseName;
   if (productId == null) { productId = ''; }
   if (warehouseId == null) { warehouseId = ''; warehouseName = 'ทุกคลัง' }
@@ -3611,9 +3611,9 @@ router.get('/report/balance', wrap(async (req, res, next) => {
 
 router.get('/report/product-receive2', wrap(async (req, res, next) => {
   let db = req.db;
-  let startdate = req.query.startDate
-  let enddate = req.query.endDate
-  let genericType = req.query.genericType;
+  let startdate: any = req.query.startDate
+  let enddate: any = req.query.endDate
+  let genericType: any = req.query.genericType;
 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
@@ -3653,12 +3653,12 @@ router.get('/report/product-receive2', wrap(async (req, res, next) => {
 
 router.get('/report/product-receive', wrap(async (req, res, next) => {
   let db = req.db;
-  let startdate = req.query.startDate
-  let enddate = req.query.endDate
-  let genericType = req.query.genericType;
+  let startdate: any = req.query.startDate
+  let enddate: any = req.query.endDate
+  let genericType: any = req.query.genericType;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
-  let warehouseId = req.query.warehouseId
-  let isFree = req.query.isFree
+  let warehouseId: any = req.query.warehouseId
+  let isFree: any = req.query.isFree
 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
@@ -3698,11 +3698,11 @@ router.get('/report/product-receive', wrap(async (req, res, next) => {
 
 router.get('/report/product-receive-account', wrap(async (req, res, next) => {
   let db = req.db;
-  let startdate = req.query.startDate
-  let enddate = req.query.endDate
-  let genericType = req.query.genericType;
+  let startdate: any = req.query.startDate
+  let enddate: any = req.query.endDate
+  let genericType: any = req.query.genericType;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
-  let warehouseId = req.query.warehouseId
+  let warehouseId: any = req.query.warehouseId
 
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
@@ -3735,7 +3735,7 @@ router.get('/report/product-receive-account', wrap(async (req, res, next) => {
 
 router.get('/report/product/receive', wrap(async (req, res, next) => {
   let db = req.db;
-  let receiveID = req.query.receiveID
+  let receiveID: any = req.query.receiveID
 
   if (typeof receiveID === 'string') receiveID = [receiveID];
 
@@ -3771,7 +3771,7 @@ router.get('/report/product/receive', wrap(async (req, res, next) => {
 
 router.get('/report/product/receive/other', wrap(async (req, res, next) => {
   let db = req.db;
-  let receiveOtherID = req.query.receiveOtherID
+  let receiveOtherID: any = req.query.receiveOtherID
 
   if (typeof receiveOtherID === 'string') receiveOtherID = [receiveOtherID];
 
@@ -3807,8 +3807,8 @@ router.get('/report/product/receive/other', wrap(async (req, res, next) => {
 
 router.get('/report/product/balance', wrap(async (req, res, next) => {
   let db = req.db;
-  let productId = req.query.productId;
-  let warehouseId = req.query.warehouseId;
+  let productId: any = req.query.productId;
+  let warehouseId: any = req.query.warehouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let productBalance = await inventoryReportModel.productBalance(db, productId, warehouseId);
@@ -3854,10 +3854,10 @@ router.get('/report/product/balance/warehouse/:warehouseId', wrap(async (req, re
 }));
 router.get('/report/product/manufacture/warehouse', wrap(async (req, res, next) => {
   let db = req.db;
-  let warehouseId = req.query.warehouseId;
-  let startDate = req.query.startDate;
-  let endDate = req.query.endDate;
-  let genericId = req.query.genericId;
+  let warehouseId: any = req.query.warehouseId;
+  let startDate: any = req.query.startDate;
+  let endDate: any = req.query.endDate;
+  let genericId: any = req.query.genericId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   moment.locale('th');
@@ -3911,7 +3911,7 @@ router.get('/report/product/all', wrap(async (req, res, next) => {
   const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
   const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
   const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
-  let query = req.query.query;
+  let query: any = req.query.query;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let productAll = await inventoryReportModel.productAll(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, query);
@@ -3925,7 +3925,7 @@ router.get('/report/product/all/excel', wrap(async (req, res, next) => {
   const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
   const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
   const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
-  let query = req.query.query;
+  let query: any = req.query.query;
   let db = req.db;
 
   fse.ensureDirSync(process.env.MMIS_TMP);
@@ -3994,10 +3994,10 @@ router.get('/report/purchasing/notgiveaway/:startDate/:endDate', wrap(async (req
 
 router.get('/report/inventoryStatus/generic', wrap(async (req, res, next) => {
   let db = req.db;
-  let warehouseId = req.query.warehouseId
-  let statusDate = req.query.statusDate
-  let genericType = req.query.genericType
-  let warehouseName = req.query.warehouseName
+  let warehouseId: any = req.query.warehouseId
+  let statusDate: any = req.query.statusDate
+  let genericType: any = req.query.genericType
+  let warehouseName: any = req.query.warehouseName
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
@@ -4049,9 +4049,9 @@ router.get('/report/inventoryStatus/generic', wrap(async (req, res, next) => {
 
 router.get('/report/summary/disbursement', wrap(async (req, res, next) => {
   let db = req.db;
-  let startDate = req.query.startDate
-  let endDate = req.query.endDate
-  let warehouseId = req.query.warehouseId
+  let startDate: any = req.query.startDate
+  let endDate: any = req.query.endDate
+  let warehouseId: any = req.query.warehouseId
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
@@ -4091,9 +4091,9 @@ router.get('/report/summary/disbursement', wrap(async (req, res, next) => {
 
 router.get('/report/summary/disbursement/excel', wrap(async (req, res, next) => {
   let db = req.db;
-  let startDate = req.query.startDate
-  let endDate = req.query.endDate
-  let warehouseId = req.query.warehouseId
+  let startDate: any = req.query.startDate
+  let endDate: any = req.query.endDate
+  let warehouseId: any = req.query.warehouseId
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
@@ -4208,12 +4208,12 @@ router.get('/report/generics-movement/:warehouseId/:startdate/:enddate', wrap(as
 
 router.get('/report/receive/export', async (req, res, next) => {
   const db = req.db;
-  let startdate = req.query.startDate
-  let enddate = req.query.endDate
-  let genericType = req.query.genericType;
+  let startdate: any = req.query.startDate
+  let enddate: any = req.query.endDate
+  let genericType: any = req.query.genericType;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
-  let warehouseId = req.query.warehouseId
-  let isFree = req.query.isFree
+  let warehouseId: any = req.query.warehouseId
+  let isFree: any = req.query.isFree
 
   // get tmt data
   let rs: any = await inventoryReportModel.productReceive(db, startdate, enddate, genericType, dateSetting, warehouseId, isFree);
@@ -4270,9 +4270,9 @@ router.get('/report/receive/export', async (req, res, next) => {
 
 router.get('/report/list/cost/excel', wrap(async (req, res, next) => {
   let db = req.db;
-  let startDate = req.query.startDate;
-  let warehouseId = req.query.warehouseId;
-  let warehouseName = req.query.warehouseName;
+  let startDate: any = req.query.startDate;
+  let warehouseId: any = req.query.warehouseId;
+  let warehouseName: any = req.query.warehouseName;
   let genericTypeId = Array.isArray(req.query.genericType) ? req.query.genericType : [req.query.genericType];
 
   let rs: any = await inventoryReportModel.list_cost(db, genericTypeId, startDate, warehouseId)
@@ -4312,7 +4312,7 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
   const db = req.db;
   const year = +req.params.year - 543;
   const warehouseId: any = req.decoded.warehouseId;
-  const genericType = req.query.genericType;
+  const genericType: any = req.query.genericType;
 
   try {
     const rs: any = await inventoryReportModel.issueYear(db, year, warehouseId, genericType);
@@ -4386,7 +4386,7 @@ router.get('/report/receive-issue-generic/year/export/:year', async (req, res, n
   const db = req.db;
   const year = +req.params.year - 543;
   const warehouseId: any = req.decoded.warehouseId;
-  const genericType = req.query.genericType;
+  const genericType: any = req.query.genericType;
 
   try {
     const rs: any = await inventoryReportModel.issueYearGeneric(db, year, warehouseId, genericType);
@@ -4644,10 +4644,10 @@ router.get('/report/print/alert-expried/excel', async (req, res, next) => {
 
 router.get('/report/inventoryStatus/generic/excel', wrap(async (req, res, next) => {
   let db = req.db;
-  let warehouseId = req.query.warehouseId
-  let statusDate = req.query.statusDate
-  let genericType = req.query.genericType
-  let warehouseName = req.query.warehouseName
+  let warehouseId: any = req.query.warehouseId
+  let statusDate: any = req.query.statusDate
+  let genericType: any = req.query.genericType
+  let warehouseName: any = req.query.warehouseName
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
   let hosdetail = await inventoryReportModel.hospital(db);
   let rs = await inventoryReportModel.inventoryStatusGeneric(db, warehouseId, genericType, statusDate, dateSetting);
@@ -4723,10 +4723,10 @@ router.get('/report/returnBudget/export', async (req, res, next) => {
 // ---------------------------------------- StockCard ---------------------------------------- //
 router.get('/report/genericStock/all', wrap(async (req, res, next) => {
   let db = req.db;
-  let startDate = req.query.startDate;
-  let endDate = req.query.endDate;
-  let warehouseId = req.query.warehouseId;
-  let offset = req.query.offset;
+  let startDate: any = req.query.startDate;
+  let endDate: any = req.query.endDate;
+  let warehouseId: any = req.query.warehouseId;
+  let offset: any = req.query.offset;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
@@ -4865,10 +4865,10 @@ router.get('/report/genericStock/all', wrap(async (req, res, next) => {
 
 router.get('/report/genericStock/all/staff', wrap(async (req, res, next) => {
   let db = req.db;
-  let startDate = req.query.startDate;
-  let endDate = req.query.endDate;
-  let warehouseId = req.query.warehouseId;
-  let offset = req.query.offset;
+  let startDate: any = req.query.startDate;
+  let endDate: any = req.query.endDate;
+  let warehouseId: any = req.query.warehouseId;
+  let offset: any = req.query.offset;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
@@ -5007,7 +5007,7 @@ router.get('/report/genericStock/all/staff', wrap(async (req, res, next) => {
 
 router.get('/report/getGenericWarehouseAll', wrap(async (req, res, next) => {
   let db = req.db;
-  let warehouseId = req.query.warehouseId;
+  let warehouseId: any = req.query.warehouseId;
   let offset = '';
   let rs = await inventoryReportModel.getGenericWarehouse(db, warehouseId, offset)
   res.send({ ok: true, rows: rs[0].length })
@@ -5015,10 +5015,10 @@ router.get('/report/getGenericWarehouseAll', wrap(async (req, res, next) => {
 
 router.get('/report/generic/stock', wrap(async (req, res, next) => {
   let db = req.db;
-  let genericId = req.query.genericId;
-  let startDate = req.query.startDate;
-  let endDate = req.query.endDate;
-  let warehouseId = req.query.warehouseId;
+  let genericId: any = req.query.genericId;
+  let startDate: any = req.query.startDate;
+  let endDate: any = req.query.endDate;
+  let warehouseId: any = req.query.warehouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'N' ? 'view_stock_card_warehouse_date' : 'view_stock_card_warehouse';
@@ -5153,10 +5153,10 @@ router.get('/report/generic/stock', wrap(async (req, res, next) => {
 
 router.get('/report/generic/stock/staff', wrap(async (req, res, next) => {
   let db = req.db;
-  let genericId = req.query.genericId;
-  let startDate = req.query.startDate;
-  let endDate = req.query.endDate;
-  let warehouseId = req.query.warehouseId;
+  let genericId: any = req.query.genericId;
+  let startDate: any = req.query.startDate;
+  let endDate: any = req.query.endDate;
+  let warehouseId: any = req.query.warehouseId;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
@@ -5290,10 +5290,10 @@ router.get('/report/generic/stock/staff', wrap(async (req, res, next) => {
 
 router.get('/report/genericStock/haveMovement', wrap(async (req, res, next) => {
   let db = req.db;
-  let startDate = req.query.startDate;
-  let endDate = req.query.endDate;
-  let warehouseId = req.query.warehouseId;
-  let offset = req.query.offset;
+  let startDate: any = req.query.startDate;
+  let endDate: any = req.query.endDate;
+  let warehouseId: any = req.query.warehouseId;
+  let offset: any = req.query.offset;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let genericTypes = req.decoded.generic_type_id;
@@ -5433,10 +5433,10 @@ router.get('/report/genericStock/haveMovement', wrap(async (req, res, next) => {
 
 router.get('/report/genericStock/haveMovement/staff', wrap(async (req, res, next) => {
   let db = req.db;
-  let startDate = req.query.startDate;
-  let endDate = req.query.endDate;
-  let warehouseId = req.query.warehouseId;
-  let offset = req.query.offset;
+  let startDate: any = req.query.startDate;
+  let endDate: any = req.query.endDate;
+  let warehouseId: any = req.query.warehouseId;
+  let offset: any = req.query.offset;
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let genericTypes = req.decoded.generic_type_id;
@@ -5576,9 +5576,9 @@ router.get('/report/genericStock/haveMovement/staff', wrap(async (req, res, next
 
 router.get('/report/getGenericInStockcrad', wrap(async (req, res, next) => {
   let db = req.db;
-  let warehouseId = req.query.warehouseId;
-  let startDate = req.query.startDate;
-  let endDate = req.query.endDate;
+  let warehouseId: any = req.query.warehouseId;
+  let startDate: any = req.query.startDate;
+  let endDate: any = req.query.endDate;
   let genericTypes = req.decoded.generic_type_id;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let offset = '';
@@ -5591,7 +5591,7 @@ router.get('/report/list-waiting', wrap(async (req, res, next) => {
   let db = req.db;
   try {
     let test;
-    let requisId = req.query.requisId;
+    let requisId: any = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
@@ -5685,7 +5685,7 @@ router.get('/report/requisition-sum-product', wrap(async (req, res, next) => {
   let db = req.db;
   try {
     let test;
-    let requisId = req.query.requisId;
+    let requisId: any = req.query.requisId;
     requisId = Array.isArray(requisId) ? requisId : [requisId];
 
     let hosdetail = await inventoryReportModel.hospital(db);
@@ -5731,7 +5731,7 @@ router.get('/report/approve/borrow', wrap(async (req, res, next) => {
   let page_re: any = line[0].line;
 
   try {
-    let borrowId = req.query.borrow_id;
+    let borrowId: any = req.query.borrow_id;
     borrowId = Array.isArray(borrowId) ? borrowId : [borrowId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
@@ -5782,7 +5782,7 @@ router.get('/report/list-borrow', wrap(async (req, res, next) => {
   let db = req.db;
   try {
     let test;
-    let borrowId = req.query.borrow_id;
+    let borrowId: any = req.query.borrow_id;
     borrowId = Array.isArray(borrowId) ? borrowId : [borrowId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
@@ -5902,10 +5902,10 @@ router.get('/report/list-borrow', wrap(async (req, res, next) => {
 
 router.get('/report/inventoryStatus/product', wrap(async (req, res, next) => {
   let db = req.db;
-  let warehouseId = req.query.warehouseId
-  let statusDate = req.query.statusDate
-  let genericType = req.query.genericType
-  let warehouseName = req.query.warehouseName
+  let warehouseId: any = req.query.warehouseId
+  let statusDate: any = req.query.statusDate
+  let genericType: any = req.query.genericType
+  let warehouseName: any = req.query.warehouseName
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
@@ -5961,10 +5961,10 @@ router.get('/report/inventoryStatus/product', wrap(async (req, res, next) => {
 
 router.get('/report/inventoryStatus/product/excel', wrap(async (req, res, next) => {
   let db = req.db;
-  let warehouseId = req.query.warehouseId
-  let statusDate = req.query.statusDate
-  let genericType = req.query.genericType
-  let warehouseName = req.query.warehouseName
+  let warehouseId: any = req.query.warehouseId
+  let statusDate: any = req.query.statusDate
+  let genericType: any = req.query.genericType
+  let warehouseName: any = req.query.warehouseName
   let hosdetail = await inventoryReportModel.hospital(db);
   let hospitalName = hosdetail[0].hospname;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
@@ -6004,7 +6004,7 @@ router.get('/report/inventoryStatus/product/excel', wrap(async (req, res, next) 
 
 router.get('/report/asn', wrap(async (req, res, next) => {
   let db = req.db;
-  let purchaseorderId = req.query.purchaseorderId
+  let purchaseorderId: any = req.query.purchaseorderId
 
   let sys_hospital = req.decoded.SYS_HOSPITAL;
   const hospcode = JSON.parse(sys_hospital).hospcode
@@ -6036,12 +6036,12 @@ router.get('/report/asn', wrap(async (req, res, next) => {
 }));
 router.get('/report/his-history', wrap(async (req, res, next) => {
   const db = req.db;
-  const warehouseId = req.query.warehouseId
-  const date = req.query.date
+  const warehouseId: any = req.query.warehouseId
+  const date: any = req.query.date
   const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
   const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
   const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
-  const warehouseName = req.query.warehouseName
+  const warehouseName: any = req.query.warehouseName
   const hospcode = req.decoded.his_hospcode;
   const hosdetail = await inventoryReportModel.hospital(db);
   const hospitalName = hosdetail[0].hospname;
@@ -6137,15 +6137,15 @@ router.get('/report/export/staff-remain', wrap(async (req, res, next) => {
 
 router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
   const db = req.db;
-  let warehouseId: any = req.query.warehouseId;
-  let warehouseName = req.query.warehouseName;
+  let warehouseId= req.query.warehouseId;
+  let warehouseName: any = req.query.warehouseName;
   if (!warehouseId) {
     warehouseId = req.decoded.warehouseId;
   }
   const month = moment(req.query.month, 'M').format('MM');
-  const year = req.query.year
+  const year: any = req.query.year
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
-  let genericType = req.query.genericTypes
+  let genericType: any = req.query.genericTypes
   genericType = Array.isArray(genericType) ? genericType : [genericType];
   let transactionIn = [`'SUMMIT'`, `'REV'`, `'REV_OTHER'`, `'REQ_IN'`, `'TRN_IN'`, `'ADD_IN'`, `'BORROW_IN'`, `'BORROW_OTHER_IN'`, `'RETURNED_IN'`, `'REP_IN'`, `'ADJUST'`, `'HIS'`]
   let transactionOut = [`'REQ_OUT'`, `'TRN_OUT'`, `'ADD_OUT'`, `'BORROW_OUT'`, `'BORROW_OTHER_OUT'`, `'RETURNED_OUT'`, `'REP_OUT'`, `'IST'`, `'ADJUST'`, `'HIS'`]
@@ -6324,12 +6324,12 @@ async function setData(rs: any) {
 }
 router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
   const db = req.db;
-  const startDate = req.query.startDate;
-  const endDate = req.query.endDate;
-  let genericTypeId = req.query.genericTypes;
+  const startDate: any = req.query.startDate;
+  const endDate: any = req.query.endDate;
+  let genericTypeId: any = req.query.genericTypes;
   genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
-  const warehouseId = req.query.warehouseId;
-  const warehouseName = req.query.warehouseName;
+  const warehouseId: any = req.query.warehouseId;
+  const warehouseName: any = req.query.warehouseName;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
 
 
@@ -6467,12 +6467,12 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
 
 router.get('/report/requisition/generic/excel/sum', wrap(async (req, res, next) => {
   const db = req.db;
-  const startDate = req.query.startDate;
-  const endDate = req.query.endDate;
-  let genericTypeId = req.query.genericTypes;
+  const startDate: any = req.query.startDate;
+  const endDate: any = req.query.endDate;
+  let genericTypeId: any = req.query.genericTypes;
   genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
-  const warehouseId = req.query.warehouseId;
-  const warehouseName = req.query.warehouseName;
+  const warehouseId: any = req.query.warehouseId;
+  const warehouseName: any = req.query.warehouseName;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
 
 
@@ -6601,12 +6601,12 @@ router.get('/report/requisition/generic/excel/sum', wrap(async (req, res, next) 
 
 // router.get('/report/requisition/generic2', wrap(async (req, res, next) => {
 //   const db = req.db;
-//   const startDate = req.query.startDate;
-//   const endDate = req.query.endDate;
-//   let genericTypeId = req.query.genericTypes;
-//   const warehouseName = req.query.warehouseName;
+//   const startDate: any = req.query.startDate;
+//   const endDate: any = req.query.endDate;
+//   let genericTypeId: any = req.query.genericTypes;
+//   const warehouseName: any = req.query.warehouseName;
 //   genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
-//   const warehouseId = req.query.warehouseId;
+//   const warehouseId: any = req.query.warehouseId;
 //   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
 //   let total_price = 0
 //   try {
@@ -6686,12 +6686,12 @@ router.get('/report/requisition/generic/excel/sum', wrap(async (req, res, next) 
 // }))
 router.get('/report/requisition/generic', wrap(async (req, res, next) => {
   const db = req.db;
-  const startDate = req.query.startDate;
-  const endDate = req.query.endDate;
-  let genericTypeId = req.query.genericTypes;
-  const warehouseName = req.query.warehouseName;
+  const startDate: any = req.query.startDate;
+  const endDate: any = req.query.endDate;
+  let genericTypeId: any = req.query.genericTypes;
+  const warehouseName: any = req.query.warehouseName;
   genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
-  const warehouseId = req.query.warehouseId;
+  const warehouseId: any = req.query.warehouseId;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
   let total_price = 0
   try {
