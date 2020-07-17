@@ -2345,13 +2345,13 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
       const rs: any = await hisTransactionModel.getGroupTransactionFromTransactionId(db, transactionIds);
       console.log('***rs');
       console.log(rs);
-      
-      
+
+
       if (rs.length) {
         for (const r of rs) {
           const rsAllocate: any = await allocateHIS(db, r.warehouse_id, [r]);
           console.log(rsAllocate.rows);
-          
+
           if (rsAllocate.ok) {
             for (const i of rsAllocate.rows) {
               //-------------- get UnitGeneric --------------
@@ -2381,7 +2381,7 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
               console.log(i.small_remain_qty, i.product_qty);
               if (i.small_remain_qty - i.product_qty >= 0 && i.small_remain_qty > 0) {
                 const transactionIds = r.transaction_id.split(',');
-                console.log(i.small_remain_qty, i.product_qty,transactionIds);
+                console.log(i.small_remain_qty, i.product_qty, transactionIds);
                 if (transactionIds.length == r.count) {
                   await hisTransactionModel.decreaseProductQty(db, i.wm_product_id, i.small_remain_qty - i.product_qty);
                   await hisTransactionModel.changeStatusToCut(db, moment().format('YYYY-MM-DD HH:mm:ss'), req.decoded.people_user_id, transactionIds);
@@ -2449,7 +2449,7 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
                   if (i.product_qty > 0 || i.product_qty < 0) {
                     // save stockcard
                     const stockId: any = await stockCardModel.saveStockHisTransaction(db, data);
-                    if(stockId){
+                    if (stockId[0] > 0) {
                       await hisTransactionModel.changeStockcardId(db, transactionIds, stockId[0]);
                     }
                   }
@@ -4139,7 +4139,7 @@ const allocateHIS = (async (db, warehouseId: any, data: any) => {
       for (const p of rsProducts) {
         const remainQty = p.qty;
         let qty = d.genericQty;
-        if (qty >= remainQty ) {
+        if (qty >= remainQty) {
           qty = remainQty;
         }
         p.qty -= qty;
