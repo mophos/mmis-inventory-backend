@@ -2379,7 +2379,7 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
               console.log('  //--------------ตัดคงคลัง--------------');
 
               console.log(i.small_remain_qty, i.product_qty);
-              if (i.small_remain_qty - i.product_qty >= 0 && i.small_remain_qty > 0) {
+              if (i.small_remain_qty - i.product_qty >= 0 && i.small_remain_qty > 0 && i.product_qty > 0) {
                 const transactionIds = r.transaction_id.split(',');
                 console.log(i.small_remain_qty, i.product_qty, transactionIds);
                 if (transactionIds.length == r.count) {
@@ -2449,8 +2449,6 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
                   if (i.product_qty > 0 || i.product_qty < 0) {
                     // save stockcard
                     const stockId: any = await stockCardModel.saveStockHisTransaction(db, data);
-                    console.log('stockId',stockId);
-                    
                     if (stockId.length) {
                       await hisTransactionModel.changeStockcardId(db, transactionIds, stockId[0]);
                     }
