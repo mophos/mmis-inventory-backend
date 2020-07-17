@@ -2449,7 +2449,9 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
                   if (i.product_qty > 0 || i.product_qty < 0) {
                     // save stockcard
                     const stockId: any = await stockCardModel.saveStockHisTransaction(db, data);
-                    await hisTransactionModel.changeStockcardId(db, transactionIds, stockId[0]);
+                    if(stockId){
+                      await hisTransactionModel.changeStockcardId(db, transactionIds, stockId[0]);
+                    }
                   }
                 }
               }
