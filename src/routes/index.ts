@@ -10,6 +10,7 @@ import { StockCard } from '../models/stockcard';
 import { ReceiveModel } from '../models/receive';
 import { listenerCount, worker } from 'cluster';
 import { WarehouseModel } from '../models/warehouse';
+import { filter } from 'bluebird';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const issueModel = new IssueModel();
@@ -214,7 +215,7 @@ router.get('/report/getBudgetYear', wrap(async (req, res, next) => {
 }))
 router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
   const db = req.db;
-  let warehouseId= req.query.warehouseId
+  let warehouseId = req.query.warehouseId
   let warehouseName: any = req.query.warehouseName;
   if (!warehouseId) {
     warehouseId = req.decoded.warehouseId;
@@ -278,7 +279,7 @@ router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
 
 router.get('/report/monthlyReport', wrap(async (req, res, next) => {
   const db = req.db;
-  let warehouseId= req.query.warehouseId;
+  let warehouseId = req.query.warehouseId;
   let warehouseName: any = req.query.warehouseName;
   if (!warehouseId) {
     warehouseId = req.decoded.warehouseId;
@@ -344,7 +345,7 @@ router.get('/report/purchase-bit-type', wrap(async (req, res, next) => {
   let enddate: any = req.query.endDate
   let genericTypeId: any = req.query.genericType
   genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId]
-  let warehouseId= req.query.warehouseId;
+  let warehouseId = req.query.warehouseId;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
   let getFrom: any = req.query.getFrom
   if (!warehouseId) {
@@ -1994,7 +1995,7 @@ router.get('/report/count/requis/:date', wrap(async (req, res, next) => {
 }));//ทำFrontEndแล้ว  //ตรวจสอบแล้ว 14-9-60  // ตรวจสอบแล้ว 27/9/60
 
 router.get('/report/issueStraff', wrap(async (req, res, next) => {
-  let issue_id= req.query.issue_id
+  let issue_id = req.query.issue_id
   let db = req.db;
   let isArray = true
   let issue_date: any = []
@@ -2036,7 +2037,7 @@ router.get('/report/issueStraff', wrap(async (req, res, next) => {
 
 router.get('/report/issue', wrap(async (req, res, next) => {
   try {
-    let issue_id= req.query.issue_id;
+    let issue_id = req.query.issue_id;
     let db = req.db;
     let isArray = true;
     let issueBody: any = [];
@@ -5316,19 +5317,24 @@ router.get('/report/genericStock/haveMovement', wrap(async (req, res, next) => {
   startDate = moment(startDate).format('D MMMM ') + (moment(startDate).get('year') + 543);
   endDate = moment(endDate).format('D MMMM ') + (moment(endDate).get('year') + 543);
 
-  for (let id in genericId) {
+  generic_stock = await inventoryReportModel.generic_stockNew2(db, dateSetting, genericId, _startDate, _endDate, warehouseId);
+  inventory_stock = await inventoryReportModel.inventory_stockcard2(db, dateSetting, genericId, _endDate, warehouseId);
 
-    generic_stock = await inventoryReportModel.generic_stockNew(db, dateSetting, genericId[id], _startDate, _endDate, warehouseId);
-    if (generic_stock[0].length > 0) {
-      inventory_stock = await inventoryReportModel.inventory_stockcard(db, dateSetting, genericId[id], _endDate, warehouseId)
+  for (let id in genericId) {
+    const filGeneric = _.filter(generic_stock[0], { generic_id: genericId[id] });
+    let gGeneric: any = filGeneric;
+    const filInv = _.filter(inventory_stock[0], { generic_id: genericId[id] });
+    
+    let iInv: any = filInv;
+    if (filGeneric.length) {
       const obj: any = {
-        generic_id: generic_stock[0][0].generic_id,
-        generic_name: generic_stock[0][0].generic_name,
-        dosage_name: generic_stock[0][0].dosage_name,
-        generic_code: generic_stock[0][0].working_code
+        generic_id: gGeneric[0].generic_id,
+        generic_name: gGeneric[0].generic_name,
+        dosage_name: gGeneric[0].dosage_name,
+        generic_code: gGeneric[0].working_code
       }
 
-      for (const v of generic_stock[0]) {
+      for (const v of gGeneric) {
         const _in_qty = +v.in_qty;
         const _out_qty = +v.out_qty;
         const _conversion_qty = +v.conversion_qty;
@@ -5392,7 +5398,7 @@ router.get('/report/genericStock/haveMovement', wrap(async (req, res, next) => {
       }
 
       //inventory_stock
-      for (const e of inventory_stock[0]) {
+      for (const e of iInv) {
         //มี unit_generic_id จะโชว์เป็น pack
         if (e.unit_generic_id) {
           e.qty = +e.in_qty - +e.out_qty
@@ -5412,12 +5418,12 @@ router.get('/report/genericStock/haveMovement', wrap(async (req, res, next) => {
           e.in_qty = inventoryReportModel.commaQty(+e.in_qty - +e.out_qty)
         }
       }
-      obj.inventory_stock = inventory_stock[0];
-      obj.generic_stock = generic_stock[0];
+      obj.inventory_stock = iInv;
+      obj.generic_stock = gGeneric;
       data.push(obj);
     }
-
   }
+
   if (data.length <= 0) {
     res.render('error404');
   }
@@ -6137,7 +6143,7 @@ router.get('/report/export/staff-remain', wrap(async (req, res, next) => {
 
 router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
   const db = req.db;
-  let warehouseId= req.query.warehouseId;
+  let warehouseId = req.query.warehouseId;
   let warehouseName: any = req.query.warehouseName;
   if (!warehouseId) {
     warehouseId = req.decoded.warehouseId;
@@ -6213,7 +6219,7 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
         dataIn.push({ transactionIn: commentIn, totalIn: totalIn, detail: rsIn })
       }
       console.log(sumInCost, ',falsdkjfa;lkdjf;lasjdf;lajdf;klajsdfla');
-      
+
       sumInCost = inventoryReportModel.comma(sumInCost)
     }
     // ------------------------------------------------
