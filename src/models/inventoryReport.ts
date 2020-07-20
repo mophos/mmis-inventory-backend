@@ -642,6 +642,7 @@ mgt.generic_type_id `
 
     inventory_stockcard2(knex: Knex, dateSetting = 'view_stock_card_warehouse', genericId, endDate, warehouseId) {
         let sql = `SELECT
+        vscw.generic_id,
         vscw.unit_generic_id,
         vscw.lot_no,
         sum(vscw.in_qty) AS in_qty,

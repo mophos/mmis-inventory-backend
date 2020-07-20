@@ -5324,13 +5324,14 @@ router.get('/report/genericStock/haveMovement', wrap(async (req, res, next) => {
     const filGeneric = _.filter(generic_stock[0], { generic_id: genericId[id] });
     let gGeneric: any = filGeneric;
     const filInv = _.filter(inventory_stock[0], { generic_id: genericId[id] });
+    
     let iInv: any = filInv;
     if (filGeneric.length) {
       const obj: any = {
-        generic_id: gGeneric.generic_id,
-        generic_name: gGeneric.generic_name,
-        dosage_name: gGeneric.dosage_name,
-        generic_code: gGeneric.working_code
+        generic_id: gGeneric[0].generic_id,
+        generic_name: gGeneric[0].generic_name,
+        dosage_name: gGeneric[0].dosage_name,
+        generic_code: gGeneric[0].working_code
       }
 
       for (const v of gGeneric) {
