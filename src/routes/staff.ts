@@ -4136,36 +4136,43 @@ const allocateHIS = (async (db, warehouseId: any, data: any) => {
     let rsProducts: any = [];
     for (const d of data) {
       rsProducts = await hisTransactionModel.getProductInWarehousesByGeneric(db, d.genericId, warehouseId);
-      for (const p of rsProducts) {
-        const remainQty = p.qty;
-        let qty = d.genericQty;
-        if (qty >= remainQty) {
-          qty = remainQty;
+      const sum = _.sumBy(rsProducts,'qty');
+      if(sum >= d.genericQty){
+        for (const p of rsProducts) {
+          const remainQty = p.qty;
+          let qty = d.genericQty;
+          if (qty >= remainQty) {
+            qty = remainQty;
+          }
+          p.qty -= qty;
+          d.genericQty -= qty;
+          const obj: any = {
+            wm_product_id: p.wm_product_id,
+            unit_generic_id: p.unit_generic_id,
+            conversion_qty: p.conversion_qty,
+            generic_id: p.generic_id,
+            pack_remain_qty: Math.floor(remainQty / p.conversion_qty),
+            small_remain_qty: remainQty,
+            product_name: p.product_name,
+            from_unit_name: p.from_unit_name,
+            to_unit_name: p.to_unit_name,
+            expired_date: p.expired_date,
+            lot_no: p.lot_no,
+            lot_time: p.lot_time,
+            product_id: p.product_id,
+            product_qty: qty,
+            cost: p.cost,
+            transaction_id: d.transaction_id,
+            warehoues_id: p.warehouse_id
+          }
+          // if (remainQty > 0) {
+          allocate.push(obj);
+          // }
         }
-        p.qty -= qty;
-        d.genericQty -= qty;
-        const obj: any = {
-          wm_product_id: p.wm_product_id,
-          unit_generic_id: p.unit_generic_id,
-          conversion_qty: p.conversion_qty,
-          generic_id: p.generic_id,
-          pack_remain_qty: Math.floor(remainQty / p.conversion_qty),
-          small_remain_qty: remainQty,
-          product_name: p.product_name,
-          from_unit_name: p.from_unit_name,
-          to_unit_name: p.to_unit_name,
-          expired_date: p.expired_date,
-          lot_no: p.lot_no,
-          lot_time: p.lot_time,
-          product_id: p.product_id,
-          product_qty: qty,
-          cost: p.cost,
-          transaction_id: d.transaction_id,
-          warehoues_id: p.warehouse_id
-        }
-        // if (remainQty > 0) {
-        allocate.push(obj);
-        // }
+
+      } else {
+        return { ok: true, rows: [] };
+
       }
 
     }
