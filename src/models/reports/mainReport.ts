@@ -204,6 +204,8 @@ export class MainReportModel {
       b.in_cost,
       b.out_qty,
       b.out_cost,
+      b.unit_name,
+      b.account_name,
       mgg1.group_name_1,
       mgg2.group_name_2,
       mgg3.group_name_3,
@@ -234,9 +236,15 @@ export class MainReportModel {
         sum( vscn.in_qty ) AS in_qty,
         sum( vscn.out_qty ) AS out_qty,
         sum( vscn.in_cost ) AS in_cost,
-        sum( vscn.out_cost ) AS out_cost 
+        sum( vscn.out_cost ) AS out_cost,
+        uu.unit_name,
+        mga.account_name
       FROM
         view_stock_card_new AS vscn 
+        JOIN mm_generics as mg ON mg.generic_id = vscn.generic_id
+        LEFT JOIN mm_unit_generics as ug ON ug.generic_id = vscn.generic_id
+        LEFT JOIN mm_units as uu ON uu.unit_id = ug.to_unit_id
+        LEFT JOIN mm_generic_accounts as mga ON mga.account_id = mg.account_id
       WHERE
         vscn.src_warehouse_id = ?`
     if (dateSetting == 'stock_date') {
