@@ -658,7 +658,6 @@ mgt.generic_type_id `
     AND vscw.generic_id IN (${genericId})
     AND vscw.stock_date < '${endDate} 23:59:59'
     GROUP BY
-        vscw.unit_generic_id,
         vscw.lot_no,
         vscw.expired_date`
         return knex.raw(sql)
