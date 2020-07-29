@@ -4625,8 +4625,10 @@ router.get('/report/print/alert-expried/excel', async (req, res, next) => {
       obj.qty = v.qty;
       obj.lot_no = v.lot_no;
       obj.cost = v.cost;
+      obj.unit_name = v.unit_name;
       obj.expired_date = v.expired_date;
       obj.warehouse_name = v.warehouse_name;
+      obj.labeler_name = v.labeler_name;
       json.push(obj);
     });
 

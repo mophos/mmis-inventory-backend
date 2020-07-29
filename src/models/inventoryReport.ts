@@ -4335,10 +4335,13 @@ ORDER BY mg.generic_name
 
     productExpired(knex: Knex, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, warehouseId) {
         let sql = knex('wm_generic_expired_alert as xp')
-            .select(knex.raw('sum(wp.qty*wp.cost) as cost,sum(wp.qty) as qty'), 'xp.generic_id', 'mg.working_code', 'mg.generic_name', 'mp.working_code as product_code', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', knex.raw('DATEDIFF(wp.expired_date, CURDATE()) AS diff'), 'xp.num_days', 'wp.warehouse_id', 'ww.warehouse_name')
+            .select(knex.raw('sum(wp.qty*wp.cost) as cost,sum(wp.qty) as qty'), 'ml.labeler_name', 'mu.unit_name', 'xp.generic_id', 'mg.working_code', 'mg.generic_name', 'mp.working_code as product_code', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', knex.raw('DATEDIFF(wp.expired_date, CURDATE()) AS diff'), 'xp.num_days', 'wp.warehouse_id', 'ww.warehouse_name')
             .join('mm_generics as mg', 'xp.generic_id', 'mg.generic_id')
             .join('mm_products as mp', 'mp.generic_id', 'mg.generic_id')
             .join('wm_products as wp', 'wp.product_id', 'mp.product_id')
+            .join('mm_unit_generics as ug', 'ug.generic_id', 'mg.generic_id')
+            .join('mm_units as mu', 'mu.unit_id', 'ug.to_unit_id')
+            .join('mm_labelers as ml', 'ml.labeler_id', 'mp.labeler_id')
             .join('wm_warehouses as ww', 'ww.warehouse_id', 'wp.warehouse_id')
             .whereRaw(`DATEDIFF(wp.expired_date, CURDATE()) < xp.num_days `)
             .whereIn('ww.warehouse_id', warehouseId)
@@ -4868,7 +4871,7 @@ ORDER BY mg.generic_name
             .orderBy('sc.ref_dst').orderBy('mgt.generic_type_id').orderBy('sc.generic_id')
         return sql
     }
-    
+
     saveProcess(knex: Knex, data) {
         return knex('rp_report_process')
             .insert(data, 'id');
