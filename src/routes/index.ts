@@ -4499,6 +4499,7 @@ router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:wa
         'ราคาต่อหน่วย': v.cost,
         'มูลค่า': v.costAmount,
         'ประเภทการรับ': v.receive_type_name,
+        'บัญชียา': v.account_name,
         'รวม': ''
       };
       json.push(obj);

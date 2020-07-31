@@ -11,15 +11,15 @@ html
     table.table
       thead
         tr
-          td.center.bold(colspan='7') #{hospitalName}
+          td.center.bold(colspan='9') #{hospitalName}
         tr
-          td.center.bold(colspan='7' ) รายงานมูลค่าจากการรับอื่นๆ
+          td.center.bold(colspan='9' ) รายงานมูลค่าจากการรับอื่นๆ
         tr
-          td.center(colspan='7') วันที่รับเข้า ตั้งแต่วันที่ #{startDate} ถึงวันที่ #{endDate}
+          td.center(colspan='9') วันที่รับเข้า ตั้งแต่วันที่ #{startDate} ถึงวันที่ #{endDate}
         tr
-          td.left(colspan='7' ) ณ คลังสินค้า #{warehouseName}
+          td.left(colspan='9' ) ณ คลังสินค้า #{warehouseName}
         tr
-          td.left(colspan='7' ) #{printDate}
+          td.left(colspan='9' ) #{printDate}
         tr
           th(style="width:5%") #
           th.left(style="width:11%") วันที่รับเข้า
@@ -28,7 +28,8 @@ html
           th.left(style="width:10%;padding-left: 2px") จำนวนที่รับ
           th.right(style="width:10%") ราคาต่อหน่วย
           th.right(style="width:10%") มูลค่า
-          th.left(style="width:20%;padding-left: 5px") ประเภทการรับ
+          th.left(style="width:10%;padding-left: 5px") ประเภทการรับ
+          th.left(style="width:10%;padding-left: 5px") บัญชียา
           //- if(wareHouseName!='ทุกคลังสินค้า')
           //-   th.left สถานที่เก็บ
           //- if(wareHouseName=='ทุกคลังสินค้า')
@@ -47,6 +48,7 @@ html
             td.right #{b.cost}
             td.right #{b.costAmount}
             td.left(style="padding-left: 5px")  #{b.receive_type_name}
+            td.left(style="padding-left: 5px")  #{b.account_name}
             //- if(wareHouseName!='ทุกคลังสินค้า')
             //-   td.top.left #{b.location_name}
             //- if(wareHouseName=='ทุกคลังสินค้า')
@@ -54,4 +56,4 @@ html
             //-   td.top.left #{b.location_name}
         tfooter
           tr
-            td.tbfooter.right(colspan="8") จำนวน #{y} รายการ | มูลค่ารวม #{sum} บาท
+            td.tbfooter.right(colspan="9") จำนวน #{y} รายการ | มูลค่ารวม #{sum} บาท
