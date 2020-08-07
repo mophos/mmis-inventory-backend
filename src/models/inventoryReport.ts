@@ -634,7 +634,6 @@ mgt.generic_type_id `
     AND vscw.generic_id = '${genericId}'
     AND vscw.stock_date < '${endDate} 23:59:59'
     GROUP BY
-        vscw.unit_generic_id,
         vscw.lot_no,
         vscw.expired_date`
         return knex.raw(sql)
@@ -658,7 +657,6 @@ mgt.generic_type_id `
     AND vscw.generic_id IN (${genericId})
     AND vscw.stock_date < '${endDate} 23:59:59'
     GROUP BY
-        vscw.unit_generic_id,
         vscw.lot_no,
         vscw.expired_date`
         return knex.raw(sql)
@@ -1831,11 +1829,13 @@ FROM
         mus.unit_name AS small_unit_name,
         vscw.in_unit_cost as cost,
         vscw.cost AS costAmount,
-        wrt.receive_type_name
+        wrt.receive_type_name,
+        ma.account_name
     FROM
         ${dateSetting} AS vscw
         JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
         JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
+        JOIN mm_generic_accounts as ma ON ma.account_id = mg.account_id
         JOIN mm_unit_generics AS mug ON mug.unit_generic_id = vscw.unit_generic_id
         JOIN mm_units AS mul ON mul.unit_id = mug.from_unit_id
         JOIN mm_units AS mus ON mus.unit_id = mug.to_unit_id
@@ -4336,10 +4336,13 @@ ORDER BY mg.generic_name
 
     productExpired(knex: Knex, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, warehouseId) {
         let sql = knex('wm_generic_expired_alert as xp')
-            .select(knex.raw('sum(wp.qty*wp.cost) as cost,sum(wp.qty) as qty'), 'xp.generic_id', 'mg.working_code', 'mg.generic_name', 'mp.working_code as product_code', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', knex.raw('DATEDIFF(wp.expired_date, CURDATE()) AS diff'), 'xp.num_days', 'wp.warehouse_id', 'ww.warehouse_name')
+            .select(knex.raw('sum(wp.qty*wp.cost) as cost,sum(wp.qty) as qty'), 'ml.labeler_name', 'mu.unit_name', 'xp.generic_id', 'mg.working_code', 'mg.generic_name', 'mp.working_code as product_code', 'mp.product_name', 'wp.lot_no', 'wp.expired_date', knex.raw('DATEDIFF(wp.expired_date, CURDATE()) AS diff'), 'xp.num_days', 'wp.warehouse_id', 'ww.warehouse_name')
             .join('mm_generics as mg', 'xp.generic_id', 'mg.generic_id')
             .join('mm_products as mp', 'mp.generic_id', 'mg.generic_id')
             .join('wm_products as wp', 'wp.product_id', 'mp.product_id')
+            .join('mm_unit_generics as ug', 'ug.generic_id', 'mg.generic_id')
+            .join('mm_units as mu', 'mu.unit_id', 'ug.to_unit_id')
+            .join('mm_labelers as ml', 'ml.labeler_id', 'mp.labeler_id')
             .join('wm_warehouses as ww', 'ww.warehouse_id', 'wp.warehouse_id')
             .whereRaw(`DATEDIFF(wp.expired_date, CURDATE()) < xp.num_days `)
             .whereIn('ww.warehouse_id', warehouseId)
@@ -4638,7 +4641,9 @@ ORDER BY mg.generic_name
     }
 
     monthlyReportBalance(knex: Knex, warehouseId: any, genericType: any, date: any, dateSetting: any) {
-        let sql = `SELECT
+        let sql = `
+        SELECT * FROM (
+        SELECT
         mgt.generic_type_name,
         mga.account_name,
         sum( vscw.in_cost - vscw.out_cost ) AS balance
@@ -4658,12 +4663,15 @@ ORDER BY mg.generic_name
         mg.account_id 
     ORDER BY
         mgt.generic_type_id,
-        mga.account_id`
+        mga.account_id
+        ) as t WHERE t.balance != 0`
         return (knex.raw(sql))
     }
 
     monthlyReportBalanceAfter(knex: Knex, warehouseId: any, genericType: any, date: any, dateSetting: any) {
-        let sql = `SELECT
+        let sql = `
+        SELECT * FROM (
+        SELECT
         mgt.generic_type_name,
         mga.account_name,
         sum( vscw.in_cost - vscw.out_cost ) AS balance
@@ -4683,7 +4691,7 @@ ORDER BY mg.generic_name
         mg.account_id 
     ORDER BY
         mgt.generic_type_id,
-        mga.account_id`
+        mga.account_id) as t WHERE t.balance != 0`
         return (knex.raw(sql))
     }
 
@@ -4717,7 +4725,9 @@ ORDER BY mg.generic_name
     }
 
     monthlyReportCosts(knex: Knex, warehouseId: any, genericType: any, startDate: any, endDate: any, dateSetting: any, transactionIn: any) {
-        let sql = `SELECT
+        let sql = `
+        SELECT * FROM (
+        SELECT
         ws.transaction_type,
 	    mgt.generic_type_name,
 	    mga.account_name,
@@ -4738,10 +4748,12 @@ ORDER BY mg.generic_name
         }
         sql += ` GROUP BY
         mg.generic_type_id,
-        mg.account_id 
+        mg.account_id,
+        ws.transaction_type
     ORDER BY
         mgt.generic_type_id,
-        mga.account_id`
+        mga.account_id
+        ) as t WHERE t.in_cost != 0 OR t.out_cost != 0`
         return (knex.raw(sql))
     }
 
@@ -4869,7 +4881,7 @@ ORDER BY mg.generic_name
             .orderBy('sc.ref_dst').orderBy('mgt.generic_type_id').orderBy('sc.generic_id')
         return sql
     }
-    
+
     saveProcess(knex: Knex, data) {
         return knex('rp_report_process')
             .insert(data, 'id');

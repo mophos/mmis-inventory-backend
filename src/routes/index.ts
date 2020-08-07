@@ -4499,6 +4499,7 @@ router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:wa
         'ราคาต่อหน่วย': v.cost,
         'มูลค่า': v.costAmount,
         'ประเภทการรับ': v.receive_type_name,
+        'บัญชียา': v.account_name,
         'รวม': ''
       };
       json.push(obj);
@@ -4625,8 +4626,10 @@ router.get('/report/print/alert-expried/excel', async (req, res, next) => {
       obj.qty = v.qty;
       obj.lot_no = v.lot_no;
       obj.cost = v.cost;
+      obj.unit_name = v.unit_name;
       obj.expired_date = v.expired_date;
       obj.warehouse_name = v.warehouse_name;
+      obj.labeler_name = v.labeler_name;
       json.push(obj);
     });
 
@@ -5324,7 +5327,7 @@ router.get('/report/genericStock/haveMovement', wrap(async (req, res, next) => {
     const filGeneric = _.filter(generic_stock[0], { generic_id: genericId[id] });
     let gGeneric: any = filGeneric;
     const filInv = _.filter(inventory_stock[0], { generic_id: genericId[id] });
-    
+
     let iInv: any = filInv;
     if (filGeneric.length) {
       const obj: any = {
@@ -6185,10 +6188,9 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
     rsIn = rsIn[0];
     if (rsIn.length) {
       for (const v of rsIn) {
-        var totalIn: any = 0;
-        let commentIn = ''
-        totalIn += v.in_cost
-        v.in_cost = inventoryReportModel.comma(v.in_cost)
+        const obj: any = {};
+        let commentIn = '';
+
         if (v.transaction_type === 'SUMMIT') {
           commentIn = 'ยอดยกมา'
         } else if (v.transaction_type === 'REV') {
@@ -6214,13 +6216,21 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
         } else if (v.transaction_type === 'HIS') {
           commentIn = 'ตัดจ่าย HIS(คนไข้คืนยา)'
         }
-        sumInCost += totalIn
-        totalIn = inventoryReportModel.comma(totalIn)
-        dataIn.push({ transactionIn: commentIn, totalIn: totalIn, detail: rsIn })
-      }
-      console.log(sumInCost, ',falsdkjfa;lkdjf;lasjdf;lajdf;klajsdfla');
+        let objAr = _.filter(rsIn, { transaction_type: v.transaction_type });
 
-      sumInCost = inventoryReportModel.comma(sumInCost)
+        sumInCost += v.in_cost;
+        obj.transaction_type = v.transaction_type;
+        obj.generic_type_name = v.generic_type_name;
+        obj.account_name = v.account_name;
+        obj.in_cost = v.in_cost;
+
+        const idx = _.findIndex(dataIn, { transactionType: v.transaction_type });
+        if (idx === -1) {
+          dataIn.push({ transactionIn: commentIn, transactionType: v.transaction_type, detail: objAr, totalIn: inventoryReportModel.comma(_.sumBy(objAr, 'in_cost')) });
+        }
+        v.in_cost = inventoryReportModel.comma(v.in_cost);
+      }
+      sumInCost = inventoryReportModel.comma(sumInCost);
     }
     // ------------------------------------------------
 
@@ -6230,10 +6240,9 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
     rsOut = rsOut[0];
     if (rsOut.length) {
       for (const v of rsOut) {
-        var totalOut: any = 0;
-        let commentOut = ''
-        totalOut += v.out_cost
-        v.out_cost = inventoryReportModel.comma(v.out_cost)
+        const obj: any = {};
+        let commentOut = '';
+
         if (v.transaction_type === 'REQ_OUT') {
           commentOut = 'ให้เบิก'
         } else if (v.transaction_type === 'TRN_OUT') {
@@ -6255,11 +6264,22 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
         } else if (v.transaction_type === 'HIS') {
           commentOut = 'ตัดจ่าย HIS'
         }
-        sumOutCost += totalOut
-        totalOut = inventoryReportModel.comma(totalOut)
-        dataOut.push({ transactionOut: commentOut, totalOut: totalOut, detail: rsOut })
+        let objAr = _.filter(rsOut, { transaction_type: v.transaction_type });
+
+        sumOutCost += v.out_cost;
+
+        obj.transaction_type = v.transaction_type;
+        obj.generic_type_name = v.generic_type_name;
+        obj.account_name = v.account_name;
+        obj.out_cost = v.out_cost;
+
+        const idx = _.findIndex(dataOut, { transactionType: v.transaction_type });
+        if (idx === -1) {
+          dataOut.push({ transactionOut: commentOut, transactionType: v.transaction_type, detail: objAr, totalOut: inventoryReportModel.comma(_.sumBy(objAr, 'out_cost')) });
+        }
+        v.out_cost = inventoryReportModel.comma(v.out_cost);
       }
-      sumOutCost = inventoryReportModel.comma(sumOutCost)
+      sumOutCost = inventoryReportModel.comma(sumOutCost);
     }
     // ------------------------------------------------
 

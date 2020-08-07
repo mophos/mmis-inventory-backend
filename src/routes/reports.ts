@@ -224,7 +224,7 @@ router.get('/monthlyReport', wrap(async (req, res, next) => {
   // ------- pdf ---------
 
   // ------- query -------
-  let warehouseId= req.query.warehouseId;
+  let warehouseId = req.query.warehouseId;
   if (!warehouseId) {
     warehouseId = req.decoded.warehouseId;
   }
@@ -334,7 +334,7 @@ router.get('/monthlyReportall', wrap(async (req, res, next) => {
   }
   const id = await inventoryReportModel.saveProcess(db, obj)
   // ------- query -------
-  let warehouseId= req.query.warehouseId;
+  let warehouseId = req.query.warehouseId;
   if (!warehouseId) {
     warehouseId = req.decoded.warehouseId;
   }
@@ -851,6 +851,7 @@ router.get('/exports/monthly-report-generic', wrap(async (req, res, next) => {
       y++;
       json.push({
         'ลำดับ': y,
+        'รหัส Generic': v.generic_code,
         'รายการ': v.generic_name,
         'จำนวนยอดยกมา': v.remain_qty,
         'มูลค่ายอดยกมา': v.remain_cost,
@@ -858,6 +859,8 @@ router.get('/exports/monthly-report-generic', wrap(async (req, res, next) => {
         'มูลค่ารับเข้า': v.in_cost,
         'จำนวนจ่ายออก': v.out_qty,
         'มูลค่าจ่ายออก': v.out_cost,
+        'หน่วยย่อย': v.unit_name,
+        'บัญชียา': v.account_name,
         'กลุ่มยา 1': v.group_name_1 || '-',
         'กลุ่มยา 2': v.group_name_2 || '-',
         'กลุ่มยา 3': v.group_name_3 || '-',
