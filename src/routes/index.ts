@@ -4021,6 +4021,8 @@ router.get('/report/inventoryStatus/generic', wrap(async (req, res, next) => {
         for (let ii in list[i]) {
           list[i][ii].unit_cost = inventoryReportModel.comma(list[i][ii].total_cost / list[i][ii].qty);
           list[i][ii].total_cost = inventoryReportModel.comma(list[i][ii].total_cost);
+          list[i][ii].min_qty = inventoryReportModel.commaQty(list[i][ii].min_qty);
+          list[i][ii].max_qty = inventoryReportModel.commaQty(list[i][ii].max_qty);
           list[i][ii].qty = inventoryReportModel.commaQty(list[i][ii].qty);
         }
       }
@@ -5935,6 +5937,8 @@ router.get('/report/inventoryStatus/product', wrap(async (req, res, next) => {
       for (let ii in list[i]) {
         list[i][ii].total_cost = inventoryReportModel.comma(list[i][ii].total_cost);
         list[i][ii].unit_cost = inventoryReportModel.comma(list[i][ii].unit_cost);
+        list[i][ii].min_qty = inventoryReportModel.commaQty(list[i][ii].min_qty);
+        list[i][ii].max_qty = inventoryReportModel.commaQty(list[i][ii].max_qty);
         list[i][ii].qty_pack = inventoryReportModel.commaQty(Math.floor(list[i][ii].qty / list[i][ii].conversion_qty));
         list[i][ii].qty_base = inventoryReportModel.commaQty(Math.floor(list[i][ii].qty % list[i][ii].conversion_qty));
         if (list[i][ii].qty_pack != 0 && list[i][ii].qty_base != 0) {
