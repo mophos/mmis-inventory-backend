@@ -2990,6 +2990,54 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   });
 }));
 
+router.get('/report/check/receives/12283', wrap(async (req, res, next) => {
+  let db = req.db;
+  let receiveID: any = req.query.receiveID
+  receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
+  let hospitalDetail = await inventoryReportModel.hospitalNew(db);
+  let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
+
+  let bahtText: any = []
+  let committee: any = []
+  check_receive = check_receive[0];
+
+  for (const v of check_receive) {
+    v.receive_date = moment(v.receive_date).format('D MMMM ') + (moment(v.receive_date).get('year') + 543);
+    v.delivery_date = moment(v.delivery_date).format('D MMMM ') + (moment(v.delivery_date).get('year') + 543);
+    v.podate = moment(v.podate).format('D MMMM ') + (moment(v.podate).get('year') + 543);
+    v.approve_date = moment(v.approve_date).format('D MMMM ') + (moment(v.approve_date).get('year') + 543);
+    let _bahtText = inventoryReportModel.bahtText(v.total_price);
+    v.bahtText = _bahtText;
+    v.total_price = inventoryReportModel.comma(v.total_price);
+    v.committee = await getCommitee(db, v.verify_committee_id);
+    if (v.committee === undefined) { res.render('no_commitee'); }
+    let word: any = 'ผู้';
+    if (v.committee.length > 1) {
+      word = 'คณะกรรมการ';
+    }
+    v.words = word;
+
+    v.chief = await getOfficer(db, v.chief_id);
+    v.staffReceive = await getOfficer(db, v.supply_id);
+    v.manager = await getOfficer(db, v.manager_id);
+  }
+
+  let serialYear = moment().get('year') + 543;
+  let monthRo = moment().get('month') + 1;
+  if (monthRo >= 10) {
+    serialYear += 1;
+  }
+
+  res.render('check_receive_3', {
+    hospitalDetail: hospitalDetail,
+    serialYear: serialYear,
+    check_receive: check_receive,
+    bahtText: bahtText,
+    committee: committee,
+    receiveID: receiveID
+  });
+}));
+
 router.get('/report/check/receive/singburi', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID: any = req.query.receiveID
