@@ -4342,7 +4342,7 @@ ORDER BY mg.generic_name
             .join('wm_products as wp', 'wp.product_id', 'mp.product_id')
             .join('mm_unit_generics as ug', 'ug.generic_id', 'mg.generic_id')
             .join('mm_units as mu', 'mu.unit_id', 'ug.to_unit_id')
-            .join('mm_labelers as ml', 'ml.labeler_id', 'mp.labeler_id')
+            .join('mm_labelers as ml', 'ml.labeler_id', 'mp.v_labeler_id')
             .join('wm_warehouses as ww', 'ww.warehouse_id', 'wp.warehouse_id')
             .whereRaw(`DATEDIFF(wp.expired_date, CURDATE()) < xp.num_days `)
             .whereIn('ww.warehouse_id', warehouseId)
