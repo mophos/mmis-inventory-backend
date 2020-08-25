@@ -2990,6 +2990,54 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   });
 }));
 
+router.get('/report/check/receives/12283', wrap(async (req, res, next) => {
+  let db = req.db;
+  let receiveID: any = req.query.receiveID
+  receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
+  let hospitalDetail = await inventoryReportModel.hospitalNew(db);
+  let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
+
+  let bahtText: any = []
+  let committee: any = []
+  check_receive = check_receive[0];
+
+  for (const v of check_receive) {
+    v.receive_date = moment(v.receive_date).format('D MMMM ') + (moment(v.receive_date).get('year') + 543);
+    v.delivery_date = moment(v.delivery_date).format('D MMMM ') + (moment(v.delivery_date).get('year') + 543);
+    v.podate = moment(v.podate).format('D MMMM ') + (moment(v.podate).get('year') + 543);
+    v.approve_date = moment(v.approve_date).format('D MMMM ') + (moment(v.approve_date).get('year') + 543);
+    let _bahtText = inventoryReportModel.bahtText(v.total_price);
+    v.bahtText = _bahtText;
+    v.total_price = inventoryReportModel.comma(v.total_price);
+    v.committee = await getCommitee(db, v.verify_committee_id);
+    if (v.committee === undefined) { res.render('no_commitee'); }
+    let word: any = 'ผู้';
+    if (v.committee.length > 1) {
+      word = 'คณะกรรมการ';
+    }
+    v.words = word;
+
+    v.chief = await getOfficer(db, v.chief_id);
+    v.staffReceive = await getOfficer(db, v.supply_id);
+    v.manager = await getOfficer(db, v.manager_id);
+  }
+
+  let serialYear = moment().get('year') + 543;
+  let monthRo = moment().get('month') + 1;
+  if (monthRo >= 10) {
+    serialYear += 1;
+  }
+
+  res.render('check_receive_3', {
+    hospitalDetail: hospitalDetail,
+    serialYear: serialYear,
+    check_receive: check_receive,
+    bahtText: bahtText,
+    committee: committee,
+    receiveID: receiveID
+  });
+}));
+
 router.get('/report/check/receive/singburi', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID: any = req.query.receiveID
@@ -4021,6 +4069,8 @@ router.get('/report/inventoryStatus/generic', wrap(async (req, res, next) => {
         for (let ii in list[i]) {
           list[i][ii].unit_cost = inventoryReportModel.comma(list[i][ii].total_cost / list[i][ii].qty);
           list[i][ii].total_cost = inventoryReportModel.comma(list[i][ii].total_cost);
+          list[i][ii].min_qty = inventoryReportModel.commaQty(list[i][ii].min_qty);
+          list[i][ii].max_qty = inventoryReportModel.commaQty(list[i][ii].max_qty);
           list[i][ii].qty = inventoryReportModel.commaQty(list[i][ii].qty);
         }
       }
@@ -5327,7 +5377,7 @@ router.get('/report/genericStock/haveMovement', wrap(async (req, res, next) => {
     const filGeneric = _.filter(generic_stock[0], { generic_id: genericId[id] });
     let gGeneric: any = filGeneric;
     const filInv = _.filter(inventory_stock[0], { generic_id: genericId[id] });
-    
+
     let iInv: any = filInv;
     if (filGeneric.length) {
       const obj: any = {
@@ -5935,6 +5985,8 @@ router.get('/report/inventoryStatus/product', wrap(async (req, res, next) => {
       for (let ii in list[i]) {
         list[i][ii].total_cost = inventoryReportModel.comma(list[i][ii].total_cost);
         list[i][ii].unit_cost = inventoryReportModel.comma(list[i][ii].unit_cost);
+        list[i][ii].min_qty = inventoryReportModel.commaQty(list[i][ii].min_qty);
+        list[i][ii].max_qty = inventoryReportModel.commaQty(list[i][ii].max_qty);
         list[i][ii].qty_pack = inventoryReportModel.commaQty(Math.floor(list[i][ii].qty / list[i][ii].conversion_qty));
         list[i][ii].qty_base = inventoryReportModel.commaQty(Math.floor(list[i][ii].qty % list[i][ii].conversion_qty));
         if (list[i][ii].qty_pack != 0 && list[i][ii].qty_base != 0) {
@@ -6188,10 +6240,9 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
     rsIn = rsIn[0];
     if (rsIn.length) {
       for (const v of rsIn) {
-        var totalIn: any = 0;
-        let commentIn = ''
-        totalIn += v.in_cost
-        v.in_cost = inventoryReportModel.comma(v.in_cost)
+        const obj: any = {};
+        let commentIn = '';
+
         if (v.transaction_type === 'SUMMIT') {
           commentIn = 'ยอดยกมา'
         } else if (v.transaction_type === 'REV') {
@@ -6217,13 +6268,21 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
         } else if (v.transaction_type === 'HIS') {
           commentIn = 'ตัดจ่าย HIS(คนไข้คืนยา)'
         }
-        sumInCost += totalIn
-        totalIn = inventoryReportModel.comma(totalIn)
-        dataIn.push({ transactionIn: commentIn, totalIn: totalIn, detail: rsIn })
-      }
-      console.log(sumInCost, ',falsdkjfa;lkdjf;lasjdf;lajdf;klajsdfla');
+        let objAr = _.filter(rsIn, { transaction_type: v.transaction_type });
 
-      sumInCost = inventoryReportModel.comma(sumInCost)
+        sumInCost += v.in_cost;
+        obj.transaction_type = v.transaction_type;
+        obj.generic_type_name = v.generic_type_name;
+        obj.account_name = v.account_name;
+        obj.in_cost = v.in_cost;
+
+        const idx = _.findIndex(dataIn, { transactionType: v.transaction_type });
+        if (idx === -1) {
+          dataIn.push({ transactionIn: commentIn, transactionType: v.transaction_type, detail: objAr, totalIn: inventoryReportModel.comma(_.sumBy(objAr, 'in_cost')) });
+        }
+        v.in_cost = inventoryReportModel.comma(v.in_cost);
+      }
+      sumInCost = inventoryReportModel.comma(sumInCost);
     }
     // ------------------------------------------------
 
@@ -6233,10 +6292,9 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
     rsOut = rsOut[0];
     if (rsOut.length) {
       for (const v of rsOut) {
-        var totalOut: any = 0;
-        let commentOut = ''
-        totalOut += v.out_cost
-        v.out_cost = inventoryReportModel.comma(v.out_cost)
+        const obj: any = {};
+        let commentOut = '';
+
         if (v.transaction_type === 'REQ_OUT') {
           commentOut = 'ให้เบิก'
         } else if (v.transaction_type === 'TRN_OUT') {
@@ -6258,11 +6316,22 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
         } else if (v.transaction_type === 'HIS') {
           commentOut = 'ตัดจ่าย HIS'
         }
-        sumOutCost += totalOut
-        totalOut = inventoryReportModel.comma(totalOut)
-        dataOut.push({ transactionOut: commentOut, totalOut: totalOut, detail: rsOut })
+        let objAr = _.filter(rsOut, { transaction_type: v.transaction_type });
+
+        sumOutCost += v.out_cost;
+
+        obj.transaction_type = v.transaction_type;
+        obj.generic_type_name = v.generic_type_name;
+        obj.account_name = v.account_name;
+        obj.out_cost = v.out_cost;
+
+        const idx = _.findIndex(dataOut, { transactionType: v.transaction_type });
+        if (idx === -1) {
+          dataOut.push({ transactionOut: commentOut, transactionType: v.transaction_type, detail: objAr, totalOut: inventoryReportModel.comma(_.sumBy(objAr, 'out_cost')) });
+        }
+        v.out_cost = inventoryReportModel.comma(v.out_cost);
       }
-      sumOutCost = inventoryReportModel.comma(sumOutCost)
+      sumOutCost = inventoryReportModel.comma(sumOutCost);
     }
     // ------------------------------------------------
 

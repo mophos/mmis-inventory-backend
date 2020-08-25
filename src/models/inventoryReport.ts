@@ -4549,11 +4549,14 @@ ORDER BY mg.generic_name
             vscw.large_unit,
             vscw.small_unit,
             sum(vscw.in_cost - vscw.out_cost) / sum(vscw.in_qty - vscw.out_qty) AS unit_cost,
-            sum(vscw.in_cost - vscw.out_cost) AS total_cost
+            sum(vscw.in_cost - vscw.out_cost) AS total_cost,
+            mgp.min_qty,
+            mgp.max_qty
         FROM
             view_stock_card_new AS vscw
             JOIN mm_products AS mp ON mp.product_id = vscw.product_id
             JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
+            LEFT JOIN mm_generic_planning AS mgp ON mgp.warehouse_id = '${warehouseId}' AND mgp.generic_id = mg.generic_id
         WHERE
         vscw.${dateSetting} <= '${date} 23:59:59'
         AND mg.generic_type_id IN(${ genericTypeId})`
@@ -4641,7 +4644,9 @@ ORDER BY mg.generic_name
     }
 
     monthlyReportBalance(knex: Knex, warehouseId: any, genericType: any, date: any, dateSetting: any) {
-        let sql = `SELECT
+        let sql = `
+        SELECT * FROM (
+        SELECT
         mgt.generic_type_name,
         mga.account_name,
         sum( vscw.in_cost - vscw.out_cost ) AS balance
@@ -4661,12 +4666,15 @@ ORDER BY mg.generic_name
         mg.account_id 
     ORDER BY
         mgt.generic_type_id,
-        mga.account_id`
+        mga.account_id
+        ) as t WHERE t.balance != 0`
         return (knex.raw(sql))
     }
 
     monthlyReportBalanceAfter(knex: Knex, warehouseId: any, genericType: any, date: any, dateSetting: any) {
-        let sql = `SELECT
+        let sql = `
+        SELECT * FROM (
+        SELECT
         mgt.generic_type_name,
         mga.account_name,
         sum( vscw.in_cost - vscw.out_cost ) AS balance
@@ -4686,7 +4694,7 @@ ORDER BY mg.generic_name
         mg.account_id 
     ORDER BY
         mgt.generic_type_id,
-        mga.account_id`
+        mga.account_id) as t WHERE t.balance != 0`
         return (knex.raw(sql))
     }
 
@@ -4720,7 +4728,9 @@ ORDER BY mg.generic_name
     }
 
     monthlyReportCosts(knex: Knex, warehouseId: any, genericType: any, startDate: any, endDate: any, dateSetting: any, transactionIn: any) {
-        let sql = `SELECT
+        let sql = `
+        SELECT * FROM (
+        SELECT
         ws.transaction_type,
 	    mgt.generic_type_name,
 	    mga.account_name,
@@ -4741,10 +4751,12 @@ ORDER BY mg.generic_name
         }
         sql += ` GROUP BY
         mg.generic_type_id,
-        mg.account_id 
+        mg.account_id,
+        ws.transaction_type
     ORDER BY
         mgt.generic_type_id,
-        mga.account_id`
+        mga.account_id
+        ) as t WHERE t.in_cost != 0 OR t.out_cost != 0`
         return (knex.raw(sql))
     }
 

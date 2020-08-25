@@ -30,6 +30,8 @@ html
             th.left รหัสเวชภัณฑ์
             th.left(style="width:45%") รายการเวชภัณฑ์
             th.left lot
+            th.left MIX
+            th.left MAX
             th.left จำนวน
             th.left มูลค่า
         tbody
@@ -42,6 +44,8 @@ html
             td.left #{a.product_code}
             td.left #{a.product_name}
             td.left #{a.lot_no}
+            td.left #{a.min_qty}
+            td.left #{a.max_qty}
             td.left #{a.show}
             td.left #{a.total_cost}
         tfooter 

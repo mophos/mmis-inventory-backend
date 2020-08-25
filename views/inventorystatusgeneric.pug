@@ -29,6 +29,8 @@ html
             th.center เลขที่
             th.left รหัสเวชภัณฑ์
             th.left(style="width:45%") รายการเวชภัณฑ์
+            th.right MIN
+            th.right MAX
             th.right จำนวน
             th.left &nbsp;หน่วย
             th.right ราคาต่อหน่วย
@@ -42,6 +44,8 @@ html
             td.center #{c}
             td.left #{a.generic_code}
             td.left #{a.generic_name}
+            td.right #{a.min_qty}
+            td.right #{a.max_qty}
             td.right #{a.qty}
             td.left &nbsp;#{a.small_unit}
             td.right #{a.unit_cost}
