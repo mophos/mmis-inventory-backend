@@ -667,6 +667,8 @@ router.put('/stockcard/borrow', async (req, res, next) => {
           // ############ เกลี่ย stock card ###############
           let product: any = [];
           let lists = await toolModel.getStockcardList(db, summary.srcWarehouseId, v.generic_id); // รายการทั้งหทก
+          console.log(v.generic_id);
+          
           let productId = await toolModel.getStockcardProduct(db, summary.dstWarehouseId, v.generic_id); //product id
 
           for (const pd of productId) {
@@ -688,7 +690,6 @@ router.put('/stockcard/borrow', async (req, res, next) => {
               if (idx > -1) {
                 product[idx].product_qty += +pd.in_qty;
                 product[idx].product_qty -= +pd.out_qty;
-
               }
               const obj: any = {
                 stock_card_id: pd.stock_card_id,
@@ -717,6 +718,7 @@ router.put('/stockcard/borrow', async (req, res, next) => {
             }
             product.push(obj);
           }
+
           for (const pd of lists) {
             const idxG = _.findIndex(product, { generic_id: v.generic_id });
             if (idxG > -1) {
@@ -726,7 +728,6 @@ router.put('/stockcard/borrow', async (req, res, next) => {
               if (idx > -1) {
                 product[idx].product_qty += +pd.in_qty;
                 product[idx].product_qty -= +pd.out_qty;
-
               }
               const obj: any = {
                 stock_card_id: pd.stock_card_id,

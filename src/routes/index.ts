@@ -11,6 +11,7 @@ import { ReceiveModel } from '../models/receive';
 import { listenerCount, worker } from 'cluster';
 import { WarehouseModel } from '../models/warehouse';
 import { filter } from 'bluebird';
+import { log } from 'util';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const issueModel = new IssueModel();
@@ -4638,9 +4639,13 @@ router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
   const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
   const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
   const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
-  const warehouseId = typeof req.query.warehouseId === 'number' || typeof req.query.warehouseId === 'string' ? [req.query.warehouseId] : req.query.warehouseId;
-  try {
-    const rs: any = await inventoryReportModel.productExpired(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, warehouseId);
+  const warehouseId = req.query.warehouseId;
+  let arWarehouseId: any = [];
+  for (const v of warehouseId) {
+    arWarehouseId.push(v.toString());
+  }
+try {
+    const rs: any = await inventoryReportModel.productExpired(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, arWarehouseId);
     rs.forEach(element => {
       element.expired_date = moment(element.expired_date).format('D/M/') + (moment(element.expired_date).get('year'));
       element.cost = inventoryReportModel.comma(element.cost);
