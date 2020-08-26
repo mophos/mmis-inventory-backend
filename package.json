@@ -49,7 +49,6 @@
     "@types/express": "^4.16.0",
     "@types/jsonwebtoken": "^7.2.7",
     "@types/knex": "0.14.14",
-    "@types/lodash": "4.14.110",
     "@types/morgan": "^1.7.32",
     "@types/mysql": "0.0.32",
     "@types/node": "^7.0.66",
