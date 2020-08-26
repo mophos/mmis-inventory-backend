@@ -242,8 +242,7 @@ export class MainReportModel {
       FROM
         view_stock_card_new AS vscn 
         JOIN mm_generics as mg ON mg.generic_id = vscn.generic_id
-        LEFT JOIN mm_unit_generics as ug ON ug.generic_id = vscn.generic_id
-        LEFT JOIN mm_units as uu ON uu.unit_id = ug.to_unit_id
+        LEFT JOIN mm_units as uu ON uu.unit_id = mg.primary_unit_id
         LEFT JOIN mm_generic_accounts as mga ON mga.account_id = mg.account_id
       WHERE
         vscn.src_warehouse_id = ?`
