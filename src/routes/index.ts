@@ -4636,19 +4636,15 @@ router.get('/report/remain-trade/qty/export', async (req, res, next) => {
 
 router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
   const db = req.db;
+  const warehouseId = req.query.warehouseId;
   const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
   const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
   const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
-  let warehouseId = req.query.warehouseId;
-  let arWarehouseId: any = [];
-  if (warehouseId === undefined) {
-    arWarehouseId.push(req.decoded.warehouseId);
-  } else {
+  try {
+    let arWarehouseId: any = [];
     for (const v of warehouseId) {
       arWarehouseId.push(v.toString());
     }
-  }
-  try {
     const rs: any = await inventoryReportModel.productExpired(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, arWarehouseId);
     rs.forEach(element => {
       element.expired_date = moment(element.expired_date).format('D/M/') + (moment(element.expired_date).get('year'));
@@ -6529,7 +6525,7 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
       // create directory
       fse.ensureDirSync(process.env.MMIS_TMP);
 
-      let filename = this.peopleId + `pay_product`+ moment().format('x');
+      let filename = this.peopleId + `pay_product` + moment().format('x');
       let filenamePath = path.join(process.env.MMIS_TMP, filename + '.xlsx');
 
       wb.write(filenamePath, function (err, stats) {
@@ -6663,7 +6659,7 @@ router.get('/report/requisition/generic/excel/sum', wrap(async (req, res, next) 
       }
       fse.ensureDirSync(process.env.MMIS_TMP);
 
-      let filename = this.peopleId + `pay_product`+ moment().format('x');
+      let filename = this.peopleId + `pay_product` + moment().format('x');
       let filenamePath = path.join(process.env.MMIS_TMP, filename + '.xlsx');
 
       wb.write(filenamePath, function (err, stats) {
