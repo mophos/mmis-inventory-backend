@@ -109,7 +109,7 @@ router.get('/gerProductReceiveNotPO', async (req, res, next) => {
 
 router.get('/gerReceiveItem', async (req, res, next) => {
   let db = req.db;
-  let receiveId = req.query.receiveId;
+  let receiveId: any = req.query.receiveId;
   if (receiveId) {
     try {
       let results = await pickModel.getReceiveProducts(db, receiveId);

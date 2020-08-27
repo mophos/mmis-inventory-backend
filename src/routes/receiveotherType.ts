@@ -8,7 +8,7 @@ const receiveotherTypeModel = new ReceiveotherTypeModel();
 
 router.get('/', (req, res, next) => {
   let db = req.db;
-  let btnDelete = req.query.btnDelete
+  let btnDelete: any = req.query.btnDelete
   let query: any = req.query.query
   receiveotherTypeModel.list(db, query, btnDelete)
     .then((results: any) => {

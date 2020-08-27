@@ -212,7 +212,7 @@ router.get('/print/transaction/:transactionId', async (req, res, next) => {
 router.get('/print/transactions', async (req, res, next) => {
 
   let db = req.db;
-  let addition_id: any = req.query.addition_id;
+  let addition_id :any = req.query.addition_id;
   let rs: any = []
   let header: any = []
   let detail: any = []

@@ -640,6 +640,11 @@ export class WarehouseModel {
       .insert(items);
   }
 
+  updateGenericPlanningMinMax(db: Knex, items: any[], id: any) {
+    return db('mm_generic_planning')
+      .update(items).where('generic_planning_id', id);
+  }
+
   removeGenericPlanningMinMax(db: Knex, warehouseId: any) {
     return db('mm_generic_planning')
       .where('warehouse_id', warehouseId)
@@ -702,12 +707,6 @@ export class WarehouseModel {
       .del();
   }
 
-
-  deleteTemplate(knex: Knex, templateId: string) {
-    return knex('wm_requisition_template')
-      .where('template_id', templateId)
-      .del();
-  }
 
   deleteTemplateItemsIssue(knex: Knex, templateId: string) {
     return knex('wm_issue_template_detail')
@@ -1240,6 +1239,11 @@ export class WarehouseModel {
     return knex('mm_generic_planning')
       .where('warehouse_id', warehouseId)
       .del();
+  }
+
+  getGenericPlanning(knex: Knex, warehouseId: any) {
+    return knex('mm_generic_planning')
+      .where('warehouse_id', warehouseId)
   }
 
   getWarehouseProductImport(knex: Knex, warehouseId: any) {

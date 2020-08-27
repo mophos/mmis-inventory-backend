@@ -915,7 +915,7 @@ router.put('/orders/confirm-without-unpaid/:confirmId', async (req, res, next) =
 
 router.get('/orders/check-unpaid', async (req, res, next) => {
   let db = req.db;
-  let requisitionId = req.query.requisitionId;
+  let requisitionId: any = req.query.requisitionId;
   try {
     let result = await orderModel.checkUnpaid(db, requisitionId);
     if (result.length) {

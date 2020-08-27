@@ -245,9 +245,9 @@ const conversion = (async (db, hospcode: any, data: any) => {
 router.get('/financial', (async (req, res, next) => {
   const db = req.db;
   const hospitalDetail = await mainReportModel.hospital(db);
-  const startDate = req.query.startDate;
-  const endDate = req.query.endDate;
-  const genericTypeId = req.query.genericTypeId;
+  const startDate: any = req.query.startDate;
+  const endDate: any = req.query.endDate;
+  const genericTypeId: any = req.query.genericTypeId;
   try {
     const rs: any = await mainReportModel.financial(db, startDate, endDate, genericTypeId);
     if (rs[0] == undefined) {

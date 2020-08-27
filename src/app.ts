@@ -105,7 +105,7 @@ import staffAlertExpired from './routes/staffAlertExpired';
 import staffBorrowOtherRoute from './routes/staffBorrowOther';
 
 const app: express.Express = express();
-
+const timeout = require('connect-timeout');
 //view engine setup
 app.set('views', path.join(__dirname, '../views'));
 app.set('view engine', 'pug');
@@ -116,6 +116,7 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: false, limit: '50mb' }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../public')));
+app.use(timeout(1200000));
 app.use(cors());
 
 // app.use(protect.express.sqlInjection({

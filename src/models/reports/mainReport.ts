@@ -146,7 +146,7 @@ export class MainReportModel {
       select rod.product_id,d.donator_name as labeler_name,rod.receive_qty,rod.unit_generic_id from wm_receive_other ro
       join wm_receive_other_detail rod on ro.receive_other_id = rod.receive_other_id
       join wm_donators as d on ro.donator_id = d.donator_id
-      where ro.receive_type_id in (?) and ro.receive_date = ? and rod.warehouse_id = ?
+      where ro.receive_type_id in (?) and ro.receive_date = ? and rod.warehouse_id = ? and ro.is_cancel = 'N'
       ) as a 
       join mm_products as mp on mp.product_id =a.product_id
       join mm_generics as mg on mg.generic_id = mp.generic_id
@@ -204,6 +204,8 @@ export class MainReportModel {
       b.in_cost,
       b.out_qty,
       b.out_cost,
+      b.unit_name,
+      b.account_name,
       mgg1.group_name_1,
       mgg2.group_name_2,
       mgg3.group_name_3,
@@ -234,9 +236,14 @@ export class MainReportModel {
         sum( vscn.in_qty ) AS in_qty,
         sum( vscn.out_qty ) AS out_qty,
         sum( vscn.in_cost ) AS in_cost,
-        sum( vscn.out_cost ) AS out_cost 
+        sum( vscn.out_cost ) AS out_cost,
+        uu.unit_name,
+        mga.account_name
       FROM
         view_stock_card_new AS vscn 
+        JOIN mm_generics as mg ON mg.generic_id = vscn.generic_id
+        LEFT JOIN mm_units as uu ON uu.unit_id = mg.primary_unit_id
+        LEFT JOIN mm_generic_accounts as mga ON mga.account_id = mg.account_id
       WHERE
         vscn.src_warehouse_id = ?`
     if (dateSetting == 'stock_date') {

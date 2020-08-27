@@ -208,7 +208,7 @@ router.put('/:borrowId', co(async (req, res, next) => {
 
 router.get('/warehouses', co(async (req, res, next) => {
   let db = req.db;
-  let borrowId = req.query.borrowId;
+  let borrowId: any = req.query.borrowId;
 
   try {
     let rs = await models.getWarehouses(db, borrowId);
@@ -222,7 +222,7 @@ router.get('/warehouses', co(async (req, res, next) => {
 
 router.get('/info/products', co(async (req, res, next) => {
   let db = req.db;
-  let borrowId = req.query.borrowId;
+  let borrowId: any = req.query.borrowId;
 
   try {
     let rs = await models.getProductDetail(db, borrowId);
@@ -236,7 +236,7 @@ router.get('/info/products', co(async (req, res, next) => {
 
 router.get('/info/generics', co(async (req, res, next) => {
   let db = req.db;
-  let borrowId = req.query.borrowId;
+  let borrowId: any = req.query.borrowId;
 
   try {
     let rs = await models.getGenericsDetail(db, borrowId);

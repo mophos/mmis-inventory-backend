@@ -40,7 +40,7 @@ router.get('/list/search', async (req, res, next) => {
   const warehouseId = req.decoded.warehouseId;
   const limit = +req.query.limit;
   const offset = +req.query.offset;
-  const query = req.query.query
+  const query: any = req.query.query
   try {
     const rs = await adjustStockModel.searchlist(db, warehouseId, limit, offset, query);
     const rsTotal = await adjustStockModel.totalsearchList(db, warehouseId, query);
@@ -59,7 +59,7 @@ router.get('/list/search', async (req, res, next) => {
 });
 router.get('/generic', async (req, res, next) => {
   const db = req.db;
-  const adjustId = req.query.adjustId;
+  const adjustId: any = req.query.adjustId;
   try {
     const rs = await adjustStockModel.getGeneric(db, adjustId);
     res.send({ ok: true, rows: rs });

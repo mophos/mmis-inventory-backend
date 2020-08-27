@@ -205,7 +205,8 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
         for (const v of detail[0]) {
           g.products.push({
             wm_product_id: v.wm_product_id,
-            product_qty: v.product_qty,
+            old_product_qty: v.product_qty,
+            product_qty: v.product_qty > v.pack_remain_qty ? v.pack_remain_qty : v.product_qty,
             generic_id: v.generic_id,
             conversion_qty: v.conversion_qty,
             product_name: v.product_name,
@@ -221,7 +222,7 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
         }
       } else {
         let idx: number = 0;
-        rsProducts = await borrowModel.getGenericQty(db, g.generic_id, srcWarehouseId);
+        rsProducts = await borrowModel.getGenericQty(db, g.borrow_generic_id, g.generic_id, srcWarehouseId);
         if (rsProducts[0].length) {
           for (const p of rsProducts[0]) {
             if (g.generic_id === p.generic_id) {
@@ -252,6 +253,47 @@ router.get('/info-detail/:borrowId', co(async (req, res, next) => {
               idx++;
             }
           }
+        }
+      }
+    }
+    res.send({ ok: true, rows: _generics });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+}));
+
+router.get('/info-detail/stockcard/:borrowId', co(async (req, res, next) => {
+  let db = req.db;
+  let borrowId = req.params.borrowId;
+  let srcWarehouseId = req.decoded.warehouseId;
+
+  try {
+    const rsGenerics = await borrowModel.getGenericInfo(db, borrowId, srcWarehouseId);
+    let _generics = rsGenerics[0];
+    for (const g of _generics) {
+      g.products = [];
+      const detail = await borrowModel.getProductStockcardInfo(db, borrowId, g.borrow_generic_id);
+      if (detail[0].length) {
+        for (const v of detail[0]) {
+          g.products.push({
+            wm_product_id: v.wm_product_id,
+            product_id: v.product_id,
+            product_qty: v.product_qty > v.pack_remain_qty ? v.pack_remain_qty : v.product_qty,
+            generic_id: v.generic_id,
+            conversion_qty: v.conversion_qty,
+            product_name: v.product_name,
+            pack_remain_qty: v.pack_remain_qty,
+            small_remain_qty: v.small_remain_qty,
+            lot_no: v.lot_no,
+            lot_time: v.lot_time,
+            expired_date: v.expired_date,
+            from_unit_name: v.from_unit_name,
+            to_unit_name: v.to_unit_name,
+            unit_generic_id: v.unit_generic_id
+          });
         }
       }
     }
@@ -513,6 +555,7 @@ router.put('/save/:borrowId', co(async (req, res, next) => {
               borrow_generic_id: rsBorrowGeneric[0],
               wm_product_id: p.wm_product_id ? p.wm_product_id : '',
               qty: p.product_qty * p.conversion_qty,
+              confirm_qty: p.product_qty * p.conversion_qty,
               create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
               create_by: req.decoded.people_user_id
             });
@@ -751,6 +794,9 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       }
     } else if (v.borrow_product_id === null) {
       const idx = _.findIndex(returnData, { 'src_warehouse_id': v.src_warehouse_id, 'dst_warehouse_id': v.dst_warehouse_id });
+      let generic = await borrowModel.getBorrowGeneric(db, v.borrow_generic_id);
+
+      console.log(generic, 'asdasdasdjskdfhaskldfjhaksdjfhaklsdhjf');
 
       let product = [];
 
@@ -837,7 +883,7 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       }
 
       // =================================== STOCK CARD IN ========================
-      
+
       let remain_dst = await productModel.getBalance(db, v.product_id, v.dst_warehouse_id, v.lot_no, v.lot_time);
       remain_dst = remain_dst[0]
       let stockIn: any = {};

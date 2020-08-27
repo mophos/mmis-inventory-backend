@@ -99,7 +99,7 @@ router.get('/:borrowNoteId/detail-list', async (req, res, next) => {
 router.get('/getall-remain', async (req, res, next) => {
   let db = req.db;
   let warehouseId = req.decoded.warehouseId;
-  let dstWarehouseId = req.query.dstWarehouseId;
+  let dstWarehouseId: any = req.query.dstWarehouseId;
 
   try {
     let rs: any = await borrowModel.getAllGeneric(db, warehouseId, dstWarehouseId);

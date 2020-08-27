@@ -229,7 +229,7 @@ router.get('/list-all', (req, res, next) => {
 
 router.get('/search-autocomplete/vendor', (req, res, next) => {
   let db = req.db;
-  const query = req.query.query;
+  const query: any = req.query.query;
 
   labelerModel.searchAutoCompleteVendor(db, query)
     .then((results: any) => {
@@ -249,7 +249,7 @@ router.get('/search-autocomplete/vendor', (req, res, next) => {
 
 router.get('/search-autocomplete/manufacture', (req, res, next) => {
   let db = req.db;
-  const query = req.query.query;
+  const query: any = req.query.query;
 
   labelerModel.searchAutoCompleteManufacture(db, query)
     .then((results: any) => {
