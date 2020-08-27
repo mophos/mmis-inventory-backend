@@ -19,7 +19,7 @@ html
           thead
             tr 
               td.left(colspan='5') เลขที่ใบเบิก #{_tmpTranfer[i][p][0].transfer_code}
-              td.right(colspan='5') วันที่อนุมัติ #{today}
+              td.right(colspan='5') วันที่อนุมัติ #{_tmpTranfer[i][p][0].approve_date}
             tr
               td.left(colspan='10') หน่วยงานที่เบิก : #{_tmpTranfer[i][p][0].dst_warehouse_name}
             tr
