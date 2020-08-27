@@ -4639,12 +4639,16 @@ router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
   const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
   const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
   const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
-  const warehouseId = req.query.warehouseId;
+  let warehouseId = req.query.warehouseId;
   let arWarehouseId: any = [];
-  for (const v of warehouseId) {
-    arWarehouseId.push(v.toString());
+  if (warehouseId === undefined) {
+    arWarehouseId.push(req.decoded.warehouseId);
+  } else {
+    for (const v of warehouseId) {
+      arWarehouseId.push(v.toString());
+    }
   }
-try {
+  try {
     const rs: any = await inventoryReportModel.productExpired(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, arWarehouseId);
     rs.forEach(element => {
       element.expired_date = moment(element.expired_date).format('D/M/') + (moment(element.expired_date).get('year'));
