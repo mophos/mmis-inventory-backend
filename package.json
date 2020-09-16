@@ -39,7 +39,6 @@
     "pug": "^2.0.4",
     "random-js": "^1.0.8",
     "rimraf": "^2.6.3",
-    "serve-favicon": "^2.4.2",
     "uuid": "^3.2.1"
   },
   "devDependencies": {
@@ -53,7 +52,6 @@
     "@types/mysql": "0.0.32",
     "@types/node": "^7.0.66",
     "@types/random-js": "^1.0.28",
-    "@types/serve-favicon": "^2.2.27",
     "@types/signale": "^1.2.0",
     "ejs": "^2.6.2",
     "nodemon": "^1.17.5",
