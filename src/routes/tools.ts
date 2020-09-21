@@ -572,7 +572,6 @@ router.put('/stockcard/requisitions', async (req, res, next) => {
 });
 
 router.put('/stockcard/borrow', async (req, res, next) => {
-
   let db = req.db;
   let borrowId: any = req.body.borrowId;
   let summary: any = req.body.summary;
@@ -587,8 +586,8 @@ router.put('/stockcard/borrow', async (req, res, next) => {
         const qtyOld = i.small_remain_qty;
         const stockCardIdOut = await toolModel.getStockCardIdOut(db, borrowId, i.product_id, i.lot_no, 'BORROW_OUT', qtyOld);
         const stockCardIdIn = await toolModel.getStockCardIdIn(db, borrowId, i.product_id, i.lot_no, 'BORROW_IN', qtyOld);
-        if (stockCardIdOut.length && stockCardIdIn.length) {
 
+        if (stockCardIdOut.length && stockCardIdIn.length) {
           // ############ ปรับคงคลัง ###############
           let qty = 0;
           if (qtyNew > qtyOld) {
@@ -668,7 +667,7 @@ router.put('/stockcard/borrow', async (req, res, next) => {
           let product: any = [];
           let lists = await toolModel.getStockcardList(db, summary.srcWarehouseId, v.generic_id); // รายการทั้งหทก
           console.log(v.generic_id);
-          
+
           let productId = await toolModel.getStockcardProduct(db, summary.dstWarehouseId, v.generic_id); //product id
 
           for (const pd of productId) {
