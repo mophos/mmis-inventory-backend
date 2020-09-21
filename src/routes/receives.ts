@@ -353,7 +353,7 @@ router.put('/:receiveId', co(async (req, res, next) => {
     }
 
     let productsData = [];
-    let totalPriceReceive = 0;
+    let totalPriceReceive: any = 0;
     // let productIds = [];
 
     products.forEach((v: any) => {
@@ -381,6 +381,12 @@ router.put('/:receiveId', co(async (req, res, next) => {
       }
       productsData.push(pdata);
     });
+
+    //แก้บัคคุณแล้วจุดทศนิยมเกินมา ทำให้รับของไม่ได้
+    let count = countDecimals(totalPriceReceive);
+    if (count > 10) {
+      totalPriceReceive = totalPriceReceive.toFixed(2);
+    }
 
     try {
 
@@ -1329,7 +1335,7 @@ router.post('/purchases/list', co(async (req, res, nex) => {
       hosp_code: hospcode
     }
     // --------------------
-    
+
     for (const r of rows[0]) {
       if (r.is_edi == 'Y') {
         data.po_no = r.purchase_order_number
@@ -1443,8 +1449,8 @@ router.get('/purchases/info/:purchaseOrderId', co(async (req, res, nex) => {
 router.get('/purchases/get-last-location', co(async (req, res, nex) => {
 
   let db = req.db;
-  let productId= req.query.productId;
-  let warehouseId= req.query.warehouseId
+  let productId = req.query.productId;
+  let warehouseId = req.query.warehouseId
   try {
     const rows = await receiveModel.getLastLocation(db, warehouseId, productId);
     if (rows[0]) {
@@ -1463,8 +1469,8 @@ router.get('/purchases/get-last-location', co(async (req, res, nex) => {
 router.get('/purchases/get-last-location-other', co(async (req, res, nex) => {
 
   let db = req.db;
-  let productId= req.query.productId;
-  let warehouseId= req.query.warehouseId
+  let productId = req.query.productId;
+  let warehouseId = req.query.warehouseId
   try {
     const rows = await receiveModel.getLastLocationOther(db, warehouseId, productId);
     if (rows[0]) {
@@ -1531,8 +1537,8 @@ router.get('/purchases/check-holiday', co(async (req, res, nex) => {
   }
 }));
 router.get('/purchases/check-expire', co(async (req, res, nex) => {
-  let genericId= req.query.genericId  //[{product_id:product_id,expired_date:expired_date}]
-  let expiredDate= req.query.expiredDate
+  let genericId = req.query.genericId  //[{product_id:product_id,expired_date:expired_date}]
+  let expiredDate = req.query.expiredDate
 
   let db = req.db;
   let i = 0;
@@ -1975,4 +1981,10 @@ async function pick(req, receiveIds) {
     return ({ ok: false, error: error.message });
   }
 }
+
+function countDecimals(value) {
+  if (Math.floor(value) === value) return 0;
+  return value.toString().split(".")[1].length || 0;
+}
+
 export default router;

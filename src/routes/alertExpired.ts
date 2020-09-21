@@ -5,14 +5,11 @@ import * as wrap from 'co-express';
 
 import { AlertExpiredModel } from '../models/alertExpired';
 import { SettingModel } from '../models/settings';
-import { awaitExpression } from 'babel-types';
 import { ReceiveModel } from './../models/receive';
 
 const router = express.Router();
 
 const alertModel = new AlertExpiredModel();
-const settingModel = new SettingModel();
-const receiveModel = new ReceiveModel();
 
 router.post('/generics', async (req, res, next) => {
   const db = req.db;

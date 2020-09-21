@@ -4485,7 +4485,8 @@ ORDER BY
             avg(q.unit_cost) AS unit_cost,
             sum(total_cost) AS total_cost,
             q.min_qty,
-            q.max_qty
+            q.max_qty,
+            q.generic_type_lv2_name
         FROM
             (
             SELECT
@@ -4502,11 +4503,13 @@ ORDER BY
                 sum(vscw.in_cost - vscw.out_cost) / sum(vscw.in_qty - vscw.out_qty) AS unit_cost,
                 sum(vscw.in_cost - vscw.out_cost) AS total_cost,
                 mgp.min_qty,
-                mgp.max_qty
+                mgp.max_qty,
+                mgt.generic_type_lv2_name
             FROM
                 view_stock_card_new AS vscw
                 JOIN mm_products AS mp ON mp.product_id = vscw.product_id
                 JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
+                LEFT JOIN mm_generic_types_lv2 as mgt ON mgt.generic_type_lv2_id = mg.generic_type_lv2_id
                 LEFT JOIN mm_generic_planning AS mgp ON mgp.warehouse_id = '${warehouseId}' AND mgp.generic_id = mg.generic_id
             WHERE
                 vscw.${dateSetting} <= '${statusDate} 23:59:59' 
@@ -4543,11 +4546,13 @@ ORDER BY
             sum(vscw.in_cost - vscw.out_cost) / sum(vscw.in_qty - vscw.out_qty) AS unit_cost,
             sum(vscw.in_cost - vscw.out_cost) AS total_cost,
             mgp.min_qty,
-            mgp.max_qty
+            mgp.max_qty,
+            mgt.generic_type_lv2_name
         FROM
             view_stock_card_new AS vscw
             JOIN mm_products AS mp ON mp.product_id = vscw.product_id
             JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
+            LEFT JOIN mm_generic_types_lv2 as mgt ON mgt.generic_type_lv2_id = mg.generic_type_lv2_id
             LEFT JOIN mm_generic_planning AS mgp ON mgp.warehouse_id = '${warehouseId}' AND mgp.generic_id = mg.generic_id
         WHERE
         vscw.${dateSetting} <= '${date} 23:59:59'

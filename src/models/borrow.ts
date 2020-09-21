@@ -695,6 +695,7 @@ export class BorrowModel {
       WHERE
       bp.borrow_id = ?
       and bg.borrow_generic_id = ?
+      and bp.qty > 0
       `;
     return knex.raw(sql, [borrowId, borrowGenericId]);
   }

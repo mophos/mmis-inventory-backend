@@ -4727,6 +4727,7 @@ router.get('/report/inventoryStatus/generic/excel', wrap(async (req, res, next) 
       'มูลค่า': v.total_cost,
       'min': v.min_qty,
       'max': v.max_qty,
+      'หมวดสินค้า(รอง)': v.generic_type_lv2_name,
       'รวม': ''
     };
     sum += v.total_cost;
@@ -6050,6 +6051,7 @@ router.get('/report/inventoryStatus/product/excel', wrap(async (req, res, next) 
       'หน่วยใหญ่': v.large_unit,
       'ราคาต่อหน่วย': v.unit_cost,
       'มูลค่า': v.total_cost,
+      'หมวดสินค้า(รอง)': v.generic_type_lv2_name,
       'รวม': ''
     };
     sum += v.total_cost;

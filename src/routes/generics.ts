@@ -6,8 +6,6 @@ import * as co from 'co-express';
 import * as _ from 'lodash';
 import { GenericModel } from '../models/generic';
 import { SettingModel } from '../models/settings'
-import { thisTypeAnnotation } from 'babel-types';
-import { stat } from 'fs';
 const router = express.Router();
 
 const genericModel = new GenericModel();
