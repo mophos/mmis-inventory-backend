@@ -4001,7 +4001,7 @@ FROM
         ( sum( IFNULL( in_qty, 0 ) ) - sum( IFNULL( out_qty , 0 ) ) ) balance,
         ROUND( sum( IFNULL( in_cost, 0 ) ) - sum( IFNULL( out_cost, 0 ) ), 2 ) amount,
 			ROUND( sum( IFNULL( in_cost, 0 ) ) - sum( IFNULL( out_cost, 0 ) ), 2 ) balance_cost,
-			ROUND( sum( IFNULL( in_cost, 0 ) ) / sum( IFNULL( in_qty * conversion_qty, 0 ) ) ) AS cost 
+			ROUND( avg( IFNULL( in_unit_cost, 0 )) ,2)*2 AS cost 
 		FROM
 			view_stock_card_warehouse vs 
 		WHERE
@@ -4097,7 +4097,7 @@ FROM
         ( sum( IFNULL( in_qty, 0 ) ) - sum( IFNULL( out_qty , 0 ) ) ) balance,
         ROUND( sum( IFNULL( in_cost, 0 ) ) - sum( IFNULL( out_cost, 0 ) ), 2 ) amount,
 			ROUND( sum( IFNULL( in_cost, 0 ) ) - sum( IFNULL( out_cost, 0 ) ), 2 ) balance_cost,
-			ROUND( sum( IFNULL( in_cost, 0 ) ) / sum( IFNULL( in_qty * conversion_qty, 0 ) ) ) AS cost 
+			ROUND( avg( IFNULL( in_unit_cost, 0 )) ,2)*2 AS cost 
 		FROM
 			view_stock_card_warehouse vs 
 		WHERE
