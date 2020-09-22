@@ -449,7 +449,7 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
     rs[0].forEach(v => {
       v.unit_price = v.cost ? inventoryReportModel.comma(v.cost) : inventoryReportModel.comma(v.cost2);
       // v.balance = +v.balance / +v.qty
-      v.amount = inventoryReportModel.comma(+v.balance * +v.cost);
+      v.amount = inventoryReportModel.comma(+v.amount);
       v.balance = inventoryReportModel.comma(+v.balance / +v.qty);
       v.in_qty = inventoryReportModel.comma(v.in_qty);
       v.out_qty = inventoryReportModel.comma(v.out_qty);
@@ -494,7 +494,7 @@ router.get('/report/receiveIssueYearGeneric/:year', wrap(async (req, res, next) 
     rs[0].forEach(v => {
       v.unit_price = v.cost ? inventoryReportModel.comma(v.cost) : inventoryReportModel.comma(v.cost2);
       // v.balance = +v.balance / +v.qty
-      v.amount = inventoryReportModel.comma(+v.balance * +v.cost);
+      v.amount = inventoryReportModel.comma(+v.amount);
       v.balance = inventoryReportModel.comma(+v.balance / +v.qty);
       v.in_qty = inventoryReportModel.comma(v.in_qty);
       v.out_qty = inventoryReportModel.comma(v.out_qty);
@@ -4394,7 +4394,7 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
         'รับ(หน่วยใหญ่)': v.in_qty,
         'จ่าย(หน่วยใหญ่)': v.out_qty,
         'คงเหลือ(หน่วยใหญ่)': v.balance / v.qty,
-        'มูลค่า': v.cost ? v.balance * v.cost : v.balance * v.cost2
+        'มูลค่า': v.amount
         // WORKING_CODE: v.working_code,
         // GENERIC_CODE: v.generic_name,
         // PRODUCT_NAME: v.product_name,
@@ -4467,7 +4467,7 @@ router.get('/report/receive-issue-generic/year/export/:year', async (req, res, n
         'รับ(หน่วยใหญ่)': v.in_qty,
         'จ่าย(หน่วยใหญ่)': v.out_qty,
         'คงเหลือ(หน่วยใหญ่)': v.balance / v.qty,
-        'มูลค่า': v.cost ? v.balance * v.cost : v.balance * v.cost2
+        'มูลค่า': v.amount
         // WORKING_CODE: v.working_code,
         // GENERIC_CODE: v.generic_name,
         // PRODUCT_NAME: v.product_name,

@@ -3992,19 +3992,20 @@ FROM
 			generic_name,
 			conversion_qty,
 			warehouse_id,
-			sum( IFNULL( in_cost / conversion_qty, 0 ) ) in_cost_all,
-			sum( IFNULL( in_qty / conversion_qty, 0 ) ) in_qty_all,
+			sum( IFNULL( in_cost , 0 ) ) in_cost_all,
+			sum( IFNULL( in_qty * conversion_qty, 0 ) ) in_qty_all,
 			sum( CASE WHEN stock_date < '${year - 1}-10-01 00:00:00' THEN in_qty - out_qty ELSE 0 END ) AS summit,
 		ROUND( sum( CASE WHEN stock_date < '${year - 1}-10-01 00:00:00' THEN in_cost - out_cost ELSE 0 END ), 4 ) AS summit_cost,
-		sum( CASE WHEN stock_date BETWEEN '${year - 1}-10-01 00:00:00' AND '${year}-09-30 23:59:59' THEN in_qty/conversion_qty ELSE 0 END ) AS in_qty,
-		sum( CASE WHEN stock_date BETWEEN '${year - 1}-10-01 00:00:00' AND '${year}-09-30 23:59:59' THEN out_qty/conversion_qty ELSE 0 END ) AS out_qty,
-		( sum( IFNULL( in_qty, 0 ) ) - sum( IFNULL( out_qty , 0 ) ) ) balance,
+		sum( CASE WHEN stock_date BETWEEN '${year - 1}-10-01 00:00:00' AND '${year}-09-30 23:59:59' THEN in_qty ELSE 0 END ) AS in_qty,
+		sum( CASE WHEN stock_date BETWEEN '${year - 1}-10-01 00:00:00' AND '${year}-09-30 23:59:59' THEN out_qty ELSE 0 END ) AS out_qty,
+        ( sum( IFNULL( in_qty, 0 ) ) - sum( IFNULL( out_qty , 0 ) ) ) balance,
+        ROUND( sum( IFNULL( in_cost, 0 ) ) - sum( IFNULL( out_cost, 0 ) ), 2 ) amount,
 			ROUND( sum( IFNULL( in_cost, 0 ) ) - sum( IFNULL( out_cost, 0 ) ), 2 ) balance_cost,
-			ROUND( sum( IFNULL( in_cost, 0 ) ) / sum( IFNULL( in_qty / conversion_qty, 0 ) ) ) AS cost 
+			ROUND( avg( IFNULL( in_unit_cost, 0 )) ,2)*2 AS cost 
 		FROM
 			view_stock_card_warehouse vs 
 		WHERE
-			warehouse_id = 33 
+			warehouse_id = ${wareHouseId} 
 		GROUP BY
 			unit_generic_id,
 			product_id 
@@ -4039,57 +4040,6 @@ ORDER BY
 	p.generic_name
 
         `)
-        // return knex.raw(`select 
-        // mg.generic_name,
-        // mg.working_code,
-        // mp.product_name,
-        // vs.balance_amount,
-        // ml.labeler_name as m_labeler_name,
-        // mga.account_name,
-        // mgt.generic_type_name,
-        // mgd.dosage_name,
-        // mg.standard_cost,
-        // l.bid_name,
-        // mgh.name,
-        // mg.min_qty,
-        // mg.max_qty,
-        // concat( IFNULL( mgg1.group_name_1 , '' ), ' ', IFNULL( mgg2.group_name_2 , '' ),' ' , IFNULL( mgg3.group_name_3 , '' ), ' ' , IFNULL( mgg4.group_name_4, '' ) ) AS group_name,				
-        // ROUND(avg(vs.balance_unit_cost),2) as cost,
-        // (select avg(cost) from wm_products where warehouse_id=vs.warehouse_id and product_id=vs.product_id and lot_no in (select lot_no from view_stock_card_warehouse where product_id=vs.product_id and unit_generic_id=vs.unit_generic_id group by lot_no) ) as cost2,
-        // mug.qty,mu1.unit_name as pack,
-        // mu2.unit_name as small_unit,
-        // (select (sum(in_qty)-sum(out_qty)) as summit from view_stock_card_warehouse where warehouse_id=vs.warehouse_id and product_id=vs.product_id and unit_generic_id = vs.unit_generic_id
-        // and stock_date BETWEEN  '${year - 1}-10-01 00:00:00' 
-        // AND '${year}-09-30 23:59:59'
-        // GROUP BY unit_generic_id,product_id) as summit,
-        // sum(vs.in_qty)/mug.qty as in_qty,
-        // sum(vs.out_qty)/mug.qty as out_qty ,
-        // (select (sum(in_qty)-sum(out_qty)) as summit from view_stock_card_warehouse where warehouse_id=vs.warehouse_id and product_id=vs.product_id and unit_generic_id = vs.unit_generic_id
-        // and stock_date BETWEEN  '${year - 1}-10-01 00:00:00' 
-        //     AND '${year}-09-30 23:59:59'
-        // GROUP BY unit_generic_id,product_id)+sum(vs.in_qty)-sum(vs.out_qty) as balance
-        // from view_stock_card_warehouse vs
-        // join mm_products mp on vs.product_id = mp.product_id
-        // join mm_generics mg on mg.generic_id = mp.generic_id
-        // join mm_unit_generics mug on mug.unit_generic_id = vs.unit_generic_id
-        // join mm_units mu1 on mu1.unit_id = mug.from_unit_id
-        // join mm_units mu2 on mu2.unit_id = mug.to_unit_id
-        // join mm_labelers ml on ml.labeler_id = mp.m_labeler_id
-        // left join mm_generic_accounts mga on mga.account_id = mg.account_id
-        // left join mm_generic_dosages mgd on mgd.dosage_id = mg.dosage_id
-        // left join mm_generic_types mgt on mgt.generic_type_id = mg.generic_type_id
-        // left join l_bid_type l on l.bid_id = mg.purchasing_method        
-        // left join mm_generic_group_1 AS mgg1 ON mgg1.group_code_1 = mg.group_code_1
-        // left join mm_generic_group_2 AS mgg2 ON mgg2.group_code_2 = mg.group_code_2 and mgg2.group_code_1 = mg.group_code_1
-        // left join mm_generic_group_3 AS mgg3 ON mgg3.group_code_3 = mg.group_code_3 and mgg3.group_code_2 = mg.group_code_2 and mgg3.group_code_1 = mg.group_code_1
-        // left join mm_generic_group_4 AS mgg4 ON mgg4.group_code_4 = mg.group_code_4 and mgg4.group_code_3 = mg.group_code_3 and mgg4.group_code_2 = mg.group_code_2 and mgg4.group_code_1 = mg.group_code_1
-        // left join mm_generic_hosp mgh on mgh.id = mg.generic_hosp_id
-
-        // where vs.warehouse_id=${wareHouseId}
-        // and mg.generic_type_id in (${genericType})
-        // and vs.stock_date BETWEEN  '${year - 1}-10-01 00:00:00' 
-        // AND '${year}-09-30 23:59:59' 
-        // GROUP BY vs.unit_generic_id,vs.product_id`);
     }
 
     issueYearGeneric(knex: Knex, year: any, wareHouseId: any, genericType: any) {
@@ -4138,19 +4088,20 @@ FROM
 			generic_name,
 			conversion_qty,
 			warehouse_id,
-			sum( IFNULL( in_cost / conversion_qty, 0 ) ) in_cost_all,
-			sum( IFNULL( in_qty / conversion_qty, 0 ) ) in_qty_all,
-			sum( CASE WHEN stock_date < '${year - 1}-10-01 00:00:00' THEN in_qty - out_qty ELSE 0 END ) AS summit,
+			sum( IFNULL( in_cost , 0 ) ) in_cost_all,
+			sum( IFNULL( in_qty * conversion_qty, 0 ) ) in_qty_all,
+			sum( CASE WHEN stock_date < '${year - 1}-10-01 00:00:00' THEN in_qty* conversion_qty - out_qty* conversion_qty ELSE 0 END ) AS summit,
 		ROUND( sum( CASE WHEN stock_date < '${year - 1}-10-01 00:00:00' THEN in_cost - out_cost ELSE 0 END ), 4 ) AS summit_cost,
-		sum( CASE WHEN stock_date BETWEEN '${year - 1}-10-01 00:00:00' AND '${year}-09-30 23:59:59' THEN in_qty/conversion_qty ELSE 0 END ) AS in_qty,
-		sum( CASE WHEN stock_date BETWEEN '${year - 1}-10-01 00:00:00' AND '${year}-09-30 23:59:59' THEN out_qty/conversion_qty ELSE 0 END ) AS out_qty,
-		( sum( IFNULL( in_qty, 0 ) ) - sum( IFNULL( out_qty , 0 ) ) ) balance,
+		sum( CASE WHEN stock_date BETWEEN '${year - 1}-10-01 00:00:00' AND '${year}-09-30 23:59:59' THEN in_qty ELSE 0 END ) AS in_qty,
+		sum( CASE WHEN stock_date BETWEEN '${year - 1}-10-01 00:00:00' AND '${year}-09-30 23:59:59' THEN out_qty ELSE 0 END ) AS out_qty,
+        ( sum( IFNULL( in_qty, 0 ) ) - sum( IFNULL( out_qty , 0 ) ) ) balance,
+        ROUND( sum( IFNULL( in_cost, 0 ) ) - sum( IFNULL( out_cost, 0 ) ), 2 ) amount,
 			ROUND( sum( IFNULL( in_cost, 0 ) ) - sum( IFNULL( out_cost, 0 ) ), 2 ) balance_cost,
-			ROUND( sum( IFNULL( in_cost, 0 ) ) / sum( IFNULL( in_qty / conversion_qty, 0 ) ) ) AS cost 
+			ROUND( avg( IFNULL( in_unit_cost, 0 )) ,2)*2 AS cost 
 		FROM
 			view_stock_card_warehouse vs 
 		WHERE
-			warehouse_id = 33 
+			warehouse_id = ${wareHouseId} 
 		GROUP BY
 			unit_generic_id,
 			product_id 
