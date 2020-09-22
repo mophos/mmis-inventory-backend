@@ -4393,8 +4393,8 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
         'ยอดยกมา(หน่วยใหญ่)': v.summit / v.qty,
         'รับ(หน่วยใหญ่)': v.in_qty,
         'จ่าย(หน่วยใหญ่)': v.out_qty,
-        'คงเหลือ(หน่วยใหญ่)': v.amount,
-        'มูลค่า': v.cost ? v.balance * v.cost : v.balance * v.cost2
+        'คงเหลือ(หน่วยใหญ่)': v.balance / v.qty,
+        'มูลค่า': v.amount
         // WORKING_CODE: v.working_code,
         // GENERIC_CODE: v.generic_name,
         // PRODUCT_NAME: v.product_name,
@@ -4466,8 +4466,8 @@ router.get('/report/receive-issue-generic/year/export/:year', async (req, res, n
         'ยอดยกมา(หน่วยใหญ่)': v.summit / v.qty,
         'รับ(หน่วยใหญ่)': v.in_qty,
         'จ่าย(หน่วยใหญ่)': v.out_qty,
-        'คงเหลือ(หน่วยใหญ่)': v.amount,
-        'มูลค่า': v.cost ? v.balance * v.cost : v.balance * v.cost2
+        'คงเหลือ(หน่วยใหญ่)': v.balance / v.qty,
+        'มูลค่า': v.amount
         // WORKING_CODE: v.working_code,
         // GENERIC_CODE: v.generic_name,
         // PRODUCT_NAME: v.product_name,
