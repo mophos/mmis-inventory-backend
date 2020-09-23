@@ -451,8 +451,8 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
       // v.balance = +v.balance / +v.qty
       v.amount = inventoryReportModel.comma(+v.amount);
       v.balance = inventoryReportModel.comma(+v.balance / +v.qty);
-      v.in_qty = inventoryReportModel.comma(v.in_qty);
-      v.out_qty = inventoryReportModel.comma(v.out_qty);
+      v.in_qty = inventoryReportModel.comma(v.in_qty/ +v.qty);
+      v.out_qty = inventoryReportModel.comma(v.out_qty/ +v.qty);
       v.summit = inventoryReportModel.comma(+v.summit / +v.qty);
 
     });
@@ -496,8 +496,8 @@ router.get('/report/receiveIssueYearGeneric/:year', wrap(async (req, res, next) 
       // v.balance = +v.balance / +v.qty
       v.amount = inventoryReportModel.comma(+v.amount);
       v.balance = inventoryReportModel.comma(+v.balance / +v.qty);
-      v.in_qty = inventoryReportModel.comma(v.in_qty);
-      v.out_qty = inventoryReportModel.comma(v.out_qty);
+      v.in_qty = inventoryReportModel.comma(v.in_qty/ +v.qty);
+      v.out_qty = inventoryReportModel.comma(v.out_qty/ +v.qty);
       v.summit = inventoryReportModel.comma(+v.summit / +v.qty);
 
     });
@@ -4391,8 +4391,8 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
         'แพ็ค': v.pack,
         'ราคาต่อแพ็ค': v.cost ? v.cost * v.qty : v.cost2 * v.qty,
         'ยอดยกมา(หน่วยใหญ่)': v.summit / v.qty,
-        'รับ(หน่วยใหญ่)': v.in_qty,
-        'จ่าย(หน่วยใหญ่)': v.out_qty,
+        'รับ(หน่วยใหญ่)': v.in_qty/ v.qty,
+        'จ่าย(หน่วยใหญ่)': v.out_qty/ v.qty,
         'คงเหลือ(หน่วยใหญ่)': v.balance / v.qty,
         'มูลค่า': v.amount
         // WORKING_CODE: v.working_code,
@@ -4464,8 +4464,8 @@ router.get('/report/receive-issue-generic/year/export/:year', async (req, res, n
         'แพ็ค': v.pack,
         'ราคาต่อแพ็ค': v.cost ? v.cost * v.qty : v.cost2 * v.qty,
         'ยอดยกมา(หน่วยใหญ่)': v.summit / v.qty,
-        'รับ(หน่วยใหญ่)': v.in_qty,
-        'จ่าย(หน่วยใหญ่)': v.out_qty,
+        'รับ(หน่วยใหญ่)': v.in_qty / v.qty ,
+        'จ่าย(หน่วยใหญ่)': v.out_qty/ v.qty,
         'คงเหลือ(หน่วยใหญ่)': v.balance / v.qty,
         'มูลค่า': v.amount
         // WORKING_CODE: v.working_code,
