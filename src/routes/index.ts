@@ -4636,16 +4636,16 @@ router.get('/report/remain-trade/qty/export', async (req, res, next) => {
 
 router.get('/report/print/alert-expried', wrap(async (req, res, next) => {
   const db = req.db;
-  const warehouseId = req.query.warehouseId;
+  const warehouseId = typeof req.query.warehouseId == 'number' || typeof req.query.warehouseId === 'string' ? [req.query.warehouseId] : req.query.warehouseId;
   const genericTypeLV1Id = checkGenericType(req.query.genericTypeLV1Id);
   const genericTypeLV2Id = checkGenericType(req.query.genericTypeLV2Id);
   const genericTypeLV3Id = checkGenericType(req.query.genericTypeLV3Id);
   try {
-    let arWarehouseId: any = [];
-    for (const v of warehouseId) {
-      arWarehouseId.push(v.toString());
-    }
-    const rs: any = await inventoryReportModel.productExpired(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, arWarehouseId);
+    // let arWarehouseId: any = [];
+    // for (const v of warehouseId) {
+    //   arWarehouseId.push(v.toString());
+    // }
+    const rs: any = await inventoryReportModel.productExpired(db, genericTypeLV1Id, genericTypeLV2Id, genericTypeLV3Id, warehouseId);
     rs.forEach(element => {
       element.expired_date = moment(element.expired_date).format('D/M/') + (moment(element.expired_date).get('year'));
       element.cost = inventoryReportModel.comma(element.cost);
