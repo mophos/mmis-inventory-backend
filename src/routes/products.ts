@@ -21,7 +21,6 @@ const router = express.Router();
 import { ProductModel } from '../models/product';
 const productModel = new ProductModel();
 let uploadDir = path.join(process.env.MMIS_DATA, 'uploaded');
-console.log(process.env);
 
 fse.ensureDirSync(uploadDir);
 
