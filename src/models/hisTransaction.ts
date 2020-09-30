@@ -443,7 +443,7 @@ export class HisTransactionModel {
             .innerJoin('mm_units as tu', 'tu.unit_id', 'ug.to_unit_id')
             .where('mp.generic_id', generics)
             .andWhere('wp.warehouse_id', warehouseId)
-            //   .whereRaw('wp.qty > 0')
+            .where('wp.expired_date','>', knex.fn.now())
             .orderBy('wp.expired_date', 'asc')
             .groupBy('wp.wm_product_id');
     }
