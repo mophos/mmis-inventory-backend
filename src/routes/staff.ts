@@ -346,23 +346,22 @@ router.post('/warehouse/save-minmax', co(async (req, res, next) => {
     if (items.length) {
       // let _items = [];
       for (const v of items) {
-        console.log(v);
-
         let idx = _.findIndex(rs, { generic_id: v.generic_id });
+        let obj: any = {};
+        // obj.warehouse_id = warehouseId;
+        obj.generic_id = v.generic_id;
+        obj.primary_unit_id = v.primary_unit_id;
+        obj.min_qty = +v.min_qty;
+        obj.max_qty = +v.max_qty;
+        obj.use_per_day = +v.use_per_day;
+        obj.safety_min_day = +v.safety_min_day;
+        obj.safety_max_day = +v.safety_max_day;
+        obj.use_total = +v.use_total;
+        obj.process_date = moment(_processDate).format('YYYY-MM-DD');
         if (idx > -1) {
-          let obj: any = {};
-          // obj.warehouse_id = warehouseId;
-          obj.generic_id = v.generic_id;
-          obj.primary_unit_id = v.primary_unit_id;
-          obj.min_qty = +v.min_qty;
-          obj.max_qty = +v.max_qty;
-          obj.use_per_day = +v.use_per_day;
-          obj.safety_min_day = +v.safety_min_day;
-          obj.safety_max_day = +v.safety_max_day;
-          obj.use_total = +v.use_total;
-          obj.process_date = moment(_processDate).format('YYYY-MM-DD');
-          // _items.push(obj);
           await warehouseModel.updateGenericPlanningMinMax(db, obj, rs[idx].generic_planning_id);
+        } else {
+          await warehouseModel.saveGenericPlanningMinMax(db, obj);
         }
       }
 
