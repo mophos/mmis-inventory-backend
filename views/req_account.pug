@@ -1,0 +1,88 @@
+include css.pug
+style(type='text/css' media='print').
+  @page{
+      margin-top: 1cm;
+      margin-left: 3cm;
+      margin-right: 1.5cm;
+  }
+style(type='text/css').
+  body{
+  font-size: 13pt;
+  }
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title report
+  body
+    button.btn.btn-sm.btn-success.btnprint(onclick='window.print()') Print
+    - for(var v of check_receive)
+      img(src=APIURL+'krut.png' height='60px' )
+      .headkut.h1 บันทึกข้อความ
+      br
+      table.table
+        tr
+          td.left 
+            .bold.conleft ส่วนราชการ &nbsp;
+            | #{hospitalDetail.hospname} จังหวัด#{hospitalDetail.province}
+          td.center(style="padding-right:35px;") 
+        tr
+          td.left(style="width: 40%;")
+            .bold.conleft ที่ &nbsp;
+            | สห 0032.301/
+          td.left วันที่ 
+      .left.bold.conleft
+        | เรื่อง&nbsp;
+      .noneBold ขออนุมัติเบิกจ่ายเงิน
+      //- hr
+      .left.bold.conleft
+        | เรียน&nbsp;
+      .noneBold ผู้อำนวยการ#{hospitalDetail.hospname}
+      .fontspace
+      | ด้วยงานการเงินได้ตรวจสอบเอกสารหลักฐานตามบันทึกตรวจรับพัสดุ เลขที่รับ #{v.receive_code} ลงวันที่ #{v.receive_date} เสร็จเรียบร้อยแล้ว 
+      | เห็นว่าครบถ้วน ถูกต้อง จึงขออนุมัติเบิกจ่ายเงินค่ายาเป็นจำนวน #{v.total_price} บาท (#{v.bahtText}) ให้กับ #{v.labeler_name} ต่อไป
+      .enter
+      .fontspace
+      | จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติเบิกจ่ายให้ต่อไปด้วย จะเป็นพระคุณ
+      br
+      br
+      br
+      br
+      table(style="width: 50%; margin-left: 40%;")
+        tr
+          td.center (#{people1.title_name}#{people1.fname}  #{people1.lname})
+        tr
+          td.center #{people1.position_name}
+      br
+      br
+      | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;เรียน ผู้อำนวยการ#{hospitalDetail.hospname}
+      br
+      | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - เห็นควรอนุมัติให้เบิกจ่ายเงินจำนวน #{v.total_price} บาท (#{v.bahtText})
+      br
+      br
+      br
+      br
+      table(style="width: 50%; margin-left: 40%;")
+        tr
+          td.center (#{people2.title_name}#{people2.fname}  #{people2.lname})
+        tr
+          td.center #{people2.position_name}
+      br
+      br
+      br
+      table(style="width: 50%; margin-left: 40%;")
+        tr
+          td.center(style="font-weight: bold;") อนุมัติให้เบิกจ่ายได้
+      br
+      br
+      br
+      br
+      table(style="width: 50%; margin-left: 40%;")
+        td.center  
+          | (#{v.manager.fullname})
+          br
+          if(v.manager.position_name)
+            | #{v.manager.position_name}
+            br
+          | #{v.manager.position}
+      .pagebreak
