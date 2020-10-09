@@ -3994,7 +3994,7 @@ FROM
 			conversion_qty,
 			warehouse_id,
 			sum( IFNULL( in_cost , 0 ) ) in_cost_all,
-			sum( IFNULL( in_qty * conversion_qty, 0 ) ) in_qty_all,
+			sum( IFNULL( in_qty , 0 ) ) in_qty_all,
 			sum( CASE WHEN stock_date < '${year - 1}-10-01 00:00:00' THEN in_qty - out_qty ELSE 0 END ) AS summit,
 		ROUND( sum( CASE WHEN stock_date < '${year - 1}-10-01 00:00:00' THEN in_cost - out_cost ELSE 0 END ), 4 ) AS summit_cost,
 		sum( CASE WHEN stock_date BETWEEN '${year - 1}-10-01 00:00:00' AND '${year}-09-30 23:59:59' THEN in_qty ELSE 0 END ) AS in_qty,
@@ -4027,8 +4027,9 @@ FROM
 		AND avg.product_id = vs.product_id 
 		AND avg.unit_generic_id = vs.unit_generic_id 
 	HAVING
-		in_qty > 0 
-		OR out_qty > 0 
+    summit > 0 
+    or in_qty > 0 
+    OR out_qty > 0 
 	) AS p
 
 	JOIN view_product_access_detail AS vp ON vp.product_id = p.product_id 
@@ -4091,8 +4092,8 @@ FROM
 			conversion_qty,
 			warehouse_id,
 			sum( IFNULL( in_cost , 0 ) ) in_cost_all,
-			sum( IFNULL( in_qty * conversion_qty, 0 ) ) in_qty_all,
-			sum( CASE WHEN stock_date < '${year - 1}-10-01 00:00:00' THEN in_qty* conversion_qty - out_qty* conversion_qty ELSE 0 END ) AS summit,
+			sum( IFNULL( in_qty , 0 ) ) in_qty_all,
+			sum( CASE WHEN stock_date < '${year - 1}-10-01 00:00:00' THEN in_qty - out_qty ELSE 0 END ) AS summit,
 		ROUND( sum( CASE WHEN stock_date < '${year - 1}-10-01 00:00:00' THEN in_cost - out_cost ELSE 0 END ), 4 ) AS summit_cost,
 		sum( CASE WHEN stock_date BETWEEN '${year - 1}-10-01 00:00:00' AND '${year}-09-30 23:59:59' THEN in_qty ELSE 0 END ) AS in_qty,
 		sum( CASE WHEN stock_date BETWEEN '${year - 1}-10-01 00:00:00' AND '${year}-09-30 23:59:59' THEN out_qty ELSE 0 END ) AS out_qty,
@@ -4124,8 +4125,9 @@ FROM
 		AND avg.product_id = vs.product_id 
 		AND avg.unit_generic_id = vs.unit_generic_id 
 	HAVING
-		in_qty > 0 
-		OR out_qty > 0 
+    summit > 0 
+    or in_qty > 0 
+    OR out_qty > 0 
 	) AS p
 
 	JOIN view_product_access_detail AS vp ON vp.product_id = p.product_id 

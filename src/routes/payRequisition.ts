@@ -323,13 +323,13 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
               people_user_id: req.decoded.people_user_id,
               created_at: moment().format('YYYY-MM-DD HH:mm:ss')
             };
-            let wmProductIdIn;
+            let wmProductIdOut;
             const checkSrc = await requisitionModel.checkProductToSave(db, s.src_warehouse, s.product_id, s.lot_no, s.lot_time);
             if (checkSrc.length) {
-              wmProductIdIn = checkSrc[0].wm_product_id;
+              wmProductIdOut = checkSrc[0].wm_product_id;
               await productModel.updateMinusStock(db, obj, checkSrc[0].wm_product_id)
             } else {
-              wmProductIdIn = obj.wm_product_id;
+              wmProductIdOut = obj.wm_product_id;
               await productModel.insertStock(db, obj)
             }
 
@@ -348,13 +348,13 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
               people_user_id: req.decoded.people_user_id,
               created_at: moment().format('YYYY-MM-DD HH:mm:ss')
             };
-            let wmProductIdOut;
+            let wmProductIdIn;
             const checkDst = await requisitionModel.checkProductToSave(db, s.dst_warehouse, s.product_id, s.lot_no, s.lot_time);
             if (checkDst.length) {
-              wmProductIdOut = checkDst[0].wm_product_id;
+              wmProductIdIn = checkDst[0].wm_product_id;
               await productModel.updatePlusStock(db, objDst, checkDst[0].wm_product_id)
             } else {
-              wmProductIdOut = objDst.wm_product_id;
+              wmProductIdIn = objDst.wm_product_id;
               const s = await productModel.insertStock(db, objDst);
             }
 
