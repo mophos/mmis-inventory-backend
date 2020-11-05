@@ -3996,16 +3996,16 @@ FROM
 			generic_name,
 			conversion_qty,
 			warehouse_id,
-			sum( IFNULL( in_cost , 0 ) ) in_cost_all,
-			sum( IFNULL( in_qty , 0 ) ) in_qty_all,
+			sum( IFNULL(  CASE WHEN stock_date < '${year}-09-30 23:59:59' THEN in_cost else 0 end, 0 ) ) in_cost_all,
+			sum( IFNULL(  CASE WHEN stock_date < '${year}-09-30 23:59:59' THEN in_qty else 0 end, 0 ) ) in_qty_all,
 			sum( CASE WHEN stock_date < '${year - 1}-10-01 00:00:00' THEN in_qty - out_qty ELSE 0 END ) AS summit,
 		ROUND( sum( CASE WHEN stock_date < '${year - 1}-10-01 00:00:00' THEN in_cost - out_cost ELSE 0 END ), 4 ) AS summit_cost,
 		sum( CASE WHEN stock_date BETWEEN '${year - 1}-10-01 00:00:00' AND '${year}-09-30 23:59:59' THEN in_qty ELSE 0 END ) AS in_qty,
 		sum( CASE WHEN stock_date BETWEEN '${year - 1}-10-01 00:00:00' AND '${year}-09-30 23:59:59' THEN out_qty ELSE 0 END ) AS out_qty,
-        ( sum( IFNULL( in_qty, 0 ) ) - sum( IFNULL( out_qty , 0 ) ) ) balance,
-        ROUND( sum( IFNULL( in_cost, 0 ) ) - sum( IFNULL( out_cost, 0 ) ), 2 ) amount,
-			ROUND( sum( IFNULL( in_cost, 0 ) ) - sum( IFNULL( out_cost, 0 ) ), 2 ) balance_cost,
-			ROUND( avg( IFNULL( in_unit_cost, 0 )) ,2)*2 AS cost 
+        ( sum( IFNULL(  CASE WHEN stock_date < '${year}-09-30 23:59:59' THEN in_qty else 0 end , 0 ) ) - sum( IFNULL(  CASE WHEN stock_date < '${year}-09-30 23:59:59' THEN out_qty else 0 end , 0 ) ) ) balance,
+        ROUND( sum( IFNULL(  CASE WHEN stock_date < '${year}-09-30 23:59:59' THEN in_cost else 0 end, 0 ) ) - sum( IFNULL(  CASE WHEN stock_date < '${year}-09-30 23:59:59' THEN out_cost else 0 end, 0 ) ), 2 ) amount,
+        ROUND( sum( IFNULL(  CASE WHEN stock_date < '${year}-09-30 23:59:59' THEN in_unit_cost else 0 end, 0 )) / sum( IFNULL(  CASE WHEN stock_date < '${year}-09-30 23:59:59' and in_qty > 0 THEN 1 else 0 end, 0 )) ,2) AS cost
+    
 		FROM
 			view_stock_card_warehouse vs 
 		WHERE
@@ -4094,16 +4094,15 @@ FROM
 			generic_name,
 			conversion_qty,
 			warehouse_id,
-			sum( IFNULL( in_cost , 0 ) ) in_cost_all,
-			sum( IFNULL( in_qty , 0 ) ) in_qty_all,
+			sum( IFNULL(  CASE WHEN stock_date < '${year}-09-30 23:59:59' THEN in_cost else 0 end, 0 ) ) in_cost_all,
+			sum( IFNULL(  CASE WHEN stock_date < '${year}-09-30 23:59:59' THEN in_qty else 0 end, 0 ) ) in_qty_all,
 			sum( CASE WHEN stock_date < '${year - 1}-10-01 00:00:00' THEN in_qty - out_qty ELSE 0 END ) AS summit,
 		ROUND( sum( CASE WHEN stock_date < '${year - 1}-10-01 00:00:00' THEN in_cost - out_cost ELSE 0 END ), 4 ) AS summit_cost,
 		sum( CASE WHEN stock_date BETWEEN '${year - 1}-10-01 00:00:00' AND '${year}-09-30 23:59:59' THEN in_qty ELSE 0 END ) AS in_qty,
 		sum( CASE WHEN stock_date BETWEEN '${year - 1}-10-01 00:00:00' AND '${year}-09-30 23:59:59' THEN out_qty ELSE 0 END ) AS out_qty,
-        ( sum( IFNULL( in_qty, 0 ) ) - sum( IFNULL( out_qty , 0 ) ) ) balance,
-        ROUND( sum( IFNULL( in_cost, 0 ) ) - sum( IFNULL( out_cost, 0 ) ), 2 ) amount,
-			ROUND( sum( IFNULL( in_cost, 0 ) ) - sum( IFNULL( out_cost, 0 ) ), 2 ) balance_cost,
-			ROUND( avg( IFNULL( in_unit_cost, 0 )) ,2)*2 AS cost 
+        ( sum( IFNULL(  CASE WHEN stock_date < '${year}-09-30 23:59:59' THEN in_qty else 0 end , 0 ) ) - sum( IFNULL(  CASE WHEN stock_date < '${year}-09-30 23:59:59' THEN out_qty else 0 end , 0 ) ) ) balance,
+			ROUND( sum( IFNULL(  CASE WHEN stock_date < '${year}-09-30 23:59:59' THEN in_cost else 0 end, 0 ) ) - sum( IFNULL(  CASE WHEN stock_date < '${year}-09-30 23:59:59' THEN out_cost else 0 end, 0 ) ), 2 ) amount,
+			ROUND( sum( IFNULL(  CASE WHEN stock_date < '${year}-09-30 23:59:59' THEN in_unit_cost else 0 end, 0 )) / sum( IFNULL(  CASE WHEN stock_date < '${year}-09-30 23:59:59' and in_qty > 0 THEN 1 else 0 end, 0 )) ,2) AS cost
 		FROM
 			view_stock_card_warehouse vs 
 		WHERE
