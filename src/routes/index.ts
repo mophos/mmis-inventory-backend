@@ -4282,6 +4282,7 @@ router.get('/report/receive/export', async (req, res, next) => {
       let obj: any = {
         'ลำดับ': i,
         'เลขที่ใบสั่งซื้อ': v.purchase_order_number,
+        'เลขที่เอกสาร': v.delivery_code,
         'วันที่รับของ': v.receive_date,
         'วันที่สั่งซื้อ': v.order_date,
         'รหัสเวชภัณฑ์': v.generic_code,
@@ -4301,7 +4302,10 @@ router.get('/report/receive/export', async (req, res, next) => {
         'ประเภทยา': v.generic_hosp_name,
         'เลขที่ใบส่งของ': v.delivery_code,
         'รูปแบบการจัดซื้อ(Purchase)': v.bid_nameP,
-        'วิธีการจัดซื้อ': v.name + ' (วงเงิน ' + v.f_amount + ' บาท)'
+        'วิธีการจัดซื้อ': v.name + ' (วงเงิน ' + v.f_amount + ' บาท)',
+        'ราคากลาง': v.standard_cost,
+        'lot_no': v.lot_no,
+        'วันหมดอายุุ': v.expired_date
       };
       json.push(obj);
     });
