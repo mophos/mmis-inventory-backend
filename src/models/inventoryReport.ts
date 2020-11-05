@@ -3649,7 +3649,10 @@ OR sc.ref_src like ?
         lbp.bid_name bid_nameP,
         pg.product_group_name,
         bp.name,
-        bp.f_amount
+        bp.f_amount,
+        mug.standard_cost,
+        ws.lot_no,
+        ws.expired_date
     FROM
         ${dateSetting} as ws
         JOIN wm_receives AS wr ON ws.document_ref_id = wr.receive_id
