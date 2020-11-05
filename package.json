@@ -50,7 +50,7 @@
     "@types/knex": "0.14.14",
     "@types/morgan": "1.7.32",
     "@types/mysql": "0.0.32",
-    "@types/node": "7.0.66",
+    "@types/node": "8.10.36",
     "@types/random-js": "1.0.28",
     "@types/signale": "1.2.0",
     "ejs": "2.6.2",
