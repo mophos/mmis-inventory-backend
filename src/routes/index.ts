@@ -4317,7 +4317,8 @@ router.get('/report/receive/export', async (req, res, next) => {
       let obj: any = {
         'ลำดับ': i,
         'เลขที่ใบสั่งซื้อ': v.purchase_order_number,
-        'เลขที่เอกสาร': v.delivery_code,
+        'เลขที่ใบนำส่ง': v.delivery_code,
+        'เลขที่เอกสาร': v.paper_number,
         'วันที่รับของ': v.receive_date,
         'วันที่สั่งซื้อ': v.order_date,
         'รหัสเวชภัณฑ์': v.generic_code,
