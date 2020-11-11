@@ -163,9 +163,7 @@ export class MainReportModel {
     //   join mm_generics as mg on mg.generic_id = mp.generic_id
     //   join mm_unit_generics as mug on mug.unit_generic_id = a.unit_generic_id
     //   join mm_units as u on u.unit_id = mug.from_unit_id`;
-    // return knex.raw(sql, [receiveDate, warehouseId, receiveTypeId, receiveDate, warehouseId]);
-    console.log(sql.toString());
-    
+    // return knex.raw(sql, [receiveDate, warehouseId, receiveTypeId, receiveDate, warehouseId]);    
     return knex.raw(sql, [receiveTypeId, receiveDate, warehouseId]);
   }
 

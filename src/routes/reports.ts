@@ -694,8 +694,6 @@ router.get('/receive/free', wrap(async (req, res, next) => {
   console.log(receiveTypeId, warehouseId);
 
   const rs: any = await mainReportModel.receiveFree(db, receiveDate, receiveTypeId, warehouseId);
-  console.log(rs);
-
 
   const _receiveDate = `${moment(receiveDate, 'YYYY-MM-DD').format('DD MMMM')} ${(moment(receiveDate, 'YYYY-MM-DD').get('year') + 543)}`
   const detail = _.chunk(rs[0], 10);
