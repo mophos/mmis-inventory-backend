@@ -134,15 +134,7 @@ export class MainReportModel {
 
   receiveFree(knex: Knex, receiveDate, receiveTypeId, warehouseId) {
     const sql =
-      `select a.*,mg.generic_name,u.unit_name from (
-      SELECT wrd.product_id,ml.labeler_name,wrd.receive_qty,wrd.unit_generic_id from wm_receives wr
-      join wm_receive_detail wrd on wr.receive_id =wrd.receive_id
-      join mm_labelers as ml on wrd.vendor_labeler_id = ml.labeler_id
-      where wrd.is_free = 'Y' and wr.receive_date = ? and wrd.warehouse_id = ?
-      
-      
-      UNION ALL
-      
+      `select a.*,mg.generic_name,u.unit_name from (      
       select rod.product_id,d.donator_name as labeler_name,rod.receive_qty,rod.unit_generic_id from wm_receive_other ro
       join wm_receive_other_detail rod on ro.receive_other_id = rod.receive_other_id
       join wm_donators as d on ro.donator_id = d.donator_id
@@ -152,7 +144,29 @@ export class MainReportModel {
       join mm_generics as mg on mg.generic_id = mp.generic_id
       join mm_unit_generics as mug on mug.unit_generic_id = a.unit_generic_id
       join mm_units as u on u.unit_id = mug.from_unit_id`;
-    return knex.raw(sql, [receiveDate, warehouseId, receiveTypeId, receiveDate, warehouseId]);
+    // const sql =
+    //   `select a.*,mg.generic_name,u.unit_name from (
+    //   SELECT wrd.product_id,ml.labeler_name,wrd.receive_qty,wrd.unit_generic_id from wm_receives wr
+    //   join wm_receive_detail wrd on wr.receive_id =wrd.receive_id
+    //   join mm_labelers as ml on wrd.vendor_labeler_id = ml.labeler_id
+    //   where wrd.is_free = 'Y' and wr.receive_date = ? and wrd.warehouse_id = ?
+      
+      
+    //   UNION ALL
+      
+    //   select rod.product_id,d.donator_name as labeler_name,rod.receive_qty,rod.unit_generic_id from wm_receive_other ro
+    //   join wm_receive_other_detail rod on ro.receive_other_id = rod.receive_other_id
+    //   join wm_donators as d on ro.donator_id = d.donator_id
+    //   where ro.receive_type_id in (?) and ro.receive_date = ? and rod.warehouse_id = ? and ro.is_cancel = 'N'
+    //   ) as a 
+    //   join mm_products as mp on mp.product_id =a.product_id
+    //   join mm_generics as mg on mg.generic_id = mp.generic_id
+    //   join mm_unit_generics as mug on mug.unit_generic_id = a.unit_generic_id
+    //   join mm_units as u on u.unit_id = mug.from_unit_id`;
+    // return knex.raw(sql, [receiveDate, warehouseId, receiveTypeId, receiveDate, warehouseId]);
+    console.log(sql.toString());
+    
+    return knex.raw(sql, [receiveTypeId, receiveDate, warehouseId]);
   }
 
   financial(knex: Knex, startDate: any, endDate: any, genericTypeId: any) {
