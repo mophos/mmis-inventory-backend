@@ -1,6 +1,5 @@
 import Knex = require('knex');
 import * as moment from 'moment';
-import { join } from 'bluebird';
 
 export class HisTransactionModel {
 
@@ -444,7 +443,7 @@ export class HisTransactionModel {
             .where('mp.generic_id', generics)
             .andWhere('wp.warehouse_id', warehouseId)
             .where('wp.expired_date','>', knex.fn.now())
-            .orderBy('wp.expired_date', 'asc')
+            .orderBy('wp.expired_date', 'DESC')
             .groupBy('wp.wm_product_id');
     }
 } 
