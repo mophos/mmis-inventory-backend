@@ -4,14 +4,27 @@ import * as moment from 'moment';
 export class PeopleModel {
   all(knex: Knex) {
     return knex('um_people as pe')
-    .select('pe.people_id','ti.title_name','pe.fname','pe.lname','po.position_name')
-    .innerJoin('um_titles as ti','pe.title_id','ti.title_id')
-    .leftJoin('um_people_positions as upp', function () {
-      this.on('upp.people_id', 'pe.people_id')
+      .select('pe.people_id', 'ti.title_name', 'pe.fname', 'pe.lname', 'po.position_name')
+      .innerJoin('um_titles as ti', 'pe.title_id', 'ti.title_id')
+      .leftJoin('um_people_positions as upp', function () {
+        this.on('upp.people_id', 'pe.people_id')
           .on('upp.is_actived', knex.raw('?', ['Y']))
-  })
-    .innerJoin('um_positions as po','upp.position_id','po.position_id')
-    .orderByRaw('pe.fname, pe.lname')
+      })
+      .innerJoin('um_positions as po', 'upp.position_id', 'po.position_id')
+      .orderByRaw('pe.fname, pe.lname')
+  }
+
+  byId(knex: Knex, peopleId) {
+    return knex('um_people as pe')
+      .select('pe.people_id', 'ti.title_name', 'pe.fname', 'pe.lname', 'po.position_name')
+      .innerJoin('um_titles as ti', 'pe.title_id', 'ti.title_id')
+      .leftJoin('um_people_positions as upp', function () {
+        this.on('upp.people_id', 'pe.people_id')
+          .on('upp.is_actived', knex.raw('?', ['Y']))
+      })
+      .innerJoin('um_positions as po', 'upp.position_id', 'po.position_id')
+      .where('pe.people_id', peopleId)
+      .orderByRaw('pe.fname, pe.lname')
   }
 
 }

@@ -12,11 +12,13 @@ import { listenerCount, worker } from 'cluster';
 import { WarehouseModel } from '../models/warehouse';
 import { filter } from 'bluebird';
 import { log } from 'util';
+import { PeopleModel } from '../models/staff/people';
 const router = express.Router();
 const inventoryReportModel = new InventoryReportModel();
 const issueModel = new IssueModel();
 const receiveModel = new ReceiveModel();
 const warehouseModel = new WarehouseModel();
+const peopleModel = new PeopleModel();
 
 const excel4node = require('excel4node');
 const signale = require('signale');
@@ -451,8 +453,8 @@ router.get('/report/receiveIssueYear/:year', wrap(async (req, res, next) => {
       // v.balance = +v.balance / +v.qty
       v.amount = inventoryReportModel.comma(+v.amount);
       v.balance = inventoryReportModel.commaQty(+v.balance / +v.qty);
-      v.in_qty = inventoryReportModel.commaQty(v.in_qty/ +v.qty);
-      v.out_qty = inventoryReportModel.commaQty(v.out_qty/ +v.qty);
+      v.in_qty = inventoryReportModel.commaQty(v.in_qty / +v.qty);
+      v.out_qty = inventoryReportModel.commaQty(v.out_qty / +v.qty);
       v.summit = inventoryReportModel.commaQty(+v.summit / +v.qty);
 
     });
@@ -496,8 +498,8 @@ router.get('/report/receiveIssueYearGeneric/:year', wrap(async (req, res, next) 
       // v.balance = +v.balance / +v.qty
       v.amount = inventoryReportModel.comma(+v.amount);
       v.balance = inventoryReportModel.commaQty(+v.balance / +v.qty);
-      v.in_qty = inventoryReportModel.commaQty(v.in_qty/ +v.qty);
-      v.out_qty = inventoryReportModel.commaQty(v.out_qty/ +v.qty);
+      v.in_qty = inventoryReportModel.commaQty(v.in_qty / +v.qty);
+      v.out_qty = inventoryReportModel.commaQty(v.out_qty / +v.qty);
       v.summit = inventoryReportModel.commaQty(+v.summit / +v.qty);
 
     });
@@ -2991,6 +2993,39 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   });
 }));
 
+router.get('/report/req/account', wrap(async (req, res, next) => {
+  let db = req.db;
+  let receiveID: any = req.query.receiveID
+  let peopleId1 = req.query.peopleId1;
+  let peopleId2 = req.query.peopleId2;
+  receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
+  let hospitalDetail = await inventoryReportModel.hospitalNew(db);
+  let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
+  let people1: any;
+  let people2: any;
+  people1 = await peopleModel.byId(db, peopleId1);
+  people2 = await peopleModel.byId(db, peopleId2);
+  check_receive = check_receive[0];
+
+  for (const v of check_receive) {
+    v.receive_date = moment(v.receive_date).format('D MMMM ') + (moment(v.receive_date).get('year') + 543);
+    v.delivery_date = moment(v.delivery_date).format('D MMMM ') + (moment(v.delivery_date).get('year') + 543);
+    v.podate = moment(v.podate).format('D MMMM ') + (moment(v.podate).get('year') + 543);
+    v.approve_date = moment(v.approve_date).format('D MMMM ') + (moment(v.approve_date).get('year') + 543);
+    let _bahtText = inventoryReportModel.bahtText(v.total_price);
+    v.bahtText = _bahtText;
+    v.total_price = inventoryReportModel.comma(v.total_price);
+    v.manager = await getOfficer(db, v.manager_id);
+  }
+
+  res.render('req_account', {
+    hospitalDetail: hospitalDetail,
+    people1: people1[0],
+    people2: people2[0],
+    check_receive: check_receive
+  });
+}));
+
 router.get('/report/check/receives/12283', wrap(async (req, res, next) => {
   let db = req.db;
   let receiveID: any = req.query.receiveID
@@ -4282,6 +4317,8 @@ router.get('/report/receive/export', async (req, res, next) => {
       let obj: any = {
         'ลำดับ': i,
         'เลขที่ใบสั่งซื้อ': v.purchase_order_number,
+        'เลขที่ใบนำส่ง': v.delivery_code,
+        'เลขที่เอกสาร': v.paper_number,
         'วันที่รับของ': v.receive_date,
         'วันที่สั่งซื้อ': v.order_date,
         'รหัสเวชภัณฑ์': v.generic_code,
@@ -4301,7 +4338,10 @@ router.get('/report/receive/export', async (req, res, next) => {
         'ประเภทยา': v.generic_hosp_name,
         'เลขที่ใบส่งของ': v.delivery_code,
         'รูปแบบการจัดซื้อ(Purchase)': v.bid_nameP,
-        'วิธีการจัดซื้อ': v.name + ' (วงเงิน ' + v.f_amount + ' บาท)'
+        'วิธีการจัดซื้อ': v.name + ' (วงเงิน ' + v.f_amount + ' บาท)',
+        'ราคากลาง': v.standard_cost,
+        'lot_no': v.lot_no,
+        'วันหมดอายุุ': v.expired_date
       };
       json.push(obj);
     });
@@ -4391,8 +4431,8 @@ router.get('/report/receive-issue/year/export/:year', async (req, res, next) => 
         'แพ็ค': v.pack,
         'ราคาต่อแพ็ค': v.cost ? v.cost * v.qty : v.cost2 * v.qty,
         'ยอดยกมา(หน่วยใหญ่)': v.summit / v.qty,
-        'รับ(หน่วยใหญ่)': v.in_qty/ v.qty,
-        'จ่าย(หน่วยใหญ่)': v.out_qty/ v.qty,
+        'รับ(หน่วยใหญ่)': v.in_qty / v.qty,
+        'จ่าย(หน่วยใหญ่)': v.out_qty / v.qty,
         'คงเหลือ(หน่วยใหญ่)': v.balance / v.qty,
         'มูลค่า': v.amount
         // WORKING_CODE: v.working_code,
@@ -4464,8 +4504,8 @@ router.get('/report/receive-issue-generic/year/export/:year', async (req, res, n
         'แพ็ค': v.pack,
         'ราคาต่อแพ็ค': v.cost ? v.cost * v.qty : v.cost2 * v.qty,
         'ยอดยกมา(หน่วยใหญ่)': v.summit / v.qty,
-        'รับ(หน่วยใหญ่)': v.in_qty / v.qty ,
-        'จ่าย(หน่วยใหญ่)': v.out_qty/ v.qty,
+        'รับ(หน่วยใหญ่)': v.in_qty / v.qty,
+        'จ่าย(หน่วยใหญ่)': v.out_qty / v.qty,
         'คงเหลือ(หน่วยใหญ่)': v.balance / v.qty,
         'มูลค่า': v.amount
         // WORKING_CODE: v.working_code,
