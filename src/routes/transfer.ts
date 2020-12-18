@@ -336,7 +336,8 @@ router.post('/approve-all', co(async (req, res, next) => {
       }
     }
     let checkDup: any = await transferModel.checkDuplicatedApprove(db, transferIds)
-    transferIds = _.map(checkDup, 'transfer_id')
+    transferIds = _.map(checkDup, 'transfer_id');
+
     if (isValid && transferIds.length) {
       await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
       await approve(db, transferIds, warehouseId, peopleUserId);
@@ -395,6 +396,7 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
       let id = uuid();
 
       // =================================== TRANSFER IN ========================
+      const expiredDate = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
       objIn.wm_product_id = id;
       objIn.warehouse_id = v.dst_warehouse_id;
       objIn.product_id = v.product_id;
@@ -403,7 +405,7 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
       objIn.price = v.cost;
       objIn.lot_no = v.lot_no;
       objIn.lot_time = v.lot_time;
-      objIn.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
+      objIn.expired_date = expiredDate;
       objIn.unit_generic_id = v.unit_generic_id;
       objIn.location_id = v.location_id;
       objIn.people_user_id = v.people_user_id;
@@ -412,11 +414,19 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
       let wmProductIdIn;
       const checkDst = await productModel.checkProductToSave(db, v.dst_warehouse_id, v.product_id, v.lot_no, v.lot_time);
       if (checkDst.length) {
-        wmProductIdIn = checkDst[0].wm_product_id;
-        await productModel.updatePlusStock(db, objIn, checkDst[0].wm_product_id)
+        const checkDstL = await productModel.checkProductToSave(db, v.dst_warehouse_id, v.product_id, v.lot_no, v.lot_time, expiredDate);
+        console.log('checkDstL', checkDstL);
+
+        wmProductIdIn = objIn.wm_product_id;
+        if (checkDstL.length) {
+          await productModel.updatePlusStock(db, objIn, checkDstL[0].wm_product_id)
+        } else {
+          objIn.lot_time = v.lot_time + 10000;
+          await productModel.insertStock(db, objIn)
+        }
       } else {
         wmProductIdIn = objIn.wm_product_id;
-        await productModel.insertStock(db, objIn)
+        await productModel.insertStock(db, objIn);
       }
       // =================================== TRANSFER OUT ========================
       objOut.wm_product_id = id;
@@ -427,14 +437,14 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
       objOut.price = v.cost;
       objOut.lot_no = v.lot_no;
       objOut.lot_time = v.lot_time;
-      objOut.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
+      objOut.expired_date = expiredDate;
       objOut.unit_generic_id = v.unit_generic_id;
       objOut.location_id = v.location_id;
       objOut.people_user_id = v.people_user_id;
       objOut.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
 
       let wmProductIdOut;
-      const checkSrc = await productModel.checkProductToSave(db, v.src_warehouse_id, v.product_id, v.lot_no, v.lot_time);
+      const checkSrc = await productModel.checkProductToSave(db, v.src_warehouse_id, v.product_id, v.lot_no, v.lot_time, expiredDate);
       if (checkSrc.length) {
         wmProductIdOut = checkSrc[0].wm_product_id;
         await productModel.updateMinusStock(db, objIn, checkSrc[0].wm_product_id)

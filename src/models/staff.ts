@@ -97,7 +97,8 @@ export class StaffModel {
       , IFNULL(gp.ordering_cost, 0) ordering_cost
       , IFNULL(gp.carrying_cost, 0) carrying_cost
       , IFNULL(gp.eoq_qty, 0) eoq_qty
-      , mg.primary_unit_id
+      , mg.primary_unit_id,
+      wp.warehouse_id
       from wm_products wp
       join mm_products mp on mp.product_id = wp.product_id
       join mm_generics mg on mg.generic_id = mp.generic_id

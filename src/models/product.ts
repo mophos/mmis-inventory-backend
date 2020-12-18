@@ -220,7 +220,7 @@ export class ProductModel {
       sql += `'${v.unit_generic_id}',${v.people_user_id}, '${v.created_at}')
       ON DUPLICATE KEY UPDATE
       qty=qty+${+v.qty},cost = (
-        select(sum(qty * cost) + ${ totalCost}) / (sum(qty) + ${v.qty})from wm_products as w
+        select(sum(qty * cost) + ${totalCost}) / (sum(qty) + ${v.qty})from wm_products as w
         where w.product_id = '${v.product_id}' and w.lot_no = '${v.lot_no}' and w.lot_time = '${v.lot_time}' and w.warehouse_id = '${v.warehouse_id}'
         group by w.product_id)`;
       sqls.push(sql);
@@ -1195,7 +1195,7 @@ group by mpp.product_id
     data.forEach(v => {
       let _sql = `
       UPDATE wm_products
-      SET qty = qty - ${ v.qty}
+      SET qty = qty - ${v.qty}
       WHERE wm_product_id = '${v.wm_product_id}'`;
       sql.push(_sql);
     });
@@ -1312,7 +1312,7 @@ group by mpp.product_id
       .leftJoin('mm_labelers as ml', 'ml.labeler_id', 'mp.v_labeler_id')
       .leftJoin('mm_labelers as ml2', 'ml2.labeler_id', 'mp.m_labeler_id')
       .leftJoin('tmt_tpu as tpu', 'tpu.TMTID', 'mp.tmt_id')
-      .where('mp.mark_deleted','N')
+      .where('mp.mark_deleted', 'N')
     if (genericType) {
       if (genericType.generic_type_lv1_id.length) {
         sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id)
@@ -1339,7 +1339,7 @@ group by mpp.product_id
       .leftJoin('mm_labelers as ml2', 'ml2.labeler_id', 'mp.m_labeler_id')
       .leftJoin('tmt_tpu as tpu', 'tpu.TMTID', 'mp.tmt_id')
       .where('mp.working_code', query)
-      .where('mp.mark_deleted','N')
+      .where('mp.mark_deleted', 'N')
       .orWhere(w => {
         w.where('mp.product_name', 'like', _query)
         w.where('mg.generic_name', 'like', _query)
@@ -1388,7 +1388,7 @@ group by mpp.product_id
           expired_date,
           unit_generic_id, people_user_id, created_at)
       VALUES('${data.wm_product_id}', '${data.warehouse_id}', '${data.product_id}',
-        ${ data.qty}, ${data.cost}, ${data.price}, '${data.lot_no}', '${data.lot_time}', ${data.location_id}, `;
+        ${data.qty}, ${data.cost}, ${data.price}, '${data.lot_no}', '${data.lot_time}', ${data.location_id}, `;
     if (data.expired_date == null) {
       sql += `null, `;
     } else {
@@ -1399,26 +1399,30 @@ group by mpp.product_id
   }
   updatePlusStock(knex: Knex, data: any, wmProductId) {
     let sql = `update wm_products as wp
-      join(select wm_product_id, (sum(w.qty * w.cost) + (${ data.cost} * ${data.qty})) / (sum(w.qty) + ${data.qty}) as cost from wm_products as w
+      join(select wm_product_id, (sum(w.qty * w.cost) + (${data.cost} * ${data.qty})) / (sum(w.qty) + ${data.qty}) as cost from wm_products as w
       where w.wm_product_id = '${wmProductId}') as w on wp.wm_product_id = wp.wm_product_id
-      set wp.qty = wp.qty + ${ +data.qty}, wp.cost = w.cost, wp.price = w.cost
+      set wp.qty = wp.qty + ${+data.qty}, wp.cost = w.cost, wp.price = w.cost
       where wp.wm_product_id = '${wmProductId}'`;
     return knex.raw(sql);
   }
   updateMinusStock(knex: Knex, data: any, wmProductId) {
     let sql = `update wm_products as wp
-      join(select wm_product_id, (sum(w.qty * w.cost) + (${ data.cost} * ${data.qty})) / (sum(w.qty) + ${data.qty}) as cost from wm_products as w
+      join(select wm_product_id, (sum(w.qty * w.cost) + (${data.cost} * ${data.qty})) / (sum(w.qty) + ${data.qty}) as cost from wm_products as w
       where w.wm_product_id = '${wmProductId}') as w on wp.wm_product_id = wp.wm_product_id
-      set wp.qty = wp.qty - ${ +data.qty}, wp.cost = w.cost, wp.price = w.cost
+      set wp.qty = wp.qty - ${+data.qty}, wp.cost = w.cost, wp.price = w.cost
       where wp.wm_product_id = '${wmProductId}'`;
     return knex.raw(sql);
   }
 
-  checkProductToSave(knex: Knex, warehouseId, productId, lotNo, lotTime) {
-    return knex('wm_products')
+  checkProductToSave(knex: Knex, warehouseId, productId, lotNo, lotTime, expireDate = null) {
+    const sql = knex('wm_products')
       .where('warehouse_id', warehouseId)
       .where('product_id', productId)
       .where('lot_no', lotNo)
       .where('lot_time', lotTime)
+    if (expireDate) {
+      sql.where('expired_date', expireDate)
+    }
+    return sql;
   }
 }
