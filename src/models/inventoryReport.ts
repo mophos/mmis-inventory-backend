@@ -3652,7 +3652,8 @@ OR sc.ref_src like ?
         bp.f_amount,
         mug.standard_cost,
         ws.lot_no,
-        ws.expired_date
+        ws.expired_date,
+        wr.paper_number
     FROM
         ${dateSetting} as ws
         JOIN wm_receives AS wr ON ws.document_ref_id = wr.receive_id
