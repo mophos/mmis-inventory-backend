@@ -348,7 +348,7 @@ router.post('/warehouse/save-minmax', co(async (req, res, next) => {
       for (const v of items) {
         let idx = _.findIndex(rs, { generic_id: v.generic_id });
         let obj: any = {};
-        // obj.warehouse_id = warehouseId;
+        obj.warehouse_id = warehouseId;
         obj.generic_id = v.generic_id;
         obj.primary_unit_id = v.primary_unit_id;
         obj.min_qty = +v.min_qty;
