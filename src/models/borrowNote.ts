@@ -120,7 +120,7 @@ export class BorrowNoteModel {
       });
     }
 
-    return sql.orderBy('bn.borrow_date', 'DESC');
+    return sql.orderBy('bn.borrow_date', 'DESC').limit(100);
   }
   getListReport(db: Knex, query: any) {
     let sql = db('wm_borrow_notes as bn')
