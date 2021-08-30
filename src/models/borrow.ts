@@ -536,6 +536,34 @@ export class BorrowModel {
       .orderBy('p.expired_date');
   }
 
+  getProductListRIds(knex: Knex, borrowIds: any[]) {
+    let subBalanceSrc = knex('wm_products as wp')
+      .sum('wp.qty')
+      .as('balance_src')
+      .whereRaw('wp.wm_product_id=p.wm_product_id')
+    // .whereRaw('wp.product_id=d.product_id and wp.warehouse_id=t.src_warehouse_id and wp.lot_no=d.lot_no and wp.expired_date=d.expired_date');
+
+    let subBalanceDst = knex('wm_products as wp')
+      .sum('wp.qty')
+      .as('balance_dst')
+      .whereRaw('wp.warehouse_id=t.dst_warehouse_id and wp.product_id=p.product_id and wp.lot_no<=>p.lot_no and wp.expired_date<=>p.expired_date')
+    // .whereRaw('wp.product_id=d.product_id and wp.warehouse_id=t.dst_warehouse_id and wp.lot_no=d.lot_no and wp.expired_date=d.expired_date');
+
+    return knex('wm_borrow_generic as tg')
+      .select('d.borrow_product_id', 'd.wm_product_id', 'ug.qty as conversion_qty', 'p.lot_no',
+        'p.expired_date', 'p.cost', 'p.price', 'p.product_id', 'p.lot_time', 'd.qty as lot_qty',
+        'mp.generic_id', 't.*', 'tg.*', subBalanceSrc, subBalanceDst, 'wpp.unit_generic_id as wpp_unit_generic_id')
+      .innerJoin('wm_borrow as t', 't.borrow_id', 'tg.borrow_id')
+      .leftJoin('wm_borrow_product as d', 'd.borrow_generic_id', 'tg.borrow_generic_id')
+      .leftJoin('wm_products as wpp', 'wpp.wm_product_id', 'd.wm_product_id')
+      .leftJoin(`wm_products as p`, 'p.wm_product_id', 'd.wm_product_id')
+      .leftJoin('mm_products as mp', 'mp.product_id', 'p.product_id')
+      .leftJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'tg.unit_generic_id')
+      .whereIn('tg.borrow_id', borrowIds)
+      .groupByRaw('tg.borrow_generic_id')
+      .orderBy('p.expired_date');
+  }
+
   removeBorrow(knex: Knex, borrowId: any) {
     return knex('wm_borrow')
       .where('borrow_id', borrowId)

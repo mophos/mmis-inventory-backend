@@ -756,9 +756,10 @@ router.get('/product-warehouse-lots/:productId/:warehouseId', co(async (req, res
 
 const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUserId: any) => {
   let results = await borrowModel.getProductListIds(db, borrowIds);
+  let _results = await borrowModel.getProductListRIds(db, borrowIds);
   let returnData: any = [];
 
-  for (let v of results) {
+  for (let v of _results) {
     let rsLots: any = await productModel.getBalance(db, v.product_id, v.src_warehouse_id, v.lot_no, v.lot_time);
     rsLots = rsLots[0][0];
 
