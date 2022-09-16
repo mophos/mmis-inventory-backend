@@ -1835,7 +1835,7 @@ FROM
         ${dateSetting} AS vscw
         JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
         JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
-        JOIN mm_generic_accounts as ma ON ma.account_id = mg.account_id
+        LEFT JOIN mm_generic_accounts as ma ON ma.account_id = mg.account_id
         JOIN mm_unit_generics AS mug ON mug.unit_generic_id = vscw.unit_generic_id
         JOIN mm_units AS mul ON mul.unit_id = mug.from_unit_id
         JOIN mm_units AS mus ON mus.unit_id = mug.to_unit_id
