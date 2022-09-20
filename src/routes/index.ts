@@ -2976,8 +2976,8 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     v.chief = await getOfficer(db, v.chief_id);
     v.staffReceive = await getOfficer(db, v.supply_id);
     v.manager = await getOfficer(db, v.manager_id);
-
     v.signature = signature[0].signature;
+    
   }
 
   let serialYear = moment().get('year') + 543;
@@ -3556,6 +3556,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
   let hospitalDetail = await inventoryReportModel.hospitalNew(db);
   hospitalDetail.book_prefix = `${req.decoded.BOOK_PREFIX}${req.decoded.warehouseBook ? req.decoded.warehouseBook : ''}`;
   let head: any = await inventoryReportModel.getReceiveHeader(db, receiveId);
+  let signature = await inventoryReportModel.getSignature(db, 'CRP')
   head = head[0];
   for (const i of head) {
     i.poNumber = i.purchase_order_book_number ? i.purchase_order_book_number : i.purchase_order_number;
@@ -3587,6 +3588,7 @@ router.get('/report/check/receives', wrap(async (req, res, next) => {
       serialYear += 1;
     }
     i.serialYear = serialYear;
+    i.signature = signature[0].signature
   }
 
   res.render('check_receives', {
@@ -3611,6 +3613,7 @@ router.get('/report/check/receives/singburi', wrap(async (req, res, next) => {
   let province = hosdetail[0].province;
   if (typeof rc_ID === 'string') rc_ID = [rc_ID];
   const receive = await inventoryReportModel.receiveSelect(db, rc_ID)
+  let signature = await inventoryReportModel.getSignature(db, 'CRP')
 
   for (let i in receive) {
     const receivePo = await inventoryReportModel.receiveByPoId(db, receive[i].purchase_order_id)
@@ -3654,7 +3657,7 @@ router.get('/report/check/receives/singburi', wrap(async (req, res, next) => {
     if (committee === undefined) { res.render('no_commitee'); }
     committees.push(committee);
     objects[0].staffReceive = await getOfficer(db, objects[0].supply_id);
-
+    objects[0].signature = signature[0].signature
   }
 
   let serialYear = moment().get('year') + 543;
