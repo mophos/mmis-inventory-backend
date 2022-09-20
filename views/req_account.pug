@@ -29,7 +29,7 @@ html
         tr
           td.left(style="width: 40%;")
             .bold.conleft ที่ &nbsp;
-            | สห 0032.301/
+            | สห 0033.301/
           td.left วันที่ 
       .left.bold.conleft
         | เรื่อง&nbsp;
@@ -77,12 +77,15 @@ html
       br
       br
       br
-      table(style="width: 50%; margin-left: 40%;")
+      table(style="width: 40%; margin-left: 40%;")
         td.center  
           | (#{v.manager.fullname})
           br
-          if(v.manager.position_name)
-            | #{v.manager.position_name}
-            br
-          | #{v.manager.position}
+          if(v.manager.position)
+            | #{v.manager.position}
+            if(v.manager.comment === null)
+              |
+            else
+              br
+              | #{v.manager.comment}
       .pagebreak
