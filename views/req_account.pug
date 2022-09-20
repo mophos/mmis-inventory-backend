@@ -83,4 +83,9 @@ html
           br
           if(v.manager.position)
             | #{v.manager.position}
+            if(v.manager.comment === null)
+              |
+            else
+              br
+              | #{v.manager.comment}
       .pagebreak

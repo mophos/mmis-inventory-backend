@@ -160,17 +160,18 @@ html
             td.right(width="5%")
             td.center(width="50%") ............................................................
             td.left 
-          tr
-            td.center 
-            td.center  
-              | (#{v.manager.fullname})
-              br
-              if(v.manager.position_name)
-                | #{v.manager.position_name}
+          if(v.signature=='N')
+            tr
+              td.center 
+              td.center  
+                | (#{v.manager.fullname})
                 br
-              | #{v.manager.position}
-              br
-              | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{hospitalDetail.province}
-            td
+                if(v.manager.position_name)
+                  | #{v.manager.position_name}
+                  br
+                | #{v.manager.position}
+                br
+                | ปฏิบัติราชการแทนผู้ว่าราชการจังหวัด#{hospitalDetail.province}
+              td
         - c++ 
         .pagebreak

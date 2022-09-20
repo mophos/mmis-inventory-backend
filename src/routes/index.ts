@@ -2951,6 +2951,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
   receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
   let hospitalDetail = await inventoryReportModel.hospitalNew(db);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
+  let signature = await inventoryReportModel.getSignature(db, 'CR')
 
   let bahtText: any = []
   let committee: any = []
@@ -2975,6 +2976,8 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     v.chief = await getOfficer(db, v.chief_id);
     v.staffReceive = await getOfficer(db, v.supply_id);
     v.manager = await getOfficer(db, v.manager_id);
+
+    v.signature = signature[0].signature;
   }
 
   let serialYear = moment().get('year') + 543;
