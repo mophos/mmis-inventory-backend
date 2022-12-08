@@ -211,7 +211,7 @@ router.get('/', async (req, res, next) => {
   let limit = +req.query.limit || 20;
   let offset = +req.query.offset || 0;
   let accessRight = req.decoded.accessRight;
-  this.rights = accessRight.split(',');
+  let rights = accessRight.split(',');
   // this.admin = _.indexOf(this.rights, 'WM_ADMIN') === -1 ? true : false;
   let warehouse = req.decoded.warehouseId;
   // if(this.admin){
@@ -236,7 +236,7 @@ router.get('/admin', async (req, res, next) => {
   let limit = +req.query.limit || 20;
   let offset = +req.query.offset || 0;
   let accessRight = req.decoded.accessRight;
-  this.rights = accessRight.split(',');
+  let rights = accessRight.split(',');
   // this.admin = _.indexOf(this.rights, 'WM_ADMIN') === -1 ? true : false;
   let warehouse = req.decoded.warehouseId;
   // if(this.admin){
