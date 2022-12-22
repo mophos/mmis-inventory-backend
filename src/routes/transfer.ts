@@ -1,5 +1,5 @@
 import { ProductModel } from './../models/product';
-const uuid = require('uuid/v4');
+import { v4 as uuid } from 'uuid';
 import Knex = require('knex');
 
 import { WarehouseModel } from '../models/warehouse';
