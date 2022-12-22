@@ -42,7 +42,8 @@
     "rimraf": "^2.6.2",
     "serve-favicon": "^2.4.5",
     "ts-node": "^6.0.3",
-    "update": "^0.7.4"
+    "update": "^0.7.4",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@types/body-parser": "1.16.3",
