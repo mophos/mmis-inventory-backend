@@ -15,7 +15,7 @@ import * as path from 'path';
 import * as fse from 'fs-extra';
 import * as rimraf from 'rimraf';
 import * as multer from 'multer';
-import * as uuid from 'uuid/v4';
+import { v4 as uuid } from 'uuid';
 import * as crypto from 'crypto';
 
 import xlsx from 'node-xlsx';

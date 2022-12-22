@@ -9,7 +9,7 @@ import * as path from 'path';
 import * as rimraf from 'rimraf';
 import * as multer from 'multer';
 import * as _ from 'lodash';
-import * as uuid from 'uuid/v4';
+import { v4 as uuid } from 'uuid';
 import { TransactionType, IStockcardItem } from '../interfaces/basic';
 
 import xlsx from 'node-xlsx';
