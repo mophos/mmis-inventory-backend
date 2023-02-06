@@ -8,7 +8,6 @@ import * as _ from 'lodash';
 import { IssueModel } from '../models/issue'
 import { StockCard } from '../models/stockcard';
 import { ReceiveModel } from '../models/receive';
-import { listenerCount, worker } from 'cluster';
 import { WarehouseModel } from '../models/warehouse';
 import { filter } from 'bluebird';
 import { log } from 'util';
@@ -27,7 +26,7 @@ const fse = require('fs-extra');
 const fs = require('fs');
 const json2xls = require('json2xls');
 moment.locale('th');
-
+let today = moment().format('DD MMMM ') + (moment().get('year') + 543);
 function printDate(SYS_PRINT_DATE) {
   moment.locale('th');
   let printDate
@@ -413,7 +412,7 @@ router.get('/report/purchase-bit-type', wrap(async (req, res, next) => {
     if (rs[0]) {
       // res.send({ rst:rst ,ot:_ot})
       res.render('purchase_bit_type', {
-        today: this.today,
+        today: today,
         hospitalName: hospitalName,
         // warehouseName:warehouseName,
         startdate: startdate,
@@ -4657,7 +4656,7 @@ router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:wa
   let hosdetail = await inventoryReportModel.hospital(db);
 
   let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId, receiveTpyeId, dateSetting);
-  if (!data[0].length || data[0] === []) {
+  if (!data[0].length || data[0].length === 0) {
     res.render('error404')
   } else {
     let hospitalName = hosdetail[0].hospname;

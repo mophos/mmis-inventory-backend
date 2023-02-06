@@ -1,4 +1,4 @@
-const uuid = require('uuid/v4');
+import { v4 as uuid } from 'uuid';
 
 import * as express from 'express';
 import * as moment from 'moment';
@@ -138,7 +138,7 @@ router.post('/upload/issue-his', upload.single('file'), co(async (req, res, next
   let excelData = workSheetsFromFile[0].data;
   let maxRecord = excelData.length;
 
-  let header = excelData[0];
+  let header: any = excelData[0];
 
   for (const v in header) {
     header[v] = header[v].toUpperCase();
@@ -191,7 +191,7 @@ router.post('/upload/issue-mmis', upload.single('file'), co(async (req, res, nex
 
   let maxRecord = excelData.length;
 
-  let header = excelData[0];
+  let header: any = excelData[0];
 
   for (const v in header) {
     header[v] = header[v].toUpperCase();
