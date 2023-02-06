@@ -3767,6 +3767,7 @@ OR sc.ref_src like ?
         LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
     WHERE
     wrd.is_free = 'N'
+    AND r.is_cancel =  'N'
   AND r.receive_date BETWEEN '${startdate}'
   AND '${enddate}'
   AND mg.generic_type_id IN ( ${genericTypeId} )
