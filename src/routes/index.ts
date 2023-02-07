@@ -410,11 +410,10 @@ router.get('/report/purchase-bit-type', wrap(async (req, res, next) => {
     }
 
     if (rs[0]) {
-      // res.send({ rst:rst ,ot:_ot})
+      let today = printDate(req.decoded.SYS_PRINT_DATE)
       res.render('purchase_bit_type', {
         today: today,
         hospitalName: hospitalName,
-        // warehouseName:warehouseName,
         startdate: startdate,
         enddate: enddate,
         lBitType: rst,
@@ -4656,7 +4655,7 @@ router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:wa
   let hosdetail = await inventoryReportModel.hospital(db);
 
   let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId, receiveTpyeId, dateSetting);
-  if (!data[0].length || data[0].length === 0) {
+  if (!data[0].length) {
     res.render('error404')
   } else {
     let hospitalName = hosdetail[0].hospname;
@@ -5936,41 +5935,53 @@ router.get('/report/approve/borrow', wrap(async (req, res, next) => {
     borrowId = Array.isArray(borrowId) ? borrowId : [borrowId]
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
+    let error = false;
     for (let i in borrowId) {
+      console.log(borrowId[i]);
+      
       const _approve_borrow = await inventoryReportModel.approve_borrow2(db, borrowId[i]);
-      if (borrowId.length === 1 && _approve_borrow[0].length === 0) { res.render('error404'); }
-      approve_borrow.push(_approve_borrow[0])
-      approve_borrow[i] = _.chunk(approve_borrow[i], page_re)
-      let page = 0;
-      _.forEach(approve_borrow[i], values => {
-        sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
-        page++;
-        _.forEach(values, value => {
-          value.sPage = page;
-          value.nPage = approve_borrow[i].length;
-          value.full_name = signature[0].signature === 'N' ? '' : value.full_name
-          value.total_cost = inventoryReportModel.comma(value.total_cost);
-          value.borrow_date = moment(value.borrow_date).format('D MMMM ') + (moment(value.borrow_date).get('year') + 543);
-          value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
-          // value.updated_at ? value.confirm_date = moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) : value.confirm_date = moment(value.created_at).format('D MMMM ') + (moment(value.created_at).get('year') + 543)
-          value.cost = inventoryReportModel.comma(value.cost);
-          value.qty = inventoryReportModel.commaQty(value.qty / value.conversion_qty);
-          value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
-          value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
-          value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
-          value.today = printDate(req.decoded.SYS_PRINT_DATE);
-          if (req.decoded.SYS_PRINT_DATE_EDIT === 'Y') {
-            value.today += (value.updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) + moment(value.updated_at).format(', HH:mm') + ' น.' : '';
-          }
+      console.log(_approve_borrow[0]);
+      
+      if (borrowId.length === 1 && _approve_borrow[0].length === 0) {
+        error = true;
+      } else {
+        approve_borrow.push(_approve_borrow[0])
+        approve_borrow[i] = _.chunk(approve_borrow[i], page_re)
+        let page = 0;
+        _.forEach(approve_borrow[i], values => {
+          sum.push(inventoryReportModel.comma(_.sumBy(values, 'total_cost')))
+          page++;
+          _.forEach(values, value => {
+            value.sPage = page;
+            value.nPage = approve_borrow[i].length;
+            value.full_name = signature[0].signature === 'N' ? '' : value.full_name
+            value.total_cost = inventoryReportModel.comma(value.total_cost);
+            value.borrow_date = moment(value.borrow_date).format('D MMMM ') + (moment(value.borrow_date).get('year') + 543);
+            value.requisition_date = moment(value.requisition_date).format('D MMMM ') + (moment(value.requisition_date).get('year') + 543);
+            // value.updated_at ? value.confirm_date = moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) : value.confirm_date = moment(value.created_at).format('D MMMM ') + (moment(value.created_at).get('year') + 543)
+            value.cost = inventoryReportModel.comma(value.cost);
+            value.qty = inventoryReportModel.commaQty(value.qty / value.conversion_qty);
+            value.confirm_qty = inventoryReportModel.commaQty(value.confirm_qty / value.conversion_qty);
+            value.dosage_name = value.dosage_name === null ? '-' : value.dosage_name
+            value.expired_date = moment(value.expired_date).isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : "-";
+            value.today = printDate(req.decoded.SYS_PRINT_DATE);
+            if (req.decoded.SYS_PRINT_DATE_EDIT === 'Y') {
+              value.today += (value.updated_at != null) ? ' แก้ไขครั้งล่าสุดวันที่ ' + moment(value.updated_at).format('D MMMM ') + (moment(value.updated_at).get('year') + 543) + moment(value.updated_at).format(', HH:mm') + ' น.' : '';
+            }
+          })
         })
-      })
+      }
     }
-    // res.send({approve_borrow:approve_borrow,page_re:page_re,sum:sum})
-    res.render('approve_borrow', {
-      hospitalName: hospitalName,
-      approve_borrow: approve_borrow,
-      sum: sum
-    });
+    if (approve_borrow.length && sum.length && !error) {
+      res.render('approve_borrow', {
+        hospitalName: hospitalName,
+        approve_borrow: approve_borrow,
+        sum: sum
+      });
+    } else {
+      res.render('error404');
+    }
+
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
