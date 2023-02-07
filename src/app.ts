@@ -139,7 +139,7 @@ let checkAuth = (req, res, next) => {
   }
   req.query2 = query;
 
-  let token: string = null;
+  let token: any = null;
   if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
     token = req.headers.authorization.split(' ')[1];
   } else if (req.query && req.query.token) {
@@ -147,19 +147,27 @@ let checkAuth = (req, res, next) => {
   } else {
     token = req.body.token;
   }
-
-  jwt.verify(token)
-    .then((decoded: any) => {
-      req.decoded = decoded;
-      next();
-    }, err => {
-      console.log(err);
-      return res.send({
-        ok: false,
-        error: 'No token provided.',
-        code: 403
+  
+  if (token) {
+    jwt.verify(token)
+      .then((decoded: any) => {
+        req.decoded = decoded;
+        next();
+      }, err => {
+        console.log(err);
+        return res.send({
+          ok: false,
+          error: 'No token provided.',
+          code: 403
+        });
       });
+  } else {
+    return res.send({
+      ok: false,
+      error: 'No token provided.',
+      code: 403
     });
+  }
 }
 
 let staffAuth = (req: Request, res: Response, next: NextFunction) => {
@@ -206,7 +214,8 @@ let dbConnection: MySqlConnectionConfig = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  multipleStatements: true
+  multipleStatements: true,
+  debug: false
 }
 
 app.use((req: Request, res: Response, next: NextFunction) => {
