@@ -13,7 +13,7 @@ const internalIssueModel = new InternalIssueModel();
 
 router.get('/', (req, res, next) => {
 
-  let db = req.db;
+  let db: any = req.db;
 
   internalIssueModel.list(db)
     .then((results: any) => {
@@ -23,14 +23,14 @@ router.get('/', (req, res, next) => {
       res.send({ ok: false, error: error })
     })
     .finally(() => {
-    db.destroy();
+      db.destroy();
     });
 });
 
 
 router.get('/success', (req, res, next) => {
 
-  let db = req.db;
+  let db: any = req.db;
 
   internalIssueModel.success(db)
     .then((results: any) => {
@@ -40,7 +40,7 @@ router.get('/success', (req, res, next) => {
       res.send({ ok: false, error: error })
     })
     .finally(() => {
-    db.destroy();
+      db.destroy();
     });
 });
 
@@ -48,15 +48,15 @@ router.get('/success', (req, res, next) => {
 
 router.post('/', (req, res, next) => {
   //wm_requisition
-  let summary = req.body.summary;
-  // let items = req.body.products;
-  // let cost_amt = req.body.cost_amt;
-  // let price_amt = req.body.price_amt;
-  // let item_qty = req.body.item_qty;
-  // let remark = req.body.remark;
-  // let internalissue_status = req.body.internalissue_status;
-  // let strpeopleid = req.body.strpeopleid;
-  // let user_id = req.body.user_id;
+  let summary: any = req.body.summary;
+  // let items:any = req.body.products;
+  // let cost_amt:any = req.body.cost_amt;
+  // let price_amt:any = req.body.price_amt;
+  // let item_qty:any = req.body.item_qty;
+  // let remark:any = req.body.remark;
+  // let internalissue_status:any = req.body.internalissue_status;
+  // let strpeopleid:any = req.body.strpeopleid;
+  // let user_id:any = req.body.user_id;
 
   // console.log(summary);
   let issueDate = summary.issueDate;
@@ -68,10 +68,10 @@ router.post('/', (req, res, next) => {
 
 
   //wm_requisition_detail
-  let items = req.body.products;
+  let items: any = req.body.products;
   // console.log(items);
 
-  let db = req.db;
+  let db: any = req.db;
 
   if (issueDate && warehouseId && unitIssueId) {
 
@@ -131,15 +131,15 @@ router.post('/', (req, res, next) => {
         db.destroy();
       });
   } else {
-    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' }) ;
+    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' });
   }
 });
 
 router.put('/:warehouse_id', (req, res, next) => {
-  let typeId = req.params.typeId;
-  let typeName = req.body.typeName;
+  let typeId: any = req.params.warehouse_id;
+  let typeName: any = req.body.typeName;
 
-  let db = req.db;
+  let db: any = req.db;
 
   if (typeId) {
     let datas: any = {
@@ -157,13 +157,13 @@ router.put('/:warehouse_id', (req, res, next) => {
         db.destroy();
       });
   } else {
-    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' }) ;
+    res.send({ ok: false, error: 'ข้อมูลไม่สมบูรณ์' });
   }
 });
 
 router.get('/detail/:warehouse_id', (req, res, next) => {
-  let typeId = req.params.typeId;
-  let db = req.db;
+  let typeId: any = req.params.warehouse_id;
+  let db: any = req.db;
 
   internalIssueModel.detail(db, typeId)
     .then((results: any) => {
@@ -178,8 +178,8 @@ router.get('/detail/:warehouse_id', (req, res, next) => {
 });
 
 router.get('/issuedetail/:internalissue_id', (req, res, next) => {
-  let InternalissueId = req.params.internalissue_id;
-  let db = req.db;
+  let InternalissueId: any = req.params.internalissue_id;
+  let db: any = req.db;
 
   internalIssueModel.issueDetail(db, InternalissueId)
     .then((results: any) => {
@@ -194,8 +194,8 @@ router.get('/issuedetail/:internalissue_id', (req, res, next) => {
 });
 
 router.delete('/:warehouse_id', (req, res, next) => {
-  let typeId = req.params.typeId;
-  let db = req.db;
+  let typeId: any = req.params.warehouse_id;
+  let db: any = req.db;
 
   internalIssueModel.remove(db, typeId)
     .then((results: any) => {
@@ -210,9 +210,9 @@ router.delete('/:warehouse_id', (req, res, next) => {
 });
 
 router.post('/search', (req, res, next) => {
-  let db = req.db;
-  let query = req.body.query || 'xx';
-  let warehouseid = req.body.warehouseid;
+  let db: any = req.db;
+  let query: any = req.body.query || 'xx';
+  let warehouseid: any = req.body.warehouseid;
   console.log(query);
   internalIssueModel.search(db, query, warehouseid)
     .then((results: any) => {
@@ -228,9 +228,9 @@ router.post('/search', (req, res, next) => {
 });
 
 router.post('/searchall', (req, res, next) => {
-  let db = req.db;
-  let query = req.body.query || 'xx';
-  let warehouseid = req.body.warehouseid;
+  let db: any = req.db;
+  let query: any = req.body.query || 'xx';
+  let warehouseid: any = req.body.warehouseid;
   console.log(query);
   internalIssueModel.searchall(db, query, warehouseid)
     .then((results: any) => {
@@ -246,8 +246,8 @@ router.post('/searchall', (req, res, next) => {
 });
 
 router.post('/product-packages', (req, res, next) => {
-  let db = req.db;
-  let productId = req.body.productId;
+  let db: any = req.db;
+  let productId: any = req.body.productId;
 
   productModel.getProductPackage(db, productId)
     .then((results: any) => {
@@ -264,12 +264,12 @@ router.post('/product-packages', (req, res, next) => {
 
 router.post('/approve', (req, res, next) => {
   // console.log(req.body);
-  let internalissueId = req.body.internalissueId;
-  let approveDate = req.body.approveDate;
+  let internalissueId: any = req.body.internalissueId;
+  let approveDate: any = req.body.approveDate;
   // console.log("internalissue ID");
   // console.log(internalissueId);
   let sql = [];
-  let db = req.db;
+  let db: any = req.db;
 
   if (internalissueId && approveDate) {
     internalIssueModel.checkDuplicatedApprove(db, internalissueId)

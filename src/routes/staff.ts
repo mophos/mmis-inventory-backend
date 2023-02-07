@@ -15,7 +15,7 @@ import * as path from 'path';
 import * as fse from 'fs-extra';
 import * as rimraf from 'rimraf';
 import * as multer from 'multer';
-import * as uuid from 'uuid/v4';
+import { v4 as uuid } from 'uuid';
 import * as crypto from 'crypto';
 
 import xlsx from 'node-xlsx';
@@ -2675,7 +2675,7 @@ router.post('/upload/issue-his', upload.single('file'), co(async (req, res, next
   let excelData = workSheetsFromFile[0].data;
   let maxRecord = excelData.length;
 
-  let header = excelData[0];
+  let header: any = excelData[0];
 
   for (const v in header) {
     header[v] = header[v].toUpperCase();
@@ -2725,7 +2725,7 @@ router.post('/upload/issue-mmis', upload.single('file'), co(async (req, res, nex
   let excelData = workSheetsFromFile[0].data;
   let maxRecord = excelData.length;
 
-  let header = excelData[0];
+  let header: any = excelData[0];
 
   for (const v in header) {
     header[v] = header[v].toUpperCase();

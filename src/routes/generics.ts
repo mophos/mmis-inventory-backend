@@ -83,7 +83,7 @@ router.get('/warehouse/search/autocomplete', async (req, res, next) => {
   let limit: any = req.query.limit === 'Y' ? false : true;
   let status = await genericModel.checkUsers(db, req.decoded.people_user_id, req.decoded.warehouseId);
   let sys_gp = await settingModel.getValue(db, 'WM_GENERIC_PLANNING');
-  this.warehouse_type = status[0].warehouse_type_id === '1' ? true : false;
+  let warehouse_type = status[0].warehouse_type_id === '1' ? true : false;
   if (warehouseId == undefined || warehouseId == null || warehouseId == '') {
     warehouseId = req.decoded.warehouseId;
   }
@@ -93,7 +93,7 @@ router.get('/warehouse/search/autocomplete', async (req, res, next) => {
     } else {
       let rs: any;
       if (limit) {
-        if (this.warehouse_type) {
+        if (warehouse_type) {
           rs = await genericModel.warehouseSearchAutocompleteLimit(db, warehouseId, q);
         } else {
           if (sys_gp[0].value === 'N') {
@@ -103,7 +103,7 @@ router.get('/warehouse/search/autocomplete', async (req, res, next) => {
           }
         }
       } else {
-        if (this.warehouse_type) {
+        if (warehouse_type) {
           rs = await genericModel.warehouseSearchAutocompleteAll(db, warehouseId, q);
         } else {
           if (sys_gp[0].value === 'N') {

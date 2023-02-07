@@ -1835,7 +1835,7 @@ FROM
         ${dateSetting} AS vscw
         JOIN wm_receive_other AS wro ON wro.receive_other_id = vscw.document_ref_id
         JOIN mm_generics AS mg ON mg.generic_id = vscw.generic_id
-        JOIN mm_generic_accounts as ma ON ma.account_id = mg.account_id
+        LEFT JOIN mm_generic_accounts as ma ON ma.account_id = mg.account_id
         JOIN mm_unit_generics AS mug ON mug.unit_generic_id = vscw.unit_generic_id
         JOIN mm_units AS mul ON mul.unit_id = mug.from_unit_id
         JOIN mm_units AS mus ON mus.unit_id = mug.to_unit_id
@@ -2751,8 +2751,9 @@ OR sc.ref_src like ?
             .orderBy('pc.committee_id');
     }
     getStaff(knex: Knex, officerId) {
-        return knex.select('t.title_name as title_name', 'p.fname', 'p.lname', knex.raw(`concat(t.title_name,p.fname,' ',p.lname) as fullname`), 'upos.position_name', 'upo.type_name as position')
+        return knex.select('t.title_name as title_name', 'p.fname', 'p.lname', knex.raw(`concat(t.title_name,p.fname,' ',p.lname) as fullname`), 'upos.position_name', 'upo.type_name as position', 'upot.comment')
             .from('um_purchasing_officer as upo')
+            .leftJoin('um_purchasing_officer_type as upot', 'upot.type_code', 'upo.type_code')
             .join('um_people as p', 'upo.people_id', 'p.people_id')
             .join('um_titles as t', 't.title_id', 'p.title_id')
             .leftJoin('um_people_positions as upp', function () {
@@ -3766,6 +3767,7 @@ OR sc.ref_src like ?
         LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
     WHERE
     wrd.is_free = 'N'
+    AND r.is_cancel =  'N'
   AND r.receive_date BETWEEN '${startdate}'
   AND '${enddate}'
   AND mg.generic_type_id IN ( ${genericTypeId} )
