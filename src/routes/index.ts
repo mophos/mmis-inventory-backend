@@ -78,7 +78,7 @@ async function getCommitee(db, committeeId) {
 }
 
 function dateToDDMMMMYYYY(date) {
-  return moment(date).isValid() ? moment(date).format('DD MMMM ') + (+moment(date).get('year') + 543) : '-';
+  return moment(date, 'YYYY-MM-DD').isValid() ? moment(date, 'YYYY-MM-DD').format('DD MMMM ') + (+moment(date, 'YYYY-MM-DD').get('year') + 543) : '-';
 }
 
 function dateToDMMYYYY(date) {
@@ -2975,7 +2975,7 @@ router.get('/report/check/receive', wrap(async (req, res, next) => {
     v.staffReceive = await getOfficer(db, v.supply_id);
     v.manager = await getOfficer(db, v.manager_id);
     v.signature = signature[0].signature;
-    
+
   }
 
   let serialYear = moment().get('year') + 543;
@@ -5938,10 +5938,10 @@ router.get('/report/approve/borrow', wrap(async (req, res, next) => {
     let error = false;
     for (let i in borrowId) {
       console.log(borrowId[i]);
-      
+
       const _approve_borrow = await inventoryReportModel.approve_borrow2(db, borrowId[i]);
       console.log(_approve_borrow[0]);
-      
+
       if (borrowId.length === 1 && _approve_borrow[0].length === 0) {
         error = true;
       } else {
@@ -6561,20 +6561,16 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
   let genericTypeId: any = req.query.genericTypes;
   genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
 
-  // let peopleId = req.decoded.peopleId
   const warehouseId: any = req.query.warehouseId;
   const warehouseName: any = req.query.warehouseName;
-  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
-
+  // let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
+  let dateSetting = true;
 
   const wb = new excel4node.Workbook();
   // Add Worksheets to the workbook
-  const ws = wb.addWorksheet('Sheet 1');
-  try {
-    // const gn: any = await inventoryReportModel.getGenericType(db, genericTypeId);
-    // const rs: any = await inventoryReportModel.payToWarehouse(db, startDate, endDate, genericTypeId, warehouseId, dateSetting)
-    const rs: any = await inventoryReportModel.payToWarehouseGenericTypeDetail2(db, startDate, endDate, genericTypeId, dateSetting, warehouseId)
 
+  try {
+    const rs: any = await inventoryReportModel.payToWarehouseGenericTypeDetail2(db, startDate, endDate, genericTypeId, dateSetting, warehouseId)
     if (rs) {
       let _data: any = await setData(rs);
       // if (rs) {
@@ -6606,61 +6602,65 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
         }
       });
 
-      ws.cell(1, 1, 1, 6, true).string('สรุปยอดจ่ายระหว่างวันที่ ' + dateToDDMMMMYYYY(startDate) + ' ถึง ' + dateToDDMMMMYYYY(endDate)).style(textBold);
-      ws.cell(1, 7, 1, 8, true).string(warehouseName);
-
-      ws.cell(2, 1, 2, 2, true).string('ชื่อวัสดุ');
-      ws.cell(2, 3).string('วัน/เดือน/ปี');
-      ws.cell(2, 4).string('เลขที่ใบเบิก');
-      ws.cell(2, 5).string('ราคา/หน่วย');
-      ws.cell(2, 6).string('หน่วยนับ');
-      ws.cell(2, 7).string('จำนวนจ่าย');
-      ws.cell(2, 8).string('รวม');
 
 
-      let cell = 2;
+
 
       let priceAll = 0;
+      const ws = [];
       for (const h of _data) {
+        let cell = 2;
+        ws[h.warehouse_id] = wb.addWorksheet(h.warehouse_name);
+        ws[h.warehouse_id].cell(1, 1, 1, 6, true).string('สรุปยอดจ่ายระหว่างวันที่ ' + dateToDDMMMMYYYY(startDate) + ' ถึง ' + dateToDDMMMMYYYY(endDate)).style(textBold);
+        ws[h.warehouse_id].cell(1, 7, 1, 8, true).string(warehouseName);
+
+        ws[h.warehouse_id].cell(2, 1, 2, 2, true).string('ชื่อวัสดุ');
+        ws[h.warehouse_id].cell(2, 3).string('วัน/เดือน/ปี');
+        ws[h.warehouse_id].cell(2, 4).string('เลขที่ใบเบิก');
+        ws[h.warehouse_id].cell(2, 5).string('ราคา/หน่วย');
+        ws[h.warehouse_id].cell(2, 6).string('หน่วยนับ');
+        ws[h.warehouse_id].cell(2, 7).string('จำนวนจ่าย');
+        ws[h.warehouse_id].cell(2, 8).string('รวม');
+
         let priceWarehouse = 0;
         let no = 0;
 
         cell++;
-        ws.cell(cell, 1, cell, 2, true).string('จ่ายให้');
-        ws.cell(cell, 3, cell, 8, true).string(h.warehouse_name);
+        ws[h.warehouse_id].cell(cell, 1, cell, 2, true).string('จ่ายให้');
+        ws[h.warehouse_id].cell(cell, 3, cell, 8, true).string(h.warehouse_name);
 
         // const type: any = await inventoryReportModel.payToWarehouseGenericType(db, startDate, endDate, genericTypeId, h.warehouse_id, dateSetting, warehouseId)
         if (h) {
           for (const t of h.data) {
             cell++;
-            ws.cell(cell, 1, cell, 8, true).string(t.generic_type_name);
+            ws[h.warehouse_id].cell(cell, 1, cell, 8, true).string(t.generic_type_name);
             let priceGenericType = 0;
             // const detail: any = await inventoryReportModel.payToWarehouseGenericTypeDetail(db, startDate, endDate, t.generic_type_id, h.warehouse_id, dateSetting, warehouseId)
             if (t.detail) {
               for (const d of t.detail) {
                 cell++;
-                ws.cell(cell, 1).number(no++);
-                ws.cell(cell, 2, cell, 4, true).string(d.generic_name);
-                ws.cell(cell, 5).date(moment(d.approve_date).format('YYYY-MM-DD'));
-                ws.cell(cell, 6).string(d.requisition_code);
-                ws.cell(cell, 9).number(d.unit_cost).style(styleCost);
-                ws.cell(cell, 7).string(d.unit_name);
-                ws.cell(cell, 8).number(d.qty).style(styleQty);
-                ws.cell(cell, 10).number(d.cost).style(styleCost);
+                ws[h.warehouse_id].cell(cell, 1).number(no++);
+                ws[h.warehouse_id].cell(cell, 2, cell, 4, true).string(d.generic_name);
+                ws[h.warehouse_id].cell(cell, 5).date(moment(d.approve_date).format('YYYY-MM-DD'));
+                ws[h.warehouse_id].cell(cell, 6).string(d.requisition_code);
+                ws[h.warehouse_id].cell(cell, 9).number(d.unit_cost).style(styleCost);
+                ws[h.warehouse_id].cell(cell, 7).string(d.unit_name);
+                ws[h.warehouse_id].cell(cell, 8).number(d.qty).style(styleQty);
+                ws[h.warehouse_id].cell(cell, 10).number(d.cost).style(styleCost);
                 priceWarehouse += d.cost;
                 priceAll += d.cost;
                 priceGenericType += d.cost;
               }
             }
             cell++;
-            ws.cell(cell, 4).string('รวม').style(lastSet);
-            ws.cell(cell, 5, cell, 7, true).string(t.generic_type_name).style(lastSet);
-            ws.cell(cell, 8).number(priceGenericType).style(lastSet).style(styleCost);
+            ws[h.warehouse_id].cell(cell, 4).string('รวม').style(lastSet);
+            ws[h.warehouse_id].cell(cell, 5, cell, 7, true).string(t.generic_type_name).style(lastSet);
+            ws[h.warehouse_id].cell(cell, 8).number(priceGenericType).style(lastSet).style(styleCost);
           }
         }
         cell++;
-        ws.cell(cell, 7).string('รวม').style(lastList);
-        ws.cell(cell, 8).number(priceWarehouse).style(lastList).style(styleCost);
+        ws[h.warehouse_id].cell(cell, 7).string('รวม').style(lastList);
+        ws[h.warehouse_id].cell(cell, 8).number(priceWarehouse).style(lastList).style(styleCost);
       }
 
 
