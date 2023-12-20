@@ -7110,7 +7110,8 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
       /* generate buffer */
       var buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
       /* set headers */
-      res.attachment("SheetJSExpress.xlsx");
+      let filename = `สรุปยอดจ่าย${startDate}ถึง${endDate}.xlsx`;
+      res.attachment(filename);
       /* respond with file data */
       res.status(200).end(buf);
 
