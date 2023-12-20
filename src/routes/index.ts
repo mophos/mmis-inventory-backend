@@ -25,6 +25,9 @@ const path = require('path')
 const fse = require('fs-extra');
 const fs = require('fs');
 const json2xls = require('json2xls');
+// var XLSX = require("xlsx");
+import * as XLSX from 'xlsx';
+
 moment.locale('th');
 let today = moment().format('DD MMMM ') + (moment().get('year') + 543);
 function printDate(SYS_PRINT_DATE) {
@@ -6554,7 +6557,7 @@ async function setData(rs: any) {
     }
   })
 }
-router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
+router.get('/report/requisition/generic/excel/old', wrap(async (req, res, next) => {
   const db = req.db;
   const startDate: any = req.query.startDate;
   const endDate: any = req.query.endDate;
@@ -7021,6 +7024,102 @@ router.get('/report/requisition/generic', wrap(async (req, res, next) => {
       res.send({ ok: false, error: 'data error!!' })
     }
   } catch (error) {
+    res.send({ ok: false, error: error.message })
+  }
+}))
+
+
+router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
+  const db = req.db;
+  const startDate: any = req.query.startDate;
+  const endDate: any = req.query.endDate;
+  let genericTypeId: any = req.query.genericTypes;
+  genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
+
+  const warehouseId: any = req.query.warehouseId;
+  const warehouseName: any = req.query.warehouseName;
+  let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
+  // let dateSetting = true;
+
+  const dataExcel: any = [];
+  try {
+    const rs: any = await inventoryReportModel.payToWarehouseGenericTypeDetail2(db, startDate, endDate, genericTypeId, dateSetting, warehouseId)
+    if (rs) {
+      let _data: any = await setData(rs);
+      var worksheet: any = XLSX.utils.aoa_to_sheet([]);
+      let priceAll = 0;
+
+      const mergeConfig = [];
+      const ws = [];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['สรุปยอดจ่ายระหว่างวันที่ ' + dateToDDMMMMYYYY(startDate) + ' ถึง ' + dateToDDMMMMYYYY(endDate)]], { origin: 'A1' });
+      mergeConfig.push({ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } });
+      XLSX.utils.sheet_add_aoa(worksheet, [[warehouseName]], { origin: 'H1' });
+      mergeConfig.push({ s: { r: 0, c: 7 }, e: { r: 0, c: 9 } });
+      XLSX.utils.sheet_add_aoa(worksheet, [['ชื่อวัสดุ', , , , 'วัน/เดือน/ปี', 'เลขที่ใบเบิก', 'ราคา/หน่วย', 'หน่วยนับ', 'จำนวนจ่าย', 'รวม']], { origin: 'A2' });
+      mergeConfig.push({ s: { r: 1, c: 0 }, e: { r: 1, c: 3 } });
+
+      let row = 2;
+      for (const h of _data) {
+        let priceWarehouse = 0;
+        let no = 0;
+        row++;
+        XLSX.utils.sheet_add_aoa(worksheet, [['จ่ายให้']], { origin: { r: row, c: 0 } });
+        XLSX.utils.sheet_add_aoa(worksheet, [[h.warehouse_name]], { origin: { r: row, c: 2 } });
+        mergeConfig.push({ s: { r: row, c: 0 }, e: { r: row, c: 1 } });
+        mergeConfig.push({ s: { r: row, c: 2 }, e: { r: row, c: 7 } });
+
+        if (h) {
+          for (const t of h.data) {
+            row++;
+            XLSX.utils.sheet_add_aoa(worksheet, [[t.generic_type_name]], { origin: { r: row, c: 0 } });
+            mergeConfig.push({ s: { r: row, c: 0 }, e: { r: row, c: 7 } });
+            let priceGenericType = 0;
+            if (t.detail) {
+              for (const d of t.detail) {
+                row++;
+                XLSX.utils.sheet_add_aoa(worksheet, [[no++, d.generic_name, , , moment(d.approve_date).format('YYYY-MM-DD'), d.requisition_code, d.unit_cost, d.unit_name, d.qty, d.cost]], { origin: { r: row, c: 0 } });
+                mergeConfig.push({ s: { r: row, c: 1 }, e: { r: row, c: 3 } });
+                priceWarehouse += d.cost;
+                priceAll += d.cost;
+                priceGenericType += d.cost;
+              }
+            }
+            row++;
+            XLSX.utils.sheet_add_aoa(worksheet, [['รวม', t.generic_type_name, , , , , priceGenericType]], { origin: { r: row, c: 3 } });
+            // worksheet[XLSX.utils.encode_cell({ r: row, c: 3 })] = {
+            //   v: 'รวม', s: {
+            //     font: { underline: true }, border: {
+            //       bottom: { style: 'double', color: { rgb: '000000' } }, // สีขีดเส้น
+            //     },
+            //   }
+            // };
+          }
+        }
+        row++;
+        XLSX.utils.sheet_add_aoa(worksheet, [['รวม', priceWarehouse]], { origin: { r: row, c: 8 } });
+
+      }
+
+
+
+      var wb = XLSX.utils.book_new();
+
+      worksheet['!merges'] = mergeConfig;
+      XLSX.utils.book_append_sheet(wb, worksheet, "Data");
+      /* generate buffer */
+      var buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+      /* set headers */
+      res.attachment("SheetJSExpress.xlsx");
+      /* respond with file data */
+      res.status(200).end(buf);
+
+    } else {
+      res.send({ ok: false, error: 'data error!!' })
+    }
+  } catch (error) {
+    console.log(error);
+
     res.send({ ok: false, error: error.message })
   }
 }))
