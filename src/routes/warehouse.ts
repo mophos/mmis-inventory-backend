@@ -86,6 +86,7 @@ router.post('/', wrap(async (req, res, next) => {
   let hospcode = req.body.hospcode;
   let depCode = req.body.depCode;
   let book = req.body.book;
+  let deptId = req.body.deptId;
 
   let db = req.db;
 
@@ -100,6 +101,7 @@ router.post('/', wrap(async (req, res, next) => {
       is_unit_issue: isUnitIssue,
       his_hospcode: hospcode,
       warehouse_book: book,
+      dept_id: deptId,
       created_at: moment().format('YYYY-MM-DD HH:mm:ss')
     };
 
@@ -147,6 +149,7 @@ router.put('/:warehouseId', wrap(async (req, res, next) => {
   let hospcode = req.body.hospcode;
   let depCode = req.body.depCode;
   let book = req.body.book;
+  let deptId = req.body.deptId;
 
   let db = req.db;
 
@@ -160,7 +163,8 @@ router.put('/:warehouseId', wrap(async (req, res, next) => {
     is_unit_issue: isUnitIssue,
     his_hospcode: hospcode,
     warehouse_book: book,
-    his_dep_code: depCode
+    his_dep_code: depCode,
+    dept_id: deptId
   }
 
   let dataWarehouse = [];

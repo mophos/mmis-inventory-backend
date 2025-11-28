@@ -1289,7 +1289,7 @@ group by mpp.product_id
           .orWhere('mp.product_name', 'like', _query)
           .orWhere('mp.keywords', 'like', _query)
       })
-    if (genericType) {
+    if (genericType && Object.keys(genericType).length > 0) {
       if (genericType.generic_type_lv1_id.length) {
         sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id);
       }
@@ -1305,7 +1305,8 @@ group by mpp.product_id
     return sql;
   }
 
-  getAllProduct(db: Knex, genericType: any = {}) {
+  getAllProduct(db: Knex, genericType: any = {}) {    
+
     let sql = db('mm_products as mp')
       .select('mp.working_code', 'mp.product_name', 'tpu.TMTID', 'tpu.FSN', 'mp.product_id', 'mg.generic_name', 'ml.labeler_name as v_labeler_name', 'ml2.labeler_name as m_labeler_name')
       .join('mm_generics as mg', 'mg.generic_id', 'mp.generic_id')
@@ -1313,14 +1314,14 @@ group by mpp.product_id
       .leftJoin('mm_labelers as ml2', 'ml2.labeler_id', 'mp.m_labeler_id')
       .leftJoin('tmt_tpu as tpu', 'tpu.TMTID', 'mp.tmt_id')
       .where('mp.mark_deleted', 'N')
-    if (genericType) {
-      if (genericType.generic_type_lv1_id.length) {
+    if (genericType && Object.keys(genericType).length > 0) {
+      if (genericType.generic_type_lv1_id.length > 0) {
         sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id)
       }
-      if (genericType.generic_type_lv2_id.length) {
+      if (genericType.generic_type_lv2_id.length > 0) {
         sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv2_id)
       }
-      if (genericType.generic_type_lv3_id.length) {
+      if (genericType.generic_type_lv3_id.length > 0) {
         sql.whereIn('mg.generic_type_lv2_id', genericType.generic_type_lv3_id)
       }
     }
@@ -1348,7 +1349,7 @@ group by mpp.product_id
           .orWhere('mg.working_code', 'like', _query)
           .orWhere('tpu.TMTID', 'like', _query)
       })
-    if (genericType) {
+    if (genericType && Object.keys(genericType).length > 0) {
       if (genericType.generic_type_lv1_id.length) {
         sql.whereIn('mg.generic_type_id', genericType.generic_type_lv1_id)
       }
@@ -1424,5 +1425,21 @@ group by mpp.product_id
       sql.where('expired_date', expireDate)
     }
     return sql;
+  }
+
+  updateProductCategory(knex: Knex, genericId, productCatId) {
+    return knex('mm_products')
+      .where('generic_id', genericId)
+      .update({
+        product_cat: productCatId
+      });
+  }
+
+  updateBuyMethod(knex: Knex, purchaseOrderId, BuyMethodId) {
+    return knex('pc_purchasing_order as ppo')
+      .where('ppo.purchase_order_id', purchaseOrderId)
+      .update({
+        buy_method_id: BuyMethodId
+      });
   }
 }
