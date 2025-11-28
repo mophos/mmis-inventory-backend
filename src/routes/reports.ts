@@ -557,47 +557,26 @@ router.get('/export/distribute', wrap(async (req, res, next) => {
   });
 }));
 
-router.get('/export/druglist', wrap(async (req, res, next) => {
+
+router.get('/export/druglist', async (req, res, next) => {
 
   const db = req.db;
-  const hospcode = req.decoded.hospcode;
-  const exportPath = path.join(process.env.MMIS_TMP);
-  fse.ensureDirSync(exportPath);
-
-  const fileName = `DRUGLIST_${moment().format('MMDD')}.txt`;
-  const filePath = path.join(exportPath, fileName);
-
-  const rs: any = await inventoryReportModel.Druglist(db);
-  const fields = ['HOSP_CODE', 'WORKING_CODE', 'GENERIC_NAME', 'TRADE_NAME',
-    'TMTID', 'NCD24', 'NLEM', 'PRODUCT_CAT', 'CONTENT_VALUE', 'CONTENT_UNIT', 'BASE_UNIT',
-    'STATUS', 'DATE_STATUS', 'D_UPDATE', 'DATE_SEND'];
-
-  const data = rs[0];
-  for (const d of data) {
-    d.HOSP_CODE = hospcode;
-    d.DATE_STATUS = d.DATE_STATUS = '' ? '' : moment(d.DATE_STATUS).format('YYYYMMDD')
-    d.D_UPDATE = d.D_UPDATE = '' ? '' : moment(d.D_UPDATE).format('YYYYMMDDhhmmss')
-    d.DATE_SEND = d.DATE_SEND = '' ? '' : moment(d.DATE_SEND).format('YYYYMM')
-  }
-  const json2csvParser = new Parser({ fields, delimiter: '|', quote: '' });
-  const csv = json2csvParser.parse(data);
-
-  fs.writeFile(filePath, csv, function (err) {
-    if (err) throw err;
-    fs.readFile(filePath, function (err, file) {
-      if (err) {
-        res.send({ ok: false, error: err });
-      } else {
-        rimraf.sync(filePath);
-        // res.contentType("application/pdf");
-        res.send(file);
-      }
-    });
+  const hospcode = JSON.parse(req.decoded.SYS_HOSPITAL).hospcode;
+  let rs: any = await inventoryReportModel.getDruglist(db);
+  
+  rs.forEach(v => {
+    v.HOSP_CODE = hospcode
   });
 
-
-
-}));
+  const xls = json2xls(rs);
+  const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+  // create directory
+  fse.ensureDirSync(exportDirectory);
+  const filePath = path.join(exportDirectory, 'druglist.xlsx');
+  fs.writeFileSync(filePath, xls, 'binary');
+  // force download
+  res.download(filePath, 'druglist.xlsx');
+});
 
 router.get('/export/inventory', wrap(async (req, res, next) => {
 

@@ -563,5 +563,47 @@ router.get('/returned/product-list/:returnedId', co(async (req, res, next) => {
   }
 }));
 
+router.get('/bi-product-category', co(async (req, res, next) => {
+  let db = req.db;
+
+  try {
+    let rs = await basicModel.getBiProductCategory(db);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/bi-buy-method', co(async (req, res, next) => {
+  let db = req.db;
+
+  try {
+    let rs = await basicModel.getBiBuyMethod(db);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
+router.get('/bi-dept', co(async (req, res, next) => {
+  let db = req.db;
+
+  try {
+    let rs = await basicModel.getBiDept(db);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+}));
+
 
 export default router;

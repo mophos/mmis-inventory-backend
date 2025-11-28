@@ -23,6 +23,8 @@ export class WarehouseModel {
   listSearch(knex: Knex, query: any = '') {
     let _query = `%${query}%`;
     return knex('wm_warehouses as w')
+      .select('w.*', 'bdd.dept_group')
+      .leftJoin('bi_dept_distribution as bdd', 'bdd.dept_id', 'w.dept_id')
       .where('w.is_deleted', 'N')
       .where(w => {
         w.where('w.warehouse_name', 'like', _query)

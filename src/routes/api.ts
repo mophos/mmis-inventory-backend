@@ -11,12 +11,19 @@ import { StockCard } from '../models/stockcard';
 import { HisTransactionModel } from '../models/hisTransaction';
 import { WarehouseModel } from '../models/warehouse';
 import { MainReportModel } from '../models/reports/mainReport';
+import { ApiModel } from '../models/api';
+import { token } from 'morgan';
+import { InventoryReportModel } from "../models/inventoryReport";
+import { count } from 'console';
+
 const mainReportModel = new MainReportModel();
+const apiModel = new ApiModel();
 
 const genericModel = new GenericModel();
 const hisTransactionModel = new HisTransactionModel();
 const stockCardModel = new StockCard();
 const warehouseModel = new WarehouseModel();
+const inventoryReportModel = new InventoryReportModel();
 const router = express.Router();
 
 
@@ -261,4 +268,610 @@ router.get('/financial', (async (req, res, next) => {
   }
 
 }));
+
+function getHospcodeNew(req){
+  const sys_hospital = req.decoded.SYS_HOSPITAL;
+  const hospcode = JSON.parse(sys_hospital).hospcodeNew
+  // const hospcode = 'IA0041124'
+  return hospcode
+}
+
+router.get('/view-drug-list', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const query  = req.query.query || '';
+    const rs: any = await apiModel.getDrugListMMIS(db,query);
+    
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.get('/dmsicapi-drug-list/period-rpt', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const periodRpt = req.query.periodRpt || '';
+    
+    const hospcode = await getHospcodeNew(req)
+    let token: any = await apiModel.getToken(db)
+    const rs: any = await apiModel.getDrugListByperiodRpt(token[0].token, hospcode, periodRpt);    
+    
+    res.send({ ok: true, rows: rs.content });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.post('/dmsicapi-drug-list/save', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const token :any = await apiModel.getToken(db)
+    const hospcode = await getHospcodeNew(req)
+    const list = await inventoryReportModel.getDruglist(db);
+    let json = { contents: [] };
+
+    list.forEach(e => {
+      const obj = {
+        hospCode: hospcode,
+        workingCode: e.WORKING_CODE,
+        periodRpt: moment().format('YYYYMM'),
+        dateStatus: moment().format('YYYY-MM-DD'),
+        genericName: e.GENERIC_NAME,
+        gpuId: e.GPUID,
+        nlem: e.NLEM,
+        productCat: e.PRODUCT_CAT,
+        baseUnit: e.BASE_UNIT,
+        status: e.STATUS,
+        dateSend: moment().format('YYYY-MM-DDTHH:mm:ss')
+      };
+      json.contents.push(obj);
+    });    
+    const rs: any = await apiModel.saveAllDrugList(json, token[0].token);
+    
+    if(rs.status == 400){
+      res.send({ ok: true ,statusCode:rs.status, error: rs.errors});
+    }else if(rs.contents.length > 0){
+      res.send({ ok: true ,statusCode:200, count: rs.contents.length});
+    }else {
+      res.send({ ok: false, error: 'ไม่สามารถบันทึกรายการได้' });
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.delete('/dmsicapi-drug-list/delete-by-id', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const data = req.body;
+    const token :any = await apiModel.getToken(db)
+    const hospcode = await getHospcodeNew(req)
+    const rs = await apiModel.deleteDrugListByid(hospcode, data.workingCode, data.periodRpt, token[0].token);
+    if (rs == 200) {
+      res.send({ ok: true });
+    }else{
+      res.send({ ok: false, error: 'ลบรายการไม่สำเร็จ' });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.delete('/dmsicapi-drug-list/delete-by-period-rpt', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const periodRpt = req.query.periodRpt || '';    
+    const token :any = await apiModel.getToken(db)
+    const hospcode = await getHospcodeNew(req)
+    const rs = await apiModel.deleteDrugListByperiodRpt(hospcode, periodRpt, token[0].token);
+    
+    if (rs == 200) {
+      res.send({ ok: true });
+    }else{
+      res.send({ ok: false, error: 'ลบรายการไม่สำเร็จ' });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.get('/view-purchaser-plan', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const query  = req.query.query || '';
+    console.log(query);
+    const rs: any = await apiModel.getPurchasePlanMMIS(db,query);
+    
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.get('/dmsicapi-purchaser-plan/period-rpt', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const periodRpt = req.query.periodRpt || '';
+    
+    const hospcode = await getHospcodeNew(req)
+    let token: any = await apiModel.getToken(db)
+    const rs: any = await apiModel.getPurchasePlanByperiodRpt(token[0].token, hospcode, periodRpt);    
+
+    res.send({ ok: true, rows: rs.content });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.post('/dmsicapi-purchaser-plan/save', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const token :any = await apiModel.getToken(db)
+    const hospcode = await getHospcodeNew(req)
+    const list = await inventoryReportModel.getPurchasePlan(db);
+    let json = { contents: [] };
+
+    list.forEach(e => {
+      const obj = {
+        hospCode: hospcode,
+        yearbudget: e.YEARBUDGET,
+        workingCode: e.WORKING_CODE,
+        genericName: e.GENERIC_NAME,
+        gpuid: e.GPUID,
+        nlem: e.NLEM,
+        qtyUseYear3: e.QTY_USE_YEAR3 || 0,
+        qtyUseYear2: e.QTY_USE_YEAR2 || 0, 
+        qtyUseYear1: e.QTY_USE_YEAR1 || 0,
+        qtyThisYear: e.QTY_THIS_YEAR || 0,
+        packSize: e.PACK_SIZE || 0,
+        baseUnit: e.BASE_UNIT,
+        packCost: e.PACK_COST || 0,
+        valueThisYear: e.VALUE_THIS_YEAR || 0,
+        qtyPlanTrimes1: e.QTY_PLAN_TRIMES1 || 0,
+        qtyPlanTrimes2: e.QTY_PLAN_TRIMES2 || 0,
+        qtyPlanTrimes3: e.QTY_PLAN_TRIMES3 || 0,
+        qtyPlanTrimes4: e.QTY_PLAN_TRIMES4 || 0,
+        periodRpt: moment().format('YYYYMM'),
+        dateSend: moment().format('YYYY-MM-DDTHH:mm:ss')
+      };
+      json.contents.push(obj);
+    });
+    
+    const rs: any = await apiModel.saveAllPurchasePlan(json, token[0].token);
+
+    if(rs.status == 400){
+      res.send({ ok: true ,statusCode:rs.status, error: rs.errors});
+    }else if(rs.contents.length > 0){
+      res.send({ ok: true ,statusCode:200, count: rs.contents.length});
+    }else {
+      res.send({ ok: false, error: 'ไม่สามารถบันทึกรายการได้' });
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.delete('/dmsicapi-purchaser-plan/delete-by-id', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const data = req.body;
+    const token :any = await apiModel.getToken(db)
+    const hospcode = await getHospcodeNew(req)
+    const rs = await apiModel.deletePurchasePlanByid(hospcode, data.workingCode, data.yearbudget, data.periodRpt, token[0].token);
+    if (rs == 200) {
+      res.send({ ok: true });
+    }else{
+      res.send({ ok: false, error: 'ลบรายการไม่สำเร็จ' });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.delete('/dmsicapi-purchaser-plan/delete-by-period-rpt', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const periodRpt = req.query.periodRpt || '';    
+    const token :any = await apiModel.getToken(db)
+    const hospcode = await getHospcodeNew(req)
+    const rs = await apiModel.deletePurchasePlanByperiodRpt(hospcode, periodRpt, token[0].token);
+    
+    if (rs == 200) {
+      res.send({ ok: true });
+    }else{
+      res.send({ ok: false, error: 'ลบรายการไม่สำเร็จ' });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.delete('/dmsicapi-purchaser-plan/delete-by-budgeYear', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const budgeYear = req.query.budgeYear || '';    
+    const token :any = await apiModel.getToken(db)
+    const hospcode = await getHospcodeNew(req)
+    const rs = await apiModel.deletePurchasePlanByYearBudget(hospcode, budgeYear, token[0].token);
+    
+    if (rs == 200) {
+      res.send({ ok: true });
+    }else{
+      res.send({ ok: false, error: 'ลบรายการไม่สำเร็จ' });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.get('/view-receipt', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const startDate  = req.query.startDate || '';
+    const endDate  = req.query.endDate || '';
+    
+    const rs: any = await apiModel.getReceiptMMIS(db, startDate, endDate);
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.get('/dmsicapi-receipt/period-rpt', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const periodRpt = req.query.periodRpt || '';
+    
+    const hospcode = await getHospcodeNew(req)
+    let token: any = await apiModel.getToken(db)
+    const rs: any = await apiModel.getReceiptByperiodRpt(token[0].token, hospcode, periodRpt);    
+    
+    res.send({ ok: true, rows: rs.content });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.post('/dmsicapi-receipt/save', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const data = req.body;
+    
+    const token :any = await apiModel.getToken(db)
+    const hospcode = await getHospcodeNew(req)
+    const list = await inventoryReportModel.getReceipt(db, data.startDate,data.endDate);
+    
+    let json = { contents: [] };
+
+    list.forEach(e => {
+      const obj = {
+        hospCode: hospcode,
+        workingCode: e.WORKING_CODE,
+        tradeName: e.TRADE_NAME,
+        tpuId: e.TPUID,
+        vendorName: e.VENDOR_NAME,
+        vendorTaxId: e.VENDOR_TAX_ID,
+        qtvRcv: parseInt(e.QTY_RCV) || 0,
+        packSize: e.PACK_SIZE || 0,
+        baseUnit: e.BASE_UNIT,
+        packCost: Number(Number(e.PACK_COST || 0).toFixed(2)),
+        totalValue: Number(Number(e.TOTAL_VALUE || 0).toFixed(2)),
+        lotNo: e.LOT_NO,
+        expireDate: moment(e.EXPIRE_DATE).format('YYYY-MM-DD'),
+        rcvNo: e.RCV_NO,
+        poNo: e.PO_NO,
+        cntNo: e.CNT_NO,
+        dateRcv: moment(e.DATE_RCV).format('YYYY-MM-DD'),
+        buyMethodId: e.BUY_METHOD_ID,
+        coPurchaseId: e.CO_PURCHASE_ID,
+        rcvFlag: e.RCV_FLAG,
+        periodRpt: moment().format('YYYYMM'),
+        dateSend: moment().format('YYYY-MM-DDTHH:mm:ss')
+      };
+      json.contents.push(obj);
+    });    
+    
+    const rs: any = await apiModel.saveAllReceipt(json, token[0].token);
+      
+    if(rs.status == 400){
+      res.send({ ok: true ,statusCode:rs.status, error: rs.errors});
+    }else if(rs.contents.length > 0){
+      res.send({ ok: true ,statusCode:200, count: rs.contents.length});
+    }else {
+      res.send({ ok: false, error: 'ไม่สามารถบันทึกรายการได้' });
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.delete('/dmsicapi-receipt/delete-by-id', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const data = req.body;
+    const token :any = await apiModel.getToken(db)
+    const hospcode = await getHospcodeNew(req)
+    const rs = await apiModel.deleteReceiptByid(hospcode, data.workingCode, data.rcvNo, data.lotNo, data.rcvFlag, data.expireDate, token[0].token);
+    
+    if (rs == 200) {
+      res.send({ ok: true });
+    }else{
+      res.send({ ok: false, error: 'ลบรายการไม่สำเร็จ' });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.delete('/dmsicapi-receipt/delete-by-period-rpt', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const periodRpt = req.query.periodRpt || '';    
+    const token :any = await apiModel.getToken(db)
+    const hospcode = await getHospcodeNew(req)
+    
+    const rs = await apiModel.deleteReceiptByperiodRpt(hospcode, periodRpt, token[0].token);
+    
+    if (rs == 200) {
+      res.send({ ok: true });
+    }else{
+      res.send({ ok: false, error: 'ลบรายการไม่สำเร็จ' });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.get('/view-distribution', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const startDate  = req.query.startDate || '';
+    const endDate  = req.query.endDate || '';
+    const rs: any = await apiModel.getDistributionMMIS(db, startDate, endDate);
+    
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.get('/dmsicapi-distribution/period-rpt', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const periodRpt = req.query.periodRpt || '';
+    
+    const hospcode = await getHospcodeNew(req)
+    let token: any = await apiModel.getToken(db)
+    const rs: any = await apiModel.getDistributionByperiodRpt(token[0].token, hospcode, periodRpt);    
+    console.log(rs);
+    
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.post('/dmsicapi-distribution/save', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const data = req.body;    
+    
+    const token :any = await apiModel.getToken(db)
+    const hospcode = await getHospcodeNew(req)
+    const list = await inventoryReportModel.getDistribution(db, data.startDate,data.endDate);
+    
+    let json = { contents: [] };
+
+    list.forEach(e => {
+      const obj = {
+        hospCode: hospcode,
+        workingCode: e.WORKING_CODE,
+        tradeName: e.TRADE_NAME,
+        tpuid: e.TPUID,
+        qtyDis: e.QTY_DIS || 0,
+        packSize: e.PACK_SIZE || 0,
+        baseUnit: e.BASE_UNIT,
+        value: Number(Number(e.VALUE || 0).toFixed(2)) || 0,
+        disDeptGroup: e.DIS_DEPT_GROUP,
+        periodRpt: moment().format('YYYYMM'),
+        dateSend: moment().format('YYYY-MM-DDTHH:mm:ss')
+      };
+      json.contents.push(obj);
+    });
+
+    const hasMissingMap = json.contents.some((c: any) => c.disDeptGroup === undefined || c.disDeptGroup === null || c.disDeptGroup === '');
+    if (hasMissingMap) {
+      res.send({ ok: false, error: 'กรุณา map กลุ่มหน่วยเบิกให้ครบถ้วน' });
+      return;
+    }
+
+    const rs: any = await apiModel.saveAllDistribution(json, token[0].token);
+    
+    if(rs.status == 400){
+      res.send({ ok: true ,statusCode:rs.status, error: rs.errors});
+    }else if(rs.contents.length > 0){
+      res.send({ ok: true ,statusCode:200, count: rs.contents.length});
+    }else {
+      res.send({ ok: false, error: 'ไม่สามารถบันทึกรายการได้' });
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.delete('/dmsicapi-distribution/delete-by-period-rpt', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const periodRpt = req.query.periodRpt || '';    
+    const token :any = await apiModel.getToken(db)
+    const hospcode = await getHospcodeNew(req)
+    
+    const rs = await apiModel.deleteDistributionByperiodRpt(hospcode, periodRpt, token[0].token);
+    
+    if (rs == 200) {
+      res.send({ ok: true });
+    }else{
+      res.send({ ok: false, error: 'ลบรายการไม่สำเร็จ' });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.get('/view-inventory', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const query  = req.query.query || '';
+    const rs: any = await apiModel.getInventoryMMIS(db,query);
+    
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.get('/dmsicapi-inventory/date-on-hand', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const date = req.query.date || '';
+    
+    const hospcode = await getHospcodeNew(req)
+    let token: any = await apiModel.getToken(db)
+    const rs: any = await apiModel.getInventoryBydateOnhand(token[0].token, hospcode, date);    
+    console.log(rs);
+    
+    res.send({ ok: true, rows: rs });
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.post('/dmsicapi-inventory/save', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const data = req.body;    
+    
+    const token :any = await apiModel.getToken(db)
+    const hospcode = await getHospcodeNew(req)
+    const list = await inventoryReportModel.getInventory(db);
+    
+    let json = { contents: [] };
+
+    list.forEach(e => {
+      const obj = {
+        hospCode: hospcode,
+        workingCode: e.WORKING_CODE,
+        tradeName: e.TRADE_NAME,
+        tpuid: e.TPUID,
+        vendorName: e.VENDOR_NAME,
+        vendorTaxId: e.VENDOR_TAX_ID,
+        qtyOnhand: e.QTY_ONHAND || 0,
+        packSize: e.PACK_SIZE || 0,
+        baseUnit: e.BASE_UNIT,
+        packCost: Number(Number(e.PACK_COST || 0).toFixed(2)),
+        valueOnhand: Number(Number(e.VALUE_ONHAND || 0).toFixed(2)),
+        lotNo: e.LOT_NO,
+        dateOnhand: moment(e.DATE_ONHAND).format('YYYY-MM-DD'),
+        expireDate: e.EXPIRE_DATE ? moment(e.EXPIRE_DATE).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
+        dateSend: moment().format('YYYY-MM-DDTHH:mm:ss')
+      };
+      json.contents.push(obj);
+    });
+    const rs: any = await apiModel.saveAllInventory(json, token[0].token);    
+    
+    if(rs.status == 400){
+      res.send({ ok: true ,statusCode:rs.status, error: rs.errors});
+    }else if(rs.contents.length > 0){
+      res.send({ ok: true ,statusCode:200, count: rs.contents.length});
+    }else {
+      res.send({ ok: false, error: 'ไม่สามารถบันทึกรายการได้' });
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.delete('/dmsicapi-inventory/delete-by-date-on-hand', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const date = req.query.date || '';    
+    const token :any = await apiModel.getToken(db)
+    const hospcode = await getHospcodeNew(req)
+    
+    const rs = await apiModel.deleteInventoryBydateOnhand(hospcode, date, token[0].token);
+    
+    if (rs == 200) {
+      res.send({ ok: true });
+    }else{
+      res.send({ ok: false, error: 'ลบรายการไม่สำเร็จ' });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.get('/token-api', (async (req, res, next) => {
+  const db = req.db;
+
+  try {
+    const token :any = await apiModel.getToken(db)
+    res.send({ ok: true, rows: token[0].token });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+}));
+
+router.post('/token-api/save', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const token = req.body;    
+    const rs: any = await apiModel.saveToken(db, token.token);
+    if (rs) {
+      res.send({ ok: true });
+    } else {
+      res.send({ ok: false, error: 'บันทึกไม่สำเร็จ' });
+    }
+    
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+});
+
+router.post('/token-api/test', async (req, res, next) => {
+  try {
+    const db = req.db;
+    const token = req.body;
+    const hospcode = await getHospcodeNew(req)
+    
+    const rs: any = await apiModel.testApi(token.token, hospcode, '202501');
+    if(rs == 200){
+      res.send({ ok: true });
+    } else {
+      res.send({ ok: false, error: 'ทดสอบการเชื่อมต่อไม่สำเร็จ' });
+    }
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  }
+});
+
 export default router;

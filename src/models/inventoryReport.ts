@@ -4865,6 +4865,33 @@ ORDER BY
             .where('id', id);
     }
 
+    getDruglist(knex: Knex) {
+        return knex('view_bi_druglist as vbd')
+            .select('vbd.*')
+    }
+
+    getPurchasePlan(knex: Knex) {
+        return knex('view_bi_purchaseplan as ppo')
+            .select('ppo.*')
+    }
+
+    getReceipt(knex: Knex, startDate:any, endDate:any) {
+        return knex('view_bi_receipt as vbr')
+            .select('vbr.*')
+            .whereBetween('vbr.DATE_RCV', [startDate, endDate])
+    }
+
+    getDistribution(knex: Knex, startDate:any, endDate:any) {
+        return knex('view_bi_distribution as vbd')
+            .select('vbd.*')
+            .whereBetween('vbd.STOCK_DATE', [startDate, endDate])
+    }
+
+    getInventory(knex: Knex) {
+        return knex('view_bi_inventory as vbi')
+            .select('vbi.*')
+    }
+
     Distribute(knex: Knex) {
         return knex.raw(`SELECT
         '' AS HOSP_CODE ,
@@ -4893,30 +4920,6 @@ ORDER BY
     join mm_products mp on wp.product_id = mp.product_id
     join mm_labelers ml on mp.v_labeler_id = ml.labeler_id
     join mm_unit_generics mug on wp.unit_generic_id = mug.unit_generic_id`);
-    }
-
-    Druglist(knex: Knex) {
-        return knex.raw(`SELECT
-        '' as HOSP_CODE,
-            mg.working_code as WORKING_CODE,
-            mg.generic_name as GENERIC_NAME,
-            mp.product_name AS TRADE_NAME ,
-            mp.tmt_id AS TMTID,
-            mp.std_code AS NCD24,
-            mga.account_code as NLEM, 
-            bt.bid_name as PRODUCT_CAT,
-        '' as CONTENT_VALUE,
-        '' as CONTENT_UNIT,
-        mg.primary_unit_id as BASE_UNIT,
-        1 as STATUS,
-        '' as DATE_STATUS,
-        '' as D_UPDATE,
-        CURRENT_DATE as DATE_SEND
-        FROM
-            mm_generics AS mg
-            JOIN mm_products AS mp on mg.generic_id = mp.generic_id
-            left join mm_generic_accounts as mga on mga.account_id = mg.account_id
-            left join l_bid_type as bt on bt.bid_id = mg.planning_method`);
     }
 
     Inventory(knex: Knex) {

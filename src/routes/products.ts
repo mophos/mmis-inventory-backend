@@ -882,4 +882,36 @@ router.post('/save-repackage', async (req, res, next) => {
   }
 });
 
+router.post('/mapping/update/product-cat', async (req, res, next) => {
+  let genericId = req.body.data.genericId;
+  let productCatId = req.body.data.productCat;
+  let db = req.db;  
+
+  try {
+    await productModel.updateProductCategory(db, genericId, productCatId);
+    res.send({ ok: true });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+});
+
+router.post('/mapping/update/buy-method', async (req, res, next) => {
+  let purchaseOrderId = req.body.data.purchaseOrderId;
+  let BuyMethodId = req.body.data.BuyMethodId;
+  let db = req.db;  
+
+  try {
+    await productModel.updateBuyMethod(db, purchaseOrderId, BuyMethodId);
+    res.send({ ok: true });
+  } catch (error) {
+    res.send({ ok: false, error: error.message });
+  } finally {
+    db.destroy();
+  }
+
+});
+
 export default router;

@@ -223,4 +223,19 @@ export class BasicModel {
     sql.orderBy('generic_type_lv3_name');
     return sql;
   }
+
+  getBiProductCategory(knex: Knex) {
+    return knex('bi_product_category')
+      .orderBy('product_cat_id');
+  }
+
+  getBiBuyMethod(knex: Knex) {
+    return knex('bi_buy_method')
+      .orderBy('buy_method_id');
+  }
+
+  getBiDept(knex: Knex) {
+    return knex('bi_dept_distribution')
+      .orderBy('dept_id');
+  }
 }
