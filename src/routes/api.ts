@@ -311,13 +311,15 @@ router.post('/dmsicapi-drug-list/save', async (req, res, next) => {
     const token :any = await apiModel.getToken(db)
     const hospcode = await getHospcodeNew(req)
     const list = await inventoryReportModel.getDruglist(db);
+    const periodRpt = req.query.periodRpt || '';
+    
     let json = { contents: [] };
 
     list.forEach(e => {
       const obj = {
         hospCode: hospcode,
         workingCode: e.WORKING_CODE,
-        periodRpt: moment().format('YYYYMM'),
+        periodRpt: periodRpt,
         dateStatus: moment().format('YYYY-MM-DD'),
         genericName: e.GENERIC_NAME,
         gpuId: e.GPUID,
@@ -416,6 +418,7 @@ router.post('/dmsicapi-purchaser-plan/save', async (req, res, next) => {
     const token :any = await apiModel.getToken(db)
     const hospcode = await getHospcodeNew(req)
     const list = await inventoryReportModel.getPurchasePlan(db);
+    const periodRpt = req.query.periodRpt || '';
     let json = { contents: [] };
 
     list.forEach(e => {
@@ -438,7 +441,7 @@ router.post('/dmsicapi-purchaser-plan/save', async (req, res, next) => {
         qtyPlanTrimes2: e.QTY_PLAN_TRIMES2 || 0,
         qtyPlanTrimes3: e.QTY_PLAN_TRIMES3 || 0,
         qtyPlanTrimes4: e.QTY_PLAN_TRIMES4 || 0,
-        periodRpt: moment().format('YYYYMM'),
+        periodRpt: periodRpt,
         dateSend: moment().format('YYYY-MM-DDTHH:mm:ss')
       };
       json.contents.push(obj);
@@ -548,10 +551,10 @@ router.post('/dmsicapi-receipt/save', async (req, res, next) => {
   try {
     const db = req.db;
     const data = req.body;
-    
     const token :any = await apiModel.getToken(db)
     const hospcode = await getHospcodeNew(req)
     const list = await inventoryReportModel.getReceipt(db, data.startDate,data.endDate);
+    const periodRpt = req.query.periodRpt || '';
     
     let json = { contents: [] };
 
@@ -577,7 +580,7 @@ router.post('/dmsicapi-receipt/save', async (req, res, next) => {
         buyMethodId: e.BUY_METHOD_ID,
         coPurchaseId: e.CO_PURCHASE_ID,
         rcvFlag: e.RCV_FLAG,
-        periodRpt: moment().format('YYYYMM'),
+        periodRpt: periodRpt,
         dateSend: moment().format('YYYY-MM-DDTHH:mm:ss')
       };
       json.contents.push(obj);
@@ -671,10 +674,10 @@ router.post('/dmsicapi-distribution/save', async (req, res, next) => {
   try {
     const db = req.db;
     const data = req.body;    
-    
     const token :any = await apiModel.getToken(db)
     const hospcode = await getHospcodeNew(req)
     const list = await inventoryReportModel.getDistribution(db, data.startDate,data.endDate);
+    const periodRpt = req.query.periodRpt || '';
     
     let json = { contents: [] };
 
@@ -689,7 +692,7 @@ router.post('/dmsicapi-distribution/save', async (req, res, next) => {
         baseUnit: e.BASE_UNIT,
         value: Number(Number(e.VALUE || 0).toFixed(2)) || 0,
         disDeptGroup: e.DIS_DEPT_GROUP,
-        periodRpt: moment().format('YYYYMM'),
+        periodRpt: periodRpt,
         dateSend: moment().format('YYYY-MM-DDTHH:mm:ss')
       };
       json.contents.push(obj);
@@ -773,6 +776,8 @@ router.post('/dmsicapi-inventory/save', async (req, res, next) => {
     const token :any = await apiModel.getToken(db)
     const hospcode = await getHospcodeNew(req)
     const list = await inventoryReportModel.getInventory(db);
+    const dateOnhand :any = req.query.dateOnhand || '';
+    console.log(dateOnhand);
     
     let json = { contents: [] };
 
@@ -790,7 +795,7 @@ router.post('/dmsicapi-inventory/save', async (req, res, next) => {
         packCost: Number(Number(e.PACK_COST || 0).toFixed(2)),
         valueOnhand: Number(Number(e.VALUE_ONHAND || 0).toFixed(2)),
         lotNo: e.LOT_NO,
-        dateOnhand: moment(e.DATE_ONHAND).format('YYYY-MM-DD'),
+        dateOnhand: moment(dateOnhand).format('YYYY-MM-DD'),
         expireDate: e.EXPIRE_DATE ? moment(e.EXPIRE_DATE).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
         dateSend: moment().format('YYYY-MM-DDTHH:mm:ss')
       };
