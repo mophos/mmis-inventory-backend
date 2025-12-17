@@ -510,8 +510,9 @@ export class ApiModel {
     });
   }
 
-  getDistributionMMIS(knex: Knex, startDate: any, endDate: any) {
+  getDistributionMMIS(knex: Knex, startDate: any, endDate: any, warehouseId:any) {
     let sql = knex("view_bi_distribution as vbd")
+    .where('vbd.WAREHOUSE_ID', warehouseId)
     .whereBetween('vbd.STOCK_DATE', [startDate, endDate])
     return sql;
   }
@@ -607,10 +608,11 @@ export class ApiModel {
     });
   }
 
-  getInventoryMMIS(knex: Knex, query: any) {
+  getInventoryMMIS(knex: Knex, query: any, warehouseId: any) {
     let _query = `%${query}%`;
     let sql = knex('view_bi_inventory as vbi')
             .select('vbi.*')
+            .where('vbi.WAREHOUSE_ID', warehouseId);
     if (query) {
       sql.where(function () {
         this.where("vbi.WORKING_CODE", "like", _query)

@@ -14,7 +14,7 @@ import { MainReportModel } from '../models/reports/mainReport';
 import { ApiModel } from '../models/api';
 import { token } from 'morgan';
 import { InventoryReportModel } from "../models/inventoryReport";
-import { count } from 'console';
+import { count, log } from 'console';
 
 const mainReportModel = new MainReportModel();
 const apiModel = new ApiModel();
@@ -332,15 +332,19 @@ router.post('/dmsicapi-drug-list/save', async (req, res, next) => {
       json.contents.push(obj);
     });    
     const rs: any = await apiModel.saveAllDrugList(json, token[0].token);
-    
-    if(rs.status == 400){
-      res.send({ ok: true ,statusCode:rs.status, error: rs.errors});
-    }else if(rs.contents.length > 0){
-      res.send({ ok: true ,statusCode:200, count: rs.contents.length});
-    }else {
-      res.send({ ok: false, error: 'ไม่สามารถบันทึกรายการได้' });
+
+    if(rs){
+      if(rs.status == 400){
+        res.send({ ok: true ,statusCode:rs.status, error: rs.errors});
+      }else if(rs.contents.length > 0){
+        res.send({ ok: true ,statusCode:200, count: rs.contents.length});
+      }else {
+        res.send({ ok: false, error: 'ไม่สามารถบันทึกรายการได้' });
+      }
+    }else{      
+      res.send({ ok: false, error: rs.error });
     }
-  } catch (error) {
+  } catch (error) {    
     res.send({ ok: false, error: error.message });
   }
 });
@@ -449,12 +453,16 @@ router.post('/dmsicapi-purchaser-plan/save', async (req, res, next) => {
     
     const rs: any = await apiModel.saveAllPurchasePlan(json, token[0].token);
 
-    if(rs.status == 400){
-      res.send({ ok: true ,statusCode:rs.status, error: rs.errors});
-    }else if(rs.contents.length > 0){
-      res.send({ ok: true ,statusCode:200, count: rs.contents.length});
-    }else {
-      res.send({ ok: false, error: 'ไม่สามารถบันทึกรายการได้' });
+    if(rs){
+      if(rs.status == 400){
+        res.send({ ok: true ,statusCode:rs.status, error: rs.errors});
+      }else if(rs.contents.length > 0){
+        res.send({ ok: true ,statusCode:200, count: rs.contents.length});
+      }else {
+        res.send({ ok: false, error: 'ไม่สามารถบันทึกรายการได้' });
+      }
+    }else{      
+      res.send({ ok: false, error: rs.error });
     }
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -588,12 +596,16 @@ router.post('/dmsicapi-receipt/save', async (req, res, next) => {
     
     const rs: any = await apiModel.saveAllReceipt(json, token[0].token);
       
-    if(rs.status == 400){
-      res.send({ ok: true ,statusCode:rs.status, error: rs.errors});
-    }else if(rs.contents.length > 0){
-      res.send({ ok: true ,statusCode:200, count: rs.contents.length});
-    }else {
-      res.send({ ok: false, error: 'ไม่สามารถบันทึกรายการได้' });
+    if(rs){
+      if(rs.status == 400){
+        res.send({ ok: true ,statusCode:rs.status, error: rs.errors});
+      }else if(rs.contents.length > 0){
+        res.send({ ok: true ,statusCode:200, count: rs.contents.length});
+      }else {
+        res.send({ ok: false, error: 'ไม่สามารถบันทึกรายการได้' });
+      }
+    }else{      
+      res.send({ ok: false, error: rs.error });
     }
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -644,7 +656,8 @@ router.get('/view-distribution', async (req, res, next) => {
     const db = req.db;
     const startDate  = req.query.startDate || '';
     const endDate  = req.query.endDate || '';
-    const rs: any = await apiModel.getDistributionMMIS(db, startDate, endDate);
+    const warehouseId = req.query.warehouseId;    
+    const rs: any = await apiModel.getDistributionMMIS(db, startDate, endDate, warehouseId);
     
     res.send({ ok: true, rows: rs });
   } catch (error) {
@@ -674,10 +687,11 @@ router.post('/dmsicapi-distribution/save', async (req, res, next) => {
   try {
     const db = req.db;
     const data = req.body;    
+    const periodRpt = req.query.periodRpt || '';
+    const warehouseId = req.query.warehouseId;
     const token :any = await apiModel.getToken(db)
     const hospcode = await getHospcodeNew(req)
-    const list = await inventoryReportModel.getDistribution(db, data.startDate,data.endDate);
-    const periodRpt = req.query.periodRpt || '';
+    const list = await inventoryReportModel.getDistribution(db, data.startDate,data.endDate, warehouseId);
     
     let json = { contents: [] };
 
@@ -706,12 +720,16 @@ router.post('/dmsicapi-distribution/save', async (req, res, next) => {
 
     const rs: any = await apiModel.saveAllDistribution(json, token[0].token);
     
-    if(rs.status == 400){
-      res.send({ ok: true ,statusCode:rs.status, error: rs.errors});
-    }else if(rs.contents.length > 0){
-      res.send({ ok: true ,statusCode:200, count: rs.contents.length});
-    }else {
-      res.send({ ok: false, error: 'ไม่สามารถบันทึกรายการได้' });
+    if(rs){
+      if(rs.status == 400){
+        res.send({ ok: true ,statusCode:rs.status, error: rs.errors});
+      }else if(rs.contents.length > 0){
+        res.send({ ok: true ,statusCode:200, count: rs.contents.length});
+      }else {
+        res.send({ ok: false, error: 'ไม่สามารถบันทึกรายการได้' });
+      }
+    }else{      
+      res.send({ ok: false, error: rs.error });
     }
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -742,7 +760,8 @@ router.get('/view-inventory', async (req, res, next) => {
   try {
     const db = req.db;
     const query  = req.query.query || '';
-    const rs: any = await apiModel.getInventoryMMIS(db,query);
+    const warehouseId = req.query.warehouseId;
+    const rs: any = await apiModel.getInventoryMMIS(db,query,warehouseId);
     
     res.send({ ok: true, rows: rs });
   } catch (error) {
@@ -754,7 +773,7 @@ router.get('/view-inventory', async (req, res, next) => {
 router.get('/dmsicapi-inventory/date-on-hand', async (req, res, next) => {
   try {
     const db = req.db;
-    const date = req.query.date || '';
+    const date = req.query.date || '';    
     
     const hospcode = await getHospcodeNew(req)
     let token: any = await apiModel.getToken(db)
@@ -771,13 +790,13 @@ router.get('/dmsicapi-inventory/date-on-hand', async (req, res, next) => {
 router.post('/dmsicapi-inventory/save', async (req, res, next) => {
   try {
     const db = req.db;
-    const data = req.body;    
+    const data = req.body;
+    const dateOnhand :any = req.query.dateOnhand || '';
+    const warehouseId = req.query.warehouseId;
     
     const token :any = await apiModel.getToken(db)
     const hospcode = await getHospcodeNew(req)
-    const list = await inventoryReportModel.getInventory(db);
-    const dateOnhand :any = req.query.dateOnhand || '';
-    console.log(dateOnhand);
+    const list = await inventoryReportModel.getInventory(db, warehouseId);
     
     let json = { contents: [] };
 
@@ -803,12 +822,16 @@ router.post('/dmsicapi-inventory/save', async (req, res, next) => {
     });
     const rs: any = await apiModel.saveAllInventory(json, token[0].token);    
     
-    if(rs.status == 400){
-      res.send({ ok: true ,statusCode:rs.status, error: rs.errors});
-    }else if(rs.contents.length > 0){
-      res.send({ ok: true ,statusCode:200, count: rs.contents.length});
-    }else {
-      res.send({ ok: false, error: 'ไม่สามารถบันทึกรายการได้' });
+    if(rs){
+      if(rs.status == 400){
+        res.send({ ok: true ,statusCode:rs.status, error: rs.errors});
+      }else if(rs.contents.length > 0){
+        res.send({ ok: true ,statusCode:200, count: rs.contents.length});
+      }else {
+        res.send({ ok: false, error: 'ไม่สามารถบันทึกรายการได้' });
+      }
+    }else{      
+      res.send({ ok: false, error: rs.error });
     }
   } catch (error) {
     res.send({ ok: false, error: error.message });
