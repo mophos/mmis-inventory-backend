@@ -4881,15 +4881,18 @@ ORDER BY
             .whereBetween('vbr.DATE_RCV', [startDate, endDate])
     }
 
-    getDistribution(knex: Knex, startDate:any, endDate:any) {
+    getDistribution(knex: Knex, startDate:any, endDate:any, warehouseId:any) {
         return knex('view_bi_distribution as vbd')
             .select('vbd.*')
+            .where('vbd.WAREHOUSE_ID', warehouseId)
             .whereBetween('vbd.STOCK_DATE', [startDate, endDate])
+            .limit(10);
     }
 
-    getInventory(knex: Knex) {
+    getInventory(knex: Knex, warehouseId:any) {
         return knex('view_bi_inventory as vbi')
             .select('vbi.*')
+            .where('vbi.WAREHOUSE_ID', warehouseId);
     }
 
     Distribute(knex: Knex) {
