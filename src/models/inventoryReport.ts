@@ -4886,7 +4886,6 @@ ORDER BY
             .select('vbd.*')
             .where('vbd.WAREHOUSE_ID', warehouseId)
             .whereBetween('vbd.STOCK_DATE', [startDate, endDate])
-            .limit(10);
     }
 
     getInventory(knex: Knex, warehouseId:any) {
