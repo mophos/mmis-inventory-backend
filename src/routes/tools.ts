@@ -161,7 +161,7 @@ router.put('/stockcard/receives', async (req, res, next) => {
       const costOld = v.cost_old / v.conversion_qty_old;
 
       // check cost receive new 62/03/24 12:00:00
-      const rs = await toolModel.getWmProductId(db, 'REV', receiveId, v.product_id, v.lot_no_old, v.expired_date_old);
+      const rs = await toolModel.getWmProductId(db, 'REV', receiveId, v.product_id, v.lot_no_old, v.expired_date_old, v.is_free);
       const wmProductId = rs[0].wm_product_id_in;
 
       if (qtyNew > qtyOld) {
@@ -188,6 +188,15 @@ router.put('/stockcard/receives', async (req, res, next) => {
       }
       await toolModel.updateReceiveDetail(db, receiveId, v);
       await toolModel.updateStockcard(db, dataStock, rs[0].stock_card_id);
+
+      await toolModel.updateWmProductCostAverage(
+          db, 
+          wmProductId,     
+          v.product_id,    
+          v.lot_no,        
+          v.expired_date,  
+          receiveId        // <--- ส่ง receiveId เข้าไปเป็น parameter สุดท้าย
+      );
 
       ///////////////save log/////////////////
       if (qtyOld != qtyNew || v.lot_no_old != v.lot_no || v.expired_date_old != v.expired_date) {
@@ -288,7 +297,7 @@ router.put('/stockcard/receive-others', async (req, res, next) => {
       const costNew = v.cost / v.conversion_qty;
       const costOld = v.cost_old / v.conversion_qty_old;
 
-      const rs = await toolModel.getWmProductId(db, 'REV_OTHER', receiveOtherId, v.product_id, v.lot_no_old, v.expired_date_old);
+      const rs = await toolModel.getWmProductId(db, 'REV_OTHER', receiveOtherId, v.product_id, v.lot_no_old, v.expired_date_old, 'N');
       const wmProductId = rs[0].wm_product_id_in;
       if (qtyNew > qtyOld) {
         qty = qtyNew - qtyOld;
