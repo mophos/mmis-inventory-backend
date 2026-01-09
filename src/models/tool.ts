@@ -579,13 +579,20 @@ export class ToolModel {
     )
   }
 
-  getWmProductId(knex: Knex, trasactionType, documentId, productId, lotNo, expiredDate) {
-    return knex('wm_stock_card')
+  getWmProductId(knex: Knex, trasactionType, documentId, productId, lotNo, expiredDate, isFree) {
+    let query = knex('wm_stock_card')
       .where('transaction_type', trasactionType)
       .where('document_ref_id', documentId)
       .where('product_id', productId)
       .where('lot_no', lotNo)
       .where('expired_date', expiredDate)
+
+      if (isFree === 'Y') {
+        query.where('in_unit_cost', 0);
+      } else {
+        query.where('in_unit_cost', '>', 0);
+      }
+      return query;
   }
 
   getLotTime(knex: Knex, productId, lotNo, warehouseId) {
@@ -595,5 +602,39 @@ export class ToolModel {
       .where('product_id', productId)
       .where('lot_no', lotNo)
       .groupBy('product_id')
+  }
+
+  updateWmProductCostAverage(knex, wmProductId, productId, lotNo, expiredDate, receiveId) {
+    return knex.transaction(async (trx) => {
+        // ใช้ .select และเขียน SQL Aggregate function ตรงๆ เพื่อความชัวร์
+        const result = await trx('wm_stock_card')
+            .select(
+                knex.raw('SUM(in_qty) as total_qty'),
+                knex.raw('SUM(in_qty * in_unit_cost) as total_value')
+            )
+            .where('product_id', productId)
+            .where('lot_no', lotNo)
+            .where('expired_date', expiredDate)
+            .where('transaction_type', 'REV')
+            .where('document_ref_id', receiveId) // ต้องตรงกับ receiveId
+            .first();
+
+        let newCost = 0;
+        const totalQty = result && result.total_qty ? +result.total_qty : 0;
+        const totalValue = result && result.total_value ? +result.total_value : 0;
+
+        if (totalQty > 0) {
+            newCost = totalValue / totalQty;
+        }
+
+        // อัปเดตราคา
+        await trx('wm_products')
+            .update({
+                cost: newCost
+            })
+            .where('wm_product_id', wmProductId);
+            
+        return newCost;
+    });
   }
 }
