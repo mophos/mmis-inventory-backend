@@ -163,6 +163,11 @@ router.put('/stockcard/receives', async (req, res, next) => {
       // check cost receive new 62/03/24 12:00:00
       const rs = await toolModel.getWmProductId(db, 'REV', receiveId, v.product_id, v.lot_no_old, v.expired_date_old, v.is_free);
       const wmProductId = rs[0].wm_product_id_in;
+      const rsWmProduct = await toolModel.getWmProductById(db, wmProductId);
+
+      if(rsWmProduct[0].qty != qtyOld) {
+        throw new Error(`ไม่สามารถแก้ไข ${v.generic_name} ได้ จำนวนคงคลังในปัจจุบันไม่เท่ากับจำนวนรับเข้าครั้งก่อน (คงเหลือในคลัง ${rsWmProduct[0].qty}  จำนวนรับเข้าครั้งก่อน ${qtyOld}) กรุณาตรวจสอบอีกครั้ง`);
+      }
 
       if (qtyNew > qtyOld) {
         qty = qtyNew - qtyOld;

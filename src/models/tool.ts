@@ -637,4 +637,9 @@ export class ToolModel {
         return newCost;
     });
   }
+
+  getWmProductById(knex: Knex, wmProductId) {
+    return knex('wm_products')
+      .where('wm_product_id', wmProductId)
+  }
 }
