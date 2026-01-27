@@ -432,7 +432,7 @@ router.get('/generic-in-group', co(async (req, res, next) => {
 
 }));
 
-router.get('/req-success/:wmRequisition?', (req, res, next) => {
+router.get('/req-success/:wmRequisition', (req, res, next) => {
   let wmRequisition = req.params.wmRequisition;
   let db = req.db;
 
