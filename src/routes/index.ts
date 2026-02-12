@@ -573,11 +573,19 @@ router.get('/report/receiveOrthorCost/:startDate/:endDate/:warehouseId/:warehous
   let warehouseName = req.params.warehouseName;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let receiveTpyeId = Array.isArray(req.query.receiveTpyeId) ? req.query.receiveTpyeId : [req.query.receiveTpyeId];
+  const rawObject = receiveTpyeId[0]; 
+
+  // 2. ดึงเฉพาะ "ค่า" (Values) ออกมาเป็น Array ['1', '2', '3', ...]
+  const idsArray = Object.values(rawObject);
+
+  // 3. แปลงเป็น String คั่นด้วยลูกน้ำ "1,2,3,..."
+  const idsString = idsArray.join(',');  
+  
   // warehouseId = warehouseId ? +warehouseId : 'ทุกคลังสินค้า'
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
 
-    let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId, receiveTpyeId, dateSetting);
+    let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId, idsString, dateSetting);
     let hospitalName = hosdetail[0].hospname;
     //  res.send(data[0])
     let sum = inventoryReportModel.comma(_.sumBy(data[0], (o: any) => { return o.costAmount; }));
@@ -4653,11 +4661,18 @@ router.get('/report/receiveOrthorCost/excel/:startDate/:endDate/:warehouseId/:wa
   let warehouseName = req.params.warehouseName;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'view_stock_card_warehouse' : 'view_stock_card_warehouse_date';
   let receiveTpyeId = Array.isArray(req.query.receiveTpyeId) ? req.query.receiveTpyeId : [req.query.receiveTpyeId];
+  const rawObject = receiveTpyeId[0]; 
+
+  // 2. ดึงเฉพาะ "ค่า" (Values) ออกมาเป็น Array ['1', '2', '3', ...]
+  const idsArray = Object.values(rawObject);
+
+  // 3. แปลงเป็น String คั่นด้วยลูกน้ำ "1,2,3,..."
+  const idsString = idsArray.join(',');  
 
   // get tmt data
   let hosdetail = await inventoryReportModel.hospital(db);
 
-  let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId, receiveTpyeId, dateSetting);
+  let data = await inventoryReportModel.receiveOrthorCost(db, startDate, endDate, warehouseId, idsString, dateSetting);
   if (!data[0].length) {
     res.render('error404')
   } else {
