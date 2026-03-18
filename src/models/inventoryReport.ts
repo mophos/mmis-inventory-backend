@@ -2606,6 +2606,72 @@ OR sc.ref_src like ?
             .where('wr.receive_id', receiveID)
     }
 
+    checkReceiveNew(knex: Knex, receiveID: any) {
+
+        const summary = knex('wm_receive_detail')
+            .select('receive_id')
+            .select(knex.raw('SUM(receive_qty * cost) AS total_price'))
+            .count('receive_detail_id AS amount_qty')
+            .groupBy('receive_id')
+            .as('summary');
+
+        return knex('wm_receives AS wr')
+            .select([
+                'v.bgtype_name',
+                'wr.receive_id',
+                'wr.receive_code',
+                'wr.receive_date',
+                'waa.approve_date',
+                'po.order_date AS podate',
+                'wr.delivery_code',
+                'summary.total_price',
+                'summary.amount_qty',
+                'wrd.receive_qty',
+                'wrt.receive_type_name',
+                'wr.purchase_order_id',
+                'ml.labeler_name',
+                'ml.labeler_name_po',
+                'wr.delivery_date',
+                'po.purchase_order_book_number',
+                'po.purchase_order_number',
+                'po.chief_id',
+                'po.verify_committee_id',
+                'po.buyer_id',
+                'po.supply_id',
+                'po.manager_id',
+                'po.head_id',
+                'mgt.generic_type_name',
+                'wr.committee_id',
+                'upo.type_name AS manager_type_name',
+                't.title_name AS manager_title_name',
+                'p.fname AS manager_fname',
+                'p.lname AS manager_lname',
+                'up.position_name AS manager_position_name'
+            ])
+            .leftJoin(summary, 'summary.receive_id', 'wr.receive_id')
+            .leftJoin('wm_receive_detail AS wrd', 'wrd.receive_id', 'wr.receive_id')
+            .leftJoin('wm_receive_approve AS waa', 'waa.receive_id', 'wr.receive_id')
+            .leftJoin('pc_purchasing_order AS po', 'po.purchase_order_id', 'wr.purchase_order_id')
+            .leftJoin('um_purchasing_officer AS upo', 'upo.officer_id', 'po.manager_id')
+            .leftJoin('um_people AS p', 'upo.people_id', 'p.people_id')
+            // ใช้ Callback function สำหรับการ JOIN ที่มีมากกว่า 1 เงื่อนไข (AND)
+            .leftJoin('um_people_positions AS upp', function() {
+                this.on('upp.people_id', '=', 'p.people_id')
+                    .andOn(knex.raw(`upp.is_actived = 'Y'`));
+            })
+            .leftJoin('um_positions AS up', 'up.position_id', 'upp.position_id')
+            .leftJoin('um_titles AS t', 'p.title_id', 't.title_id')
+            .leftJoin('view_budget_subtype AS v', 'v.bgtypesub_id', 'po.budget_detail_id')
+            .leftJoin('wm_receive_types AS wrt', 'wrt.receive_type_id', 'wr.receive_type_id')
+            .leftJoin('mm_labelers AS ml', 'ml.labeler_id', 'po.labeler_id')
+            .leftJoin('mm_products AS mp', 'mp.product_id', 'wrd.product_id')
+            .leftJoin('mm_generics AS mg', 'mg.generic_id', 'mp.generic_id')
+            .leftJoin('mm_generic_types AS mgt', 'mgt.generic_type_id', 'mg.generic_type_id')
+            .whereIn('wr.receive_id', receiveID)
+            .groupBy('wr.receive_id')
+            .orderBy('wr.receive_id', 'asc');
+    }
+
     checkReceive(knex: Knex, receiveID) {
         let sql = `SELECT
         v.bgtype_name,
@@ -2837,58 +2903,60 @@ OR sc.ref_src like ?
             .groupBy('wp.product_id')
     }
 
-    productReceive2(knex: Knex, receiveID) {
-        let sql = `SELECT
-        r.receive_id,
-        p.product_name,
-        r.receive_code,
-        r.receive_date,
-        ppo.purchase_order_number,
-        r.delivery_code,
-        l.labeler_name,
-        l.labeler_name_po,
-        wrd.discount,
-        wrd.receive_qty,
-        mug.qty,
-        mu.unit_name,
-        muu.unit_name as large_unit,
-        lbp.NAME,
-        wrd.cost,
-        mg.generic_id,
-        mg.working_code as generic_code,
-        mg.generic_name,
-        wrd.expired_date,
-        lbt.bid_name,
-        ppoi.discount_cash,
-        ppoi.discount_percent,
-        ppoi.qty AS reqty,
-        wrd.cost * wrd.receive_qty AS total_cost,
-        bt.bgtype_name,
-        wrd.lot_no,
-        mgh.name as name_hosp
-    FROM
-        wm_receives AS r
-        LEFT JOIN wm_receive_detail AS wrd ON r.receive_id = wrd.receive_id
-        LEFT JOIN mm_unit_generics AS mug ON mug.unit_generic_id = wrd.unit_generic_id
-        LEFT JOIN mm_products AS p ON wrd.product_id = p.product_id
-        LEFT JOIN mm_labelers AS l ON r.vendor_labeler_id = l.labeler_id
-        LEFT JOIN mm_generics AS mg ON p.generic_id = mg.generic_id
-        LEFT JOIN wm_warehouses AS wh ON wrd.warehouse_id = wh.warehouse_id
-        LEFT JOIN mm_units mu ON mug.to_unit_id = mu.unit_id
-        LEFT JOIN mm_units muu ON mug.from_unit_id = muu.unit_id
-        LEFT JOIN pc_purchasing_order ppo ON r.purchase_order_id = ppo.purchase_order_id
-        LEFT JOIN l_bid_process lbp ON ppo.purchase_method_id = lbp.id
-        LEFT JOIN l_bid_type lbt ON ppo.purchase_type_id = lbt.bid_id
-        LEFT JOIN pc_purchasing_order_item ppoi ON ppo.purchase_order_id = ppoi.purchase_order_id 
-        AND wrd.product_id = ppoi.product_id
-        LEFT JOIN bm_bgtype bt ON ppo.budgettype_id = bt.bgtype_id 
-        LEFT JOIN mm_generic_hosp mgh ON mgh.id = mg.generic_hosp_id
-    WHERE
-        r.receive_id IN ( ${receiveID} )
-    GROUP BY wrd.receive_detail_id
-    order by r.receive_id`
-        return knex.raw(sql);
+    productReceive2(knex: Knex, receiveID: any[]) {
+        return knex('wm_receives AS r')
+            .select(
+                'r.receive_id',
+                'p.product_name',
+                'r.receive_code',
+                'r.receive_date',
+                'ppo.purchase_order_number',
+                'r.delivery_code',
+                'l.labeler_name',
+                'l.labeler_name_po',
+                'wrd.discount',
+                'wrd.receive_qty',
+                'mug.qty',
+                'mu.unit_name',
+                'muu.unit_name as large_unit',
+                'lbp.NAME',
+                'wrd.cost',
+                'mg.generic_id',
+                'mg.working_code as generic_code',
+                'mg.generic_name',
+                'wrd.expired_date',
+                'lbt.bid_name',
+                'ppoi.discount_cash',
+                'ppoi.discount_percent',
+                'ppoi.qty AS reqty',
+                knex.raw('wrd.cost * wrd.receive_qty AS total_cost'), // คำนวณค่าจาก SQL
+                'bt.bgtype_name',
+                'wrd.lot_no',
+                'mgh.name as name_hosp'
+            )
+            .leftJoin('wm_receive_detail AS wrd', 'r.receive_id', 'wrd.receive_id')
+            .leftJoin('mm_unit_generics AS mug', 'mug.unit_generic_id', 'wrd.unit_generic_id')
+            .leftJoin('mm_products AS p', 'wrd.product_id', 'p.product_id')
+            .leftJoin('mm_labelers AS l', 'r.vendor_labeler_id', 'l.labeler_id')
+            .leftJoin('mm_generics AS mg', 'p.generic_id', 'mg.generic_id')
+            .leftJoin('wm_warehouses AS wh', 'wrd.warehouse_id', 'wh.warehouse_id')
+            .leftJoin('mm_units AS mu', 'mug.to_unit_id', 'mu.unit_id')
+            .leftJoin('mm_units AS muu', 'mug.from_unit_id', 'muu.unit_id')
+            .leftJoin('pc_purchasing_order AS ppo', 'r.purchase_order_id', 'ppo.purchase_order_id')
+            .leftJoin('l_bid_process AS lbp', 'ppo.purchase_method_id', 'lbp.id')
+            .leftJoin('l_bid_type AS lbt', 'ppo.purchase_type_id', 'lbt.bid_id')
+            .leftJoin('pc_purchasing_order_item AS ppoi', function() {
+                // Join แบบมี 2 เงื่อนไข (AND)
+                this.on('ppo.purchase_order_id', '=', 'ppoi.purchase_order_id')
+                    .andOn('wrd.product_id', '=', 'ppoi.product_id')
+            })
+            .leftJoin('bm_bgtype AS bt', 'ppo.budgettype_id', 'bt.bgtype_id')
+            .leftJoin('mm_generic_hosp AS mgh', 'mgh.id', 'mg.generic_hosp_id')
+            .whereIn('r.receive_id', receiveID) // ใช้ whereIn แทนการต่อ String
+            .groupBy('wrd.receive_detail_id')
+            .orderBy('r.receive_id');
     }
+
     productReceiveOther(knex: Knex, receiveID) {
         let sql = `SELECT
         ro.receive_other_id,
@@ -3785,129 +3853,116 @@ OR sc.ref_src like ?
             .distinct('bg_year')
             .select(knex.raw('bg_year + 543 as bg_year'));
     }
-    monthlyReport(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting = 'stock_date') {
-        month = month < 10 ? '0' + month : month;
-        let sql = `
-        SELECT
-	sum( ifnull( blb.bl, 0 ) ) AS balance,
-	sum( ifnull( io.in_cost, 0 ) ) AS in_cost,
-	sum( ifnull( io.out_cost, 0 ) ) AS out_cost,
-	( sum( ifnull( blb.bl, 0 ) ) + sum( ifnull( io.in_cost, 0 ) ) ) - sum( ifnull( io.out_cost, 0 ) ) AS balanceAfter,
-	gt.generic_type_id,
-	gt.generic_type_code,
-	gt.generic_type_name,
-'' AS 'account_id',
-'' AS 'account_code',
-'' AS 'account_name'
-FROM
-	(
-	SELECT
-		mp.generic_id 
-	FROM
-		wm_products AS wp
-		LEFT JOIN mm_products AS mp ON mp.product_id = wp.product_id 
-	WHERE
-		wp.warehouse_id = ${wareHouseId} 
-	GROUP BY
-		mp.generic_id 
-	) AS q1
-	LEFT JOIN (
-	SELECT
-		sc.generic_id,
-		sum(sc.in_cost) AS in_cost,
-		sum(sc.out_cost) AS out_cost 
-	FROM
-        view_stock_card_new AS sc 
-	WHERE
-        sc.src_warehouse_id = ${wareHouseId}  
-        AND substr(sc.${dateSetting},1,7)= '${year}-${month}'
-        GROUP BY
-		sc.generic_id 
-	) AS io ON io.generic_id = q1.generic_id
-	LEFT JOIN (
-	SELECT
-		sc.generic_id,
-		sum(sc.in_cost - sc.out_cost) AS bl 
-	FROM
-        view_stock_card_new AS sc 
-	WHERE
-		sc.src_warehouse_id = ${wareHouseId} 
-		AND sc.${dateSetting} < '${year}-${month}-01 00:00:00'
-	GROUP BY
-		sc.generic_id 
-	) AS blb ON blb.generic_id = q1.generic_id
-	LEFT JOIN mm_generics AS mg ON mg.generic_id = q1.generic_id
-    LEFT JOIN mm_generic_types AS gt ON gt.generic_type_id = mg.generic_type_id
-    LEFT JOIN mm_generic_accounts AS ga ON ga.account_id = mg.account_id 
-WHERE
-        mg.generic_type_id in (${genericType})
-        and ( (ga.account_code <> 'ed' AND ga.account_code <> 'ned') or ga.account_code is null )
-GROUP BY
-	mg.generic_type_id
-    `
-        return knex.raw(sql)
+
+    monthlyReportM(knex: Knex, month: any, year: any, genericType: any[], wareHouseId: any, dateSetting = 'stock_date') {
+        const startMonthStr = String(month).padStart(2, '0');
+        const startDate = `${year}-${startMonthStr}-01 00:00:00`;
+
+        const nextMonthNum = Number(month) === 12 ? 1 : Number(month) + 1;
+        const nextYearNum = Number(month) === 12 ? Number(year) + 1 : Number(year);
+        const endMonthStr = String(nextMonthNum).padStart(2, '0');
+        const endDate = `${nextYearNum}-${endMonthStr}-01 00:00:00`;
+
+        const q1 = knex('wm_products AS wp')
+            .select('mp.generic_id')
+            .leftJoin('mm_products AS mp', 'mp.product_id', 'wp.product_id')
+            .join('mm_generics AS mg', 'mg.generic_id', 'mp.generic_id')
+            .join('mm_generic_accounts AS ga', 'ga.account_id', 'mg.account_id')
+            .where('wp.warehouse_id', wareHouseId)
+            .whereIn('mg.generic_type_id', genericType)
+            .where(function() {
+                this.where('ga.account_code', 'ed').orWhere('ga.account_code', 'ned');
+            })
+            .groupBy('mp.generic_id')
+            .as('q1');
+
+        const sd = knex('view_stock_card_new AS sc')
+            .select('sc.generic_id')
+            .select(knex.raw(`SUM(CASE WHEN sc.?? < ? THEN sc.in_cost - sc.out_cost ELSE 0 END) AS bl`, [dateSetting, startDate]))
+            .select(knex.raw(`SUM(CASE WHEN sc.?? >= ? THEN sc.in_cost ELSE 0 END) AS in_cost`, [dateSetting, startDate]))
+            .select(knex.raw(`SUM(CASE WHEN sc.?? >= ? THEN sc.out_cost ELSE 0 END) AS out_cost`, [dateSetting, startDate]))
+            .where('sc.src_warehouse_id', wareHouseId)
+            .whereRaw(`sc.?? < ?`, [dateSetting, endDate])
+            .groupBy('sc.generic_id')
+            .as('sd');
+
+        let sql = knex.select([
+            knex.raw('SUM( IFNULL( sd.bl, 0 ) ) AS balance'),
+            knex.raw('SUM( IFNULL( sd.in_cost, 0 ) ) AS in_cost'),
+            knex.raw('SUM( IFNULL( sd.out_cost, 0 ) ) AS out_cost'),
+            knex.raw('( SUM( IFNULL( sd.bl, 0 ) ) + SUM( IFNULL( sd.in_cost, 0 ) ) ) - SUM( IFNULL( sd.out_cost, 0 ) ) AS balanceAfter'),
+            'gt.generic_type_id',
+            'gt.generic_type_code',
+            'gt.generic_type_name',
+            'ga.account_id',
+            'ga.account_code',
+            'ga.account_name'
+        ])
+        .from(q1)
+        .leftJoin(sd, 'sd.generic_id', 'q1.generic_id')
+        .leftJoin('mm_generics AS mg', 'mg.generic_id', 'q1.generic_id')
+        .leftJoin('mm_generic_types AS gt', 'gt.generic_type_id', 'mg.generic_type_id')
+        .leftJoin('mm_generic_accounts AS ga', 'ga.account_id', 'mg.account_id')
+        .groupBy('mg.account_id');
+
+        return sql
     }
-    monthlyReportM(knex: Knex, month: any, year: any, genericType: any, wareHouseId: any, dateSetting = 'stock_date') {
-        month = month < 10 ? '0' + month : month;
-        let sql = `
-        SELECT
-	sum( ifnull( blb.bl, 0 ) ) AS balance,
-	sum( ifnull( io.in_cost, 0 ) ) AS in_cost,
-	sum( ifnull( io.out_cost, 0 ) ) AS out_cost,
-	( sum( ifnull( blb.bl, 0 ) ) + sum( ifnull( io.in_cost, 0 ) ) ) - sum( ifnull( io.out_cost, 0 ) ) AS balanceAfter,
-	gt.generic_type_id,
-	gt.generic_type_code,
-	gt.generic_type_name,
-	ga.account_id,
-	ga.account_code,
-	ga.account_name 
-FROM
-	(
-	SELECT
-		mp.generic_id 
-	FROM
-		wm_products AS wp
-		LEFT JOIN mm_products AS mp ON mp.product_id = wp.product_id 
-	WHERE
-		wp.warehouse_id = ${wareHouseId}  
-	GROUP BY
-		mp.generic_id 
-	) AS q1
-	LEFT JOIN (
-	SELECT
-		sc.generic_id,
-		sum(sc.in_cost) AS in_cost,
-		sum(sc.out_cost) AS out_cost 
-	FROM
-        view_stock_card_new AS sc 
-	WHERE
-		sc.src_warehouse_id = ${wareHouseId}  
-        AND substr(sc.${dateSetting},1,7)= '${year}-${month}'
-	GROUP BY
-		sc.generic_id 
-	) AS io ON io.generic_id = q1.generic_id
-	LEFT JOIN (
-	SELECT
-		sc.generic_id,
-		sum(sc.in_cost - sc.out_cost) AS bl 
-	FROM
-        view_stock_card_new AS sc 
-	WHERE
-		sc.src_warehouse_id = ${wareHouseId}  
-		AND sc.${dateSetting} < '${year}-${month}-01 00:00:00'
-	GROUP BY
-		sc.generic_id 
-	) AS blb ON blb.generic_id = q1.generic_id
-	LEFT JOIN mm_generics AS mg ON mg.generic_id = q1.generic_id
-	LEFT JOIN mm_generic_types AS gt ON gt.generic_type_id = mg.generic_type_id
-	LEFT JOIN mm_generic_accounts AS ga ON ga.account_id = mg.account_id  
-    WHERE
-        mg.generic_type_id in (${genericType}) and
-    (ga.account_code = 'ed' or ga.account_code = 'ned') 
-    GROUP BY
-	mg.account_id
-    `
-        return knex.raw(sql)
+
+    monthlyReport(knex: Knex, month: any, year: any, genericType: any[], wareHouseId: any, dateSetting = 'stock_date') {
+        const startMonthStr = String(month).padStart(2, '0');
+        const startDate = `${year}-${startMonthStr}-01 00:00:00`;
+
+        const nextMonthNum = Number(month) === 12 ? 1 : Number(month) + 1;
+        const nextYearNum = Number(month) === 12 ? Number(year) + 1 : Number(year);
+        const endMonthStr = String(nextMonthNum).padStart(2, '0');
+        const endDate = `${nextYearNum}-${endMonthStr}-01 00:00:00`;
+
+        const q1 = knex('wm_products AS wp')
+            .select('mp.generic_id')
+            .leftJoin('mm_products AS mp', 'mp.product_id', 'wp.product_id')
+            .join('mm_generics AS mg', 'mg.generic_id', 'mp.generic_id')
+            .leftJoin('mm_generic_accounts AS ga', 'ga.account_id', 'mg.account_id')
+            .where('wp.warehouse_id', wareHouseId)
+            .whereIn('mg.generic_type_id', genericType)
+            .where(function() {
+                this.where(function() {
+                    this.where('ga.account_code', '<>', 'ed').andWhere('ga.account_code', '<>', 'ned');
+                }).orWhereNull('ga.account_code');
+            })
+            .groupBy('mp.generic_id')
+            .as('q1');
+
+        const sd = knex('view_stock_card_new AS sc')
+            .select('sc.generic_id')
+            .select(knex.raw(`SUM(CASE WHEN sc.?? < ? THEN sc.in_cost - sc.out_cost ELSE 0 END) AS bl`, [dateSetting, startDate]))
+            .select(knex.raw(`SUM(CASE WHEN sc.?? >= ? THEN sc.in_cost ELSE 0 END) AS in_cost`, [dateSetting, startDate]))
+            .select(knex.raw(`SUM(CASE WHEN sc.?? >= ? THEN sc.out_cost ELSE 0 END) AS out_cost`, [dateSetting, startDate]))
+            .where('sc.src_warehouse_id', wareHouseId)
+            .whereRaw(`sc.?? < ?`, [dateSetting, endDate])
+            .groupBy('sc.generic_id')
+            .as('sd');
+
+        let sql = knex.select([
+            knex.raw('SUM( IFNULL( sd.bl, 0 ) ) AS balance'),
+            knex.raw('SUM( IFNULL( sd.in_cost, 0 ) ) AS in_cost'),
+            knex.raw('SUM( IFNULL( sd.out_cost, 0 ) ) AS out_cost'),
+            knex.raw('( SUM( IFNULL( sd.bl, 0 ) ) + SUM( IFNULL( sd.in_cost, 0 ) ) ) - SUM( IFNULL( sd.out_cost, 0 ) ) AS balanceAfter'),
+            'gt.generic_type_id',
+            'gt.generic_type_code',
+            'gt.generic_type_name',
+            knex.raw(`'' AS account_id`),
+            knex.raw(`'' AS account_code`),
+            knex.raw(`'' AS account_name`)
+        ])
+        .from(q1)
+        .leftJoin(sd, 'sd.generic_id', 'q1.generic_id')
+        .leftJoin('mm_generics AS mg', 'mg.generic_id', 'q1.generic_id')
+        .leftJoin('mm_generic_types AS gt', 'gt.generic_type_id', 'mg.generic_type_id')
+        .leftJoin('mm_generic_accounts AS ga', 'ga.account_id', 'mg.account_id')
+        .groupBy('mg.generic_type_id');
+
+        console.log(sql.toString());
+        return sql
     }
 
     lBitType(knex: Knex) {

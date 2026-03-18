@@ -228,19 +228,28 @@ router.get('/report/monthlyReport/excel', wrap(async (req, res, next) => {
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
   const month: any = req.query.month
   const year: any = req.query.year
-  let genericType: any = req.query.genericTypes
+  let rawGenericType: any = req.query.genericTypes;
+  let genericType: any[] = [];
+  if (rawGenericType !== undefined && rawGenericType !== null) {
+      if (typeof rawGenericType === 'object' && !Array.isArray(rawGenericType)) {
+          genericType = Object.values(rawGenericType); 
+      } else if (!Array.isArray(rawGenericType)) {
+          genericType = [rawGenericType]; 
+      } else {
+          genericType = rawGenericType; 
+      }
+  }
   let _tableName = "สรุปงานคลังเวชภัณฑ์"
-  genericType = Array.isArray(genericType) ? genericType : [genericType];
 
   try {
     let monthName = moment((+year) + '-' + (+month) + '-1').format('MMMM');
     const rsM: any = await inventoryReportModel.monthlyReportM(db, month, year, genericType, warehouseId, dateSetting);
     const rs: any = await inventoryReportModel.monthlyReport(db, month, year, genericType, warehouseId, dateSetting);
     let ans: any = []
-    for (const items of rsM[0]) {
-      rs[0].push(items)
+    for (const items of rsM) {
+      rs.push(items)
     }
-    ans = _.sortBy(rs[0], ['generic_type_id', 'account_id']);
+    ans = _.sortBy(rs, ['generic_type_id', 'account_id']);
     let sum: any = {
       balance: 0,
       in_cost: 0,
@@ -289,45 +298,62 @@ router.get('/report/monthlyReport', wrap(async (req, res, next) => {
   if (!warehouseId) {
     warehouseId = req.decoded.warehouseId;
   }
-  const month: any = req.query.month
-  const year: any = req.query.year
+  const month: any = req.query.month;
+  const year: any = req.query.year;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
-  let genericType: any = req.query.genericTypes
-  genericType = Array.isArray(genericType) ? genericType : [genericType];
+  
+  let rawGenericType: any = req.query.genericTypes;
+  let genericType: any[] = [];
+  if (rawGenericType !== undefined && rawGenericType !== null) {
+      if (typeof rawGenericType === 'object' && !Array.isArray(rawGenericType)) {
+          genericType = Object.values(rawGenericType); 
+      } else if (!Array.isArray(rawGenericType)) {
+          genericType = [rawGenericType]; 
+      } else {
+          genericType = rawGenericType; 
+      }
+  }
 
   try {
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
     let monthName = moment((+year) + '-' + (+month) + '-1').format('MMMM');
     let monthbeforName = moment(((+month) % 12 == 1 ? +year - 1 : +year) + '-' + ((+month) % 12 == 1 ? 12 : +month - 1) + '-1').format('MMMM');
+    
     const rsM: any = await inventoryReportModel.monthlyReportM(db, month, year, genericType, warehouseId, dateSetting);
     const rs: any = await inventoryReportModel.monthlyReport(db, month, year, genericType, warehouseId, dateSetting);
-    let ans: any = []
-    for (const items of rsM[0]) {
-      rs[0].push(items)
+    
+    let ans: any = [];
+    
+    for (const items of rsM) {
+      rs.push(items);
     }
-    ans = _.sortBy(rs[0], ['generic_type_id', 'account_id']);
+    ans = _.sortBy(rs, ['generic_type_id', 'account_id']);
+    
     let sum: any = {
       balance: 0,
       in_cost: 0,
       out_cost: 0,
       balanceAfter: 0
-    }
-    // res.send({ans:ans , monthName:monthName , monthbeforName:monthbeforName})
+    };
+    
     for (const items of ans) {
-      sum.balance += items.balance
-      sum.in_cost += items.in_cost
-      sum.out_cost += items.out_cost
-      sum.balanceAfter += items.balanceAfter
-      items.balance = inventoryReportModel.comma(items.balance)
-      items.in_cost = inventoryReportModel.comma(items.in_cost)
-      items.out_cost = inventoryReportModel.comma(items.out_cost)
-      items.balanceAfter = inventoryReportModel.comma(items.balanceAfter)
+      sum.balance += items.balance || 0;
+      sum.in_cost += items.in_cost || 0;
+      sum.out_cost += items.out_cost || 0;
+      sum.balanceAfter += items.balanceAfter || 0;
+      
+      items.balance = inventoryReportModel.comma(items.balance);
+      items.in_cost = inventoryReportModel.comma(items.in_cost);
+      items.out_cost = inventoryReportModel.comma(items.out_cost);
+      items.balanceAfter = inventoryReportModel.comma(items.balanceAfter);
     }
-    sum.balance = inventoryReportModel.comma(sum.balance)
-    sum.in_cost = inventoryReportModel.comma(sum.in_cost)
-    sum.out_cost = inventoryReportModel.comma(sum.out_cost)
-    sum.balanceAfter = inventoryReportModel.comma(sum.balanceAfter)
+    
+    sum.balance = inventoryReportModel.comma(sum.balance);
+    sum.in_cost = inventoryReportModel.comma(sum.in_cost);
+    sum.out_cost = inventoryReportModel.comma(sum.out_cost);
+    sum.balanceAfter = inventoryReportModel.comma(sum.balanceAfter);
+    
     res.render('monthly-report', {
       ans: ans,
       monthName: monthName,
@@ -338,9 +364,9 @@ router.get('/report/monthlyReport', wrap(async (req, res, next) => {
       hospitalName: hospitalName
     });
   } catch (error) {
-    res.send({ ok: false, error: error.message })
+    res.send({ ok: false, error: error.message });
   }
-}))
+}));
 
 router.get('/report/purchase-bit-type', wrap(async (req, res, next) => {
   const db = req.db;
@@ -3139,14 +3165,23 @@ router.get('/report/check/receive/singburi', wrap(async (req, res, next) => {
 
 router.get('/report/check/receive/4', wrap(async (req, res, next) => {
   let db = req.db;
-  let receiveID: any = req.query.receiveID
-  receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
-  let hospitalDetail = await inventoryReportModel.hospitalNew(db);
-  let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
+  let rawreceiveID: any = req.query.receiveID;
+  let receiveID: any[] = [];
+  if (rawreceiveID !== undefined && rawreceiveID !== null) {
+      if (typeof rawreceiveID === 'object' && !Array.isArray(rawreceiveID)) {
+          receiveID = Object.values(rawreceiveID); 
+      } else if (!Array.isArray(rawreceiveID)) {
+          receiveID = [rawreceiveID]; 
+      } else {
+          receiveID = rawreceiveID; 
+      }
+  }
 
+  let hospitalDetail = await inventoryReportModel.hospitalNew(db);
+  let check_receive = await inventoryReportModel.checkReceiveNew(db, receiveID);
+  
   let bahtText: any = []
   let committee: any = []
-  check_receive = check_receive[0];
 
   for (const v of check_receive) {
     v.receive_date = moment(v.receive_date).format('D MMMM ') + (moment(v.receive_date).get('year') + 543);
@@ -3359,13 +3394,21 @@ router.get('/report/receive-where-vender', wrap(async (req, res, next) => {
 
 router.get('/report/check/receive3', wrap(async (req, res, next) => {
   let db = req.db;
-  let receiveID: any = req.query.receiveID
-  receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
+  let rawReceiveID = req.query.receiveID;
+  let receiveID = [];
+  if (typeof rawReceiveID === 'string') {
+    receiveID = rawReceiveID.split(','); 
+  } else if (Array.isArray(rawReceiveID)) {
+    receiveID = rawReceiveID;
+  } else if (typeof rawReceiveID === 'object' && rawReceiveID !== null) {
+    receiveID = Object.values(rawReceiveID);
+  }
+
   let hospitalDetail = await inventoryReportModel.hospitalNew(db);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
   let productReceive = await inventoryReportModel.productReceive2(db, receiveID);
 
-  productReceive = productReceive[0];
+  // productReceive = productReceive[0];
   productReceive.forEach(value => {
     value.receive_date = moment(value.receive_date).format('D/MM/YYYY');
     value.expired_date = moment(value.expired_date, 'YYYY-MM-DD').isValid() ? moment(value.expired_date).format('DD/MM/') + (moment(value.expired_date).get('year')) : '-';
@@ -3835,9 +3878,16 @@ router.get('/report/product-receive-account', wrap(async (req, res, next) => {
 
 router.get('/report/product/receive', wrap(async (req, res, next) => {
   let db = req.db;
-  let receiveID: any = req.query.receiveID
+  let rawReceiveID = req.query.receiveID;
+  let receiveID = [];
 
-  if (typeof receiveID === 'string') receiveID = [receiveID];
+  if (typeof rawReceiveID === 'string') {
+    receiveID = rawReceiveID.split(','); 
+  } else if (Array.isArray(rawReceiveID)) {
+    receiveID = rawReceiveID;
+  } else if (typeof rawReceiveID === 'object' && rawReceiveID !== null) {
+    receiveID = Object.values(rawReceiveID);
+  }
 
   let productReceive = await inventoryReportModel.productReceive2(db, receiveID);
 
@@ -3847,7 +3897,6 @@ router.get('/report/product/receive', wrap(async (req, res, next) => {
 
   let allcost: any = 0;
 
-  productReceive = productReceive[0];
   productReceive.forEach(value => {
     allcost += value.total_cost;
     value.receive_date = moment(value.receive_date).format('D/MM/YYYY');
@@ -6378,8 +6427,18 @@ router.get('/report/monthlyReportAll', wrap(async (req, res, next) => {
   const month = moment(req.query.month, 'M').format('MM');
   const year: any = req.query.year
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? 'stock_date' : 'create_date';
-  let genericType: any = req.query.genericTypes
-  genericType = Array.isArray(genericType) ? genericType : [genericType];
+  let rawGenericType: any = req.query.genericTypes;
+  let genericType: any[] = [];
+  if (rawGenericType !== undefined && rawGenericType !== null) {
+      if (typeof rawGenericType === 'object' && !Array.isArray(rawGenericType)) {
+          genericType = Object.values(rawGenericType); 
+      } else if (!Array.isArray(rawGenericType)) {
+          genericType = [rawGenericType]; 
+      } else {
+          genericType = rawGenericType; 
+      }
+  }
+
   let transactionIn = [`'SUMMIT'`, `'REV'`, `'REV_OTHER'`, `'REQ_IN'`, `'TRN_IN'`, `'ADD_IN'`, `'BORROW_IN'`, `'BORROW_OTHER_IN'`, `'RETURNED_IN'`, `'REP_IN'`, `'ADJUST'`, `'HIS'`]
   let transactionOut = [`'REQ_OUT'`, `'TRN_OUT'`, `'ADD_OUT'`, `'BORROW_OUT'`, `'BORROW_OTHER_OUT'`, `'RETURNED_OUT'`, `'REP_OUT'`, `'IST'`, `'ADJUST'`, `'HIS'`]
   let dataIn = []
