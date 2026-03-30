@@ -2982,8 +2982,18 @@ router.get('/report/productDisbursement/:internalissueId', wrap(async (req, res,
 
 router.get('/report/check/receive', wrap(async (req, res, next) => {
   let db = req.db;
-  let receiveID: any = req.query.receiveID
-  receiveID = Array.isArray(receiveID) ? receiveID : [receiveID]
+  let rawreceiveID: any = req.query.receiveID;
+  let receiveID: any[] = [];
+  if (rawreceiveID !== undefined && rawreceiveID !== null) {
+      if (typeof rawreceiveID === 'object' && !Array.isArray(rawreceiveID)) {
+          receiveID = Object.values(rawreceiveID); 
+      } else if (!Array.isArray(rawreceiveID)) {
+          receiveID = [rawreceiveID]; 
+      } else {
+          receiveID = rawreceiveID; 
+      }
+  }
+
   let hospitalDetail = await inventoryReportModel.hospitalNew(db);
   let check_receive = await inventoryReportModel.checkReceive(db, receiveID);
   let signature = await inventoryReportModel.getSignature(db, 'CR')
