@@ -3449,55 +3449,34 @@ OR sc.ref_src like ?
         return knex.raw(sql);
     }
 
-    summaryDisbursement(knex: Knex, startDate: any, endDate: any, warehouseId: any, dateSetting) {
+    summaryDisbursement(knex: Knex, startDate: any, endDate: any, warehouseId: any, dateSetting) {        
         let date = dateSetting ? 'ro.requisition_date' : 'rc.approve_date'
-        let subSql = `
-        SELECT 
-            ${date} as requisition_date,
-            ro.wm_requisition,
-            rci.unit_cost as cost,
-            SUM(rci.confirm_qty) as confirm_qty,
-            ww.warehouse_name,
-            ww.short_code
-            FROM
-            wm_requisition_orders ro
-            JOIN wm_requisition_confirms rc ON ro.requisition_order_id = rc.requisition_order_id
-            JOIN wm_requisition_confirm_items rci ON rc.confirm_id = rci.confirm_id AND rci.confirm_qty > 0
-            JOIN wm_products wp ON rci.wm_product_id = wp.wm_product_id
-            JOIN wm_warehouses ww ON ww.warehouse_id = ro.wm_requisition
-            WHERE ${date} BETWEEN '${startDate}' and '${endDate}'
-        `;
-        if (warehouseId != '0') {
-            subSql += `AND ww.warehouse_id = '${warehouseId}'`
-        }
-        subSql += `GROUP BY rci.generic_id,ro.wm_requisition`;
-
         let sql = `
         SELECT
-        t.wm_requisition,
-        (
-            SELECT
-            count(*)
-            FROM
-            wm_requisition_orders ro
-            left JOIN wm_requisition_confirms rc ON ro.requisition_order_id = rc.requisition_order_id
-            WHERE
-            ro.wm_requisition = t.wm_requisition
-            AND ro.is_cancel = 'N' and ${date} BETWEEN '${startDate}' and '${endDate}'
-            GROUP BY
-            ro.wm_requisition
-        ) count_requisition,
-        count(*) AS count_requisition_item,
-        SUM(t.cost*t.confirm_qty) AS cost,
-        t.warehouse_name,
-        t.short_code
+            ro.wm_requisition,
+            COUNT(DISTINCT ro.requisition_order_id) AS count_requisition,
+            COUNT(DISTINCT rci.generic_id) AS count_requisition_item,
+            SUM(rci.unit_cost * rci.confirm_qty) AS cost,
+            ww.warehouse_name,
+            ww.short_code
         FROM
-        (
-            ${subSql}
-        ) as t
-        where t.requisition_date BETWEEN '${startDate}' and '${endDate}'
-        GROUP BY t.wm_requisition
-       `;
+            wm_requisition_orders ro
+            JOIN wm_requisition_confirms rc ON ro.requisition_order_id = rc.requisition_order_id
+            JOIN wm_requisition_confirm_items rci ON rc.confirm_id = rci.confirm_id
+            JOIN wm_warehouses ww ON ww.warehouse_id = ro.wm_requisition
+        WHERE
+            ro.is_cancel = 'N'
+            AND rci.confirm_qty > 0
+            AND ${date} BETWEEN '${startDate}' and '${endDate}'
+        `;
+        if (warehouseId != '0') {
+            sql += `AND ww.warehouse_id = '${warehouseId}'`
+        }
+        sql += `
+        GROUP BY
+            ro.wm_requisition,
+            ww.warehouse_name,
+            ww.short_code`
         return knex.raw(sql);
     }
 
@@ -3511,37 +3490,29 @@ OR sc.ref_src like ?
         mm_generic_types mgt
         LEFT JOIN (
         SELECT
-            t.generic_type_id,
-            t.account_name,
-            t.account_id,
-            count(*) AS count,
-            sum(t.cost*t.confirm_qty) AS cost
-        FROM
-        (
-            SELECT 
             mg.generic_type_id,
             mga.account_name,
             mga.account_id,
-            rci.unit_cost as cost,
-            sum(rci.confirm_qty) as confirm_qty
-            FROM
+            COUNT(DISTINCT rci.generic_id) AS count,
+            SUM(rci.unit_cost * rci.confirm_qty) AS cost
+        FROM
             wm_requisition_orders ro
             JOIN wm_requisition_confirms rc ON ro.requisition_order_id = rc.requisition_order_id
             JOIN wm_requisition_confirm_items rci ON rc.confirm_id = rci.confirm_id
             JOIN mm_generics mg ON rci.generic_id = mg.generic_id
-            LEFT JOIN mm_generic_types mgt ON mg.generic_type_id = mgt.generic_type_id
             LEFT JOIN mm_generic_accounts mga ON mga.account_id = mg.account_id
-            JOIN wm_products wp ON rci.wm_product_id = wp.wm_product_id
-            WHERE
+        WHERE
             ro.wm_requisition = '${warehouse_id}'
-            and  ${date} BETWEEN '${startDate}' and '${endDate}'
-        	and ro.is_cancel = 'N'  
-            GROUP BY rci.generic_id
-        ) as t
+            AND ${date} BETWEEN '${startDate}' and '${endDate}'
+	        AND ro.is_cancel = 'N'
+	        AND rci.confirm_qty > 0
         GROUP BY
-            t.generic_type_id,
-            t.account_id
+            mg.generic_type_id,
+            mga.account_id,
+            mga.account_name
         ) AS a ON a.generic_type_id = mgt.generic_type_id`
+         console.log(sql.toString());
+         
         return knex.raw(sql);
     }
 

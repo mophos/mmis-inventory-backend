@@ -371,9 +371,9 @@ export class ApiModel {
 
   getReceiptMMIS(knex: Knex, startDate: any, endDate: any) {
     let sql = knex('view_bi_receipt as vbr')
-      .select('vbr.*','lb.bid_name','lbp.name as buy_method_name')
-      .leftJoin('l_bid_type as lb','lb.bid_id','vbr.CO_PURCHASE_ID')
-      .leftJoin('l_bid_process as lbp','lbp.buy_method_id','vbr.BUY_METHOD_ID')
+      .select('vbr.*','bm.buy_method_name','bcp.co_purchase_name')
+      .leftJoin('bi_buy_method as bm','bm.buy_method_id','vbr.BUY_METHOD_ID')
+      .leftJoin('bi_co_purchase as bcp','bcp.co_purchase_id','vbr.CO_PURCHASE_ID')
       .whereBetween('vbr.DATE_RCV', [startDate, endDate])
     return sql;
   }
