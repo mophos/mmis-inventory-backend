@@ -15,6 +15,10 @@ import { ApiModel } from '../models/api';
 import { token } from 'morgan';
 import { InventoryReportModel } from "../models/inventoryReport";
 import { count, log } from 'console';
+const path = require('path')
+const fse = require('fs-extra');
+const json2xls = require('json2xls');
+const fs = require('fs');
 
 const mainReportModel = new MainReportModel();
 const apiModel = new ApiModel();
@@ -289,6 +293,30 @@ router.get('/view-drug-list', async (req, res, next) => {
   }
 });
 
+router.get('/export/drug-list', async (req, res, next) => {
+  const db = req.db;
+
+  try {
+    const rs: any = await apiModel.getDrugListMMIS(db,'');
+    const hospcode = await getHospcodeNew(req)
+    
+    rs.forEach(v => {
+      v.HOSP_CODE = hospcode;
+    });
+
+    const xls = json2xls(rs);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'DrugList.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'DrugList.xlsx');
+  } catch (error) {
+    res.send({ ok: false, message: error.message })
+  }
+});
+
 router.get('/dmsicapi-drug-list/period-rpt', async (req, res, next) => {
   try {
     const db = req.db;
@@ -397,6 +425,30 @@ router.get('/view-purchaser-plan', async (req, res, next) => {
   } catch (error) {
     console.log(error);
     res.send({ ok: false, error: error.message });
+  }
+});
+
+router.get('/export/purchaser-plan', async (req, res, next) => {
+  const db = req.db;
+
+  try {
+    const rs: any = await apiModel.getPurchasePlanMMIS(db,'');
+    const hospcode = await getHospcodeNew(req)
+    
+    rs.forEach(v => {
+      v.HOSP_CODE = hospcode;
+    });
+
+    const xls = json2xls(rs);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'PurchasePlan.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'PurchasePlan.xlsx');
+  } catch (error) {
+    res.send({ ok: false, message: error.message })
   }
 });
 
@@ -539,6 +591,32 @@ router.get('/view-receipt', async (req, res, next) => {
   }
 });
 
+router.get('/export/receipt', async (req, res, next) => {
+  const db = req.db;
+  const startDate  = req.query.startDate || '';
+  const endDate  = req.query.endDate || '';
+
+  try {
+    const rs: any = await apiModel.getReceiptMMIS(db, startDate, endDate);
+    const hospcode = await getHospcodeNew(req)
+    
+    rs.forEach(v => {
+      v.HOSP_CODE = hospcode;
+    });
+
+    const xls = json2xls(rs);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'Receipt.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'Receipt.xlsx');
+  } catch (error) {
+    res.send({ ok: false, message: error.message })
+  }
+});
+
 router.get('/dmsicapi-receipt/period-rpt', async (req, res, next) => {
   try {
     const db = req.db;
@@ -666,6 +744,33 @@ router.get('/view-distribution', async (req, res, next) => {
   }
 });
 
+router.get('/export/distribution', async (req, res, next) => {
+  const db = req.db;
+  const startDate  = req.query.startDate || '';
+  const endDate  = req.query.endDate || '';
+  const warehouseId = req.query.warehouseId; 
+
+  try {
+    const rs: any = await apiModel.getDistributionMMIS(db, startDate, endDate, warehouseId);
+    const hospcode = await getHospcodeNew(req)
+    
+    rs.forEach(v => {
+      v.HOSP_CODE = hospcode;
+    });
+
+    const xls = json2xls(rs);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'Distribution.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'Distribution.xlsx');
+  } catch (error) {
+    res.send({ ok: false, message: error.message })
+  }
+});
+
 router.get('/dmsicapi-distribution/period-rpt', async (req, res, next) => {
   try {
     const db = req.db;
@@ -767,6 +872,31 @@ router.get('/view-inventory', async (req, res, next) => {
   } catch (error) {
     console.log(error);
     res.send({ ok: false, error: error.message });
+  }
+});
+
+router.get('/export/inventory', async (req, res, next) => {
+  const db = req.db;
+  const warehouseId = req.query.warehouseId; 
+
+  try {
+    const rs: any = await apiModel.getInventoryMMIS(db, '', warehouseId);
+    const hospcode = await getHospcodeNew(req)
+    
+    rs.forEach(v => {
+      v.HOSP_CODE = hospcode;
+    });
+
+    const xls = json2xls(rs);
+    const exportDirectory = path.join(process.env.MMIS_DATA, 'exports');
+    // create directory
+    fse.ensureDirSync(exportDirectory);
+    const filePath = path.join(exportDirectory, 'Inventory.xlsx');
+    fs.writeFileSync(filePath, xls, 'binary');
+    // force download
+    res.download(filePath, 'Inventory.xlsx');
+  } catch (error) {
+    res.send({ ok: false, message: error.message })
   }
 });
 

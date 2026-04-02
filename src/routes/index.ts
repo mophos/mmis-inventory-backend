@@ -5961,15 +5961,22 @@ router.get('/report/list-waiting', wrap(async (req, res, next) => {
 router.get('/report/requisition-sum-product', wrap(async (req, res, next) => {
   let db = req.db;
   try {
-    let test;
-    let requisId: any = req.query.requisId;
-    requisId = Array.isArray(requisId) ? requisId : [requisId];
+    let rawrequisId: any = req.query.requisId;
+    let requisId: any[] = [];
+    if (rawrequisId !== undefined && rawrequisId !== null) {
+        if (typeof rawrequisId === 'object' && !Array.isArray(rawrequisId)) {
+            requisId = Object.values(rawrequisId); 
+        } else if (!Array.isArray(rawrequisId)) {
+            requisId = [rawrequisId]; 
+        } else {
+            requisId = rawrequisId; 
+        }
+    }
 
     let hosdetail = await inventoryReportModel.hospital(db);
     let hospitalName = hosdetail[0].hospname;
 
     const rs = await inventoryReportModel.getRequisitionSumProduct(db, requisId);
-    console.log('rs', rs[0]);
     for (const i of rs[0]) {
       i.qty = i.qty / i.conversion;
       if (i.count_unit > 1) {
