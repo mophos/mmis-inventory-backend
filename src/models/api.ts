@@ -512,7 +512,7 @@ export class ApiModel {
 
   getDistributionMMIS(knex: Knex, startDate: any, endDate: any, warehouseId:any) {
     let sql = knex("view_bi_distribution as vbd")
-    .where('vbd.WAREHOUSE_ID', warehouseId)
+    .where('vbd.SRC_WAREHOUSE_ID', warehouseId)
     .whereBetween('vbd.STOCK_DATE', [startDate, endDate])
     return sql;
   }
