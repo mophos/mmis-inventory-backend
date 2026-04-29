@@ -4910,7 +4910,7 @@ ORDER BY
     getDistribution(knex: Knex, startDate:any, endDate:any, warehouseId:any) {
         return knex('view_bi_distribution as vbd')
             .select('vbd.*')
-            .where('vbd.WAREHOUSE_ID', warehouseId)
+            .where('vbd.SRC_WAREHOUSE_ID', warehouseId)
             .whereBetween('vbd.STOCK_DATE', [startDate, endDate])
     }
 
