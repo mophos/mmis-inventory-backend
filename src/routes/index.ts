@@ -6672,8 +6672,17 @@ router.get('/report/requisition/generic/excel/old', wrap(async (req, res, next) 
   const db = req.db;
   const startDate: any = req.query.startDate;
   const endDate: any = req.query.endDate;
-  let genericTypeId: any = req.query.genericTypes;
-  genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
+  let rawGenericType: any = req.query.genericTypes;
+  let genericType: any[] = [];
+  if (rawGenericType !== undefined && rawGenericType !== null) {
+      if (typeof rawGenericType === 'object' && !Array.isArray(rawGenericType)) {
+          genericType = Object.values(rawGenericType); 
+      } else if (!Array.isArray(rawGenericType)) {
+          genericType = [rawGenericType]; 
+      } else {
+          genericType = rawGenericType; 
+      }
+  }
 
   const warehouseId: any = req.query.warehouseId;
   const warehouseName: any = req.query.warehouseName;
@@ -6684,7 +6693,7 @@ router.get('/report/requisition/generic/excel/old', wrap(async (req, res, next) 
   // Add Worksheets to the workbook
 
   try {
-    const rs: any = await inventoryReportModel.payToWarehouseGenericTypeDetail2(db, startDate, endDate, genericTypeId, dateSetting, warehouseId)
+    const rs: any = await inventoryReportModel.payToWarehouseGenericTypeDetail2(db, startDate, endDate, genericType, dateSetting, warehouseId)
     if (rs) {
       let _data: any = await setData(rs);
       // if (rs) {
@@ -6715,10 +6724,6 @@ router.get('/report/requisition/generic/excel/old', wrap(async (req, res, next) 
           }
         }
       });
-
-
-
-
 
       let priceAll = 0;
       const ws = [];
@@ -6777,8 +6782,6 @@ router.get('/report/requisition/generic/excel/old', wrap(async (req, res, next) 
         ws[h.warehouse_id].cell(cell, 8).number(priceWarehouse).style(lastList).style(styleCost);
       }
 
-
-
       // ++startCell
       // ws.cell(++startCell, 7).string('ยอดรวมคงคลัง').style(lastList);
       // ws.cell(startCell, 8, startCell, 9, true).number(total_price_all).style(lastList).style(styleCost);
@@ -6815,8 +6818,18 @@ router.get('/report/requisition/generic/excel/sum', wrap(async (req, res, next) 
   const db = req.db;
   const startDate: any = req.query.startDate;
   const endDate: any = req.query.endDate;
-  let genericTypeId: any = req.query.genericTypes;
-  genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
+  let rawGenericType: any = req.query.genericTypes;
+  let genericType: any[] = [];
+  if (rawGenericType !== undefined && rawGenericType !== null) {
+      if (typeof rawGenericType === 'object' && !Array.isArray(rawGenericType)) {
+          genericType = Object.values(rawGenericType); 
+      } else if (!Array.isArray(rawGenericType)) {
+          genericType = [rawGenericType]; 
+      } else {
+          genericType = rawGenericType; 
+      }
+  }
+
   const warehouseId: any = req.query.warehouseId;
   const warehouseName: any = req.query.warehouseName;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
@@ -6828,7 +6841,7 @@ router.get('/report/requisition/generic/excel/sum', wrap(async (req, res, next) 
   try {
     // const gn: any = await inventoryReportModel.getGenericType(db, genericTypeId);
     // const rs: any = await inventoryReportModel.payToWarehouse(db, startDate, endDate, genericTypeId, warehouseId, dateSetting)
-    const rs: any = await inventoryReportModel.payToWarehouseGenericTypeDetail2(db, startDate, endDate, genericTypeId, dateSetting, warehouseId)
+    const rs: any = await inventoryReportModel.payToWarehouseGenericTypeDetail2(db, startDate, endDate, genericType, dateSetting, warehouseId)
     if (rs) {
       console.log('ssetData')
       let _data: any = await setData(rs);
@@ -7037,14 +7050,27 @@ router.get('/report/requisition/generic', wrap(async (req, res, next) => {
   const db = req.db;
   const startDate: any = req.query.startDate;
   const endDate: any = req.query.endDate;
-  let genericTypeId: any = req.query.genericTypes;
   const warehouseName: any = req.query.warehouseName;
-  genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
+  let rawGenericType: any = req.query.genericTypes;
+  let genericType: any[] = [];
+  if (rawGenericType !== undefined && rawGenericType !== null) {
+      if (typeof rawGenericType === 'object' && !Array.isArray(rawGenericType)) {
+          genericType = Object.values(rawGenericType); 
+      } else if (!Array.isArray(rawGenericType)) {
+          genericType = [rawGenericType]; 
+      } else {
+          genericType = rawGenericType; 
+      }
+  }
+
+
   const warehouseId: any = req.query.warehouseId;
   let dateSetting = req.decoded.WM_STOCK_DATE === 'Y' ? true : false;
   let total_price = 0
+
   try {
-    const rs: any = await inventoryReportModel.payToWarehouseGenericTypeDetail2(db, startDate, endDate, genericTypeId, dateSetting, warehouseId)
+    const rs: any = await inventoryReportModel.payToWarehouseGenericTypeDetail2(db, startDate, endDate, genericType, dateSetting, warehouseId)
+    console.log(rs)
 
     if (rs) {
       let _data = _.map(_.groupBy(rs, (v) => { return v.warehouse_id }), (v: any) => {
@@ -7144,8 +7170,17 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
   const db = req.db;
   const startDate: any = req.query.startDate;
   const endDate: any = req.query.endDate;
-  let genericTypeId: any = req.query.genericTypes;
-  genericTypeId = Array.isArray(genericTypeId) ? genericTypeId : [genericTypeId];
+  let rawGenericType: any = req.query.genericTypes;
+  let genericType: any[] = [];
+  if (rawGenericType !== undefined && rawGenericType !== null) {
+      if (typeof rawGenericType === 'object' && !Array.isArray(rawGenericType)) {
+          genericType = Object.values(rawGenericType); 
+      } else if (!Array.isArray(rawGenericType)) {
+          genericType = [rawGenericType]; 
+      } else {
+          genericType = rawGenericType; 
+      }
+  }
 
   const warehouseId: any = req.query.warehouseId;
   const warehouseName: any = req.query.warehouseName;
@@ -7154,7 +7189,7 @@ router.get('/report/requisition/generic/excel', wrap(async (req, res, next) => {
 
   const dataExcel: any = [];
   try {
-    const rs: any = await inventoryReportModel.payToWarehouseGenericTypeDetail2(db, startDate, endDate, genericTypeId, dateSetting, warehouseId)
+    const rs: any = await inventoryReportModel.payToWarehouseGenericTypeDetail2(db, startDate, endDate, genericType, dateSetting, warehouseId)
     if (rs) {
       let _data: any = await setData(rs);
       var worksheet: any = XLSX.utils.aoa_to_sheet([]);
