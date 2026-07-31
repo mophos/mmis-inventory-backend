@@ -443,7 +443,7 @@ export class HisTransactionModel {
             .where('mp.generic_id', generics)
             .andWhere('wp.warehouse_id', warehouseId)
             .where('wp.expired_date','>', knex.fn.now())
-            .orderBy('wp.expired_date', 'DESC')
+            .orderBy('wp.expired_date', 'ASC')
             .groupBy('wp.wm_product_id');
     }
 } 

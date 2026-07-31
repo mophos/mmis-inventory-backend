@@ -246,11 +246,11 @@ router.put('/stockcard/receives', async (req, res, next) => {
           product[idxG].generic_qty += +pd.in_qty;
           product[idxG].generic_qty -= +pd.out_qty;
           const idx = _.findIndex(product, { product_id: pd.product_id });
-          if (idx > -1) {
-            product[idx].product_qty += +pd.in_qty;
-            product[idx].product_qty -= +pd.out_qty;
-
+          if (idx === -1) {
+            throw new Error(`ไม่พบ product ${pd.product_id} ใน generic ${v.generic_id}`);
           }
+          product[idx].product_qty += +pd.in_qty;
+          product[idx].product_qty -= +pd.out_qty;
           const obj: any = {
             stock_card_id: pd.stock_card_id,
             balance_qty: product[idx].product_qty,
@@ -302,7 +302,12 @@ router.put('/stockcard/receive-others', async (req, res, next) => {
       const costNew = v.cost / v.conversion_qty;
       const costOld = v.cost_old / v.conversion_qty_old;
 
-      const rs = await toolModel.getWmProductId(db, 'REV_OTHER', receiveOtherId, v.product_id, v.lot_no_old, v.expired_date_old, 'N');
+      // ของฟรี (in_unit_cost = 0) ก็เกิดขึ้นได้กับ REV_OTHER จึงต้องเลือก isFree ตามราคาจริงที่เคยบันทึกไว้
+      const isFreeOld = costOld > 0 ? 'N' : 'Y';
+      const rs = await toolModel.getWmProductId(db, 'REV_OTHER', receiveOtherId, v.product_id, v.lot_no_old, v.expired_date_old, isFreeOld);
+      if (!rs || !rs.length) {
+        throw new Error(`ไม่พบข้อมูล wm_stock_card (product_id: ${v.product_id}, lot: ${v.lot_no_old}, expired: ${v.expired_date_old}, cost: ${v.cost_old})`);
+      }
       const wmProductId = rs[0].wm_product_id_in;
       if (qtyNew > qtyOld) {
         qty = qtyNew - qtyOld;
@@ -313,6 +318,9 @@ router.put('/stockcard/receive-others', async (req, res, next) => {
       }
       await toolModel.updateReceiveOtherDetail(db, receiveOtherId, v);
       const stockCardId = await toolModel.getStockCardId(db, receiveOtherId, v.product_id, v.lot_no_old, 'REV_OTHER');
+      if (!stockCardId || !stockCardId.length) {
+        throw new Error(`ไม่พบ stock_card (product_id: ${v.product_id}, lot: ${v.lot_no_old})`);
+      }
       await toolModel.updateStockcard(db, dataStock, stockCardId[0].stock_card_id);
 
       if (v.lot_no != v.lot_no_old || v.expired_date != v.expired_date_old || v.unit_generic_id != v.unit_generic_id_old) {
@@ -373,11 +381,11 @@ router.put('/stockcard/receive-others', async (req, res, next) => {
           product[idxG].generic_qty += +pd.in_qty;
           product[idxG].generic_qty -= +pd.out_qty;
           const idx = _.findIndex(product, { product_id: pd.product_id });
-          if (idx > -1) {
-            product[idx].product_qty += +pd.in_qty;
-            product[idx].product_qty -= +pd.out_qty;
-
+          if (idx === -1) {
+            throw new Error(`ไม่พบ product ${pd.product_id} ใน generic ${v.generic_id}`);
           }
+          product[idx].product_qty += +pd.in_qty;
+          product[idx].product_qty -= +pd.out_qty;
           const obj: any = {
             stock_card_id: pd.stock_card_id,
             balance_qty: product[idx].product_qty,
@@ -882,11 +890,11 @@ router.put('/stockcard/transfers', async (req, res, next) => {
           product[idxG].generic_qty += +pd.in_qty;
           product[idxG].generic_qty -= +pd.out_qty;
           const idx = _.findIndex(product, { product_id: pd.product_id });
-          if (idx > -1) {
-            product[idx].product_qty += +pd.in_qty;
-            product[idx].product_qty -= +pd.out_qty;
-
+          if (idx === -1) {
+            throw new Error(`ไม่พบ product ${pd.product_id} ใน generic ${v.generic_id}`);
           }
+          product[idx].product_qty += +pd.in_qty;
+          product[idx].product_qty -= +pd.out_qty;
           const obj: any = {
             stock_card_id: pd.stock_card_id,
             balance_qty: product[idx].product_qty,
@@ -920,11 +928,11 @@ router.put('/stockcard/transfers', async (req, res, next) => {
           product[idxG].generic_qty += +pd.in_qty;
           product[idxG].generic_qty -= +pd.out_qty;
           const idx = _.findIndex(product, { product_id: pd.product_id });
-          if (idx > -1) {
-            product[idx].product_qty += +pd.in_qty;
-            product[idx].product_qty -= +pd.out_qty;
-
+          if (idx === -1) {
+            throw new Error(`ไม่พบ product ${pd.product_id} ใน generic ${v.generic_id}`);
           }
+          product[idx].product_qty += +pd.in_qty;
+          product[idx].product_qty -= +pd.out_qty;
           const obj: any = {
             stock_card_id: pd.stock_card_id,
             balance_qty: product[idx].product_qty,
@@ -1017,11 +1025,11 @@ router.put('/stockcard/issues', async (req, res, next) => {
           product[idxG].generic_qty += +pd.in_qty;
           product[idxG].generic_qty -= +pd.out_qty;
           const idx = _.findIndex(product, { product_id: pd.product_id });
-          if (idx > -1) {
-            product[idx].product_qty += +pd.in_qty;
-            product[idx].product_qty -= +pd.out_qty;
-
+          if (idx === -1) {
+            throw new Error(`ไม่พบ product ${pd.product_id} ใน generic ${v.generic_id}`);
           }
+          product[idx].product_qty += +pd.in_qty;
+          product[idx].product_qty -= +pd.out_qty;
           const obj: any = {
             stock_card_id: pd.stock_card_id,
             balance_qty: product[idx].product_qty,
