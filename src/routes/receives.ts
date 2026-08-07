@@ -811,34 +811,41 @@ router.post('/approve', co(async (req, res, next) => {
   let receiveIds = Array.isArray(req.body.receiveIds) ? req.body.receiveIds : [req.body.receiveIds];
   let comment = req.body.comment;
   try {
-    const insertDB = [];
-    const updateDB = [];
-    const errorDB = [];
-    var errApp: any = []
-    var sussApp: any = []
+    var errApp: any = []   // ใบที่อนุมัติไปแล้ว
+    var sussApp: any = []  // ใบที่อนุมัติสำเร็จรอบนี้ (commit แล้ว)
+    var failApp: any = []  // ใบที่ทำรายการไม่สำเร็จ ถูก rollback ทั้งใบ
     // new
     for (const r of receiveIds) {
+      // แต่ละใบรับอยู่ใน transaction ของตัวเอง ถ้าพลาดกลางทางจะ rollback ทั้งใบ
+      // ทำให้ wm_receive_approve, wm_products และ wm_stock_card ลงครบหรือไม่ลงเลย
+      let isDuplicated = false;
+      try {
+        await db.transaction(async (trx) => {
+          // ล็อกแถวใบรับก่อน กัน request ที่ยิงซ้อนกันเข้ามาตัดสต๊อกซ้ำ
+          await receiveModel.lockReceive(trx, r);
 
-      const checkApprove = await receiveModel.checkDuplicatedApprove(db, r);
-      if (checkApprove.length == 0) {
-        const approveData = {
-          approve_date: moment().format('YYYY-MM-DD'),
-          created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
-          people_user_id: req.decoded.people_user_id,
-          receive_id: r,
-          comment: comment
-        }
+          // เช็คซ้ำหลังได้ lock แล้วเท่านั้น ไม่งั้นยังเป็น check-then-act ที่แข่งกันได้
+          const lockedApprove = await receiveModel.lockApproveByReceive(trx, r);
+          const checkApprove = await receiveModel.checkDuplicatedApprove(trx, r);
+          if (lockedApprove.length != 0 || checkApprove.length != 0) {
+            isDuplicated = true;
+            return;
+          }
 
-        const receiveApproveId: any = await receiveModel.saveApprove(db, approveData);
-        if (receiveApproveId.length > 0) {
-          insertDB.push({ 'table': 'wm_receive_approve', 'key': 'approve_id', 'value': receiveApproveId[0] });
-        } else {
-          errorDB.push({ 'table': 'wm_receive_approve', 'data': approveData });
-        }
+          let products = await receiveModel.getReceiveProductApprove(trx, r);
 
-        if (receiveApproveId.length > 0) {
-          sussApp.push(r)
-          let products = await receiveModel.getReceiveProductApprove(db, r);
+          // getReceiveProductApprove ใช้ INNER JOIN กับ mm_unit_generics ถ้า unit_generic_id
+          // ของ detail แถวไหนถูกลบไปแล้ว แถวนั้นจะหายจากผลลัพธ์เงียบๆ ไม่มี error ให้ rollback
+          // ปล่อยไว้จะได้ใบที่อนุมัติแล้วแต่สต๊อกลงไม่ครบ จึงต้องเทียบจำนวนกับตารางดิบก่อน
+          const detailCount: any = await receiveModel.countReceiveDetail(trx, r);
+          const totalDetail = +detailCount[0].total;
+          if (!totalDetail) {
+            throw new Error('ใบรับนี้ไม่มีรายการสินค้าใน wm_receive_detail');
+          }
+          if (products.length !== totalDetail) {
+            throw new Error(`รายการรับไม่ครบ: wm_receive_detail มี ${totalDetail} รายการ แต่ประมวลผลได้ ${products.length} รายการ (ตรวจสอบ unit_generic_id ที่อาจถูกลบไปแล้ว)`);
+          }
+
           let lotTimes = [];
           let lotTime: any;
           for (const p of products) {
@@ -872,29 +879,17 @@ router.post('/approve', co(async (req, res, next) => {
             // End ObjWmProduct
 
             // Start save wm_products
-            let update = false;
-            let oldWmproducts;
-            const dataWmProducts = await productModel.checkDuplicatedProduct(db, p.product_id, p.warehouse_id, p.lot_no, p.lot_time);
+            // ห้ามกลืน error ตรงนี้ ต้องปล่อยให้ throw ออกไป rollback ทั้งใบ
+            // ของเดิมจับ error ไว้แล้ววิ่งต่อ ทำให้ wmProductId เป็น undefined แล้วไปพังขั้นถัดไปแทน
+            const dataWmProducts = await productModel.checkDuplicatedProduct(trx, p.product_id, p.warehouse_id, p.lot_no, p.lot_time);
             let wmProductId: any;
-            try {
-              if (dataWmProducts.length) {
-                update = true;
-                oldWmproducts = dataWmProducts[0];
-                ObjWmProduct.wm_product_id = oldWmproducts.wm_product_id;
-                await receiveModel.updateProduct(db, ObjWmProduct);
-                wmProductId = ObjWmProduct.wm_product_id;
-              } else {
-                await receiveModel.insertProduct(db, ObjWmProduct);
-                wmProductId = ObjWmProduct.wm_product_id;
-              }
-              if (update) {
-                updateDB.push({ 'table': 'wm_products', 'key': 'wm_product_id', 'value': wmProductId, 'dataNew': ObjWmProduct, 'dataOld': oldWmproducts });
-              } else {
-                insertDB.push({ 'table': 'wm_products', 'key': 'wm_product_id', 'value': wmProductId });
-              }
-            } catch (error) {
-              console.log(error);
-              errorDB.push({ 'table': 'wm_products', 'data': ObjWmProduct, 'data_old': oldWmproducts });
+            if (dataWmProducts.length) {
+              ObjWmProduct.wm_product_id = dataWmProducts[0].wm_product_id;
+              await receiveModel.updateProduct(trx, ObjWmProduct);
+              wmProductId = ObjWmProduct.wm_product_id;
+            } else {
+              await receiveModel.insertProduct(trx, ObjWmProduct);
+              wmProductId = ObjWmProduct.wm_product_id;
             }
             // End save wm_products
 
@@ -904,20 +899,26 @@ router.post('/approve', co(async (req, res, next) => {
               'cost': p.cost
             }
             if (p.cost > 0) {
-              await receiveModel.adjustCost(db, objAdjust);
+              await receiveModel.adjustCost(trx, objAdjust);
             }
             // End adjust unit cost to mm_unit_generics
 
             // Start get balance_unit_cost
-            const balanceCost = await receiveModel.getCostProductWmProductId(db, wmProductId);
+            const balanceCost = await receiveModel.getCostProductWmProductId(trx, wmProductId);
+            if (!balanceCost.length) {
+              throw new Error(`ไม่พบต้นทุนใน wm_products (wm_product_id: ${wmProductId}, product_id: ${p.product_id}, lot: ${p.lot_no})`);
+            }
             let _balanceCost = balanceCost[0].cost
             // End get balance_unit_cost
 
 
 
             // Start Obj Stockcard
-            let balance = await productModel.getBalance(db, p.product_id, p.warehouse_id, p.lot_no, p.lot_time);
+            let balance = await productModel.getBalance(trx, p.product_id, p.warehouse_id, p.lot_no, p.lot_time);
             balance = balance[0]
+            if (!balance || !balance.length) {
+              throw new Error(`คำนวณยอดคงเหลือไม่ได้ (product_id: ${p.product_id}, lot: ${p.lot_no}, lot_time: ${lotTime})`);
+            }
             let objStockcard: any = {};
             objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
             objStockcard.product_id = p.product_id;
@@ -942,31 +943,72 @@ router.post('/approve', co(async (req, res, next) => {
             // End Obj Stockcard
 
             // Start Save Stockcard
-            const stockcardId = await stockcard.saveFastStockTransaction(db, objStockcard);
-            if (stockcardId.length > 0) {
-              insertDB.push({ 'table': 'wm_stock_card', 'key': 'stock_card_id', 'value': stockcardId[0] });
-            } else {
-              errorDB.push({ 'table': 'wm_stock_card', 'data': objStockcard });
+            const stockcardId = await stockcard.saveFastStockTransaction(trx, objStockcard);
+            if (!stockcardId.length) {
+              throw new Error(`บันทึก wm_stock_card ไม่สำเร็จ (product_id: ${p.product_id}, lot: ${p.lot_no})`);
             }
             // End Save Stockcard
           }
-        }
-      } else {
-        errApp.push(r)
-      }
-      if (errorDB.length > 0) {
-        for (const e of errorDB) {
-          const text = e.table + ' ' + e.data;
-          await receiveModel.saveApproveComment(db, r, text)
 
+          // บันทึกการอนุมัติเป็นขั้นตอนสุดท้าย หลังสต๊อกลงครบทุกรายการแล้วเท่านั้น
+          const approveData = {
+            approve_date: moment().format('YYYY-MM-DD'),
+            created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+            people_user_id: req.decoded.people_user_id,
+            receive_id: r,
+            comment: comment
+          }
+          const receiveApproveId: any = await receiveModel.saveApprove(trx, approveData);
+          if (!receiveApproveId.length) {
+            throw new Error('บันทึกลง wm_receive_approve ไม่สำเร็จ');
+          }
+        });
+
+        // เชื่อผลของ promise อย่างเดียวไม่ได้ knex จะ resolve แทน reject ถ้า ROLLBACK
+        // ใช้เวลาเกิน 5 วินาที (node_modules/knex/lib/transaction.js:140 เรียก _resolver()
+        // ใน TimeoutError) ใบที่ rollback ไปแล้วจะถูกรายงานว่าสำเร็จ จึงต้องยืนยันกับ DB จริง
+        if (isDuplicated) {
+          errApp.push(r);
+        } else {
+          const confirmed = await receiveModel.getApproveStatus(db, r);
+          if (confirmed.length) {
+            sussApp.push(r);
+          } else {
+            signale.error(`approve receive ${r}: transaction resolved but no approve row found`);
+            failApp.push({ receive_id: r, error: 'ไม่พบการบันทึกอนุมัติหลังจบ transaction (อาจถูก rollback)' });
+          }
         }
+      } catch (error) {
+        // มาถึงตรงนี้แปลว่า rollback ไปแล้ว ใบนี้ยังไม่ถูกอนุมัติ กดอนุมัติใหม่ได้
+        signale.error(`approve receive ${r} failed:`, error);
+        failApp.push({ receive_id: r, error: error.message });
       }
     }
-    if (sussApp.length > 0) {
-      let pickReturn: any = await pick(req, receiveIds);
 
-      if (pickReturn.ok) res.send({ ok: true, errDupApprove: errApp });
-      else res.send({ ok: false, message: pickReturn.message });
+    let pickError: any = null;
+    if (sussApp.length > 0) {
+      // ส่งเฉพาะใบที่เพิ่งอนุมัติสำเร็จรอบนี้เท่านั้น
+      // pick() ไม่มีกลไกกันทำซ้ำ (getPickCheck ไม่มี flag ว่าหยิบไปแล้ว และ decreaseQtyPick
+      // ทำ qty = qty - N ตรงๆ) ถ้าส่งใบที่อนุมัติไปแล้วเข้าไปด้วยจะโอนซ้ำและตัดยอดซ้ำ
+      let pickReturn: any = await pick(req, sussApp);
+      if (!pickReturn.ok) pickError = pickReturn.error;
+    }
+
+    if (failApp.length > 0) {
+      const detail = failApp.map((f: any) => `${f.receive_id} (${f.error})`).join(', ');
+      res.send({
+        ok: false,
+        error: `อนุมัติไม่สำเร็จ ${failApp.length} รายการ ระบบยกเลิกการบันทึกทั้งใบแล้ว สามารถกดอนุมัติใหม่ได้: ${detail}`,
+        approved: sussApp, errDupApprove: errApp, errApprove: failApp
+      });
+    } else if (pickError) {
+      res.send({
+        ok: false,
+        error: `อนุมัติรับเข้าสำเร็จแล้ว แต่จ่ายตามใบเบิก (การหยิบ) ไม่สำเร็จ: ${pickError}`,
+        approved: sussApp, errDupApprove: errApp
+      });
+    } else if (sussApp.length > 0) {
+      res.send({ ok: true, errDupApprove: errApp });
     } else {
       res.send({ ok: false, error: 'ไม่มีรายการที่สามารถยืนยันได้' });
     }

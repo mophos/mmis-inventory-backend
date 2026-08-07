@@ -532,6 +532,25 @@ export class ReceiveModel {
       .where('lot_time', lotTime);
   }
 
+  // ล็อกแถวใบรับไว้จนกว่า transaction จะจบ กันกดอนุมัติซ้อนกันแล้วตัดสต๊อกซ้ำ
+  // ต้องเรียกภายใน transaction เท่านั้น มิฉะนั้น lock จะหลุดทันที
+  lockReceive(knex: Knex, receiveId: any) {
+    return knex('wm_receives')
+      .select('receive_id')
+      .where('receive_id', receiveId)
+      .forUpdate();
+  }
+
+  // อ่านแบบ locking read เพื่อให้เห็นแถวที่ transaction อื่นเพิ่ง commit จริงๆ
+  // ถ้าใช้ SELECT ธรรมดา REPEATABLE READ อาจให้ค่าจาก snapshot เก่าแล้วอนุมัติซ้ำได้
+  // ต้องเรียกภายใน transaction และหลัง lockReceive() เท่านั้น
+  lockApproveByReceive(knex: Knex, receiveId: any) {
+    return knex('wm_receive_approve')
+      .select('approve_id')
+      .where('receive_id', receiveId)
+      .forUpdate();
+  }
+
   checkDuplicatedApprove(knex: Knex, receiveId: any) {
     return knex('wm_receive_approve')
       .select('receive_id')
@@ -701,6 +720,14 @@ WHERE
     // .select('q1.pick_qty','rd.receive_detail_id','rd.product_id', 'rd.receive_id', 'rd.unit_generic_id', 'rd.lot_no','rd.receive_qty')
     // .innerJoin(knex.raw(('(' + q1 + ')as q1 on q1.product_id = rd.product_id  and q1.receive_id = rd.receive_id and q1.unit_generic_id=rd.unit_generic_id and q1.lot_no=rd.lot_no')))
     // .whereIn('rd.receive_id', receive_id)
+  }
+
+  // นับรายการดิบใน wm_receive_detail ไว้เทียบกับผลของ getReceiveProductApprove
+  // ซึ่งใช้ INNER JOIN กับ mm_unit_generics แถวที่ unit_generic_id ถูกลบจะหายเงียบๆ
+  countReceiveDetail(knex: Knex, receiveId: any) {
+    return knex('wm_receive_detail')
+      .count('* as total')
+      .where('receive_id', receiveId);
   }
 
   getReceiveProductApprove(knex: Knex, receiveId: any) {
