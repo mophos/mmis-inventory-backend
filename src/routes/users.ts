@@ -1,35 +1,28 @@
 'use strict';
 
 import * as express from 'express';
-import * as moment from 'moment';
-import * as crypto from 'crypto';
-import * as co from 'co-express';
 
-import { UserModel } from '../models/users';
 const router = express.Router();
 
-const userModel = new UserModel();
-
-router.post('/change-password', co(async(req, res, next) => {
-
-  let db = req.db;
-  let userId = req.decoded.id;
-  let password = req.body.password;
-
-  console.log(req.decoded);
-
-  let encPassword = crypto.createHash('md5').update(password).digest('hex');
-
-  try {
-    await userModel.changePassword(db, userId, encPassword);
-    res.send({ ok: true });
-  } catch (error) {
-    res.send({ ok: false, error: error.message });
-  } finally {
-    db.destroy();
-  }
-
-}));
-
+/**
+ * POST /users/change-password — ปิดการใช้งานแล้ว
+ *
+ * เดิม endpoint นี้ hash รหัสผ่านเป็น md5 ดิบแล้วเขียนทับคอลัมน์ password โดยตรง
+ * โดยไม่แตะ password_algo ซึ่งใช้ไม่ได้อีกแล้วหลังระบบย้ายไปใช้ bcrypt:
+ * ผู้ใช้ที่เปลี่ยนรหัสผ่านไปแล้ว (password_algo = 'bcrypt') ถ้ามาเปลี่ยนรหัสจากที่นี่
+ * รหัสจะกลายเป็น md5 แต่ระบบยังเทียบด้วย bcrypt -> เจ้าของบัญชีเข้าระบบไม่ได้อีกเลย
+ *
+ * การเปลี่ยนรหัสผ่านทั้งหมดต้องทำผ่านหน้าเข้าสู่ระบบ (mmis-management-backend)
+ * ซึ่งจัดการ bcrypt, password_algo, ประวัติ และการบังคับเปลี่ยนรหัสให้ครบถ้วน
+ *
+ * ไม่ลบ route ทิ้งเพื่อให้หน้าจอรุ่นเก่าที่ยังเรียกอยู่ได้ข้อความที่อ่านรู้เรื่อง
+ * แทนที่จะได้ 404 ที่ไม่บอกอะไรผู้ใช้เลย
+ */
+router.post('/change-password', (req, res, next) => {
+  res.send({
+    ok: false,
+    error: 'กรุณาเปลี่ยนรหัสผ่านที่หน้าเข้าสู่ระบบของ MMIS'
+  });
+});
 
 export default router;

@@ -35,7 +35,10 @@ import { GenericModel } from '../models/generic';
 
 
 const router = express.Router();
+import { PasswordModel } from '../models/password';
+
 const staffModel = new StaffModel();
+const passwordModel = new PasswordModel();
 const warehouseModel = new WarehouseModel();
 const alertModel = new AlertExpiredModel();
 const productModel = new ProductModel();
@@ -2827,9 +2830,9 @@ router.post('/adjust-stock/check/password', async (req, res, next) => {
   const password = req.body.password;
   const peopleUserId = req.decoded.people_user_id;
   try {
-    let encPassword = crypto.createHash('md5').update(password).digest('hex');
-    const rs: any = await adjustStockModel.checkPassword(db, peopleUserId, encPassword);
-    if (rs.length) {
+    // ดึงแถวผู้ใช้มาก่อน แล้วเทียบรหัสผ่านใน node เพราะ bcrypt เทียบใน SQL ไม่ได้
+    const rs: any = await adjustStockModel.findUserByPeopleUserId(db, peopleUserId);
+    if (rs.length && passwordModel.verify(password, rs[0].password)) {
       res.send({ ok: true });
     } else {
       res.send({ ok: false });
@@ -3065,8 +3068,10 @@ router.post('/basic/checkApprove', async (req, res, next) => {
     let password = req.body.password;
     let action = req.body.action;
     const warehouseId = req.decoded.warehouseId;
-    password = crypto.createHash('md5').update(password).digest('hex');
-    const isCheck: any = await basicModel.checkApprove(db, username, password, warehouseId);
+    // ดึงสิทธิ์มาก่อนแล้วเทียบรหัสผ่านใน node เพราะ bcrypt เทียบใน SQL ไม่ได้
+    // ถ้ารหัสไม่ตรงให้ถือว่าไม่พบข้อมูล ผลลัพธ์จึงเหมือนเดิมทุกกรณี
+    const rows: any = await basicModel.findApprover(db, username, warehouseId);
+    const isCheck: any = rows.length && passwordModel.verify(password, rows[0].password) ? rows : [];
     if (isCheck.length) {
       let access_right;
       isCheck.forEach(v => {

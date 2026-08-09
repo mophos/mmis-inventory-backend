@@ -79,13 +79,19 @@ export class AdjustStockModel {
       .where('a.adjust_id', adjustId)
   }
 
-  checkPassword(knex: Knex, peopleUserId, password) {
+  /**
+   * ดึงผู้ใช้ตาม people_user_id โดยไม่กรองด้วยรหัสผ่านใน SQL
+   *
+   * เดิมใส่ md5 ลงใน WHERE ได้เพราะเทียบตรงๆ ได้ แต่ bcrypt เทียบใน SQL ไม่ได้
+   * (ทุก hash มี salt ต่างกัน) จึงต้องดึงแถวมาแล้วเทียบใน node ด้วย PasswordModel
+   * เงื่อนไขอื่น (is_active, inuse) คงไว้เหมือนเดิมทุกข้อ
+   */
+  findUserByPeopleUserId(knex: Knex, peopleUserId) {
     return knex('um_people_users as pu')
       .join('um_users as u', 'pu.user_id', 'u.user_id')
       .where('u.is_active', 'Y')
       .where('pu.inuse', 'Y')
       .where('pu.people_user_id', peopleUserId)
-      .where('u.password', password)
   }
 
   saveHead(knex: Knex, head) {
