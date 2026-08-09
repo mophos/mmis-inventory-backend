@@ -2,10 +2,12 @@ import * as express from 'express';
 import * as crypto from 'crypto';
 import * as moment from 'moment';
 import { ToolModel } from '../models/tool';
+import { PasswordModel } from '../models/password';
 import * as _ from 'lodash';
 const router = express.Router();
 
 const toolModel = new ToolModel();
+const passwordModel = new PasswordModel();
 
 router.post('/stockcard/receives/search', async (req, res, next) => {
 
@@ -118,10 +120,9 @@ router.post('/check/password', async (req, res, next) => {
   const password = req.body.password;
   const peopleUserId = req.decoded.people_user_id;
   try {
-    let encPassword = crypto.createHash('md5').update(password).digest('hex');
-    const rs = await toolModel.checkPassword(db, peopleUserId, encPassword);
-    console.log(rs);
-    if (rs.length) {
+    // ดึงแถวผู้ใช้มาก่อน แล้วเทียบรหัสผ่านใน node เพราะ bcrypt เทียบใน SQL ไม่ได้
+    const rs: any = await toolModel.findUserByPeopleUserId(db, peopleUserId);
+    if (rs.length && passwordModel.verify(password, rs[0].password)) {
       res.send({ ok: true });
     } else {
       res.send({ ok: false });

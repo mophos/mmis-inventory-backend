@@ -2,11 +2,15 @@ import Knex = require('knex');
 import * as moment from 'moment';
 
 export class BasicModel {
-  checkApprove(knex: Knex, username: any, password: any, warehouseId) {
+  /**
+   * ดึงสิทธิ์ของผู้อนุมัติตาม username + คลัง โดยไม่กรองด้วยรหัสผ่านใน SQL
+   * (bcrypt เทียบใน SQL ไม่ได้ — ดูคำอธิบายใน models/password.ts)
+   * เงื่อนไข warehouse_id คงไว้เหมือนเดิม เพื่อไม่ให้คนนอกคลังมาอนุมัติข้ามคลังได้
+   */
+  findApprover(knex: Knex, username: any, warehouseId) {
     return knex('um_users as uu')
       .join('um_user_warehouse as uw', 'uw.user_id', 'uu.user_id')
       .where('uu.username', username)
-      .where('uu.password', password)
       .where('uw.warehouse_id', warehouseId)
   }
   getProductVendors(knex: Knex, genericId: any) {

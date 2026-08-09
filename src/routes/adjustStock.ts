@@ -2,6 +2,7 @@
 
 import * as express from 'express';
 import { AdjustStockModel } from '../models/adjustStock';
+import { PasswordModel } from '../models/password';
 import { ProductModel } from '../models/product';
 import { SerialModel } from '../models/serial';
 const router = express.Router();
@@ -10,6 +11,7 @@ import * as crypto from 'crypto';
 
 
 const adjustStockModel = new AdjustStockModel();
+const passwordModel = new PasswordModel();
 const serialModel = new SerialModel();
 const productModel = new ProductModel();
 
@@ -75,9 +77,10 @@ router.post('/check/password', async (req, res, next) => {
   const password = req.body.password;
   const peopleUserId = req.decoded.people_user_id;
   try {
-    let encPassword = crypto.createHash('md5').update(password).digest('hex');
-    const rs = await adjustStockModel.checkPassword(db, peopleUserId, encPassword);
-    if (rs.length) {
+    // ดึงแถวผู้ใช้มาก่อน แล้วเทียบรหัสผ่านใน node เพราะ bcrypt เทียบใน SQL ไม่ได้
+    // รองรับทั้งบัญชีที่ยังเป็น md5 และที่ย้ายมาเป็น bcrypt แล้ว
+    const rs: any = await adjustStockModel.findUserByPeopleUserId(db, peopleUserId);
+    if (rs.length && passwordModel.verify(password, rs[0].password)) {
       res.send({ ok: true });
     } else {
       res.send({ ok: false });

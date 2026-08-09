@@ -331,13 +331,17 @@ export class ToolModel {
       .insert(data);
   }
 
-  checkPassword(knex: Knex, peopleUserId, password) {
+  /**
+   * ดึงผู้ใช้ตาม people_user_id โดยไม่กรองด้วยรหัสผ่านใน SQL
+   * (bcrypt เทียบใน SQL ไม่ได้ — ดูคำอธิบายใน models/password.ts)
+   * เงื่อนไขอื่น (is_active, inuse) คงไว้เหมือนเดิมทุกข้อ
+   */
+  findUserByPeopleUserId(knex: Knex, peopleUserId) {
     return knex('um_people_users as pu')
       .join('um_users as u', 'pu.user_id', 'u.user_id')
       .where('u.is_active', 'Y')
       .where('pu.inuse', 'Y')
       .where('pu.people_user_id', peopleUserId)
-      .where('u.password', password)
   }
 
   updateRequisitionOrder(knex: Knex, requisitionId, data) {

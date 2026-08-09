@@ -13,7 +13,10 @@ import _ = require('lodash');
 
 const router = express.Router();
 
+import { PasswordModel } from '../models/password';
+
 const basicModel = new BasicModel();
+const passwordModel = new PasswordModel();
 const genericModel = new GenericModel();
 const requisitionModel = new RequisitionModel();
 const productModel = new ProductModel();
@@ -488,8 +491,10 @@ router.post('/checkApprove', async (req, res, next) => {
     let password = req.body.password;
     let action = req.body.action;
     const warehouseId = req.decoded.warehouseId;
-    password = crypto.createHash('md5').update(password).digest('hex');
-    const isCheck = await basicModel.checkApprove(db, username, password, warehouseId);
+    // ดึงสิทธิ์มาก่อนแล้วเทียบรหัสผ่านใน node เพราะ bcrypt เทียบใน SQL ไม่ได้
+    // ถ้ารหัสไม่ตรงให้ถือว่าไม่พบข้อมูล ผลลัพธ์จึงเหมือนเดิมทุกกรณี
+    const rows: any = await basicModel.findApprover(db, username, warehouseId);
+    const isCheck = rows.length && passwordModel.verify(password, rows[0].password) ? rows : [];
     if (isCheck.length) {
       let access_right;
       isCheck.forEach(v => {
