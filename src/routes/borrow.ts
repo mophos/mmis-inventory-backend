@@ -935,8 +935,10 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       stockOut.wm_product_id_out = wmProductIdOut;
       await stockCard.saveFastStockTransaction(db, stockOut);
       await stockCard.saveFastStockTransaction(db, stockIn);
+      // ส่ง borrow_product_id เพื่อให้ตั้ง confirm_qty เฉพาะบรรทัดของใบนี้
+      // เดิมส่ง wm_product_id ทำให้ไปเขียนทับใบยืมอื่นที่ใช้ lot เดียวกัน
       let obj = {
-        wm_product_id: v.wm_product_id,
+        borrow_product_id: v.borrow_product_id,
         qty: v.lot_qty > remain_dst[0].balance_lot ? remain_dst[0].balance_lot : v.lot_qty
       }
       await borrowModel.updateConfirm(db, obj);

@@ -60,7 +60,7 @@ export class GenericModel {
             FROM
               mm_generics
             WHERE
-              working_code = '${q}'
+              working_code = :q
               and mark_deleted = 'N'
               and is_active ='Y'
           ) AS s
@@ -74,7 +74,7 @@ export class GenericModel {
               FROM
                 mm_generics
               WHERE
-                generic_name LIKE '${q_}'
+                generic_name LIKE :q_
                 and mark_deleted = 'N'
                 and is_active ='Y'
               LIMIT 10
@@ -90,8 +90,8 @@ export class GenericModel {
                   mm_generics
                 WHERE
               (
-                  generic_name LIKE '${_q_}'
-                OR keywords LIKE '${_q_}'
+                  generic_name LIKE :_q_
+                OR keywords LIKE :_q_
               )
                 and mark_deleted = 'N'
                 and is_active ='Y'
@@ -100,7 +100,7 @@ export class GenericModel {
                 LIMIT 10
               ) AS s
       ) AS a`
-    return knex.raw(sql);
+    return knex.raw(sql, { q, q_, _q_ });
   }
 
   searchAutocompleteAll(knex: Knex, q: any) {
@@ -119,7 +119,7 @@ export class GenericModel {
             FROM
               mm_generics
             WHERE
-              working_code = '${q}'
+              working_code = :q
               and mark_deleted = 'N'
               and is_active ='Y'
           ) AS s
@@ -133,7 +133,7 @@ export class GenericModel {
               FROM
                 mm_generics
               WHERE
-                generic_name LIKE '${q_}'
+                generic_name LIKE :q_
                 and mark_deleted = 'N'
                 and is_active ='Y'
             ) AS s
@@ -148,8 +148,8 @@ export class GenericModel {
                   mm_generics
                 WHERE
               (
-                  generic_name LIKE '${_q_}'
-                OR keywords LIKE '${_q_}'
+                  generic_name LIKE :_q_
+                OR keywords LIKE :_q_
               )
                 and mark_deleted = 'N'
                 and is_active ='Y'
@@ -157,7 +157,7 @@ export class GenericModel {
                   generic_name
               ) AS s
       ) AS a`
-    return knex.raw(sql);
+    return knex.raw(sql, { q, q_, _q_ });
   }
 
 
@@ -177,7 +177,7 @@ export class GenericModel {
         INNER JOIN mm_products AS mp ON mp.product_id = wp.product_id
         WHERE
           mp.generic_id = a.generic_id
-        AND wp.warehouse_id = ${warehouseId}
+        AND wp.warehouse_id = :warehouseId
       ) AS qty
       FROM
       (
@@ -190,7 +190,7 @@ export class GenericModel {
             FROM
               mm_generics
             WHERE
-              working_code = '${q}'
+              working_code = :q
               and mark_deleted ='N'
               and is_active ='Y'
           ) AS s
@@ -204,7 +204,7 @@ export class GenericModel {
               FROM
                 mm_generics
               WHERE
-                generic_name LIKE '${q_}'
+                generic_name LIKE :q_
                 and mark_deleted ='N'
               and is_active ='Y'
               LIMIT 10
@@ -220,8 +220,8 @@ export class GenericModel {
                   mm_generics
                 WHERE
                 (
-                  generic_name LIKE '${_q_}'
-                OR keywords LIKE '${_q_}'
+                  generic_name LIKE :_q_
+                OR keywords LIKE :_q_
                 )
                 and mark_deleted ='N'
               and is_active ='Y'
@@ -232,9 +232,9 @@ export class GenericModel {
       ) AS a
       where
 			a.generic_id in (
-			SELECT mp.generic_id from wm_products as wp join mm_products as mp on mp.product_id = wp.product_id WHERE wp.warehouse_id = ${warehouseId} group by mp.generic_id
+			SELECT mp.generic_id from wm_products as wp join mm_products as mp on mp.product_id = wp.product_id WHERE wp.warehouse_id = :warehouseId group by mp.generic_id
 			)`
-    return knex.raw(sql);
+    return knex.raw(sql, { q, q_, _q_, warehouseId });
   }
 
   warehouseSearchAutocompleteAll(knex: Knex, warehouseId: any, q: any) {
@@ -253,7 +253,7 @@ export class GenericModel {
         INNER JOIN mm_products AS mp ON mp.product_id = wp.product_id
         WHERE
           mp.generic_id = a.generic_id
-        AND wp.warehouse_id = ${warehouseId}
+        AND wp.warehouse_id = :warehouseId
       ) AS qty
       FROM
       (
@@ -266,7 +266,7 @@ export class GenericModel {
             FROM
               mm_generics
             WHERE
-              working_code = '${q}'
+              working_code = :q
               and mark_deleted ='N'
               and is_active ='Y'
           ) AS s
@@ -280,7 +280,7 @@ export class GenericModel {
               FROM
                 mm_generics
               WHERE
-                generic_name LIKE '${q_}'
+                generic_name LIKE :q_
                 and mark_deleted ='N'
               and is_active ='Y'
             ) AS s
@@ -295,8 +295,8 @@ export class GenericModel {
                   mm_generics
                 WHERE
                 (
-                  generic_name LIKE '${_q_}'
-                OR keywords LIKE '${_q_}'
+                  generic_name LIKE :_q_
+                OR keywords LIKE :_q_
                 )
                 and mark_deleted ='N'
               and is_active ='Y'
@@ -306,9 +306,9 @@ export class GenericModel {
       ) AS a
       where
 			a.generic_id in (
-			SELECT mp.generic_id from wm_products as wp join mm_products as mp on mp.product_id = wp.product_id WHERE wp.warehouse_id = ${warehouseId} group by mp.generic_id
+			SELECT mp.generic_id from wm_products as wp join mm_products as mp on mp.product_id = wp.product_id WHERE wp.warehouse_id = :warehouseId group by mp.generic_id
       )`
-    return knex.raw(sql);
+    return knex.raw(sql, { q, q_, _q_, warehouseId });
   }
 
   warehouseSearchAutocompleteLimitStaff(knex: Knex, warehouseId: any, q: any, srcWarehouseId: any) {
@@ -327,7 +327,7 @@ export class GenericModel {
         INNER JOIN mm_products AS mp ON mp.product_id = wp.product_id
         WHERE
           mp.generic_id = a.generic_id
-        AND wp.warehouse_id = ${warehouseId}
+        AND wp.warehouse_id = :warehouseId
       ) AS qty
       FROM
       (
@@ -340,7 +340,7 @@ export class GenericModel {
             FROM
               mm_generics
             WHERE
-              working_code = '${q}'
+              working_code = :q
               and mark_deleted ='N'
               and is_active ='Y'
           ) AS s
@@ -354,7 +354,7 @@ export class GenericModel {
               FROM
                 mm_generics
               WHERE
-                generic_name LIKE '${q_}'
+                generic_name LIKE :q_
                 and mark_deleted ='N'
               and is_active ='Y'
               LIMIT 10
@@ -370,8 +370,8 @@ export class GenericModel {
                   mm_generics
                 WHERE
                 (
-                  generic_name LIKE '${_q_}'
-                OR keywords LIKE '${_q_}'
+                  generic_name LIKE :_q_
+                OR keywords LIKE :_q_
                 )
                 and mark_deleted ='N'
               and is_active ='Y'
@@ -382,11 +382,11 @@ export class GenericModel {
       ) AS a
       where
 			a.generic_id in (
-			SELECT mp.generic_id from wm_products as wp join mm_products as mp on mp.product_id = wp.product_id WHERE wp.warehouse_id = ${warehouseId} AND mp.generic_id IN (
-        SELECT generic_id FROM mm_generic_planning WHERE warehouse_id = ${srcWarehouseId} GROUP BY generic_id
+			SELECT mp.generic_id from wm_products as wp join mm_products as mp on mp.product_id = wp.product_id WHERE wp.warehouse_id = :warehouseId AND mp.generic_id IN (
+        SELECT generic_id FROM mm_generic_planning WHERE warehouse_id = :srcWarehouseId GROUP BY generic_id
       ) group by mp.generic_id
 			)`
-    return knex.raw(sql);
+    return knex.raw(sql, { q, q_, _q_, warehouseId, srcWarehouseId });
   }
 
   warehouseSearchAutocompleteAllStaff(knex: Knex, warehouseId: any, q: any, srcWarehouseId: any) {
@@ -405,7 +405,7 @@ export class GenericModel {
         INNER JOIN mm_products AS mp ON mp.product_id = wp.product_id
         WHERE
           mp.generic_id = a.generic_id
-        AND wp.warehouse_id = ${warehouseId}
+        AND wp.warehouse_id = :warehouseId
       ) AS qty
       FROM
       (
@@ -418,7 +418,7 @@ export class GenericModel {
             FROM
               mm_generics
             WHERE
-              working_code = '${q}'
+              working_code = :q
               and mark_deleted ='N'
               and is_active ='Y'
           ) AS s
@@ -432,7 +432,7 @@ export class GenericModel {
               FROM
                 mm_generics
               WHERE
-                generic_name LIKE '${q_}'
+                generic_name LIKE :q_
                 and mark_deleted ='N'
               and is_active ='Y'
             ) AS s
@@ -447,8 +447,8 @@ export class GenericModel {
                   mm_generics
                 WHERE
                 (
-                  generic_name LIKE '${_q_}'
-                OR keywords LIKE '${_q_}'
+                  generic_name LIKE :_q_
+                OR keywords LIKE :_q_
                 )
                 and mark_deleted ='N'
               and is_active ='Y'
@@ -458,11 +458,11 @@ export class GenericModel {
       ) AS a
       where
 			a.generic_id in (
-			SELECT mp.generic_id from wm_products as wp join mm_products as mp on mp.product_id = wp.product_id WHERE wp.warehouse_id = ${warehouseId} AND mp.generic_id IN (
-        SELECT generic_id FROM mm_generic_planning WHERE warehouse_id = ${srcWarehouseId} GROUP BY generic_id
+			SELECT mp.generic_id from wm_products as wp join mm_products as mp on mp.product_id = wp.product_id WHERE wp.warehouse_id = :warehouseId AND mp.generic_id IN (
+        SELECT generic_id FROM mm_generic_planning WHERE warehouse_id = :srcWarehouseId GROUP BY generic_id
       ) group by mp.generic_id
 			)`
-    return knex.raw(sql);
+    return knex.raw(sql, { q, q_, _q_, warehouseId, srcWarehouseId });
   }
 
   searchGenericSetZeroWarehouse(knex: Knex, query: any, warehouseId: any) {

@@ -41,7 +41,7 @@ router.get('/warehouse', async (req, res, next) => {
     }
   } catch (error) {
     console.log(error)
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -70,7 +70,7 @@ router.get('/warehouse/generic/:dstWarehouseId', async (req, res, next) => {
     }
   } catch (error) {
     console.log(error)
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -87,7 +87,7 @@ router.get('/generic/warehouse/:genericId', async (req, res, next) => {
     res.send({ ok: true, rows: rs });
   } catch (error) {
     console.log(error)
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -116,7 +116,7 @@ router.get('/generic', async (req, res, next) => {
     }
   } catch (error) {
     console.log(error)
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -133,7 +133,7 @@ router.get('/history', async (req, res, next) => {
     res.send({ ok: true, rows: rs });
   } catch (error) {
     console.log(error)
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -151,7 +151,7 @@ router.get('/list/:status', async (req, res, next) => {
     res.send({ ok: true, rows: rs });
   } catch (error) {
     console.log(error)
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -168,7 +168,7 @@ router.get('/info/:transactionId', async (req, res, next) => {
     res.send({ ok: true, rows: rs });
   } catch (error) {
     console.log(error)
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -204,7 +204,7 @@ router.get('/print/transaction/:transactionId', async (req, res, next) => {
 
   } catch (error) {
     console.log(error)
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -261,7 +261,7 @@ router.get('/print/transactions', async (req, res, next) => {
 
   } catch (error) {
     console.log(error)
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -305,7 +305,7 @@ router.get('/print/approve', async (req, res, next) => {
           })
         })
       } catch (error) {
-        res.send({ ok: false, error: error.messgae });
+        res.send({ ok: false, error: error.message });
       }
     };
 
@@ -321,7 +321,7 @@ router.get('/print/approve', async (req, res, next) => {
 
   } catch (error) {
     console.log(error)
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -339,7 +339,7 @@ router.get('/product/:transactionId/:genericId', async (req, res, next) => {
     res.send({ ok: true, rows: rs });
   } catch (error) {
     console.log(error)
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -532,7 +532,7 @@ router.post('/cancel', async (req, res, next) => {
     res.send({ ok: true });
   } catch (error) {
     console.log(error)
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -621,7 +621,7 @@ router.get('/dashboard/warehouse/:warehouseId', async (req, res, next) => {
     }
   } catch (error) {
     console.log(error)
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -766,7 +766,7 @@ router.get('/dashboard/generic/:genericId', async (req, res, next) => {
     res.send({ ok: true, rows: rs });
   } catch (error) {
     console.log(error)
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }

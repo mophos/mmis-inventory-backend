@@ -68,7 +68,7 @@ router.get('/search-autocomplete', async (req, res, next) => {
       res.send([]);
     }
   } catch (error) {
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -122,7 +122,7 @@ router.get('/warehouse/search/autocomplete', async (req, res, next) => {
   } catch (error) {
     console.log(error);
 
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -156,7 +156,7 @@ router.get('/warehouse/search/autocomplete/all', async (req, res, next) => {
   } catch (error) {
     console.log(error);
 
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }

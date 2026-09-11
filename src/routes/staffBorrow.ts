@@ -323,7 +323,10 @@ router.post('/save', co(async (req, res, next) => {
           borrow_id: borrowId,
           generic_id: g.generic_id,
           qty: g.borrow_qty,
-          // primary_unit_id: g.primary_unit_id,
+          // wm_borrow_generic.primary_unit_id เป็น NOT NULL และไม่มี default
+          // เดิมบรรทัดนี้ถูก comment ไว้ ทำให้บันทึกใบยืมฝั่ง staff ไม่ผ่านเลยสักครั้ง
+          // (ER_NO_DEFAULT_FOR_FIELD) ฝั่ง admin ส่งค่านี้อยู่แล้ว
+          primary_unit_id: g.primary_unit_id,
           unit_generic_id: g.unit_generic_id,
           create_date: moment().format('YYYY-MM-DD HH:mm:ss'),
           create_by: req.decoded.people_user_id
@@ -703,10 +706,10 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       stockOut.wm_product_id_out = wmProductIdOut;
       await stockCard.saveFastStockTransaction(db, stockOut);
       await stockCard.saveFastStockTransaction(db, stockIn);
+      // ส่ง borrow_product_id ด้วยเหตุผลเดียวกับ routes/borrow.ts
       let obj = {
-        wm_product_id: v.wm_product_id,
+        borrow_product_id: v.borrow_product_id,
         qty: v.lot_qty > remain_dst[0].balance_lot ? remain_dst[0].balance_lot : v.lot_qty
-
       }
       await borrowModel.updateConfirm(db, obj);
     }

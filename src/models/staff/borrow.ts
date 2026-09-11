@@ -401,11 +401,25 @@ export class BorrowModel {
     return knex.raw(query);
   }
 
+  /**
+   * ตั้ง confirm_qty ของรายการยืมหนึ่งบรรทัด
+   *
+   * WHERE เดิมระบุแค่ wm_product_id ซึ่งเป็น lot ในคลัง ไม่ได้ระบุว่าใบยืมไหน
+   * lot เดียวถูกยืมได้หลายใบ การอนุมัติใบหนึ่งจึงเขียนทับ confirm_qty
+   * ของทุกใบที่เคยใช้ lot เดียวกัน
+   *
+   * ผลที่เกิดขึ้นจริง
+   *   - รายงานใบอนุมัติแสดงจำนวนผิด (routes/index.ts แสดง confirm_qty)
+   *   - หน้าคืนของยืมจำกัดจำนวนคืนไว้ที่ confirm_qty (routes/borrow.ts)
+   *     ค่าต่ำกว่าจริงทำให้คืนไม่ครบ ค่าสูงกว่าจริงทำให้คืนเกินและสต๊อกต้นทางเกินความจริง
+   *
+   * borrow_product_id เป็น primary key ของ wm_borrow_product จึงชี้ได้แถวเดียวแน่นอน
+   * และเปลี่ยนมาใช้ query builder เพื่อให้ค่าถูกผูกเป็นพารามิเตอร์แทนการต่อสตริง
+   */
   updateConfirm(knex: Knex, data: any) {
-    let sql = `UPDATE wm_borrow_product
-    SET confirm_qty = ${data.qty}
-    WHERE wm_product_id = '${data.wm_product_id}'`;
-    return knex.raw(sql);
+    return knex('wm_borrow_product')
+      .where('borrow_product_id', data.borrow_product_id)
+      .update({ confirm_qty: data.qty });
   }
 
   getProductForSave(knex: Knex, ids: any[]) {
@@ -440,8 +454,12 @@ export class BorrowModel {
     // .whereRaw('wp.product_id=d.product_id and wp.warehouse_id=t.dst_warehouse_id and wp.lot_no=d.lot_no and wp.expired_date=d.expired_date');
 
     return knex('wm_borrow_product as d')
+      // เพิ่ม p.lot_time เข้ามา เดิมไม่ได้ select ทำให้ routes/staffBorrow.ts
+      // ส่ง objIn.lot_time เป็น undefined ตอน insert wm_products
+      // ซึ่งคอลัมน์นั้นเป็น int NOT NULL การอนุมัติยืมฝั่ง staff จึงพังทุกครั้ง
+      // ฝั่ง admin (models/borrow.ts) select p.lot_time อยู่แล้ว
       .select('d.borrow_product_id', 'd.borrow_id', 'd.wm_product_id', 'd.qty as lot_qty', 'ug.qty as conversion_qty', 'p.lot_no',
-        'p.expired_date', 'p.cost', 'p.price', 'p.product_id',
+        'p.expired_date', 'p.cost', 'p.price', 'p.product_id', 'p.lot_time',
         'mp.generic_id', 't.*', 'tg.*', subBalanceSrc, subBalanceDst, 'p.unit_generic_id')
       .innerJoin('wm_borrow as t', 't.borrow_id', 'd.borrow_id')
       .joinRaw('join wm_borrow_generic as tg on tg.borrow_id = d.borrow_id and tg.borrow_generic_id = d.borrow_generic_id')
