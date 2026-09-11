@@ -462,11 +462,25 @@ export class BorrowModel {
     return knex.raw(query);
   }
 
+  /**
+   * ตั้ง confirm_qty ของรายการยืมหนึ่งบรรทัด
+   *
+   * WHERE เดิมระบุแค่ wm_product_id ซึ่งเป็น lot ในคลัง ไม่ได้ระบุว่าใบยืมไหน
+   * lot เดียวถูกยืมได้หลายใบ การอนุมัติใบหนึ่งจึงเขียนทับ confirm_qty
+   * ของทุกใบที่เคยใช้ lot เดียวกัน
+   *
+   * ผลที่เกิดขึ้นจริง
+   *   - รายงานใบอนุมัติแสดงจำนวนผิด (routes/index.ts แสดง confirm_qty)
+   *   - หน้าคืนของยืมจำกัดจำนวนคืนไว้ที่ confirm_qty (routes/borrow.ts)
+   *     ค่าต่ำกว่าจริงทำให้คืนไม่ครบ ค่าสูงกว่าจริงทำให้คืนเกินและสต๊อกต้นทางเกินความจริง
+   *
+   * borrow_product_id เป็น primary key ของ wm_borrow_product จึงชี้ได้แถวเดียวแน่นอน
+   * และเปลี่ยนมาใช้ query builder เพื่อให้ค่าถูกผูกเป็นพารามิเตอร์แทนการต่อสตริง
+   */
   updateConfirm(knex: Knex, data: any) {
-    let sql = `UPDATE wm_borrow_product
-    SET confirm_qty = ${data.qty}
-    WHERE wm_product_id = '${data.wm_product_id}'`;
-    return knex.raw(sql);
+    return knex('wm_borrow_product')
+      .where('borrow_product_id', data.borrow_product_id)
+      .update({ confirm_qty: data.qty });
   }
 
   getProductForSave(knex: Knex, ids: any[]) {

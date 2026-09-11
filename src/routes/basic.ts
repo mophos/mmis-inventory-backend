@@ -478,7 +478,7 @@ router.get('/get-generic-warehouse-remain/:warehouseId/:genericId', async (req, 
     res.send({ ok: true, remain_qty: rs[0].remain_qty });
   } catch (error) {
     console.log(error);
-    res.send({ ok: false, error: error.messgae });
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }

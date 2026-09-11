@@ -933,7 +933,8 @@ export class WarehouseModel {
     from mm_shipping_networks as sn
     left join wm_warehouses as dst on dst.warehouse_id=sn.source_warehouse_id
     where sn.source_warehouse_id = ?
-    and sn.transfer_type = 'REQ' and dst.is_actived='Y'`;
+    and sn.transfer_type = 'REQ' and dst.is_actived='Y'
+    and sn.is_active = 'Y'`;
     return knex.raw(sql, [warehouseId]);
   }
 
@@ -944,6 +945,7 @@ export class WarehouseModel {
     left join wm_warehouses as dst on dst.warehouse_id=sn.destination_warehouse_id
     where sn.source_warehouse_id = ?
     and sn.transfer_type = ? and dst.is_actived='Y'
+    and sn.is_active = 'Y'
     order by dst.short_code
     `;
     return knex.raw(sql, [warehouseId, type]);
@@ -956,6 +958,7 @@ export class WarehouseModel {
     left join wm_warehouses as dst on dst.warehouse_id=sn.destination_warehouse_id
     where sn.source_warehouse_id = ?
     and sn.transfer_type in (?) and dst.is_actived='Y'
+    and sn.is_active = 'Y'
     order by dst.short_code
     `;
     return knex.raw(sql, [warehouseId, type]);
@@ -966,12 +969,13 @@ export class WarehouseModel {
     select sn.*, dst.warehouse_name, dst.warehouse_id,dst.short_code, dst.location, dst.is_minmax_planning
     from mm_shipping_networks as sn
     left join wm_warehouses as dst on dst.warehouse_id=sn.destination_warehouse_id
-    where sn.source_warehouse_id = '${warehouseId}'
+    where sn.source_warehouse_id = ?
     and dst.is_actived='Y' and sn.transfer_type in ('REQ','TRN')
+    and sn.is_active = 'Y'
     group by sn.destination_warehouse_id
     order by dst.short_code
     `;
-    return knex.raw(sql);
+    return knex.raw(sql, [warehouseId]);
   }
 
   getMappingsGenerics(knex: Knex, hospcode: any) {

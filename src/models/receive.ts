@@ -462,11 +462,11 @@ export class ReceiveModel {
       .del();
   }
 
-  removeOldApproveOther(knex: Knex, receiveIds: any) {
-    return knex('wm_receive_approve')
-      .whereIn('receive_other_id', receiveIds)
-      .del();
-  }
+  // ลบ removeOldApproveOther ออกแล้ว
+  //
+  // เดิมการอนุมัติใบรับอื่นๆ ลบแถวอนุมัติเก่าทิ้งก่อนบันทึกใหม่
+  // ซึ่งเป็นทางที่ทำให้ใบที่ถูกข้ามจากบั๊ก splice เสียแถวอนุมัติไปโดยไม่ได้สร้างคืน
+  // ตอนนี้เช็คใบซ้ำภายใน transaction หลังล็อกแถวแล้ว จึงไม่ต้องลบอะไรก่อน
 
   saveReceiveDetail(knex: Knex, products: any[]) {
     return knex('wm_receive_detail')
@@ -506,17 +506,17 @@ export class ReceiveModel {
       .where('receive_other_id', receiveOtherId)
   }
 
-  updateReceiveDetailSummary(knex: Knex, receiveDetailId: any, data: any) {
-    return knex('wm_receive_detail')
-      .where('receive_detail_id', receiveDetailId)
-      .update(data);
-  }
-
-  updateReceiveOtherDetailSummary(knex: Knex, receiveDetailId: any, data: any) {
-    return knex('wm_receive_detail')
-      .where('receive_detail_id', receiveDetailId)
-      .update(data);
-  }
+  // ลบ updateReceiveDetailSummary และ updateReceiveOtherDetailSummary ออกแล้ว
+  //
+  // ทั้งคู่ UPDATE wm_receive_detail เหมือนกัน ทั้งที่ตัวที่ชื่อ Other ควรเขียนลง
+  // wm_receive_other_detail ผู้เรียกมีที่เดียวคือการอนุมัติใบรับอื่นๆ ซึ่งส่ง
+  // receive_detail_id ของ wm_receive_other_detail เข้ามา เลขจึงไปตรงกับแถวของ
+  // ใบสั่งซื้อคนละใบแล้วเขียนทับค่าของแถวนั้น
+  //
+  // ตรวจทุก backend แล้วไม่มี query ไหนอ่าน wm_product_id ของทั้ง wm_receive_detail
+  // และ wm_receive_other_detail เลย การอนุมัติรับจากใบสั่งซื้อก็ไม่เคยเขียนคอลัมน์นี้
+  // จึงเอาการเขียนออกทั้งหมดแทนที่จะแก้ให้เขียนถูกตาราง
+  // ถ้าวันหน้าต้องใช้ค่านี้ ให้เขียนฟังก์ชันใหม่ที่ระบุตารางให้ถูกตั้งแต่ต้น
 
   updateReceiveDetail(knex: Knex, receiveDetailId: any, data: any) {
     return knex('wm_receives')
@@ -563,26 +563,40 @@ export class ReceiveModel {
       });
   }
 
+  // ล็อกแถวใบรับอื่นๆ กัน request ที่ยิงซ้อนกันเข้ามาอนุมัติซ้ำ
+  // ต้องเรียกภายใน transaction เท่านั้น
+  lockReceiveOther(knex: Knex, receiveOtherId: any) {
+    return knex('wm_receive_other')
+      .select('receive_other_id')
+      .where('receive_other_id', receiveOtherId)
+      .forUpdate();
+  }
+
+  // อ่านแบบ locking read เพื่อให้เห็นแถวที่ transaction อื่นเพิ่ง commit จริงๆ
+  // SELECT ธรรมดาภายใต้ REPEATABLE READ อาจให้ค่าจาก snapshot เก่าแล้วอนุมัติซ้ำได้
+  // ต้องเรียกหลัง lockReceiveOther() เท่านั้น
+  lockApproveByReceiveOther(knex: Knex, receiveOtherId: any) {
+    return knex('wm_receive_approve')
+      .select('approve_id')
+      .where('receive_other_id', receiveOtherId)
+      .forUpdate();
+  }
+
   checkDuplicatedApproveOther(knex: Knex, receiveId: any) {
     return knex('wm_receive_approve')
       .count('* as total')
       .where('receive_other_id', receiveId);
   }
-  checkDuplicatedApproveOtherStaff(knex: Knex, receiveId: any) {
-    return knex('wm_receive_approve')
-      .whereIn('receive_other_id', receiveId);
-  }
+  // ลบ checkDuplicatedApproveOtherStaff ออกแล้ว
+  // ผู้เรียกเดียวคือการอนุมัติใบรับอื่นๆ ฝั่ง staff ซึ่งเปลี่ยนมาเช็คใต้ล็อกแทน
   getApproveStatus(knex: Knex, receiveId: any) {
     return knex('wm_receive_approve')
       .where('receive_id', receiveId);
   }
 
-  getApproveOtherStatus(knex: Knex, approveIds: any) {
-    return knex('wm_receive_approve')
-      .select('receive_other_id')
-      .whereIn('approve_id', approveIds)
-      .groupBy('receive_other_id');
-  }
+  // ลบ getApproveOtherStatus ออกแล้ว
+  // เดิมใช้แปลง approve_id กลับเป็น receive_other_id หลังบันทึกอนุมัติยกชุด
+  // ตอนนี้วนทีละใบอยู่แล้ว จึงรู้ receive_other_id ตั้งแต่ต้นลูป
 
   getReceiveInfo(knex: Knex, receiveId: any) {
     return knex('wm_receives as r')

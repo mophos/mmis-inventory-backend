@@ -30,6 +30,24 @@ import { StockCard } from '../models/stockcard';
 import { TransactionType } from '../interfaces/basic';
 import { PeriodModel } from '../models/period';
 
+/**
+ * lot_no ของรายการรับ ห้ามว่าง
+ *
+ * wm_products.lot_no เป็น NOT NULL และอยู่ใน PRIMARY KEY
+ * (warehouse_id, product_id, lot_no, lot_time)
+ * ถ้าปล่อยให้ว่างมาถึงตอนอนุมัติ saveProducts จะ INSERT ไม่ผ่าน ลูปตายกลางทาง
+ * ใบถูกอนุมัติค้างโดยสต๊อกลงไม่ครบ และใบอื่นที่อนุมัติพร้อมกันในรอบเดียว
+ * จะไม่ถูกประมวลผลตามไปด้วย
+ *
+ * เดิมมี default '-' เฉพาะตอนสร้างใบใหม่ (POST) ส่วนตอนแก้ไขใบ (PUT) ไม่มี
+ * ทั้งฝั่งรับจากใบสั่งซื้อและรับแบบอื่นๆ จึงเป็นทางที่ทำให้เกิด lot_no ว่างในฐานข้อมูล
+ * และการเช็คเดิมใช้ == null ซึ่งไม่ครอบคลุมค่าว่างกับช่องว่างล้วน
+ */
+const normalizeLotNo = (lotNo: any): string => {
+  const v = lotNo === null || lotNo === undefined ? '' : String(lotNo).trim();
+  return v === '' ? '-' : v;
+};
+
 const router = express.Router();
 
 const receiveModel = new ReceiveModel();
@@ -290,7 +308,7 @@ router.post('/', co(async (req, res, next) => {
                 location_id: v.location_id,
                 warehouse_id: v.warehouse_id,
                 cost: +v.cost,
-                lot_no: v.lot_no == null ? '-' : v.lot_no,
+                lot_no: normalizeLotNo(v.lot_no),
                 expired_date: moment(v.expired_date, 'DD/MM/YYYY').isValid() ? moment(v.expired_date, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
                 vendor_labeler_id: summary.supplierId,
                 manufacturer_labeler_id: v.manufacture_id,
@@ -365,7 +383,7 @@ router.put('/:receiveId', co(async (req, res, next) => {
         location_id: v.location_id,
         warehouse_id: v.warehouse_id,
         cost: +v.cost,
-        lot_no: v.lot_no,
+        lot_no: normalizeLotNo(v.lot_no),
         // conversion_qty: +v.conversion_qty,
         expired_date: moment(v.expired_date, 'DD/MM/YYYY').isValid() ? moment(v.expired_date, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
         vendor_labeler_id: summary.supplierId,
@@ -716,7 +734,7 @@ router.post('/other', co(async (req, res, next) => {
             location_id: v.location_id,
             warehouse_id: v.warehouse_id,
             cost: +v.cost,
-            lot_no: v.lot_no == null ? '-' : v.lot_no,
+            lot_no: normalizeLotNo(v.lot_no),
             expired_date: moment(v.expired_date, 'DD/MM/YYYY').isValid() ? moment(v.expired_date, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
             manufacturer_labeler_id: v.manufacture_id
           }
@@ -772,7 +790,7 @@ router.put('/other/:receiveOtherId', co(async (req, res, next) => {
         location_id: v.location_id,
         warehouse_id: v.warehouse_id,
         cost: +v.cost,
-        lot_no: v.lot_no,
+        lot_no: normalizeLotNo(v.lot_no),
         expired_date: moment(v.expired_date, 'DD/MM/YYYY').isValid() ? moment(v.expired_date, 'DD/MM/YYYY').format('YYYY-MM-DD') : null,
         manufacturer_labeler_id: v.manufacture_id
       }
@@ -1024,162 +1042,173 @@ router.post('/approve', co(async (req, res, next) => {
 router.post('/other/approve', co(async (req, res, next) => {
   let db = req.db;
   let warehouseId = req.decoded.warehouseId;
-  let receiveIds = req.body.receiveIds;
+  let receiveIds = Array.isArray(req.body.receiveIds) ? req.body.receiveIds : [req.body.receiveIds];
   let comment = req.body.comment;
   let approveDate = req.body.approveDate;
 
+  // เดิมบันทึกอนุมัติของทุกใบก่อน แล้วค่อยดึงสินค้าของทุกใบมารวมวนในลูปเดียว
+  // โดยไม่มี transaction เลย ถ้าพังกลางทางใบจะถูกอนุมัติค้างโดยสต๊อกลงไม่ครบ
+  // และใบที่อยู่หลังจุดที่พังในลูปเดียวกันจะไม่ถูกประมวลผลเลยทั้งที่ไม่มีปัญหาอะไร
+  // (เคยทำให้บรรทัดเสียบรรทัดเดียวลาม 6 ใบมาแล้ว)
+  //
+  // เปลี่ยนมาใช้รูปแบบเดียวกับการอนุมัติรับจากใบสั่งซื้อ (/approve ด้านบน)
+  // คือแต่ละใบอยู่ใน transaction ของตัวเอง พังใบไหนก็ rollback เฉพาะใบนั้น
+  // และบันทึกอนุมัติเป็นขั้นตอนสุดท้ายหลังสต๊อกลงครบแล้วเท่านั้น
+  const approvedOk: any = [];      // อนุมัติสำเร็จรอบนี้ (commit แล้ว)
+  const alreadyApproved: any = []; // อนุมัติไปแล้วก่อนหน้า
+  const failedApprove: any = [];   // ล้มเหลว rollback ทั้งใบแล้ว
+
   try {
-    let approveDatas = [];
-    // _.forEach(receiveIds, (v: any) => {
-    for (const v of receiveIds) {
-      const checkApprove = await receiveModel.checkDuplicatedApproveOther(db, v);
-      if (checkApprove[0].total > 0) {
-        const idx = _.indexOf(receiveIds, v);
-        if (idx > -1) {
-          receiveIds.splice(idx, 1);
+    for (const r of receiveIds) {
+      let isDuplicated = false;
+      try {
+        await db.transaction(async (trx) => {
+          // ล็อกใบก่อน แล้วค่อยเช็คซ้ำหลังได้ล็อก
+          // ถ้าเช็คก่อนล็อกจะเป็น check-then-act ที่สอง request แข่งกันได้
+          await receiveModel.lockReceiveOther(trx, r);
+          const lockedApprove: any = await receiveModel.lockApproveByReceiveOther(trx, r);
+          if (lockedApprove.length) {
+            isDuplicated = true;
+            return;
+          }
+
+          const _rproducts: any = await receiveModel.getReceiveOtherProductsImport(trx, [r]);
+          let balances: any = await receiveModel.getProductRemainByReceiveOtherIds(trx, [r], warehouseId);
+          balances = balances[0];
+
+          const lot_time: any = [];
+          let lotTime = 0;
+
+          for (const v of _rproducts) {
+            const idx = _.findIndex(lot_time, { 'product_id': v.product_id, 'lot_no': v.lot_no });
+            if (idx > -1) {
+              lot_time[idx].lot_time += 1;
+              lotTime = lot_time[idx].lot_time;
+            } else {
+              lot_time.push({ product_id: v.product_id, lot_no: v.lot_no, lot_time: +v.lot_time + 1 });
+              lotTime = +v.lot_time + 1;
+            }
+
+            const id = uuid();
+            if (+v.receive_qty > 0) {
+              const qty = v.receive_qty * v.conversion_qty;
+              const expiredDate = moment(v.expired_date, 'YYYY-MM-DD').isValid()
+                ? moment(v.expired_date, 'YYYY-MM-DD').format('YYYY-MM-DD') : null;
+
+              const obj: any = {
+                wm_product_id: id,
+                warehouse_id: v.warehouse_id,
+                receive_other_id: v.receive_other_id,
+                product_id: v.product_id,
+                generic_id: v.generic_id,
+                balance: v.balance,
+                receive_code: v.receive_code,
+                donator_id: v.donator_id,
+                qty: qty,
+                price: (v.cost * v.receive_qty) / qty,
+                cost: (v.cost * v.receive_qty) / qty,
+                lot_no: v.lot_no,
+                expired_date: expiredDate,
+                unit_generic_id: v.unit_generic_id,
+                location_id: +v.location_id,
+                people_user_id: req.decoded.people_user_id,
+                created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+                lot_time: lotTime
+              };
+              await receiveModel.saveProducts(trx, obj);
+
+              const cost: any = await receiveModel.getCostProduct(trx, obj);
+              // ปกติต้องเจอ เพราะเพิ่ง saveProducts แถวนี้ไป ถ้าไม่เจอใช้ต้นทุนที่เพิ่งบันทึกแทน
+              const _cost = cost.length ? cost[0].cost : obj.cost;
+
+              let balance = 0;
+              let balance_generic = 0;
+              const idxB = _.findIndex(balances, { product_id: v.product_id, warehouse_id: v.warehouse_id });
+              if (idxB > -1) {
+                balance = balances[idxB].balance + qty;
+                balance_generic = balances[idxB].balance_generic + qty;
+                balances[idxB].balance += qty;
+                balances[idxB].balance_generic += qty;
+              }
+
+              const bl: any = await receiveModel.getBalanceLot(trx, v.warehouse_id, v.product_id, v.lot_no, obj.lot_time);
+              const balanceLot = bl[0].length == 0 ? qty : bl[0][0].balanceLot;
+
+              const objS: any = {
+                stock_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+                product_id: v.product_id,
+                generic_id: v.generic_id,
+                unit_generic_id: v.unit_generic_id,
+                transaction_type: TransactionType.RECEIVE_OTHER,
+                document_ref_id: v.receive_other_id,
+                document_ref: v.receive_code,
+                in_qty: qty,
+                in_unit_cost: (v.cost * v.receive_qty) / qty,
+                balance_lot_qty: balanceLot,
+                balance_qty: balance,
+                balance_generic_qty: balance_generic,
+                balance_unit_cost: _cost,
+                ref_src: v.donator_id,
+                ref_dst: v.warehouse_id,
+                comment: 'รับเข้าคลังแบบอื่นๆ',
+                lot_no: v.lot_no,
+                lot_time: lotTime,
+                expired_date: expiredDate,
+                wm_product_id_in: id
+              };
+
+              const stockcardId: any = await stockcard.saveFastStockTransaction(trx, objS);
+              if (!stockcardId.length) {
+                throw new Error(`บันทึก wm_stock_card ไม่สำเร็จ (product_id: ${v.product_id}, lot: ${v.lot_no})`);
+              }
+            }
+          }
+
+          // บันทึกการอนุมัติเป็นขั้นตอนสุดท้าย หลังสต๊อกลงครบทุกรายการแล้วเท่านั้น
+          const approveId: any = await receiveModel.saveApprove(trx, {
+            approve_date: approveDate,
+            created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+            people_user_id: req.decoded.people_user_id,
+            receive_other_id: r,
+            comment: comment
+          });
+          if (!approveId.length) {
+            throw new Error('บันทึกลง wm_receive_approve ไม่สำเร็จ');
+          }
+        });
+
+        // เชื่อผลของ promise อย่างเดียวไม่ได้ knex จะ resolve แทน reject ถ้า ROLLBACK
+        // ใช้เวลาเกิน 5 วินาที (node_modules/knex/lib/transaction.js) ใบที่ rollback ไปแล้ว
+        // จะถูกรายงานว่าสำเร็จ จึงต้องยืนยันกับ DB จริงอีกครั้ง
+        if (isDuplicated) {
+          alreadyApproved.push(r);
+        } else {
+          const confirmed: any = await receiveModel.checkDuplicatedApproveOther(db, r);
+          if (+confirmed[0].total > 0) {
+            approvedOk.push(r);
+          } else {
+            signale.error(`approve receive_other ${r}: transaction resolved but no approve row found`);
+            failedApprove.push({ receive_other_id: r, error: 'ไม่พบการบันทึกอนุมัติหลังจบ transaction (อาจถูก rollback)' });
+          }
         }
-      } else {
-        let _approveData = {
-          approve_date: approveDate,
-          created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
-          people_user_id: req.decoded.people_user_id,
-          receive_other_id: v,
-          comment: comment
-        }
-        approveDatas.push(_approveData);
+      } catch (error) {
+        // มาถึงตรงนี้แปลว่า rollback ไปแล้ว ใบนี้ยังไม่ถูกอนุมัติ กดอนุมัติใหม่ได้
+        signale.error(`approve receive_other ${r} failed:`, error);
+        failedApprove.push({ receive_other_id: r, error: error.message });
       }
     }
 
-    if (!receiveIds.length) {
-      res.send({ ok: false, error: 'ไม่มีรายการอนุมัติ กรุณา refresh ใหม่' });
+    if (failedApprove.length > 0) {
+      const detail = failedApprove.map((f: any) => `${f.receive_other_id} (${f.error})`).join(', ');
+      res.send({
+        ok: false,
+        error: `อนุมัติไม่สำเร็จ ${failedApprove.length} รายการ ระบบยกเลิกการบันทึกทั้งใบแล้ว สามารถกดอนุมัติใหม่ได้: ${detail}`,
+        approved: approvedOk, errDupApprove: alreadyApproved, errApprove: failedApprove
+      });
+    } else if (approvedOk.length > 0) {
+      res.send({ ok: true, approved: approvedOk, errDupApprove: alreadyApproved });
     } else {
-
-      await receiveModel.removeOldApproveOther(db, receiveIds);
-      var approveId = []
-      for (const json of approveDatas) {
-        var idx = await receiveModel.saveApprove(db, json);
-        approveId.push(idx[0])
-      }
-      if (approveId.length > 0) {
-        const _receiveOtherIds = await receiveModel.getApproveOtherStatus(db, approveId);
-        const receiveOtherIds = _.map(_receiveOtherIds, 'receive_other_id')
-        // get product
-        let _rproducts = await receiveModel.getReceiveOtherProductsImport(db, receiveOtherIds);
-        let products: any = [];
-        let lot_time = [];
-        let lotTime = 0;
-        let data = [];
-        let balances = await receiveModel.getProductRemainByReceiveOtherIds(db, receiveOtherIds, warehouseId);
-        balances = balances[0];
-        for (const v of _rproducts) {
-          const idx = _.findIndex(lot_time, { 'product_id': v.product_id, 'lot_no': v.lot_no });
-
-          if (idx > -1) {
-            lot_time[idx].lot_time += 1;
-            lotTime = lot_time[idx].lot_time;
-          } else {
-            let lotObj = {
-              product_id: v.product_id,
-              lot_no: v.lot_no,
-              lot_time: +v.lot_time + 1
-            };
-            lotTime = +v.lot_time + 1
-            lot_time.push(lotObj);
-          }
-
-          let id = uuid();
-          const idxWM = _.findIndex(products, { 'product_id': v.product_id, 'warehouse_id': v.warehouse_id, 'lot_no': v.lot_no, 'lot_time': lotTime });
-          if (v.is_free == 'Y') {
-            id = products[idxWM].wm_product_id;
-          }
-          await receiveModel.updateReceiveDetailSummary(db, v.receive_detail_id, { 'wm_product_id': id });
-          let obj_adjust: any = {};
-          if (+v.receive_qty > 0) {
-            let qty = v.receive_qty * v.conversion_qty;
-            let expiredDate = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date, 'YYYY-MM-DD').format('YYYY-MM-DD') : null;
-            let obj: any = {
-              wm_product_id: id,
-              warehouse_id: v.warehouse_id,
-              receive_other_id: v.receive_other_id,
-              product_id: v.product_id,
-              generic_id: v.generic_id,
-              balance: v.balance,
-              receive_code: v.receive_code,
-              donator_id: v.donator_id,
-              qty: qty,
-              price: (v.cost * v.receive_qty) / qty,
-              cost: (v.cost * v.receive_qty) / qty,
-              lot_no: v.lot_no,
-              expired_date: expiredDate,
-              unit_generic_id: v.unit_generic_id,
-              location_id: +v.location_id,
-              people_user_id: req.decoded.people_user_id,
-              created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
-              lot_time: lotTime
-            };
-            // add product
-            products.push(obj);
-
-            // new version ////////////////////////////////////////
-
-            // save to wm_products
-            await receiveModel.saveProducts(db, obj);
-
-            // get cost from wm_product
-            const cost = await receiveModel.getCostProduct(db, obj);
-            let _cost = cost[0].cost
-
-            let objS: any = {};
-            objS.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-            objS.product_id = v.product_id;
-            objS.generic_id = v.generic_id;
-            objS.unit_generic_id = v.unit_generic_id;
-            objS.transaction_type = TransactionType.RECEIVE_OTHER;
-            objS.document_ref_id = v.receive_other_id;
-            objS.document_ref = v.receive_code;
-            objS.in_qty = qty;
-            objS.in_unit_cost = (v.cost * v.receive_qty) / qty;
-
-            let balance = 0;
-            let balance_generic = 0;
-            let balanceLot = 0;
-            let idxB = _.findIndex(balances, {
-              product_id: v.product_id,
-              warehouse_id: v.warehouse_id
-            });
-
-            if (idxB > -1) {
-              balance = balances[idxB].balance + qty;
-              balance_generic = balances[idxB].balance_generic + qty;
-              balances[idxB].balance += qty;
-              balances[idxB].balance_generic += qty;
-            }
-
-            const bl = await receiveModel.getBalanceLot(db, v.warehouse_id, v.product_id, v.lot_no, obj.lot_time);
-            balanceLot = bl[0].length == 0 ? qty : bl[0][0].balanceLot;
-
-            objS.balance_lot_qty = balanceLot;
-            objS.balance_qty = balance;
-            objS.balance_generic_qty = balance_generic;
-            objS.balance_unit_cost = _cost;
-            objS.ref_src = v.donator_id;
-            objS.ref_dst = v.warehouse_id;
-            objS.comment = 'รับเข้าคลังแบบอื่นๆ';
-            objS.lot_no = v.lot_no;
-            objS.lot_time = lotTime;
-            objS.expired_date = expiredDate;
-            objS.wm_product_id_in = id;
-            // data.push(objS);
-
-            //////////////////////////////////////////
-            // await receiveModel.saveProducts(db, products);
-            await stockcard.saveFastStockTransaction(db, objS);
-          }
-        }
-        res.send({ ok: true });
-      } else {
-        res.send({ ok: false, error: 'การอนุมัติมีปัญหา กรุณาติดต่อเจ้าหน้าที่ศูนย์เทคฯ' })
-      }
+      res.send({ ok: false, error: 'ไม่มีรายการอนุมัติ กรุณา refresh ใหม่' });
     }
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -1372,14 +1401,19 @@ router.post('/purchases/list', co(async (req, res, nex) => {
     const hospcode = JSON.parse(sys_hospital).hospcode
 
     const settings: any = await receiveModel.getSettingEDI(db, 'TOKEN');
+    // ไม่มีแถว TOKEN ใน pc_edi แปลว่ายังไม่ได้ตั้งค่า EDI
+    // เดิมอ่าน settings[0].value ตรง ๆ ทำให้ทั้งหน้าพัง
+    // ทั้งที่โรงพยาบาลที่ไม่ได้ใช้ EDI ก็ไม่จำเป็นต้องมีค่านี้
+    const ediToken = settings.length ? settings[0].value : null;
     let data: any = {
-      token: settings[0].value,
+      token: ediToken,
       hosp_code: hospcode
     }
     // --------------------
 
     for (const r of rows[0]) {
-      if (r.is_edi == 'Y') {
+      // ไม่มี token ก็เรียก ASN ไม่ได้อยู่ดี ข้ามไปเลยดีกว่าปล่อยให้ค้าง
+      if (r.is_edi == 'Y' && ediToken) {
         data.po_no = r.purchase_order_number
         const rsASN: any = await receiveModel.getASN(data);
         if (rsASN.asns != undefined) {
@@ -1443,14 +1477,19 @@ router.post('/purchases/list/search', co(async (req, res, nex) => {
     const hospcode = JSON.parse(sys_hospital).hospcode
 
     const settings: any = await receiveModel.getSettingEDI(db, 'TOKEN');
+    // ไม่มีแถว TOKEN ใน pc_edi แปลว่ายังไม่ได้ตั้งค่า EDI
+    // เดิมอ่าน settings[0].value ตรง ๆ ทำให้ทั้งหน้าพัง
+    // ทั้งที่โรงพยาบาลที่ไม่ได้ใช้ EDI ก็ไม่จำเป็นต้องมีค่านี้
+    const ediToken = settings.length ? settings[0].value : null;
     let data: any = {
-      token: settings[0].value,
+      token: ediToken,
       hosp_code: hospcode
     }
     // --------------------
 
     for (const r of rows[0]) {
-      if (r.is_edi == 'Y') {
+      // ไม่มี token ก็เรียก ASN ไม่ได้อยู่ดี ข้ามไปเลยดีกว่าปล่อยให้ค้าง
+      if (r.is_edi == 'Y' && ediToken) {
         data.po_no = r.purchase_order_number
         const rsASN: any = await receiveModel.getASN(data);
         if (rsASN.asns != undefined) {
@@ -1588,6 +1627,12 @@ router.get('/purchases/check-expire', co(async (req, res, nex) => {
   let diffday: any;
   try {
     const rows = await receiveModel.getPurchaseCheckExpire(db, genericId);
+    // ยาที่ยังไม่ได้ตั้งจำนวนวันแจ้งเตือนใกล้หมดอายุ = ไม่ต้องเตือน ปล่อยผ่าน
+    // เดิมอ่าน rows[0].num_days ตรง ๆ ยาตัวเดียวที่ไม่ได้ตั้งค่าทำให้บันทึกรับสินค้าไม่ได้ทั้งใบ
+    if (!rows.length || rows[0].num_days === null) {
+      res.send({ ok: true });
+      return;
+    }
     const day = rows[0].num_days;
     moment.locale('th');
     console.log(moment(expiredDate));
@@ -1781,6 +1826,11 @@ router.get('/asn', co(async (req, res, nex) => {
     let sys_hospital = req.decoded.SYS_HOSPITAL;
     const hospcode = JSON.parse(sys_hospital).hospcode
     const settings: any = await receiveModel.getSettingEDI(db, 'TOKEN');
+    if (!settings.length) {
+      // ยังไม่ได้ตั้ง token EDI จึงเรียก ASN ไม่ได้ ตอบให้ชัดแทนที่จะ error
+      res.send({ ok: false, error: 'ยังไม่ได้ตั้งค่า TOKEN ของระบบ EDI ในตาราง pc_edi' });
+      return;
+    }
     const data: any = {
       token: settings[0].value,
       hosp_code: hospcode,
