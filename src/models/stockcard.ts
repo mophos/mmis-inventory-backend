@@ -375,7 +375,7 @@ export class StockCard {
       stock_date, product_id, generic_id, unit_generic_id, transaction_type,
       document_ref_id, document_ref, in_qty, in_unit_cost, balance_generic_qty,
       balance_qty, balance_unit_cost, ref_src, ref_dst, comment, 
-      lot_no, expired_date)
+      lot_no, expired_date, lot_time, wm_product_id_in, balance_lot_qty)
       select current_timestamp() as stock_date
       , wp.product_id
       , adg.generic_id
@@ -393,21 +393,28 @@ export class StockCard {
       , 'รับเติม' as comment
       , wp.lot_no
       , wp.expired_date
+      , wp.lot_time
+      , dwp.wm_product_id as wm_product_id_in
+      , dwp.qty as balance_lot_qty
       from wm_addition_header adh
       join wm_addition_generic adg on adg.addition_id = adh.addition_id
       join wm_addition_product adp on adp.addition_generic_id = adg.addition_generic_id
       join wm_products wp on wp.wm_product_id = adp.wm_product_id
+      -- แถวปลายทางที่ moveStock ย้ายของไปลง (lot + lot_time เดียวกัน = PK แถวเดียว) เดิมไม่มี wm_product_id_in / lot_time
+      left join wm_products dwp on dwp.warehouse_id = adh.dst_warehouse_id and dwp.product_id = wp.product_id
+        and dwp.lot_no <=> wp.lot_no and dwp.lot_time = wp.lot_time
       left join (
         select mp.generic_id, wp.warehouse_id, sum(wp.qty) balance_generic_qty
         from wm_products wp
         join mm_products mp on mp.product_id = wp.product_id
         group by warehouse_id, generic_id
       ) gbq on gbq.generic_id = adg.generic_id and gbq.warehouse_id = adh.dst_warehouse_id
+      -- ยอดคงเหลือรายสินค้าของคลัง (เดิมรวมราย lot+วันหมดอายุ ใส่ผิดช่อง balance_qty)
       left join (
-        select wp.product_id, wp.lot_no, wp.expired_date, wp.warehouse_id, sum(wp.qty) balance_qty
+        select wp.product_id, wp.warehouse_id, sum(wp.qty) balance_qty
         from wm_products wp
-        group by wp.product_id, wp.lot_no, wp.expired_date, wp.warehouse_id
-      ) pbq on pbq.product_id = wp.product_id and pbq.lot_no <=> wp.lot_no and pbq.expired_date <=> wp.expired_date and pbq.warehouse_id = adh.dst_warehouse_id
+        group by wp.product_id, wp.warehouse_id
+      ) pbq on pbq.product_id = wp.product_id and pbq.warehouse_id = adh.dst_warehouse_id
       where adh.addition_id in (?)
       group by adh.dst_warehouse_id, adp.wm_product_id
     `;
@@ -422,7 +429,7 @@ export class StockCard {
       stock_date, product_id, generic_id, unit_generic_id, transaction_type,
       document_ref_id, document_ref, out_qty, out_unit_cost, balance_generic_qty,
       balance_qty, balance_unit_cost, ref_src, ref_dst, comment,
-      lot_no, expired_date)
+      lot_no, expired_date, lot_time, wm_product_id_out, balance_lot_qty)
       select current_timestamp() as stock_date
       , wp.product_id
       , adg.generic_id
@@ -440,6 +447,9 @@ export class StockCard {
       , 'เติม' as comment
       , wp.lot_no
       , wp.expired_date
+      , wp.lot_time
+      , adp.wm_product_id as wm_product_id_out
+      , wp.qty as balance_lot_qty
       from wm_addition_header adh
       join wm_addition_generic adg on adg.addition_id = adh.addition_id
       join wm_addition_product adp on adp.addition_generic_id = adg.addition_generic_id
@@ -450,11 +460,12 @@ export class StockCard {
         join mm_products mp on mp.product_id = wp.product_id
         group by warehouse_id, generic_id
       ) gbq on gbq.generic_id = adg.generic_id and gbq.warehouse_id = adh.src_warehouse_id
+      -- ยอดคงเหลือรายสินค้าของคลัง (เดิมรวมราย lot+วันหมดอายุ ใส่ผิดช่อง balance_qty)
       left join (
-        select wp.product_id, wp.lot_no, wp.expired_date, wp.warehouse_id, sum(wp.qty) balance_qty
+        select wp.product_id, wp.warehouse_id, sum(wp.qty) balance_qty
         from wm_products wp
-        group by wp.product_id, wp.lot_no, wp.expired_date, wp.warehouse_id
-      ) pbq on pbq.product_id = wp.product_id and pbq.lot_no <=> wp.lot_no and pbq.expired_date <=> wp.expired_date and pbq.warehouse_id = adh.src_warehouse_id
+        group by wp.product_id, wp.warehouse_id
+      ) pbq on pbq.product_id = wp.product_id and pbq.warehouse_id = adh.src_warehouse_id
       where adh.addition_id in (?)
       group by adh.dst_warehouse_id, adp.wm_product_id
     `;

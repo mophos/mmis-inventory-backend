@@ -652,7 +652,7 @@ router.post('/transfer/save', co(async (req, res, next) => {
 
         if (approveAuto) {
           await transferModel.changeConfirmStatusIds(db, transferId, peopleUserId);
-          await transferApprove(db, transferId, warehouseId, peopleUserId);
+          await db.transaction((trx) => transferApprove(trx, transferId, warehouseId, peopleUserId));
         }
 
         res.send({ ok: true });
@@ -826,7 +826,7 @@ router.post('/transfer/approve', co(async (req, res, next) => {
     }
     if (isValid) {
       await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
-      await transferApprove(db, transferIds, warehouseId, peopleUserId);
+      await db.transaction((trx) => transferApprove(trx, transferIds, warehouseId, peopleUserId));
       res.send({ ok: true });
     } else {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะบางรายการมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
@@ -840,6 +840,11 @@ router.post('/transfer/approve', co(async (req, res, next) => {
 }));
 
 const transferApprove = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUserId: any) => {
+  // ล็อกเอกสารกันอนุมัติซ้อน (ต้องเรียกใน transaction)
+  const lockDocs: any = await db('wm_transfer').whereIn('transfer_id', transferIds).forUpdate();
+  if (lockDocs.some((d: any) => d.approved === 'Y')) {
+    throw new Error('มีเอกสารที่อนุมัติไปแล้ว กรุณารีเฟรชหน้าจอ');
+  }
   let results: any = await transferModel.getProductListIds(db, transferIds);
   for (let v of results) {
     if (+v.product_qty != 0) {
@@ -886,15 +891,17 @@ const transferApprove = (async (db: Knex, transferIds: any[], warehouseId: any, 
       objOut.people_user_id = v.people_user_id;
       objOut.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
 
-      let wmProductIdOut;
-      const checkSrc: any = await productModel.checkProductToSave(db, v.src_warehouse_id, v.product_id, v.lot_no, v.lot_time);
-      if (checkSrc.length) {
-        wmProductIdOut = checkSrc[0].wm_product_id;
-        await productModel.updateMinusStock(db, objIn, checkSrc[0].wm_product_id)
-      } else {
-        wmProductIdOut = objIn.wm_product_id;
-        await productModel.insertStock(db, objIn)
+      // ตัดจากแถวที่ระบุในเอกสารตรงๆ (lock แถว)
+      // เดิมหาด้วย lot + lot_time ถ้าไม่เจอจะ insert แถวที่จำนวน "บวก" ลงคลังต้นทาง (ของงอก / ใบโอนกลายเป็นเพิ่มปลายทางซ้ำ)
+      const srcRow: any = await db('wm_products').where('wm_product_id', v.wm_product_id).forUpdate();
+      if (!srcRow.length || +srcRow[0].warehouse_id !== +v.src_warehouse_id) {
+        throw new Error(`ไม่พบรายการคงคลังต้นทางของ ${v.product_id} lot ${v.lot_no} ยังไม่ได้ทำรายการ`);
       }
+      if (+srcRow[0].qty < +v.product_qty) {
+        throw new Error(`คงคลังไม่พอ ${v.product_id} lot ${v.lot_no} (คงเหลือ ${srcRow[0].qty} ต้องการ ${v.product_qty}) ยังไม่ได้ทำรายการ`);
+      }
+      const wmProductIdOut = srcRow[0].wm_product_id;
+      await productModel.updateMinusStock(db, objIn, wmProductIdOut);
       // =================================== STOCK IN ========================
       let remain_dst: any = await productModel.getBalance(db, v.product_id, v.dst_warehouse_id, v.lot_no, v.lot_time);
       remain_dst = remain_dst[0]
@@ -1043,6 +1050,9 @@ router.post('/issue-transaction', co(async (req, res, next) => {
   let warehouseId = req.decoded.warehouseId;
 
   try {
+   // ทั้งคำขอใน transaction เดียว ล้มกลางทางย้อนกลับหมด (เดิมเขียนทีละคำสั่ง ล้มแล้วข้อมูลลงไม่ครบ)
+   // ส่งผลหลัง commit (เดิม res.send อยู่ใน transaction ผู้ใช้ได้คำตอบก่อนข้อมูล commit)
+   const txResult: any = await db.transaction(async (trx) => {
     let _summary: any = {};
     _summary.issue_date = summary.issueDate;
     _summary.transaction_issue_id = summary.transactionId;
@@ -1057,10 +1067,10 @@ router.post('/issue-transaction', co(async (req, res, next) => {
       year += 1;
     }
 
-    let serialCode: any = await serialModel.getSerial(db, 'ST', year, warehouseId);
+    let serialCode: any = await serialModel.getSerial(trx, 'ST', year, warehouseId);
     _summary.issue_code = serialCode;
 
-    let id: any = await issueModel.saveSummary(db, _summary);
+    let id: any = await issueModel.saveSummary(trx, _summary);
     let issueId = id[0];
 
     let _cutProduct = [];
@@ -1075,7 +1085,7 @@ router.post('/issue-transaction', co(async (req, res, next) => {
       obj.generic_id = v.generic_id;
       _genericIds.push(v.generic_id);
       _generics.push(obj);
-      let issue_generic_id: any = await issueModel.saveGenerics(db, _generics);
+      let issue_generic_id: any = await issueModel.saveGenerics(trx, _generics);
 
       for (let e of v.items) {
         if (e.product_qty > 0) {
@@ -1090,7 +1100,7 @@ router.post('/issue-transaction', co(async (req, res, next) => {
           cutProduct.wm_product_id = e.wm_product_id;
           _products.push(objP);
           _cutProduct.push(cutProduct);
-          await issueModel.saveProducts(db, _products);
+          await issueModel.saveProducts(trx, _products);
         }
       }
 
@@ -1105,11 +1115,10 @@ router.post('/issue-transaction', co(async (req, res, next) => {
         approve_date: moment().format('YYYY-MM-DD'),
         approve_people_user_id: req.decoded.people_user_id
       }
-      await issueModel.updateSummaryApprove(db, id, summary);
+      await issueModel.updateSummaryApprove(trx, id, summary);
       // update wm_product
-      await issueModel.saveProductStock(db, _cutProduct);
 
-      let rs: any = await issueModel.getIssueApprove(db, id[0], warehouseId);
+      let rs: any = await issueModel.getIssueApprove(trx, id[0], warehouseId);
 
       rs = rs[0];
       let data = [];
@@ -1117,8 +1126,9 @@ router.post('/issue-transaction', co(async (req, res, next) => {
       let balances = [];
       let balancesG = [];
       let balancesL = [];
-      for (const e of rs[0]) {
-        let srcBalance: any = await issueModel.getBalance(db, warehouseId, e.product_id, e.lot_no, e.lot_time);
+      // rs = แถวผลลัพธ์แล้ว (เดิม rs[0] = แถวแรก → "rs[0] is not iterable" ตัดจ่ายแบบไม่ต้องอนุมัติใช้ไม่ได้เลย)
+      for (const e of rs) {
+        let srcBalance: any = await issueModel.getBalance(trx, warehouseId, e.product_id, e.lot_no, e.lot_time);
         srcBalance = srcBalance[0];
         let objBalance: any = {
           product_id: srcBalance[0].product_id,
@@ -1150,8 +1160,19 @@ router.post('/issue-transaction', co(async (req, res, next) => {
         }
       }
 
+      // ตัดสต๊อกหลังอ่านยอดคงเหลือ (โค้ดด้านล่างลบจำนวนจ่ายจากยอดที่อ่านไว้ก่อนตัด) เดิมตัดก่อน → ยอดคงเหลือใน stock card ต่ำไปเท่าจำนวนจ่าย
+      // เดิมส่งทั้ง array เข้าไป ฟังก์ชันรับทีละรายการ → SQL "qty-undefined" error หลังบันทึกอนุมัติไปแล้ว
+      for (const c of _cutProduct) {
+        if (!(+c.cutQty > 0)) continue;
+        const cur: any = await trx('wm_products').where('wm_product_id', c.wm_product_id).forUpdate();
+        if (!cur.length || +cur[0].qty < +c.cutQty) {
+          throw new Error(`คงคลังไม่พอหรือไม่พบรายการ (${c.wm_product_id}) ยังไม่ได้บันทึก`);
+        }
+        await issueModel.saveProductStock(trx, c);
+      }
+
       for (const e of rs) {
-        if (rs.out_qty != 0) {
+        if (e.out_qty != 0) {
           let objStockcard: any = {}
           objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
           objStockcard.product_id = e.product_id;
@@ -1200,12 +1221,15 @@ router.post('/issue-transaction', co(async (req, res, next) => {
           data.push(objStockcard)
         }
       }
-      await stockCardModel.saveFastStockTransaction(db, data);
+      await stockCardModel.saveFastStockTransaction(trx, data);
     }
 
-    res.send({ ok: true });
+    return { ok: true };
+   });
+   res.send(txResult);
   } catch (error) {
-    throw error;
+    // ส่งข้อความ error ให้หน้าจอ (เดิม throw ต่อ ผู้ใช้ได้ error: {} ว่าง เช่นกรณีคงคลังไม่พอ / อนุมัติซ้ำ)
+    res.send({ ok: false, error: error.message });
     // res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
@@ -1281,22 +1305,30 @@ router.post('/issue-transaction/approve', co(async (req, res, next) => {
   let issueIds = req.body.issueIds;
   issueIds = Array.isArray(issueIds) ? issueIds : [issueIds];
   try {
+   // ทั้งคำขอใน transaction เดียว ล้มกลางทางย้อนกลับหมด (เดิมเขียนทีละคำสั่ง ล้มแล้วข้อมูลลงไม่ครบ)
+   // ส่งผลหลัง commit (เดิม res.send อยู่ใน transaction ผู้ใช้ได้คำตอบก่อนข้อมูล commit)
+   const txResult: any = await db.transaction(async (trx) => {
     const decoded = req.decoded;
     const warehouseId = decoded.warehouseId;
-    const checkApprove: any = await issueModel.checkDuplicatedApprove(db, issueIds);
+    const checkApprove: any = await issueModel.checkDuplicatedApprove(trx, issueIds);
     issueIds = _.map(checkApprove, 'issue_id')
     if (issueIds.length) {
       for (let v of issueIds) {
+        // ล็อกใบกันอนุมัติซ้อน (checkDuplicatedApprove ไม่ได้ล็อก สองคำขอพร้อมกันผ่านทั้งคู่)
+        const lk: any = await trx('wm_issue_summary').where('issue_id', v).forUpdate();
+        if (!lk.length || lk[0].approved === 'Y') {
+          throw new Error('มีใบตัดจ่ายที่อนุมัติไปแล้ว กรุณารีเฟรชหน้าจอ');
+        }
         let summary = {
           approved: 'Y',
           approve_date: moment().format('YYYY-MM-DD'),
           approve_people_user_id: req.decoded.people_user_id
         }
 
-        let rs: any = await issueModel.getIssueApprove(db, v, warehouseId);
+        let rs: any = await issueModel.getIssueApprove(trx, v, warehouseId);
 
         for (const e of rs[0]) {
-          if (rs.out_qty != 0) {
+          if (e.out_qty != 0) {
 
 
             let objStockcard: any = {};
@@ -1304,8 +1336,12 @@ router.post('/issue-transaction/approve', co(async (req, res, next) => {
             cutProduct.cutQty = e.out_qty;
             cutProduct.wm_product_id = e.wm_product_id;
             // _cutProduct.push(cutProduct);
-            await issueModel.saveProductStock(db, cutProduct);
-            let srcBalance: any = await issueModel.getBalance(db, warehouseId, e.product_id, e.lot_no, e.lot_time);
+            const cur: any = await trx('wm_products').where('wm_product_id', e.wm_product_id).forUpdate();
+            if (!cur.length || +cur[0].qty < +e.out_qty) {
+              throw new Error(`คงคลังไม่พอ ${e.product_id} lot ${e.lot_no} ยังไม่ได้อนุมัติ`);
+            }
+            await issueModel.saveProductStock(trx, cutProduct);
+            let srcBalance: any = await issueModel.getBalance(trx, warehouseId, e.product_id, e.lot_no, e.lot_time);
             srcBalance = srcBalance[0];
 
             objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -1335,22 +1371,24 @@ router.post('/issue-transaction/approve', co(async (req, res, next) => {
 
 
 
-            await stockCardModel.saveFastStockTransaction(db, objStockcard);
+            await stockCardModel.saveFastStockTransaction(trx, objStockcard);
           }
         }
 
-        await issueModel.updateSummaryApprove(db, v, summary);
+        await issueModel.updateSummaryApprove(trx, v, summary);
         // update wm_product
-        // let b: any = await issueModel.saveProductStock(db, _cutProduct);
-        // let c: any = await stockCardModel.saveFastStockTransaction(db, data);
+        // let b: any = await issueModel.saveProductStock(trx, _cutProduct);
+        // let c: any = await stockCardModel.saveFastStockTransaction(trx, data);
       }
 
-      res.send({ ok: true });
+      return { ok: true };
     } else {
-      res.send({ ok: false, error: 'ไม่พบรายการที่ต้องการอนุมัติ' });
+      return { ok: false, error: 'ไม่พบรายการที่ต้องการอนุมัติ' };
     }
 
 
+   });
+   res.send(txResult);
   } catch (error) {
     console.log(error);
     res.send({ ok: false, error: error.message });
@@ -2343,18 +2381,24 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
   let no = 1;
   if (transactionIds.length) {
     try {
+   // ทั้งคำขอใน transaction เดียว ล้มกลางทางย้อนกลับหมด (เดิมเขียนทีละคำสั่ง ล้มแล้วข้อมูลลงไม่ครบ)
+   // ส่งผลหลัง commit (เดิม res.send อยู่ใน transaction ผู้ใช้ได้คำตอบก่อนข้อมูล commit)
+   const txResult: any = await db.transaction(async (trx) => {
 
-      const rs = await hisTransactionModel.getGroupTransactionFromTransactionId(db, transactionIds);
+      // ล็อกรายการ HIS ก่อน (คำสั่งแรกใน transaction) กันกดนำเข้าซ้อนแล้วตัดซ้ำ
+      // ตัวกรอง is_cut_stock = 'N' ใน getGroupTransactionFromTransactionId ไม่ได้ล็อก สองคำขอพร้อมกันผ่านทั้งคู่
+      await trx('wm_his_transaction').whereIn('transaction_id', transactionIds).forUpdate().select('transaction_id');
+      const rs = await hisTransactionModel.getGroupTransactionFromTransactionId(trx, transactionIds);
       if (rs.length) {
         for (const r of rs) {
-          const rsAllocate = await allocateHIS(db, r.warehouse_id, [r]);
+          const rsAllocate = await allocateHIS(trx, r.warehouse_id, [r]);
           if (rsAllocate.ok) {
             for (const i of rsAllocate.rows) {
               //-------------- get UnitGeneric --------------
-              let unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, i.generic_id);
+              let unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(trx, i.generic_id);
               //เช็ค unitId
               if (!unitId.length) {
-                let unit = await hisTransactionModel.getUnitGenericId(db, i.generic_id);
+                let unit = await hisTransactionModel.getUnitGenericId(trx, i.generic_id);
                 //สร้าง unit 1 ต่อ 1 ใหม่
                 let newUnit = {
                   from_unit_id: unit[0].to_unit_id,
@@ -2365,7 +2409,7 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
                 }
                 unitId = newUnit;
                 //insert UnitGeneric
-                const u = await hisTransactionModel.insertUnitId(db, newUnit);
+                const u = await hisTransactionModel.insertUnitId(trx, newUnit);
                 unitId.unit_generic_id = u[0];
               } else {
                 unitId = unitId[0];
@@ -2376,10 +2420,10 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
               if (i.small_remain_qty - i.product_qty >= 0 && i.small_remain_qty > 0 && i.product_qty > 0) {
                 const transactionIds = r.transaction_id.split(',');
                 if (transactionIds.length == r.count) {
-                  await hisTransactionModel.decreaseProductQty(db, i.wm_product_id, i.small_remain_qty - i.product_qty);
-                  await hisTransactionModel.changeStatusToCut(db, moment().format('YYYY-MM-DD HH:mm:ss'), req.decoded.people_user_id, transactionIds);
+                  await hisTransactionModel.cutProductQty(trx, i.wm_product_id, i.product_qty);
+                  await hisTransactionModel.changeStatusToCut(trx, moment().format('YYYY-MM-DD HH:mm:ss'), req.decoded.people_user_id, transactionIds);
                   //getBalance เพื่อไปลง stockcard
-                  let balance: any = await hisTransactionModel.getBalance(db, i.wm_product_id);
+                  let balance: any = await hisTransactionModel.getBalance(trx, i.wm_product_id);
                   balance = balance[0];
                   let balance_qty = balance[0].balance_qty;
                   let balance_lot_qty = balance[0].balance_lot_qty;
@@ -2441,17 +2485,17 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
                   }
                   if (i.product_qty > 0 || i.product_qty < 0) {
                     // save stockcard
-                    const stockId = await stockCardModel.saveStockHisTransaction(db, data);
-                    await hisTransactionModel.changeStockcardId(db, transactionIds, stockId[0]);
+                    const stockId = await stockCardModel.saveStockHisTransaction(trx, data);
+                    await hisTransactionModel.changeStockcardId(trx, transactionIds, stockId[0]);
                   }
                 }
               } else if (i.product_qty < 0) {
                 const transactionIds = r.transaction_id.split(',');
                 if (transactionIds.length == r.count) {
-                  await hisTransactionModel.decreaseProductQty(db, i.wm_product_id, i.small_remain_qty - i.product_qty);
-                  await hisTransactionModel.changeStatusToCut(db, moment().format('YYYY-MM-DD HH:mm:ss'), req.decoded.people_user_id, transactionIds);
+                  await hisTransactionModel.cutProductQty(trx, i.wm_product_id, i.product_qty);
+                  await hisTransactionModel.changeStatusToCut(trx, moment().format('YYYY-MM-DD HH:mm:ss'), req.decoded.people_user_id, transactionIds);
                   //getBalance เพื่อไปลง stockcard
-                  let balance: any = await hisTransactionModel.getBalance(db, i.wm_product_id);
+                  let balance: any = await hisTransactionModel.getBalance(trx, i.wm_product_id);
                   balance = balance[0];
                   let balance_qty = balance[0].balance_qty;
                   let balance_lot_qty = balance[0].balance_lot_qty;
@@ -2487,8 +2531,8 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
                   }
                   if (i.product_qty > 0 || i.product_qty < 0) {
                     // save stockcard
-                    const stockId = await stockCardModel.saveStockHisTransaction(db, data);
-                    await hisTransactionModel.changeStockcardId(db, transactionIds, stockId[0]);
+                    const stockId = await stockCardModel.saveStockHisTransaction(trx, data);
+                    await hisTransactionModel.changeStockcardId(trx, transactionIds, stockId[0]);
                   }
                 }
               }
@@ -2496,10 +2540,12 @@ router.post('/his-transaction/import', co(async (req, res, next) => {
             }
           }
         }
-        res.send({ ok: true });
+        return { ok: true };
       } else {
-        res.send({ ok: false, error: 'ไม่มีรายการตัดจ่าย' });
+        return { ok: false, error: 'ไม่มีรายการตัดจ่าย' };
       }
+   });
+   res.send(txResult);
     } catch (error) {
       console.log(error);
       res.send({ ok: false, error: error.message });
@@ -2852,18 +2898,21 @@ router.post('/adjust-stock/', async (req, res, next) => {
   const head = req.body.head;
   const detail = req.body.detail;
   try {
+   // ทั้งคำขอใน transaction เดียว ล้มกลางทางย้อนกลับหมด (เดิมเขียนทีละคำสั่ง ล้มแล้วข้อมูลลงไม่ครบ)
+   // ส่งผลหลัง commit (เดิม res.send อยู่ใน transaction ผู้ใช้ได้คำตอบก่อนข้อมูล commit)
+   const txResult: any = await db.transaction(async (trx) => {
     let year = moment().get('year');
     const month = moment().get('month') + 1;
     if (month >= 10) {
       year += 1;
     }
-    const adjustCode: any = await serialModel.getSerial(db, 'ADJ', year, warehouseId);
+    const adjustCode: any = await serialModel.getSerial(trx, 'ADJ', year, warehouseId);
     head.adjust_code = adjustCode;
     head.adjust_date = moment.tz('Asia/Bangkok').format('YYYY-MM-DD HH:mm:ss');
     head.people_user_id = peopleUserId;
     head.warehouse_id = warehouseId;
     head.is_approved = 'Y';
-    const adjustId: any = await adjustStockModel.saveHead(db, head);
+    const adjustId: any = await adjustStockModel.saveHead(trx, head);
     if (adjustId[0]) {
       for (const d of detail) {
         const generic = {
@@ -2872,8 +2921,18 @@ router.post('/adjust-stock/', async (req, res, next) => {
           old_qty: d.old_qty,
           new_qty: d.qty
         }
-        const adjustGenericId: any = await adjustStockModel.saveGeneric(db, generic);
+        const adjustGenericId: any = await adjustStockModel.saveGeneric(trx, generic);
         for (const p of d.products) {
+          // ยอดเดิม/ราคาอ่านจากฐานตอนบันทึก (lock แถว) ไม่ใช้ค่าที่หน้าจอส่งมาตอนเปิดหน้า
+          const cur: any = await trx('wm_products').where('wm_product_id', p.wm_product_id).forUpdate();
+          if (!cur.length) {
+            throw new Error(`ไม่พบรายการสินค้าในคลัง (${p.wm_product_id})`);
+          }
+          if (+cur[0].warehouse_id !== +warehouseId) {
+            throw new Error('รายการสินค้าไม่ได้อยู่ในคลังของผู้ใช้');
+          }
+          p.old_qty = +cur[0].qty;
+          p.cost = cur[0].cost;
           if (p.qty > 0 || p.old_qty != p.qty) {
             const product = {
               adjust_generic_id: adjustGenericId,
@@ -2881,9 +2940,9 @@ router.post('/adjust-stock/', async (req, res, next) => {
               old_qty: p.old_qty,
               new_qty: +p.qty || 0
             }
-            await adjustStockModel.saveProduct(db, product);
-            await adjustStockModel.updateQty(db, p.wm_product_id, p.qty);
-            let balance: any = await productModel.getBalance(db, p.product_id, warehouseId, p.lot_no, p.lot_time);
+            await adjustStockModel.saveProduct(trx, product);
+            await adjustStockModel.updateQty(trx, p.wm_product_id, p.qty);
+            let balance: any = await productModel.getBalance(trx, p.product_id, warehouseId, p.lot_no, p.lot_time);
             balance = balance[0];
             if (p.old_qty > p.qty) {
               // ปรับยอดลดลง
@@ -2911,9 +2970,9 @@ router.post('/adjust-stock/', async (req, res, next) => {
                 wm_product_id_out: p.wm_product_id,
                 expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null
               }
-              await adjustStockModel.saveStockCard(db, data);
-            } else {
-              // ปรับยอดเพิ่มขึ้น
+              await adjustStockModel.saveStockCard(trx, data);
+            } else if (p.old_qty < p.qty) {
+              // ปรับยอดเพิ่มขึ้น (เดิม else รวมกรณียอดเท่าเดิม → ลง stock card จำนวน 0)
               const adjQty = p.qty - p.old_qty;
               const data = {
                 stock_date: moment().format('YYYY-MM-DD HH:mm:ss'),
@@ -2938,15 +2997,17 @@ router.post('/adjust-stock/', async (req, res, next) => {
                 expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null,
                 wm_product_id_in: p.wm_product_id
               }
-              await adjustStockModel.saveStockCard(db, data);
+              await adjustStockModel.saveStockCard(trx, data);
             }
           }
         }
       }
-      res.send({ ok: true });
+      return { ok: true };
     } else {
-      res.send({ ok: false })
+      return { ok: false };
     }
+   });
+   res.send(txResult);
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {

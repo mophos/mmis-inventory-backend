@@ -413,6 +413,7 @@ export class ReceiveModel {
   getReceiveOtherEditProductList(knex: Knex, receiveOtherId: any) {
     let sql = `
       SELECT
+      rd.receive_detail_id,
       rd.cost,
       rd.product_id,
       rd.receive_qty,
@@ -838,17 +839,19 @@ WHERE
         VALUES(?,?,?,?,?,
         ?,?,?,?,
         ?,?,?,?)
-        ON DUPLICATE KEY UPDATE qty = qty + ?, unit_generic_id = ?,cost = (
-        select(sum(w.qty * w.cost) + ? / (sum(w.qty) + ?))
-        from wm_products as w
-        where w.product_id = ? and w.lot_no = ? and w.warehouse_id = ?
-        group by w.product_id)`;
+        ON DUPLICATE KEY UPDATE
+        cost = IF(qty + ? = 0, cost, (qty * cost + ?) / (qty + ?)),
+        price = cost,
+        qty = qty + ?,
+        unit_generic_id = ?`;
+    // ชนแถวเดิม (warehouse, product, lot, lot_time) ให้เฉลี่ยราคากับแถวนั้นแถวเดียว
+    // เดิมขาดวงเล็บ ได้ sum(qty*cost) + (มูลค่าใหม่ / จำนวนรวม) และรวมทุก lot_time ของ lot
+    // ลำดับสำคัญ: cost ต้องคำนวณก่อน qty ถูกบวก (MySQL ประเมิน assignment จากซ้ายไปขวา)
     return knex.raw(sql, [v.wm_product_id, v.warehouse_id, v.product_id, v.qty, v.cost,
     v.price, v.lot_no, v.expired_date, v.location_id,
     v.unit_generic_id, v.people_user_id, v.created_at, v.lot_time,
-    v.qty, v.unit_generic_id,
-      totalCost, v.qty,
-    v.product_id, v.lot_no, v.warehouse_id
+    v.qty, totalCost, v.qty,
+    v.qty, v.unit_generic_id
     ]);
   }
 

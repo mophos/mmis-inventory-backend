@@ -1,7 +1,85 @@
 import Knex = require('knex');
 import * as moment from 'moment';
+import { v4 as uuid } from 'uuid';
 
 export class BorrowModel {
+
+  // อนุมัติรับคืน (ใช้ทั้ง /borrow และ /staff/borrow) ต้องเรียกใน transaction
+  // เดิม: admin insert wm_products ไม่มี lot_time + เฉลี่ยราคารวมทุก lot_time + วันหมดอายุ null กลายเป็น 'null'
+  //       + stock card ไม่อ้าง wm_product_id / staff ใช้ v.lot_time ที่ไม่ได้ select (NaN) และ v.dst_warehouse_id ที่ไม่มี
+  //       + ทั้งคู่ไม่ล็อก กดซ้ำ = ของเข้าซ้ำ / รวมรายการข้ามใบด้วย group by สินค้า+lot ทำให้ document_ref_id ผิดใบ
+  // ตอนนี้: ล็อกใบ, ทีละบรรทัดคืน, เข้าแถวคลังที่ lot + วันหมดอายุตรง (lot_time ล่าสุด) ไม่มีสร้างแถวใหม่ lot_time ถัดไป
+  async approveReturned(knex: Knex, returnedIds: any[], peopleUserId: any) {
+    // schema กลาง (mmis.sql) ยังไม่มี 'RETURNED' ใน enum ของ wm_stock_card.transaction_type และไม่มี view รายงาน
+    // อนุมัติคืนยืมจึงไม่เคยสำเร็จ (ใช้จริงแทบไม่มี: ทั้งเซิร์ฟเวอร์ 5 ใบ อนุมัติได้ 1 ใบเมื่อ 2018) — ตัดสินใจไม่แก้ schema (2026-10-11)
+    // แจ้งข้อความชัดเจนแทน error ของ SQL ถ้าภายหลังเพิ่ม enum + view จะทำงานต่อได้ทันที
+    const col: any = await knex.raw(`select column_type from information_schema.columns
+      where table_schema = database() and table_name = 'wm_stock_card' and column_name = 'transaction_type'`);
+    const colType = col[0] && col[0][0] ? String(col[0][0].column_type || col[0][0].COLUMN_TYPE || '') : '';
+    if (colType.indexOf("'RETURNED'") === -1) {
+      throw new Error('ระบบยังไม่รองรับการอนุมัติคืนยืม (ฐานข้อมูลยังไม่มีประเภท RETURNED) กรุณาติดต่อผู้ดูแลระบบ');
+    }
+    const lockRows: any = await knex('wm_returned').whereIn('returned_id', returnedIds).forUpdate();
+    if (lockRows.length !== new Set(returnedIds.map((x: any) => String(x))).size) {
+      throw new Error('ไม่พบใบคืนบางรายการ กรุณารีเฟรชหน้าจอ');
+    }
+    if (lockRows.some((r: any) => r.is_approved === 'Y')) {
+      throw new Error('มีใบคืนที่อนุมัติไปแล้ว กรุณารีเฟรชหน้าจอ');
+    }
+    const lines: any = await knex('wm_returned_detail as rd')
+      .select('rd.returned_detail_id', 'rd.returned_id', 'rd.product_id', 'rd.lot_no', 'rd.expired_date', 'rd.returned_qty',
+        'rd.cost', 'rd.unit_generic_id', 'rd.location_id', 'rt.warehouse_id', 'rt.returned_code', 'ug.qty as conversion_qty', 'mp.generic_id')
+      .innerJoin('wm_returned as rt', 'rt.returned_id', 'rd.returned_id')
+      .innerJoin('mm_products as mp', 'mp.product_id', 'rd.product_id')
+      .innerJoin('mm_unit_generics as ug', 'ug.unit_generic_id', 'rd.unit_generic_id')
+      .whereIn('rd.returned_id', returnedIds)
+      .orderBy('rd.returned_detail_id');
+    const now = moment().format('YYYY-MM-DD HH:mm:ss');
+    for (const v of lines) {
+      const qty = +v.returned_qty * +v.conversion_qty;
+      if (!(qty > 0)) continue;
+      const cost = (+v.cost * +v.returned_qty) / qty; // ราคาต่อหน่วยย่อย
+      const expiredDate = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
+      const same: any = await knex('wm_products')
+        .where('warehouse_id', v.warehouse_id).where('product_id', v.product_id)
+        .whereRaw('lot_no <=> ?', [v.lot_no]).whereRaw('expired_date <=> ?', [expiredDate])
+        .orderBy('lot_time', 'desc').forUpdate();
+      let wmProductId;
+      let lotTime;
+      if (same.length) {
+        const d = same[0];
+        wmProductId = d.wm_product_id;
+        lotTime = d.lot_time;
+        await knex.raw(`update wm_products
+          set cost = IF(qty + ? = 0, cost, (qty * cost + ?) / (qty + ?)), price = cost, qty = qty + ?
+          where wm_product_id = ?`, [qty, cost * qty, qty, qty, wmProductId]);
+      } else {
+        const mx: any = await knex('wm_products').max('lot_time as m')
+          .where('warehouse_id', v.warehouse_id).where('product_id', v.product_id).whereRaw('lot_no <=> ?', [v.lot_no]);
+        lotTime = (+mx[0].m || 0) + 1;
+        wmProductId = uuid();
+        await knex('wm_products').insert({
+          wm_product_id: wmProductId, warehouse_id: v.warehouse_id, product_id: v.product_id, qty: qty, cost: cost, price: cost,
+          lot_no: v.lot_no, lot_time: lotTime, expired_date: expiredDate, unit_generic_id: v.unit_generic_id,
+          location_id: +v.location_id || 0, people_user_id: peopleUserId, created_at: now
+        });
+      }
+      const bal: any = await knex.raw(`select
+          (select sum(qty) from wm_products where warehouse_id = ? and product_id = ? and lot_no <=> ? and lot_time = ?) as balance_lot,
+          (select sum(qty) from wm_products where warehouse_id = ? and product_id = ?) as balance,
+          (select sum(w.qty) from wm_products w join mm_products p on p.product_id = w.product_id where w.warehouse_id = ? and p.generic_id = ?) as balance_generic`,
+        [v.warehouse_id, v.product_id, v.lot_no, lotTime, v.warehouse_id, v.product_id, v.warehouse_id, v.generic_id]);
+      const b = bal[0][0];
+      await knex('wm_stock_card').insert({
+        stock_date: now, product_id: v.product_id, generic_id: v.generic_id, unit_generic_id: v.unit_generic_id,
+        transaction_type: 'RETURNED', document_ref_id: v.returned_id, document_ref: v.returned_code,
+        in_qty: qty, in_unit_cost: cost, out_qty: 0, out_unit_cost: 0,
+        balance_lot_qty: b.balance_lot, balance_qty: b.balance, balance_generic_qty: b.balance_generic, balance_unit_cost: cost,
+        ref_dst: v.warehouse_id, comment: 'คืน', lot_no: v.lot_no, lot_time: lotTime, expired_date: expiredDate,
+        wm_product_id_in: wmProductId
+      });
+    }
+  }
 
   saveBorrow(knex: Knex, data) {
     return knex('wm_borrow')

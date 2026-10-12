@@ -474,9 +474,18 @@ router.post('/approve', co(async (req, res, next) => {
   let db = req.db;
   let transactionIds = req.body.transactionIds;
   try {
-    await additionModel.deleteGenericNonAddition(db, transactionIds);
-    await additionModel.deleteProductNonAddition(db, transactionIds);
-    let results = await additionModel.getProductList(db, transactionIds);
+   // ทั้งคำขอใน transaction เดียว ล้มกลางทางย้อนกลับหมด (เดิมเขียนทีละคำสั่ง ล้มแล้วข้อมูลลงไม่ครบ)
+   // ส่งผลหลัง commit (เดิม res.send อยู่ใน transaction ผู้ใช้ได้คำตอบก่อนข้อมูล commit)
+   const txResult: any = await db.transaction(async (trx) => {
+    // ล็อกใบกันอนุมัติซ้อน (เดิมไม่ตรวจสถานะ กดซ้ำ = ย้ายของซ้ำ)
+    transactionIds = Array.isArray(transactionIds) ? transactionIds : [transactionIds];
+    const lockHeads: any = await trx('wm_addition_header').whereIn('addition_id', transactionIds).forUpdate();
+    if (lockHeads.length !== transactionIds.length || lockHeads.some((h: any) => h.status === 'APPROVE')) {
+      throw new Error('มีใบเติมที่อนุมัติไปแล้วหรือไม่พบใบ กรุณารีเฟรชหน้าจอ');
+    }
+    await additionModel.deleteGenericNonAddition(trx, transactionIds);
+    await additionModel.deleteProductNonAddition(trx, transactionIds);
+    let results = await additionModel.getProductList(trx, transactionIds);
 
     let dstProducts = [];
     results.forEach((v: any) => {
@@ -497,6 +506,7 @@ router.post('/approve', co(async (req, res, next) => {
       obj.lot_no = v.lot_no;
       obj.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;
       obj.transaction_code = v.addition_code;
+      obj.src_wm_product_id = v.wm_product_id;
       obj.people_user_id = req.decoded.people_user_id;
       obj.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
 
@@ -507,12 +517,13 @@ router.post('/approve', co(async (req, res, next) => {
       'status': 'APPROVE',
       'update_by': req.decoded.people_user_id
     };
-    await additionModel.approveTransactions(db, transactionIds, _data);
-    await additionModel.saveDstProducts(db, dstProducts);
-    await additionModel.decreaseQty(db, dstProducts);
-    await stockCard.saveStockAdditionIn(db, transactionIds);
-    await stockCard.saveStockAdditionOut(db, transactionIds);
-    res.send({ ok: true });
+    await additionModel.approveTransactions(trx, transactionIds, _data);
+    await additionModel.moveStock(trx, dstProducts);
+    await stockCard.saveStockAdditionIn(trx, transactionIds);
+    await stockCard.saveStockAdditionOut(trx, transactionIds);
+    return { ok: true };
+   });
+   res.send(txResult);
   } catch (error) {
     console.log(error)
     res.send({ ok: false, error: error.message });

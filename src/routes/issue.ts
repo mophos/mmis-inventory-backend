@@ -28,6 +28,8 @@ router.post('/', co(async (req, res, next) => {
   //  console.log(req.decoded);
 
   try {
+    // ทั้งเอกสาร (สร้าง + ตัดสต๊อก + stock card) ใน transaction เดียว
+    await db.transaction(async (trx) => {
 
     let _summary: any = {};
     _summary.issue_date = summary.issueDate;
@@ -42,10 +44,10 @@ router.post('/', co(async (req, res, next) => {
     if (month >= 10) {
       year += 1;
     }
-    let serialCode = await serialModel.getSerial(db, 'ST', year, warehouseId);
+    let serialCode = await serialModel.getSerial(trx, 'ST', year, warehouseId);
     _summary.issue_code = serialCode;
 
-    let id = await issueModel.saveSummary(db, _summary);
+    let id = await issueModel.saveSummary(trx, _summary);
     let issueId = id[0];
 
     let _cutProduct = [];
@@ -60,7 +62,7 @@ router.post('/', co(async (req, res, next) => {
       obj.generic_id = v.generic_id;
       _genericIds.push(v.generic_id);
       _generics.push(obj);
-      let issue_generic_id = await issueModel.saveGenerics(db, _generics);
+      let issue_generic_id = await issueModel.saveGenerics(trx, _generics);
 
       for (let e of v.items) {
         // if (e.product_qty > 0) {
@@ -75,7 +77,7 @@ router.post('/', co(async (req, res, next) => {
           cutProduct.wm_product_id = e.wm_product_id;
           _products.push(objP);
           _cutProduct.push(cutProduct);
-          await issueModel.saveProducts(db, _products);
+          await issueModel.saveProducts(trx, _products);
         // }
       }
     }
@@ -87,19 +89,19 @@ router.post('/', co(async (req, res, next) => {
         approve_date: moment().format('YYYY-MM-DD'),
         approve_people_user_id: req.decoded.people_user_id
       }
-      await issueModel.updateSummaryApprove(db, id, summary);
+      await issueModel.updateSummaryApprove(trx, id, summary);
       //  update wm_product
-      await issueModel.saveProductStock(db, _cutProduct);
 
-      let rs = await issueModel.getIssueApprove(db, id[0], warehouseId);
+      let rs = await issueModel.getIssueApprove(trx, id[0], warehouseId);
       rs = rs[0];
       let data = [];
 
       let balances = [];
       let balancesG = [];
       let balancesL = [];
-      for (const e of rs[0]) {
-        let srcBalance = await issueModel.getBalance(db, warehouseId, e.product_id, e.lot_no, e.lot_time);
+      // rs = แถวผลลัพธ์แล้ว (เดิม rs[0] = แถวแรก → "rs[0] is not iterable" ตัดจ่ายแบบไม่ต้องอนุมัติใช้ไม่ได้เลย)
+      for (const e of rs) {
+        let srcBalance = await issueModel.getBalance(trx, warehouseId, e.product_id, e.lot_no, e.lot_time);
         srcBalance = srcBalance[0];
         let objBalance: any = {
           product_id: srcBalance[0].product_id,
@@ -131,8 +133,19 @@ router.post('/', co(async (req, res, next) => {
         }
       }
 
+      // ตัดสต๊อกหลังอ่านยอดคงเหลือ (โค้ดด้านล่างลบจำนวนจ่ายจากยอดที่อ่านไว้ก่อนตัด) เดิมตัดก่อน → ยอดคงเหลือใน stock card ต่ำไปเท่าจำนวนจ่าย
+      // เดิมส่งทั้ง array เข้าไป ฟังก์ชันรับทีละรายการ → SQL "qty-undefined" error หลังบันทึกอนุมัติไปแล้ว
+      for (const c of _cutProduct) {
+        if (!(+c.cutQty > 0)) continue;
+        const cur: any = await trx('wm_products').where('wm_product_id', c.wm_product_id).forUpdate();
+        if (!cur.length || +cur[0].qty < +c.cutQty) {
+          throw new Error(`คงคลังไม่พอหรือไม่พบรายการ (${c.wm_product_id}) ยังไม่ได้บันทึก`);
+        }
+        await issueModel.saveProductStock(trx, c);
+      }
+
       for (const e of rs) {
-        if (rs.out_qty != 0) {
+        if (e.out_qty != 0) {
           let objStockcard: any = {}
           objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
           objStockcard.product_id = e.product_id;
@@ -182,9 +195,10 @@ router.post('/', co(async (req, res, next) => {
         }
       }
 
-      await stockCardModel.saveFastStockTransaction(db, data);
+      await stockCardModel.saveFastStockTransaction(trx, data);
     }
 
+    });
     res.send({ ok: true });
   } catch (error) {
     // throw error;
@@ -270,23 +284,33 @@ router.post('/approve', co(async (req, res, next) => {
     if (issueIds.length) {
 
 
+     // ทั้งคำขอใน transaction เดียว ล้มกลางทางย้อนกลับหมด (เดิมตัดสต๊อกทีละรายการโดยไม่มี transaction)
+     await db.transaction(async (trx) => {
       for (let v of issueIds) {
+        const lk: any = await trx('wm_issue_summary').where('issue_id', v).forUpdate();
+        if (!lk.length || lk[0].approved === 'Y') {
+          throw new Error('มีใบตัดจ่ายที่อนุมัติไปแล้ว กรุณารีเฟรชหน้าจอ');
+        }
         let summary = {
           approved: 'Y',
           approve_date: moment().format('YYYY-MM-DD'),
           approve_people_user_id: req.decoded.people_user_id
         }
 
-        let rs = await issueModel.getIssueApprove(db, v, warehouseId);
+        let rs = await issueModel.getIssueApprove(trx, v, warehouseId);
         for (const e of rs[0]) {
 
           if (e.out_qty != 0) {
             let cutProduct: any = {};
             cutProduct.cutQty = e.out_qty;
             cutProduct.wm_product_id = e.wm_product_id;
-            await issueModel.saveProductStock(db, cutProduct);
+            const cur: any = await trx('wm_products').where('wm_product_id', e.wm_product_id).forUpdate();
+            if (!cur.length || +cur[0].qty < +e.out_qty) {
+              throw new Error(`คงคลังไม่พอ ${e.product_id} lot ${e.lot_no} ยังไม่ได้อนุมัติ`);
+            }
+            await issueModel.saveProductStock(trx, cutProduct);
 
-            let balance = await issueModel.getBalance(db, warehouseId, e.product_id, e.lot_no, e.lot_time);
+            let balance = await issueModel.getBalance(trx, warehouseId, e.product_id, e.lot_no, e.lot_time);
             balance = balance[0];
 
             let objStockcard: any = {};
@@ -312,13 +336,14 @@ router.post('/approve', co(async (req, res, next) => {
             objStockcard.lot_no = e.lot_no;
             objStockcard.lot_time = e.lot_time;
             objStockcard.expired_date = e.expired_date;
-            await stockCardModel.saveFastStockTransaction(db, objStockcard);
+            await stockCardModel.saveFastStockTransaction(trx, objStockcard);
 
           }
         }
         v = Array.isArray(v) ? v : [v];
-        await issueModel.updateSummaryApprove(db, v, summary);
+        await issueModel.updateSummaryApprove(trx, v, summary);
       }
+     });
 
       res.send({ ok: true });
     } else {

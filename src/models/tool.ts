@@ -169,10 +169,38 @@ export class ToolModel {
       })
   }
 
+  // แก้บรรทัดใบรับ PO ด้วย receive_detail_id (เดิม ใบ+สินค้า+lot+is_free: สองบรรทัด lot เดียวกันถูกทับทั้งคู่)
+  updateReceiveDetailById(db: Knex, receiveDetailId: any, products: any) {
+    return db('wm_receive_detail')
+      .where('receive_detail_id', receiveDetailId)
+      .update({
+        unit_generic_id: products.unit_generic_id,
+        receive_qty: products.receive_qty,
+        is_free: products.is_free,
+        cost: products.cost,
+        discount: products.discount,
+        lot_no: products.lot_no,
+        expired_date: products.expired_date
+      });
+  }
+
   updateReceiveOther(db: Knex, receiveOtherId: any, summary: any) {
     return db('wm_receive_other')
       .where('receive_other_id', receiveOtherId)
       .update(summary);
+  }
+
+  // แก้บรรทัดใบรับด้วย receive_detail_id ตรงๆ (เดิมใช้ ใบ+สินค้า+lot ทำให้ใบที่มีของซื้อกับของแถม lot เดียวกันถูกทับทั้งสองบรรทัด)
+  updateReceiveOtherDetailById(db: Knex, receiveDetailId: any, products: any) {
+    return db('wm_receive_other_detail')
+      .where('receive_detail_id', receiveDetailId)
+      .update({
+        unit_generic_id: products.unit_generic_id,
+        receive_qty: products.receive_qty,
+        cost: products.cost,
+        lot_no: products.lot_no,
+        expired_date: products.expired_date
+      })
   }
 
   updateReceiveOtherDetail(db: Knex, receiveOtherId: any, products: any) {
@@ -278,11 +306,69 @@ export class ToolModel {
     return knex.raw(sql);
   }
 
-  decreaseQtyWM(knex: Knex, wmProductId, qty) {
-    const sql = `UPDATE wm_products 
-    set qty = qty-${qty}
-    WHERE wm_product_id = '${wmProductId}'`
-    return knex.raw(sql);;
+  // ปรับคอลัมน์ยอดคงเหลือใน stock card หลังแก้จำนวนบรรทัดหนึ่ง (delta = ผลต่อคลังนั้น: รับเพิ่ม +, จ่ายเพิ่ม −)
+  // บวกส่วนต่างให้บรรทัดที่แก้และบรรทัดหลังจากนั้นเท่านั้น บรรทัดก่อนหน้าไม่ถูกแตะ
+  // เดิม: คำนวณยอดคงเหลือรายสินค้า/generic ใหม่ทั้งประวัติจากผลรวมรับ-จ่าย (ประวัติเก่าที่ไม่ตรงอยู่แล้วถูกเขียนทับ เช่นเคส P000073)
+  //       และไม่ปรับยอดคงเหลือราย lot (balance_lot_qty) เลย
+  async shiftBalances(knex: Knex, o: { warehouseId: any, stockCardId: any, productId: any, genericId: any, wmProductId: any, delta: number }) {
+    const d = +o.delta;
+    if (!d || !o.stockCardId) return;
+    // ราย lot = แถวคงคลังเดียว (warehouse+product+lot+lot_time = PK) ใช้บรรทัดที่อ้างแถวนั้น
+    if (o.wmProductId) {
+      await knex('wm_stock_card')
+        .where('stock_card_id', '>=', o.stockCardId)
+        .where(function () {
+          this.where('wm_product_id_in', o.wmProductId).orWhere('wm_product_id_out', o.wmProductId);
+        })
+        .update({ balance_lot_qty: knex.raw('balance_lot_qty + ?', [d]) });
+    }
+    // รายสินค้า / generic ของคลังนั้น (view แยกบรรทัดตามคลัง) ดึง id ก่อนเพราะ MySQL อัปเดตตารางที่อยู่ใน subquery ไม่ได้
+    const chunks = (a: any[]) => { const r = []; for (let i = 0; i < a.length; i += 1000) r.push(a.slice(i, i + 1000)); return r; };
+    const prodIds: any = await knex('view_stock_card_warehouse').distinct('stock_card_id')
+      .where('warehouse_id', o.warehouseId).where('product_id', o.productId).where('stock_card_id', '>=', o.stockCardId);
+    for (const c of chunks(prodIds.map((r: any) => r.stock_card_id))) {
+      await knex('wm_stock_card').whereIn('stock_card_id', c).update({ balance_qty: knex.raw('balance_qty + ?', [d]) });
+    }
+    const genIds: any = await knex('view_stock_card_warehouse').distinct('stock_card_id')
+      .where('warehouse_id', o.warehouseId).where('generic_id', o.genericId).where('stock_card_id', '>=', o.stockCardId);
+    for (const c of chunks(genIds.map((r: any) => r.stock_card_id))) {
+      await knex('wm_stock_card').whereIn('stock_card_id', c).update({ balance_generic_qty: knex.raw('balance_generic_qty + ?', [d]) });
+    }
+  }
+
+  // ปรับจำนวนแถวคงคลังตามที่แก้ใน stock card พร้อมปรับราคาแถวให้มูลค่าเปลี่ยนเท่ากับที่ลง stock card (delta x ราคาในบรรทัดนั้น)
+  // เดิมปรับแค่จำนวน ถ้าราคาแถว (เฉลี่ยแล้ว) ต่างจากราคาในใบ มูลค่าคงคลังกับ stock card จะไม่ตรงกัน
+  // delta < 0 ต้องมีของพอ ไม่พอ throw
+  async moveQtyAtCost(knex: Knex, wmProductId: any, delta: number, unitCost: any) {
+    delta = +delta;
+    if (!delta) return 0;
+    const c = +unitCost || 0;
+    const rs: any = await knex.raw(`update wm_products
+      set cost = IF(qty + ? = 0, cost, (qty * cost + ?) / (qty + ?)), price = cost, qty = qty + ?
+      where wm_product_id = ? and (? > 0 or qty + ? >= 0)`, [delta, delta * c, delta, delta, wmProductId, delta, delta]);
+    const n = rs && rs[0] ? +rs[0].affectedRows : 0;
+    if (n !== 1) {
+      const r: any = await knex('wm_products').select('qty').where('wm_product_id', wmProductId);
+      throw new Error(r.length
+        ? `คงคลังไม่พอสำหรับปรับลด (คงเหลือ ${r[0].qty} ต้องลด ${-delta}) ยังไม่ได้แก้ไขอะไร`
+        : `ไม่พบรายการคงคลัง (${wmProductId}) ยังไม่ได้แก้ไขอะไร`);
+    }
+    return n;
+  }
+
+  // ลดยอดต้องพอ ไม่พอ throw (เดิมลดได้จนติดลบ เช่นแก้ใบเบิกเพิ่มจำนวนเกินคงคลังต้นทาง)
+  async decreaseQtyWM(knex: Knex, wmProductId, qty) {
+    const n: any = await knex('wm_products')
+      .where('wm_product_id', wmProductId)
+      .where('qty', '>=', qty)
+      .update({ qty: knex.raw('qty - ?', [qty]) });
+    if (n !== 1) {
+      const r: any = await knex('wm_products').select('qty').where('wm_product_id', wmProductId);
+      throw new Error(r.length
+        ? `คงคลังไม่พอสำหรับปรับลด (คงเหลือ ${r[0].qty} ต้องลด ${qty}) ยังไม่ได้แก้ไขอะไร`
+        : `ไม่พบรายการคงคลัง (${wmProductId}) ยังไม่ได้แก้ไขอะไร`);
+    }
+    return n;
   }
 
   // chageCost(knex:Knex,)
@@ -299,11 +385,11 @@ export class ToolModel {
     WHERE product_id = '${productId}'  AND lot_no = '${lotNoOld}' AND expired_date = '${expiredOld}'`
     return knex.raw(sql);
   }
+  // ใช้ query builder: ไม่มีวันหมดอายุ (null) เดิมได้สตริง 'null' ลงคอลัมน์วันที่ → error
   changeLotWmProductWM(knex: Knex, lotNoNew, lotTimeNew, expiredNew, unitGenericId, cost, wmProductId) {
-    const sql = `UPDATE wm_products 
-    set lot_no = '${lotNoNew}',lot_time = '${lotTimeNew}',expired_date = '${expiredNew}',unit_generic_id =${unitGenericId},cost = ${cost},price = ${cost}
-    WHERE wm_product_id = '${wmProductId}'`
-    return knex.raw(sql);
+    return knex('wm_products')
+      .where('wm_product_id', wmProductId)
+      .update({ lot_no: lotNoNew, lot_time: lotTimeNew, expired_date: expiredNew || null, unit_generic_id: unitGenericId, cost: cost, price: cost });
   }
 
   changeLotTimeWmProductWM(knex: Knex, lotTime, wmProductId) {
@@ -314,10 +400,11 @@ export class ToolModel {
   }
 
   changeLotStockcardWM(knex: Knex, lotNoNew, lotTimeNew, expiredNew, wmProductId) {
-    const sql = `UPDATE wm_stock_card 
-    set lot_no = '${lotNoNew}',lot_time = '${lotTimeNew}',expired_date = '${expiredNew}'
-    WHERE wm_product_id_in = '${wmProductId}' or wm_product_id_out = '${wmProductId}' `
-    return knex.raw(sql);
+    return knex('wm_stock_card')
+      .where(function () {
+        this.where('wm_product_id_in', wmProductId).orWhere('wm_product_id_out', wmProductId);
+      })
+      .update({ lot_no: lotNoNew, lot_time: lotTimeNew, expired_date: expiredNew || null });
   }
   changeLotTimeStockcardWM(knex: Knex, lotTime, wmProductId) {
     const sql = `UPDATE wm_stock_card 
@@ -588,8 +675,9 @@ export class ToolModel {
       .where('transaction_type', trasactionType)
       .where('document_ref_id', documentId)
       .where('product_id', productId)
-      .where('lot_no', lotNo)
-      .where('expired_date', expiredDate)
+      .whereRaw('lot_no <=> ?', [lotNo])
+      // ไม่มีวันหมดอายุ (null) เดิมใช้ = จะหาไม่เจอแล้ว crash หลังแก้หัวใบไปแล้ว
+      .whereRaw('expired_date <=> ?', [expiredDate])
 
       if (isFree === 'Y') {
         query.where('in_unit_cost', 0);
@@ -608,36 +696,37 @@ export class ToolModel {
       .groupBy('product_id')
   }
 
-  updateWmProductCostAverage(knex, wmProductId, productId, lotNo, expiredDate, receiveId) {
+  updateWmProductCostAverage(knex, wmProductId, productId?, lotNo?, expiredDate?, receiveId?) {
     return knex.transaction(async (trx) => {
         // ใช้ .select และเขียน SQL Aggregate function ตรงๆ เพื่อความชัวร์
+        // เฉลี่ยจากทุกรายการรับเข้าแถวนี้ (wm_product_id_in) ไม่ใช่เฉพาะใบรับใบนี้
+        // เดิมกรอง expired_date = ? ถ้าไม่มีวันหมดอายุ (null) จะไม่เจอแถวแล้วตั้ง cost = 0
+        // และถ้าแถวนี้รวมของจากหลายใบรับ ราคาเฉลี่ยของใบอื่นจะหายไป
         const result = await trx('wm_stock_card')
             .select(
                 knex.raw('SUM(in_qty) as total_qty'),
                 knex.raw('SUM(in_qty * in_unit_cost) as total_value')
             )
-            .where('product_id', productId)
-            .where('lot_no', lotNo)
-            .where('expired_date', expiredDate)
-            .where('transaction_type', 'REV')
-            .where('document_ref_id', receiveId) // ต้องตรงกับ receiveId
+            .where('wm_product_id_in', wmProductId)
+            .where('in_qty', '>', 0)
             .first();
 
-        let newCost = 0;
         const totalQty = result && result.total_qty ? +result.total_qty : 0;
         const totalValue = result && result.total_value ? +result.total_value : 0;
 
-        if (totalQty > 0) {
-            newCost = totalValue / totalQty;
+        // หารายการรับเข้าไม่เจอ ห้ามตั้งราคาเป็น 0 ปล่อยราคาเดิมไว้
+        if (totalQty <= 0) {
+            return null;
         }
+        const newCost = totalValue / totalQty;
 
-        // อัปเดตราคา
         await trx('wm_products')
             .update({
-                cost: newCost
+                cost: newCost,
+                price: newCost
             })
             .where('wm_product_id', wmProductId);
-            
+
         return newCost;
     });
   }
@@ -645,5 +734,58 @@ export class ToolModel {
   getWmProductById(knex: Knex, wmProductId) {
     return knex('wm_products')
       .where('wm_product_id', wmProductId)
+  }
+
+  // หาบรรทัด stock card ของเอกสารที่จะแก้ให้ได้แถวเดียวแน่นอน
+  // ลำดับ: ตรง wm_product_id ก่อน → ไม่มีค่อยใช้ product + lot + จำนวนเดิม
+  // exclude = stock_card_id ที่รายการก่อนหน้าในคำขอเดียวกันจองไปแล้ว กันสองรายการ lot เดียวกันชนแถวเดียวกัน
+  async findStockCardForEdit(knex: Knex, opt: {
+    docId: any, type: string, productId: any, lotNo: any,
+    wmCol?: 'wm_product_id_in' | 'wm_product_id_out', wmProductId?: any,
+    qtyCol: 'in_qty' | 'out_qty', qty: number, exclude: any[],
+    costCol?: 'in_unit_cost' | 'out_unit_cost', cost?: number
+  }) {
+    const base = () => {
+      const q = knex('wm_stock_card')
+        .select('stock_card_id', 'wm_product_id_in', 'wm_product_id_out', 'in_qty', 'out_qty', 'in_unit_cost', 'out_unit_cost', 'lot_time')
+        .where('document_ref_id', opt.docId)
+        .where('transaction_type', opt.type)
+        .where('product_id', opt.productId)
+        .whereRaw('lot_no <=> ?', [opt.lotNo])
+        .orderBy('stock_card_id');
+      if (opt.exclude.length) {
+        q.whereNotIn('stock_card_id', opt.exclude);
+      }
+      // ใบรับที่มีของซื้อกับของแถม lot เดียวกัน แยกด้วยราคาเดิม
+      if (opt.costCol && opt.cost !== undefined && opt.cost !== null) {
+        q.whereRaw(`abs(${opt.costCol} - ?) < 0.0001`, [opt.cost]);
+      }
+      return q;
+    };
+    if (opt.wmCol && opt.wmProductId) {
+      const byWm: any = await base().where(opt.wmCol, opt.wmProductId).where(opt.qtyCol, opt.qty);
+      if (byWm.length) return byWm[0];
+    }
+    const byQty: any = await base().where(opt.qtyCol, opt.qty);
+    return byQty.length ? byQty[0] : null;
+  }
+
+  // ตรวจว่าแถวคงคลังยังแก้จากใบรับได้: ยังไม่มีจ่ายออก และยอดคงคลัง = ผลรวมรับเข้าทุกรายการของแถว
+  // (แถวหนึ่งอาจรวมหลายบรรทัด เช่นของซื้อ+ของแถม lot เดียวกันในใบรับ PO หรือหลายใบรับ จึงเทียบกับผลรวม ไม่ใช่บรรทัดเดียว)
+  async checkRowEditable(knex: Knex, wmProductId: any) {
+    const row: any = await knex('wm_products').where('wm_product_id', wmProductId).forUpdate().first();
+    const i: any = await knex('wm_stock_card').where('wm_product_id_in', wmProductId).where('in_qty', '>', 0).sum('in_qty as q').count('* as n').first();
+    const o: any = await knex('wm_stock_card').where('wm_product_id_out', wmProductId).where('out_qty', '>', 0).count('* as n').first();
+    const inQty = +((i && i.q) || 0);
+    const outCount = +((o && o.n) || 0);
+    const inCount = +((i && i.n) || 0); // จำนวนรายการรับเข้าของแถว (>1 = แถวรวมหลายบรรทัด/หลายใบรับ)
+    return { row, inQty, inCount, outCount, editable: !!row && outCount === 0 && Math.abs(+row.qty - inQty) < 0.0001 };
+  }
+
+  // แก้เฉพาะราคา ไม่ใช้ changeLotWmProductWM เพราะตัวนั้นคำนวณ lot_time ใหม่ด้วย
+  updateWmProductCost(knex: Knex, wmProductId, cost) {
+    return knex('wm_products')
+      .where('wm_product_id', wmProductId)
+      .update({ cost: cost, price: cost });
   }
 }

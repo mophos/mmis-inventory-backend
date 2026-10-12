@@ -39,6 +39,9 @@ router.post('/', co(async (req, res, next) => {
 
 
   try {
+   // ทั้งคำขอใน transaction เดียว ล้มกลางทางย้อนกลับหมด (เดิมเขียนทีละคำสั่ง ล้มแล้วข้อมูลลงไม่ครบ)
+   // ส่งผลหลัง commit (เดิม res.send อยู่ใน transaction ผู้ใช้ได้คำตอบก่อนข้อมูล commit)
+   const txResult: any = await db.transaction(async (trx) => {
     let _summary: any = {};
     _summary.borrow_other_date = summary.borrowDate;
     // _summary.transaction_issue_id = summary.transactionId;
@@ -52,10 +55,10 @@ router.post('/', co(async (req, res, next) => {
     if (month >= 10) {
       year += 1;
     }
-    let serialCode = await serialModel.getSerial(db, 'BO', year, warehouseId);
+    let serialCode = await serialModel.getSerial(trx, 'BO', year, warehouseId);
     _summary.borrow_other_code = serialCode;
 
-    let id = await models.saveSummary(db, _summary);
+    let id = await models.saveSummary(trx, _summary);
     let borrowId = id[0];
 
     let _cutProduct = [];
@@ -70,7 +73,7 @@ router.post('/', co(async (req, res, next) => {
       obj.generic_id = v.generic_id;
       _genericIds.push(v.generic_id);
       _generics.push(obj);
-      let borrow_generic_id = await models.saveGenerics(db, _generics);
+      let borrow_generic_id = await models.saveGenerics(trx, _generics);
 
       for (let e of v.items) {
         if (e.product_qty > 0) {
@@ -85,7 +88,7 @@ router.post('/', co(async (req, res, next) => {
           cutProduct.wm_product_id = e.wm_product_id;
           _products.push(objP);
           _cutProduct.push(cutProduct);
-          await models.saveProducts(db, _products);
+          await models.saveProducts(trx, _products);
         }
       }
 
@@ -95,49 +98,16 @@ router.post('/', co(async (req, res, next) => {
 
     let isApprove = decoded.WM_ISSUE_APPROVE === 'Y' ? true : false;
     if (!isApprove) {
-      let summary = {
-        approved: 'Y',
-        approve_date: moment().format('YYYY-MM-DD'),
-        approve_people_user_id: req.decoded.people_user_id
-      }
-      await models.updateSummaryApprove(db, id, summary);
-      // update wm_product
-      await models.saveProductStock(db, _cutProduct);
-
-      let rs = await models.getBorrowApprove(db, id[0], warehouseId);
-
-      rs = rs[0];
-      let data = [];
-      rs.forEach(e => {
-        let objStockcard: any = {}
-        objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-        objStockcard.product_id = e.product_id;
-        objStockcard.generic_id = e.generic_id;
-        objStockcard.unit_generic_id = e.unit_generic_id;
-        objStockcard.transaction_type = TransactionType.ISSUE_TRANSACTION;
-        objStockcard.document_ref_id = e.issue_id;
-        objStockcard.document_ref = e.issue_code;
-        objStockcard.in_qty = 0;
-        objStockcard.in_unit_cost = 0;
-        objStockcard.out_qty = e.out_qty;
-        objStockcard.out_unit_cost = e.out_unit_cost;
-        objStockcard.balance_qty = e.balance_qty;
-        objStockcard.balance_unit_cost = e.balance_unit_cost;
-        objStockcard.ref_src = warehouseId;
-        objStockcard.ref_dst = e.ref_src;
-        objStockcard.comment = e.transaction_name;
-        objStockcard.balance_generic_qty = e.balance_generic;
-        objStockcard.lot_no = e.lot_no;
-        objStockcard.expired_date = e.expired_date;
-
-        data.push(objStockcard)
-      });
-      await stockCardModel.saveFastStockTransaction(db, data);
+      // ตัดสต๊อก + stock card BORROW_OTHER_OUT ดู models.approveOut (เดิมลงเป็น IST ไม่มี wm_product_id / lot_time)
+      await models.approveOut(trx, borrowId, warehouseId, req.decoded.people_user_id);
     }
 
-    res.send({ ok: true });
+    return { ok: true };
+   });
+   res.send(txResult);
   } catch (error) {
-    throw error;
+    // ส่งข้อความ error ให้หน้าจอ (เดิม throw ต่อ ผู้ใช้ได้ error: {} ว่าง เช่นกรณีคงคลังไม่พอ / อนุมัติซ้ำ)
+    res.send({ ok: false, error: error.message });
     // res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
@@ -279,59 +249,22 @@ router.post('/approve-all', co(async (req, res, next) => {
   let db = req.db;
   let borrowOtherIds = req.body.borrowOtherIds;
   try {
+   // ทั้งคำขอใน transaction เดียว ล้มกลางทางย้อนกลับหมด (เดิมเขียนทีละคำสั่ง ล้มแล้วข้อมูลลงไม่ครบ)
+   // ส่งผลหลัง commit (เดิม res.send อยู่ใน transaction ผู้ใช้ได้คำตอบก่อนข้อมูล commit)
+   const txResult: any = await db.transaction(async (trx) => {
     const decoded = req.decoded;
     const warehouseId = decoded.warehouseId;
 
-    for (let v of borrowOtherIds) {
-      let summary = {
-        approved: 'Y',
-        approve_date: moment().format('YYYY-MM-DD'),
-        approve_people_user_id: req.decoded.people_user_id
-      }
-
-      let rs = await models.getBorrowApprove(db, v, warehouseId);
-
-      let data = [];
-      let _cutProduct = [];
-
-      rs[0].forEach(e => {
-        if (rs.out_qty != 0) {
-          let objStockcard: any = {};
-          let cutProduct: any = {};
-          objStockcard.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-          objStockcard.product_id = e.product_id;
-          objStockcard.generic_id = e.generic_id;
-          objStockcard.unit_generic_id = e.unit_generic_id;
-          objStockcard.transaction_type = TransactionType.ISSUE_TRANSACTION;
-          objStockcard.document_ref_id = e.borrow_other_id;
-          objStockcard.document_ref = e.borrow_other_code;
-          objStockcard.in_qty = 0;
-          objStockcard.in_unit_cost = 0;
-          objStockcard.out_qty = e.out_qty;
-          objStockcard.out_unit_cost = e.out_unit_cost;
-          objStockcard.balance_qty = e.balance_qty;
-          objStockcard.balance_unit_cost = e.balance_unit_cost;
-          objStockcard.ref_src = warehouseId;
-          objStockcard.ref_dst = e.src_warehouse_name;
-          objStockcard.balance_generic_qty = e.balance_generic;
-          objStockcard.lot_no = e.lot_no;
-          objStockcard.expired_date = e.expired_date;
-          objStockcard.comment = 'ยืมนอกหน่วยงาน';
-          data.push(objStockcard)
-          cutProduct.cutQty = e.out_qty;
-          cutProduct.wm_product_id = e.wm_product_id;
-          _cutProduct.push(cutProduct);
-        }
-      });
-      v = Array.isArray(v) ? v : [v];
-      await models.updateSummaryApprove(db, v, summary);
-      // update wm_product
-      await models.saveProductStock(db, _cutProduct);
-      await stockCardModel.saveFastStockTransaction(db, data);
+    borrowOtherIds = Array.isArray(borrowOtherIds) ? borrowOtherIds : [borrowOtherIds];
+    for (const v of borrowOtherIds) {
+      // ล็อกใบ / ตรวจคงคลัง / stock card มี wm_product_id_out + lot_time ดู models.approveOut
+      await models.approveOut(trx, v, warehouseId, req.decoded.people_user_id);
     }
 
-    res.send({ ok: true });
+    return { ok: true };
 
+   });
+   res.send(txResult);
   } catch (error) {
     console.log(error);
     res.send({ ok: false, error: error.message });

@@ -48,6 +48,8 @@ router.post('/issue-jhcis', async (req, res, next) => {
   let hospcode: any;
 
   try {
+   // ทั้งคำขอใน transaction เดียว ล้มกลางทางย้อนกลับหมด (เดิมเขียนทีละคำสั่ง ล้มแล้วข้อมูลลงไม่ครบ)
+   const result: any = await db.transaction(async (trx) => {
     let _data: any = [];
     for (const v of data) {
       hospcode = v.hospcode
@@ -69,20 +71,23 @@ router.post('/issue-jhcis', async (req, res, next) => {
       });
     }
 
-    const data_: any = await conversion(db, hospcode, _data);
-    await hisTransactionModel.saveHisTransactionTemp(db, data_);
+    const data_: any = await conversion(trx, hospcode, _data);
+    await hisTransactionModel.saveHisTransactionTemp(trx, data_);
 
-    const rs = await hisTransactionModel.getGroupTransaction(db, hospcode, dateServe, warehouseId);
+    // ล็อกรายการที่ยังไม่ตัดของวันนั้นก่อน กันส่งซ้อนแล้วตัดซ้ำ
+    await trx('wm_his_transaction').where('hospcode', hospcode).where('mmis_warehouse', warehouseId)
+      .where('date_serv', dateServe).where('is_cut_stock', 'N').forUpdate().select('transaction_id');
+    const rs = await hisTransactionModel.getGroupTransaction(trx, hospcode, dateServe, warehouseId);
     if (rs.length) {
-      const rsAllocate = await allocate(db, warehouseId, rs);
+      const rsAllocate = await allocate(trx, warehouseId, rs);
       if (rsAllocate.ok) {
         for (const i of rsAllocate.rows) {
           //-------------- get UnitGeneric --------------
-          let unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, i.generic_id);
+          let unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(trx, i.generic_id);
 
           //เช็ค unitId
           if (!unitId.length) {
-            let unit = await hisTransactionModel.getUnitGenericId(db, i.generic_id);
+            let unit = await hisTransactionModel.getUnitGenericId(trx, i.generic_id);
             //สร้าง unit 1 ต่อ 1 ใหม่
             let newUnit = {
               from_unit_id: unit[0].to_unit_id,
@@ -93,18 +98,17 @@ router.post('/issue-jhcis', async (req, res, next) => {
             }
             unitId = newUnit;
             //insert UnitGeneric
-            const u = await hisTransactionModel.insertUnitId(db, newUnit);
+            const u = await hisTransactionModel.insertUnitId(trx, newUnit);
             unitId.unit_generic_id = u[0];
           } else {
             unitId = unitId[0];
           }
           //----------------------------------------
           //--------------ตัดคงคลัง--------------
-          await hisTransactionModel.decreaseProductQty(db, i.wm_product_id, i.small_remain_qty - i.product_qty);
-          await hisTransactionModel.changeStatusToCut2(db, moment().format('YYYY-MM-DD hh:mm:ss'), req.decoded.people_user_id, hospcode, warehouseId, dateServe, i.product_id);
+          await hisTransactionModel.cutProductQty(trx, i.wm_product_id, i.product_qty);
 
           //getBalance เพื่อไปลง stockcard
-          let balance = await hisTransactionModel.getBalance(db, i.wm_product_id);
+          let balance = await hisTransactionModel.getBalance(trx, i.wm_product_id);
           balance = balance[0];
           let balance_qty = balance[0].balance_qty;
           let balance_lot_qty = balance[0].balance_lot_qty;
@@ -167,18 +171,27 @@ router.post('/issue-jhcis', async (req, res, next) => {
             };
           }
           if (i.product_qty > 0) {
-            await stockCardModel.saveStockHisTransaction(db, data);
+            await stockCardModel.saveStockHisTransaction(trx, data);
           }
           // save stockcard
 
         }
+        // ทำเครื่องหมายตัดแล้วเฉพาะรายการของ generic ที่ตัดจริง
+        // เดิม changeStatusToCut2 เทียบ ht.mmis (generic_id) กับ product_id → ไม่เคยทำเครื่องหมาย ส่งวันเดิมซ้ำ = ตัดซ้ำ
+        const cutGroups: any[] = Array.from(new Set(rsAllocate.rows.map((r: any) => String(r.transaction_id))));
+        for (const g of cutGroups) {
+          await hisTransactionModel.changeStatusToCut(trx, moment().format('YYYY-MM-DD HH:mm:ss'), req.decoded.people_user_id, g.split(','));
+        }
       } else {
-        res.send({ ok: false, error: 'ไม่สามารถตัดจ่ายได้' });
+        return { ok: false, error: 'ไม่สามารถตัดจ่ายได้' };
       }
     } else {
-      res.send({ ok: false, error: 'ไม่มีรายการตัดจ่าย' });
+      return { ok: false, error: 'ไม่มีรายการตัดจ่าย' };
     }
-    res.send({ ok: true, rows: 'test' });
+    return { ok: true, rows: 'test' };
+   });
+    // ส่งผลครั้งเดียวหลัง commit (เดิม res.send ซ้ำสองครั้งในกรณีไม่มีรายการ)
+    res.send(result);
   } catch (error) {
     console.log(error);
 
@@ -194,6 +207,10 @@ const allocate = (async (db, warehouseId: any, data: any) => {
     let rsProducts: any = [];
     for (const d of data) {
       rsProducts = await genericModel.getProductInWarehousesByGenerics(db, [d.genericId], warehouseId);
+      // ของไม่พอทั้งจำนวน: ข้าม generic นี้ (ไม่ตัด ไม่ทำเครื่องหมาย ตัดภายหลังได้) เดิมตัดเท่าที่มีแล้วถือว่าตัดครบ
+      if (+d.genericQty > 0 && rsProducts.reduce((t: number, p: any) => t + +p.qty, 0) < +d.genericQty) {
+        continue;
+      }
       for (const p of rsProducts) {
         const remainQty = p.qty;
         let qty = d.genericQty;

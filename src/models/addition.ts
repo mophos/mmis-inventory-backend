@@ -363,6 +363,7 @@ export class Addition {
     return knex('wm_addition_product as adp')
       .select('adh.dst_warehouse_id', 'adh.src_warehouse_id', 'awp.product_id', 'amp.generic_id', 'awp.unit_generic_id'
         , 'adp.addition_qty', 'awp.cost', 'awp.lot_no', 'awp.expired_date', 'adh.addition_code'
+        , 'adp.wm_product_id', 'awp.lot_time'
         , subBalanceSrc, subBalanceDst, subBalanceGenericSrc, subBalanceGenericDst)
       .join('wm_addition_header as adh', 'adh.addition_id', 'adp.addition_id')
       .join('wm_products as awp', 'awp.wm_product_id', 'adp.wm_product_id')
@@ -432,6 +433,38 @@ export class Addition {
 
     let queries = sqls.join(';');
     return knex.raw(queries);
+  }
+
+  // ย้ายของจากแถวต้นทาง (ระบุด้วย wm_product_id) ไปแถวปลายทาง lot + lot_time เดียวกัน (ต้องเรียกใน transaction)
+  // เดิม decreaseQty ตัดทุกแถวของ lot (ไม่กรอง lot_time) และ saveDstProducts insert แถวใหม่ทุกครั้งโดยไม่มี lot_time
+  async moveStock(knex: Knex, data: any[]) {
+    for (const v of data) {
+      if (!(+v.qty > 0)) continue;
+      const src: any = await knex('wm_products').where('wm_product_id', v.src_wm_product_id).forUpdate();
+      if (!src.length || +src[0].warehouse_id !== +v.src_warehouse_id) {
+        throw new Error(`ไม่พบรายการคงคลังต้นทาง (${v.src_wm_product_id})`);
+      }
+      if (+src[0].qty < +v.qty) {
+        throw new Error(`คงคลังไม่พอ ${v.product_id} lot ${v.lot_no} (คงเหลือ ${src[0].qty} ต้องการ ${v.qty})`);
+      }
+      await knex('wm_products').where('wm_product_id', v.src_wm_product_id).update({ qty: knex.raw('qty - ?', [v.qty]) });
+      const s = src[0];
+      const dst: any = await knex('wm_products').where('warehouse_id', v.dst_warehouse_id).where('product_id', s.product_id)
+        .whereRaw('lot_no <=> ?', [s.lot_no]).where('lot_time', s.lot_time).forUpdate();
+      if (dst.length) {
+        const d = dst[0];
+        const cost = (+d.qty + +v.qty) > 0 ? ((+d.qty * +d.cost) + (+v.qty * +s.cost)) / (+d.qty + +v.qty) : s.cost;
+        await knex('wm_products').where('wm_product_id', d.wm_product_id)
+          .update({ qty: knex.raw('qty + ?', [v.qty]), cost: cost, price: cost });
+      } else {
+        await knex('wm_products').insert({
+          wm_product_id: v.wm_product_id, warehouse_id: v.dst_warehouse_id, product_id: s.product_id,
+          qty: v.qty, cost: s.cost, price: s.cost, lot_no: s.lot_no, lot_time: s.lot_time,
+          expired_date: s.expired_date, unit_generic_id: s.unit_generic_id, location_id: s.location_id || 0,
+          people_user_id: v.people_user_id, created_at: v.created_at
+        });
+      }
+    }
   }
 
   decreaseQty(knex: Knex, data: any[]) {
