@@ -5120,8 +5120,9 @@ router.get('/report/genericStock/all', wrap(async (req, res, next) => {
         //มี unit_generic_id จะโชว์เป็น pack
         if (e.unit_generic_id) {
           e.qty = +e.in_qty - +e.out_qty
-          e.qty_pack = inventoryReportModel.commaQty(Math.floor(e.qty / e.conversion_qty));
-          e.qty_base = inventoryReportModel.commaQty(Math.floor(e.qty % e.conversion_qty));
+          // trunc ไม่ใช่ floor: ยอดติดลบ -205/10 ต้องได้ -20 กล่อง -5 ห่อ ไม่ใช่ -21 กล่อง -5 ห่อ
+          e.qty_pack = inventoryReportModel.commaQty(Math.trunc(e.qty / e.conversion_qty));
+          e.qty_base = inventoryReportModel.commaQty(Math.trunc(e.qty % e.conversion_qty));
           e.expired_date = moment(e.expired_date, 'YYYY-MM-DD').isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year')) + ' :' : '';
           if (e.qty_pack != 0 && e.qty_base != 0) {
             e.show_qty = e.lot_no + ' - ' + e.expired_date + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
@@ -5262,8 +5263,9 @@ router.get('/report/genericStock/all/staff', wrap(async (req, res, next) => {
         //มี unit_generic_id จะโชว์เป็น pack
         if (e.unit_generic_id) {
           e.qty = +e.in_qty - +e.out_qty
-          e.qty_pack = inventoryReportModel.commaQty(Math.floor(e.qty / e.conversion_qty));
-          e.qty_base = inventoryReportModel.commaQty(Math.floor(e.qty % e.conversion_qty));
+          // trunc ไม่ใช่ floor: ยอดติดลบ -205/10 ต้องได้ -20 กล่อง -5 ห่อ ไม่ใช่ -21 กล่อง -5 ห่อ
+          e.qty_pack = inventoryReportModel.commaQty(Math.trunc(e.qty / e.conversion_qty));
+          e.qty_base = inventoryReportModel.commaQty(Math.trunc(e.qty % e.conversion_qty));
           e.expired_date = moment(e.expired_date, 'YYYY-MM-DD').isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year')) + ' :' : '';
           if (e.qty_pack != 0 && e.qty_base != 0) {
             e.show_qty = e.lot_no + ' - ' + e.expired_date + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
@@ -5409,8 +5411,9 @@ router.get('/report/generic/stock', wrap(async (req, res, next) => {
         //มี unit_generic_id จะโชว์เป็น pack
         if (e.unit_generic_id) {
           e.qty = +e.in_qty - +e.out_qty
-          e.qty_pack = inventoryReportModel.commaQty(Math.floor(e.qty / e.conversion_qty));
-          e.qty_base = inventoryReportModel.commaQty(Math.floor(e.qty % e.conversion_qty));
+          // trunc ไม่ใช่ floor: ยอดติดลบ -205/10 ต้องได้ -20 กล่อง -5 ห่อ ไม่ใช่ -21 กล่อง -5 ห่อ
+          e.qty_pack = inventoryReportModel.commaQty(Math.trunc(e.qty / e.conversion_qty));
+          e.qty_base = inventoryReportModel.commaQty(Math.trunc(e.qty % e.conversion_qty));
           e.expired_date = moment(e.expired_date, 'YYYY-MM-DD').isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year')) + ' :' : '';
           if (e.qty_pack != 0 && e.qty_base != 0) {
             e.show_qty = e.lot_no + ' - ' + e.expired_date + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
@@ -5546,8 +5549,9 @@ router.get('/report/generic/stock/staff', wrap(async (req, res, next) => {
         //มี unit_generic_id จะโชว์เป็น pack
         if (e.unit_generic_id) {
           e.qty = +e.in_qty - +e.out_qty
-          e.qty_pack = inventoryReportModel.commaQty(Math.floor(e.qty / e.conversion_qty));
-          e.qty_base = inventoryReportModel.commaQty(Math.floor(e.qty % e.conversion_qty));
+          // trunc ไม่ใช่ floor: ยอดติดลบ -205/10 ต้องได้ -20 กล่อง -5 ห่อ ไม่ใช่ -21 กล่อง -5 ห่อ
+          e.qty_pack = inventoryReportModel.commaQty(Math.trunc(e.qty / e.conversion_qty));
+          e.qty_base = inventoryReportModel.commaQty(Math.trunc(e.qty % e.conversion_qty));
           e.expired_date = moment(e.expired_date, 'YYYY-MM-DD').isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year')) + ' :' : '';
           if (e.qty_pack != 0 && e.qty_base != 0) {
             e.show_qty = e.lot_no + ' - ' + e.expired_date + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
@@ -5693,8 +5697,9 @@ router.get('/report/genericStock/haveMovement', wrap(async (req, res, next) => {
         //มี unit_generic_id จะโชว์เป็น pack
         if (e.unit_generic_id) {
           e.qty = +e.in_qty - +e.out_qty
-          e.qty_pack = inventoryReportModel.commaQty(Math.floor(e.qty / e.conversion_qty));
-          e.qty_base = inventoryReportModel.commaQty(Math.floor(e.qty % e.conversion_qty));
+          // trunc ไม่ใช่ floor: ยอดติดลบ -205/10 ต้องได้ -20 กล่อง -5 ห่อ ไม่ใช่ -21 กล่อง -5 ห่อ
+          e.qty_pack = inventoryReportModel.commaQty(Math.trunc(e.qty / e.conversion_qty));
+          e.qty_base = inventoryReportModel.commaQty(Math.trunc(e.qty % e.conversion_qty));
           e.expired_date = moment(e.expired_date, 'YYYY-MM-DD').isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year')) + ' :' : '';
           if (e.qty_pack != 0 && e.qty_base != 0) {
             e.show_qty = e.lot_no + ' - ' + e.expired_date + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'
@@ -5836,8 +5841,9 @@ router.get('/report/genericStock/haveMovement/staff', wrap(async (req, res, next
         //มี unit_generic_id จะโชว์เป็น pack
         if (e.unit_generic_id) {
           e.qty = +e.in_qty - +e.out_qty
-          e.qty_pack = inventoryReportModel.commaQty(Math.floor(e.qty / e.conversion_qty));
-          e.qty_base = inventoryReportModel.commaQty(Math.floor(e.qty % e.conversion_qty));
+          // trunc ไม่ใช่ floor: ยอดติดลบ -205/10 ต้องได้ -20 กล่อง -5 ห่อ ไม่ใช่ -21 กล่อง -5 ห่อ
+          e.qty_pack = inventoryReportModel.commaQty(Math.trunc(e.qty / e.conversion_qty));
+          e.qty_base = inventoryReportModel.commaQty(Math.trunc(e.qty % e.conversion_qty));
           e.expired_date = moment(e.expired_date, 'YYYY-MM-DD').isValid() ? moment(e.expired_date).format('DD/MM/') + (moment(e.expired_date).get('year')) + ' :' : '';
           if (e.qty_pack != 0 && e.qty_base != 0) {
             e.show_qty = e.lot_no + ' - ' + e.expired_date + ' [ ' + e.qty_pack + ' ' + e.large_unit + ' ' + e.qty_base + ' ' + e.small_unit + ' (' + e.conversion_qty + ' ' + e.small_unit + ')' + ' ]'

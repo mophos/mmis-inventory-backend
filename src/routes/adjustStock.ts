@@ -105,13 +105,15 @@ router.post('/', async (req, res, next) => {
     year += 1;
   }
   try {
-    const adjustCode = await serialModel.getSerial(db, 'ADJ', year, warehouseId);
+   // ทั้งเอกสารใน transaction เดียว (รวมเลขเอกสาร) ล้มกลางทางย้อนกลับหมด
+   const saved = await db.transaction(async (trx) => {
+    const adjustCode = await serialModel.getSerial(trx, 'ADJ', year, warehouseId);
     head.adjust_code = adjustCode;
     head.adjust_date = moment.tz('Asia/Bangkok').format('YYYY-MM-DD HH:mm:ss');
     head.people_user_id = peopleUserId;
     head.warehouse_id = warehouseId;
     head.is_approved = 'Y';
-    const adjustId = await adjustStockModel.saveHead(db, head);
+    const adjustId = await adjustStockModel.saveHead(trx, head);
     if (adjustId) {
       for (const d of detail) {
         const generic = {
@@ -121,9 +123,20 @@ router.post('/', async (req, res, next) => {
           new_qty: d.qty
         }
 
-        const adjustGenericId = await adjustStockModel.saveGeneric(db, generic);
+        const adjustGenericId = await adjustStockModel.saveGeneric(trx, generic);
 
         for (const p of d.products) {
+          // ยอดเดิมและราคาต้องอ่านจากฐานตอนบันทึก (lock แถว) ไม่ใช้ค่าที่หน้าจอส่งมาตอนเปิดหน้า
+          // ถ้ามีการจ่ายระหว่างเปิดหน้ากับกดบันทึก ส่วนต่างที่ลง stock card จะผิด แต่ wm_products ถูกตั้งเป็นค่าใหม่แบบค่าสัมบูรณ์
+          const cur: any = await trx('wm_products').where('wm_product_id', p.wm_product_id).forUpdate();
+          if (!cur.length) {
+            throw new Error(`ไม่พบรายการสินค้าในคลัง (${p.wm_product_id})`);
+          }
+          if (+cur[0].warehouse_id !== +warehouseId) {
+            throw new Error('รายการสินค้าไม่ได้อยู่ในคลังของผู้ใช้');
+          }
+          p.old_qty = +cur[0].qty;
+          p.cost = cur[0].cost;
           if (p.qty > 0 || p.old_qty != p.qty) {
             const product = {
               adjust_generic_id: adjustGenericId,
@@ -131,9 +144,9 @@ router.post('/', async (req, res, next) => {
               old_qty: p.old_qty,
               new_qty: +p.qty || 0
             }
-            await adjustStockModel.saveProduct(db, product);
-            await adjustStockModel.updateQty(db, p.wm_product_id, p.qty);
-            let balance = await productModel.getBalance(db, p.product_id, warehouseId, p.lot_no, p.lot_time);
+            await adjustStockModel.saveProduct(trx, product);
+            await adjustStockModel.updateQty(trx, p.wm_product_id, p.qty);
+            let balance = await productModel.getBalance(trx, p.product_id, warehouseId, p.lot_no, p.lot_time);
             balance = balance[0];
             if (p.old_qty > p.qty) {
               //     // ปรับยอดลดลง
@@ -161,7 +174,7 @@ router.post('/', async (req, res, next) => {
                 expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null,
                 wm_product_id_out: p.wm_product_id
               }
-              await adjustStockModel.saveStockCard(db, data);
+              await adjustStockModel.saveStockCard(trx, data);
             } else if (p.old_qty < p.qty) {
               // ปรับยอดเพิ่มขึ้น
               const adjQty = p.qty - p.old_qty;
@@ -188,15 +201,17 @@ router.post('/', async (req, res, next) => {
                 expired_date: moment(p.expired_date).isValid() ? moment(p.expired_date).format('YYYY-MM-DD') : null,
                 wm_product_id_in: p.wm_product_id
               }
-              await adjustStockModel.saveStockCard(db, data);
+              await adjustStockModel.saveStockCard(trx, data);
             }
           }
         }
       }
-      res.send({ ok: true });
+      return true;
     } else {
-      res.send({ ok: false })
+      return false;
     }
+   });
+    res.send({ ok: !!saved });
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {

@@ -299,18 +299,24 @@ router.post('/import', co(async (req, res, next) => {
 
   if (transactionIds.length) {
     try {
+   // ทั้งคำขอใน transaction เดียว ล้มกลางทางย้อนกลับหมด (เดิมเขียนทีละคำสั่ง ล้มแล้วข้อมูลลงไม่ครบ)
+   // ส่งผลหลัง commit (เดิม res.send อยู่ใน transaction ผู้ใช้ได้คำตอบก่อนข้อมูล commit)
+   const txResult: any = await db.transaction(async (trx) => {
 
-      const rs = await hisTransactionModel.getGroupTransactionFromTransactionId(db, transactionIds);
+      // ล็อกรายการ HIS ก่อน (คำสั่งแรกใน transaction) กันกดนำเข้าซ้อนแล้วตัดซ้ำ
+      // ตัวกรอง is_cut_stock = 'N' ใน getGroupTransactionFromTransactionId ไม่ได้ล็อก สองคำขอพร้อมกันผ่านทั้งคู่
+      await trx('wm_his_transaction').whereIn('transaction_id', transactionIds).forUpdate().select('transaction_id');
+      const rs = await hisTransactionModel.getGroupTransactionFromTransactionId(trx, transactionIds);
       if (rs.length) {
         for (const r of rs) {
-          const rsAllocate = await allocateHIS(db, r.warehouse_id, [r]);
+          const rsAllocate = await allocateHIS(trx, r.warehouse_id, [r]);
           if (rsAllocate.ok) {
             for (const i of rsAllocate.rows) {
               //-------------- get UnitGeneric --------------
-              let unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(db, i.generic_id);
+              let unitId = await hisTransactionModel.getUnitGenericIdForHisStockCard(trx, i.generic_id);
               //เช็ค unitId
               if (!unitId.length) {
-                let unit = await hisTransactionModel.getUnitGenericId(db, i.generic_id);
+                let unit = await hisTransactionModel.getUnitGenericId(trx, i.generic_id);
                 //สร้าง unit 1 ต่อ 1 ใหม่
                 let newUnit = {
                   from_unit_id: unit[0].to_unit_id,
@@ -321,7 +327,7 @@ router.post('/import', co(async (req, res, next) => {
                 }
                 unitId = newUnit;
                 //insert UnitGeneric
-                const u = await hisTransactionModel.insertUnitId(db, newUnit);
+                const u = await hisTransactionModel.insertUnitId(trx, newUnit);
                 unitId.unit_generic_id = u[0];
               } else {
                 unitId = unitId[0];
@@ -332,10 +338,10 @@ router.post('/import', co(async (req, res, next) => {
               if (i.small_remain_qty - i.product_qty >= 0 && i.small_remain_qty > 0 && i.product_qty > 0) {
                 const transactionIds = r.transaction_id.split(',');
                 if (transactionIds.length == r.count) {
-                  await hisTransactionModel.decreaseProductQty(db, i.wm_product_id, i.small_remain_qty - i.product_qty);
-                  await hisTransactionModel.changeStatusToCut(db, moment().format('YYYY-MM-DD HH:mm:ss'), req.decoded.people_user_id, transactionIds);
+                  await hisTransactionModel.cutProductQty(trx, i.wm_product_id, i.product_qty);
+                  await hisTransactionModel.changeStatusToCut(trx, moment().format('YYYY-MM-DD HH:mm:ss'), req.decoded.people_user_id, transactionIds);
                   //getBalance เพื่อไปลง stockcard
-                  let balance: any = await hisTransactionModel.getBalance(db, i.wm_product_id);
+                  let balance: any = await hisTransactionModel.getBalance(trx, i.wm_product_id);
                   balance = balance[0];
                   let balance_qty = balance[0].balance_qty;
                   let balance_lot_qty = balance[0].balance_lot_qty;
@@ -397,17 +403,17 @@ router.post('/import', co(async (req, res, next) => {
                   }
                   if (i.product_qty > 0 || i.product_qty < 0) {
                     // save stockcard
-                    const stockId = await stockCardModel.saveStockHisTransaction(db, data);
-                    await hisTransactionModel.changeStockcardId(db, transactionIds, stockId[0]);
+                    const stockId = await stockCardModel.saveStockHisTransaction(trx, data);
+                    await hisTransactionModel.changeStockcardId(trx, transactionIds, stockId[0]);
                   }
                 }
               } else if (i.product_qty < 0) {
                 const transactionIds = r.transaction_id.split(',');
                 if (transactionIds.length == r.count) {
-                  await hisTransactionModel.decreaseProductQty(db, i.wm_product_id, i.small_remain_qty - i.product_qty);
-                  await hisTransactionModel.changeStatusToCut(db, moment().format('YYYY-MM-DD HH:mm:ss'), req.decoded.people_user_id, transactionIds);
+                  await hisTransactionModel.cutProductQty(trx, i.wm_product_id, i.product_qty);
+                  await hisTransactionModel.changeStatusToCut(trx, moment().format('YYYY-MM-DD HH:mm:ss'), req.decoded.people_user_id, transactionIds);
                   //getBalance เพื่อไปลง stockcard
-                  let balance: any = await hisTransactionModel.getBalance(db, i.wm_product_id);
+                  let balance: any = await hisTransactionModel.getBalance(trx, i.wm_product_id);
                   balance = balance[0];
                   let balance_qty = balance[0].balance_qty;
                   let balance_lot_qty = balance[0].balance_lot_qty;
@@ -443,8 +449,8 @@ router.post('/import', co(async (req, res, next) => {
                   }
                   if (i.product_qty > 0 || i.product_qty < 0) {
                     // save stockcard
-                    const stockId = await stockCardModel.saveStockHisTransaction(db, data);
-                    await hisTransactionModel.changeStockcardId(db, transactionIds, stockId[0]);
+                    const stockId = await stockCardModel.saveStockHisTransaction(trx, data);
+                    await hisTransactionModel.changeStockcardId(trx, transactionIds, stockId[0]);
                   }
                 }
               }
@@ -452,10 +458,12 @@ router.post('/import', co(async (req, res, next) => {
             }
           }
         }
-        res.send({ ok: true });
+        return { ok: true };
       } else {
-        res.send({ ok: false, error: 'ไม่มีรายการตัดจ่าย' });
+        return { ok: false, error: 'ไม่มีรายการตัดจ่าย' };
       }
+   });
+   res.send(txResult);
     } catch (error) {
       console.log(error);
       res.send({ ok: false, error: error.message });

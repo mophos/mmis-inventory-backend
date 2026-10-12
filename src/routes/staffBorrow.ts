@@ -3,6 +3,7 @@ import Knex = require('knex');
 
 import { WarehouseModel } from '../models/warehouse';
 import { BorrowModel } from '../models/staff/borrow';
+import { BorrowModel as AdminBorrowModel } from '../models/borrow';
 import { SerialModel } from '../models/serial';
 import { StockCard } from '../models/stockcard';
 import { ProductModel } from '../models/product';
@@ -16,6 +17,7 @@ import { TransactionType } from '../interfaces/basic';
 const router = express.Router();
 
 const borrowModel = new BorrowModel();
+const adminBorrowModel = new AdminBorrowModel();
 const serialModel = new SerialModel();
 const stockCard = new StockCard();
 const productModel = new ProductModel();
@@ -446,14 +448,15 @@ router.post('/approve-all', co(async (req, res, next) => {
       }
     }
     if (isValid) {
-      let rs: any = await approve(db, borrowIds, warehouseId, peopleUserId);
+      let rs: any = await db.transaction((trx) => approve(trx, borrowIds, warehouseId, peopleUserId));
 
       res.send({ ok: true, data: rs });
     } else {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะบางรายการมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
     }
   } catch (error) {
-    throw error;
+    // ส่งข้อความ error ให้หน้าจอ (เดิม throw ต่อ ผู้ใช้ได้ error: {} ว่าง เช่นกรณีคงคลังไม่พอ / อนุมัติซ้ำ)
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -463,100 +466,32 @@ router.post('/approve-all', co(async (req, res, next) => {
 router.post('/returned/approved', co(async (req, res, next) => {
   let db = req.db;
   let returnedIds = req.body.returnedIds;
+  returnedIds = Array.isArray(returnedIds) ? returnedIds : [returnedIds];
   let peopleUserId = req.decoded.people_user_id;
 
   try {
-    let _rproducts = await borrowModel.getReturnedProductsImport(db, returnedIds);
+   // ทั้งคำขอใน transaction เดียว ล้มกลางทางย้อนกลับหมด (เดิมเขียนทีละคำสั่ง ล้มแล้วข้อมูลลงไม่ครบ)
+   // ส่งผลหลัง commit (เดิม res.send อยู่ใน transaction ผู้ใช้ได้คำตอบก่อนข้อมูล commit)
+   const txResult: any = await db.transaction(async (trx) => {
+    // รับคืนเข้าคลัง + stock card (ล็อกใบ / lot_time / wm_product_id) ดู borrowModel.approveReturned
+    await adminBorrowModel.approveReturned(trx, returnedIds, peopleUserId);
 
-    let lot_time = [];
-    let lotTime = 0;
-    for (const v of _rproducts) {
-      // =================================== CAL LOT TIME ========================
-      const idx = _.findIndex(lot_time, { 'product_id': v.product_id, 'lot_no': v.lot_no, 'warehouse_id': v.warehouse_id });
-      if (idx > -1) {
-        lot_time[idx].lot_time += 1;
-        lotTime = lot_time[idx].lot_time;
-      } else {
-        let lotObj = {
-          product_id: v.product_id,
-          lot_no: v.lot_no,
-          lot_time: +v.lot_time + 1,
-          warehouse_id: v.warehouse_id
-        };
-        lotTime = +v.lot_time + 1
-        lot_time.push(lotObj);
-      }
-      // =================================== PRODUCT IN ========================
-      let id = uuid();
-      let qty = (v.returned_qty * v.conversion_qty);
-      let cost = (v.cost * v.returned_qty) / qty;
-      let expiredDate = moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date, 'YYYY-MM-DD').format('YYYY-MM-DD') : null;
-      let objIn: any = {
-        wm_product_id: id,
-        warehouse_id: v.warehouse_id,
-        product_id: v.product_id,
-        generic_id: v.generic_id,
-        qty: qty,
-        price: cost,
-        cost: cost,
-        lot_no: v.lot_no,
-        lot_time: lotTime,
-        expired_date: expiredDate,
-        unit_generic_id: v.unit_generic_id,
-        location_id: +v.location_id,
-        people_user_id: req.decoded.people_user_id,
-        created_at: moment().format('YYYY-MM-DD HH:mm:ss')
-      };
-      let wmProductIdIn;
-      const checkDst = await productModel.checkProductToSave(db, v.warehouse_id, v.product_id, v.lot_no, v.lot_time);
-      if (checkDst.length) {
-        wmProductIdIn = checkDst[0].wm_product_id;
-        await productModel.updatePlusStock(db, objIn, checkDst[0].wm_product_id)
-      } else {
-        wmProductIdIn = objIn.wm_product_id;
-        await productModel.insertStock(db, objIn)
-      }
-
-      // =================================== STOCK IN ========================
-      let remain_dst = await productModel.getBalance(db, v.product_id, v.dst_warehouse_id, v.lot_no, v.lot_time);
-      remain_dst = remain_dst[0]
-      let stockIn: any = {};
-      stockIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-      stockIn.product_id = v.product_id;
-      stockIn.generic_id = v.generic_id;
-      stockIn.unit_generic_id = v.unit_generic_id;
-      stockIn.transaction_type = TransactionType.RETURNED;
-      stockIn.document_ref_id = v.returned_id;
-      stockIn.document_ref = v.returned_code;
-      stockIn.in_qty = qty;
-      stockIn.in_unit_cost = cost;
-      stockIn.balance_lot_qty = remain_dst[0].balance_lot;
-      stockIn.balance_qty = remain_dst[0].balance;
-      stockIn.balance_generic_qty = remain_dst[0].balance_generic;
-      stockIn.balance_unit_cost = v.cost;
-      stockIn.ref_src = v.donator_id;
-      stockIn.ref_dst = v.warehouse_id;
-      stockIn.comment = 'คืน';
-      stockIn.lot_no = v.lot_no;
-      stockIn.lot_time = lotTime;
-      stockIn.expired_date = expiredDate;
-      await stockCard.saveFastStockTransaction(db, stockIn);
-    }
-
-    let rs = await borrowModel.getBorrowDetail(db, returnedIds);
+    let rs = await borrowModel.getBorrowDetail(trx, returnedIds);
     for (const v of rs) {
       if (v.borrow_id) {
-        await borrowModel.updateReturnedApprove(db, returnedIds);
+        await borrowModel.updateReturnedApprove(trx, returnedIds);
       } else {
-        await borrowModel.updateReturnedApproveOther(db, returnedIds);
+        await borrowModel.updateReturnedApproveOther(trx, returnedIds);
       }
     }
 
-    await borrowModel.changeApproveStatusReturned(db, returnedIds, peopleUserId);
-    // await borrowModel.saveProducts(db, products);
+    await borrowModel.changeApproveStatusReturned(trx, returnedIds, peopleUserId);
+    // await borrowModel.saveProducts(trx, products);
 
-    res.send({ ok: true });
+    return { ok: true };
 
+   });
+   res.send(txResult);
   } catch (error) {
     res.send({ ok: false, error: error.message });
   } finally {
@@ -599,6 +534,11 @@ router.get('/product-warehouse-lots/:productId/:warehouseId', co(async (req, res
 }));
 
 const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUserId: any) => {
+  // ล็อกเอกสารกันอนุมัติซ้อน (ต้องเรียกใน transaction)
+  const lockDocs: any = await db('wm_borrow').whereIn('borrow_id', borrowIds).forUpdate();
+  if (lockDocs.some((d: any) => d.approved === 'Y')) {
+    throw new Error('มีเอกสารที่อนุมัติไปแล้ว กรุณารีเฟรชหน้าจอ');
+  }
   let results = await borrowModel.getProductListIds(db, borrowIds);
 
   for (let v of results) {
@@ -644,15 +584,17 @@ const approve = (async (db: Knex, borrowIds: any[], warehouseId: any, peopleUser
       objOut.location_id = v.location_id;
       objOut.people_user_id = v.people_user_id;
       objOut.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
-      let wmProductIdOut;
-      const checkSrc = await productModel.checkProductToSave(db, v.src_warehouse_id, v.product_id, v.lot_no, v.lot_time);
-      if (checkSrc.length) {
-        wmProductIdOut = checkSrc[0].wm_product_id;
-        await productModel.updateMinusStock(db, objOut, checkSrc[0].wm_product_id)
-      } else {
-        wmProductIdOut = objOut.wm_product_id;
-        await productModel.insertStock(db, objOut)
+      // ตัดจากแถวที่ระบุในเอกสารตรงๆ (lock แถว)
+      // เดิมหาด้วย lot + lot_time ถ้าไม่เจอจะ insert แถวที่จำนวน "บวก" ลงคลังต้นทาง (ของงอก / ใบโอนกลายเป็นเพิ่มปลายทางซ้ำ)
+      const srcRow: any = await db('wm_products').where('wm_product_id', v.wm_product_id).forUpdate();
+      if (!srcRow.length || +srcRow[0].warehouse_id !== +v.src_warehouse_id) {
+        throw new Error(`ไม่พบรายการคงคลังต้นทางของ ${v.product_id} lot ${v.lot_no} ยังไม่ได้ทำรายการ`);
       }
+      if (+srcRow[0].qty < +v.lot_qty) {
+        throw new Error(`คงคลังไม่พอ ${v.product_id} lot ${v.lot_no} (คงเหลือ ${srcRow[0].qty} ต้องการ ${v.lot_qty}) ยังไม่ได้ทำรายการ`);
+      }
+      const wmProductIdOut = srcRow[0].wm_product_id;
+      await productModel.updateMinusStock(db, objOut, wmProductIdOut);
 
       // =================================== STOCK CARD IN ========================
 

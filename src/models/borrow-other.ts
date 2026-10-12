@@ -42,6 +42,51 @@ export class BorrowOther {
       .update(data);
   }
 
+  // อนุมัติยืมนอก: ตัดสต๊อก + stock card BORROW_OTHER_OUT (ต้องเรียกใน transaction ใช้ทั้ง admin / staff / สร้างแบบอนุมัติทันที)
+  // เดิม: สร้างแบบอนุมัติทันทีลง stock card เป็น IST + document_ref_id = issue_id (undefined) ไม่ขึ้นในรายงานยืมนอก
+  //       ทุกทางไม่มี wm_product_id_out / lot_time, ไม่ล็อกใบ, ไม่ตรวจคงคลังพอ
+  async approveOut(knex: Knex, borrowOtherId: any, warehouseId: any, peopleUserId: any) {
+    const head: any = await knex('wm_borrow_other_summary').where('borrow_other_id', borrowOtherId).forUpdate().first();
+    if (!head) {
+      throw new Error('ไม่พบใบยืมนอก กรุณารีเฟรชหน้าจอ');
+    }
+    if (head.approved === 'Y') {
+      throw new Error(`ใบยืมนอก ${head.borrow_other_code} อนุมัติไปแล้ว กรุณารีเฟรชหน้าจอ`);
+    }
+    const lines: any = await knex('wm_borrow_other_generics as sg')
+      .join('wm_borrow_other_products as sp', 'sp.borrow_generic_id', 'sg.borrow_generic_id')
+      .where('sg.borrow_other_id', borrowOtherId).where('sp.qty', '>', 0)
+      .select('sg.generic_id', 'sp.product_id', 'sp.wm_product_id', 'sp.qty');
+    const now = moment().format('YYYY-MM-DD HH:mm:ss');
+    for (const l of lines) {
+      const src: any = await knex('wm_products').where('wm_product_id', l.wm_product_id).forUpdate().first();
+      if (!src || +src.warehouse_id !== +warehouseId) {
+        throw new Error(`ไม่พบรายการคงคลังของ ${l.product_id} ยังไม่ได้ทำรายการ`);
+      }
+      if (+src.qty < +l.qty) {
+        throw new Error(`คงคลังไม่พอ ${l.product_id} lot ${src.lot_no} (คงเหลือ ${src.qty} ต้องการ ${l.qty}) ยังไม่ได้ทำรายการ`);
+      }
+      await knex('wm_products').where('wm_product_id', src.wm_product_id).update({ qty: knex.raw('qty - ?', [+l.qty]) });
+      const bal: any = await knex.raw(`select
+          (select sum(qty) from wm_products where warehouse_id = ? and product_id = ? and lot_no <=> ? and lot_time = ?) as balance_lot,
+          (select sum(qty) from wm_products where warehouse_id = ? and product_id = ?) as balance,
+          (select sum(w.qty) from wm_products w join mm_products p on p.product_id = w.product_id where w.warehouse_id = ? and p.generic_id = ?) as balance_generic`,
+        [warehouseId, src.product_id, src.lot_no, src.lot_time, warehouseId, src.product_id, warehouseId, l.generic_id]);
+      const b = bal[0][0];
+      await knex('wm_stock_card').insert({
+        stock_date: now, product_id: src.product_id, generic_id: l.generic_id, unit_generic_id: src.unit_generic_id,
+        transaction_type: 'BORROW_OTHER_OUT', document_ref_id: borrowOtherId, document_ref: head.borrow_other_code,
+        in_qty: 0, in_unit_cost: 0, out_qty: +l.qty, out_unit_cost: src.cost,
+        balance_lot_qty: b.balance_lot, balance_qty: b.balance, balance_generic_qty: b.balance_generic, balance_unit_cost: src.cost,
+        ref_src: warehouseId, comment: 'ยืมนอกหน่วยงาน',
+        lot_no: src.lot_no, lot_time: src.lot_time, expired_date: src.expired_date, wm_product_id_out: src.wm_product_id
+      });
+    }
+    await knex('wm_borrow_other_summary').where('borrow_other_id', borrowOtherId).update({
+      approved: 'Y', approve_date: moment().format('YYYY-MM-DD'), approve_people_user_id: peopleUserId
+    });
+  }
+
   saveProductStock(knex: Knex, data: any) {
     let sqls = [];
 

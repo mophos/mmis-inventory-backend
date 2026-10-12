@@ -1185,9 +1185,40 @@ router.post('/products/change-cost', async (req, res, next) => {
   let db = req.db;
   let wmProductId = req.body.wmProductId;
   let cost = +req.body.cost;
+  const peopleUserId = req.decoded.people_user_id;
 
   try {
-    await productModel.changeCost(db, wmProductId, cost);
+    // เดิมแก้ wm_products.cost อย่างเดียว ของที่จ่ายออกหลังจากนั้นใช้ราคาใหม่ แต่รับเข้าใน stock card ยังราคาเดิม
+    // มูลค่าคงคลังกับ stock card จึงไม่ตรงกันถาวร ตอนนี้ยอมให้เปลี่ยนเฉพาะแถวที่ยังไม่มีการจ่ายออก
+    // และแก้ราคารับเข้าใน stock card ไปพร้อมกัน (บันทึก wm_stock_card_logs)
+    await db.transaction(async (trx) => {
+      const rows: any = await productModel.getWmProductById(trx, wmProductId);
+      if (!rows.length) {
+        throw new Error('ไม่พบรายการสินค้าในคลัง');
+      }
+      const out: any = await productModel.countStockcardOutByWmProduct(trx, wmProductId);
+      if (+out[0].total > 0) {
+        throw new Error('เปลี่ยนราคาไม่ได้ เพราะมีการจ่ายออกจากรายการนี้แล้ว (ราคาจ่ายออกจะไม่ตรงกับราคารับเข้า) กรุณาแก้ราคาที่ใบรับก่อนจ่ายออก');
+      }
+      const ins: any = await productModel.getStockcardInByWmProduct(trx, wmProductId);
+      const inQty = ins.reduce((t, r) => t + +r.in_qty, 0);
+      if (!ins.length || inQty != +rows[0].qty) {
+        throw new Error(`เปลี่ยนราคาไม่ได้ เพราะจำนวนคงคลัง (${rows[0].qty}) ไม่ตรงกับจำนวนรับเข้าใน stock card (${inQty})`);
+      }
+      await productModel.changeCost(trx, wmProductId, cost);
+      for (const r of ins) {
+        await productModel.changeStockcardInCost(trx, r.stock_card_id, cost);
+        await productModel.saveStockcardLog(trx, {
+          stock_card_log_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+          stock_card_id: r.stock_card_id,
+          in_qty_old: r.in_qty,
+          in_unit_cost_old: r.in_unit_cost,
+          in_qty_new: r.in_qty,
+          in_unit_cost_new: cost,
+          people_user_id: peopleUserId
+        });
+      }
+    });
     res.send({ ok: true });
   } catch (error) {
     res.send({ ok: false, error: error.message });
@@ -1276,12 +1307,38 @@ router.put('/products/lot-expired', wrap(async (req, res, next) => {
         create_by: peopleId
       }
 
-      await warehouseModel.insertProductHistory(db, history);
-
-      await warehouseModel.updateProduct(db, data.wm_product_id, oldData, newData);
-      // await warehouseModel.updateReceiveDetail(db, data.product_id, oldData, newData);
-      // await warehouseModel.updateReceiveOtherDetail(db, data.product_id, oldData, newData);
-      await warehouseModel.updateStockCard(db, data.product_id, oldData, newData);
+      // ทั้งหมดใน transaction เดียว
+      // เดิมแก้ wm_products แถวเดียว แต่แก้ stock card ทุกคลังที่ lot+วันหมดอายุ+lot_time ตรงกัน (ไม่กรองคลัง)
+      // คลังที่รับต่อ (เบิก/โอน) stock card เป็น lot ใหม่แต่คงคลังยังเป็น lot เดิม → ยอดราย lot ผิดทั้งสองคลัง
+      // ตอนนี้แก้เฉพาะ stock card ที่อ้างแถวนี้ (wm_product_id_in / wm_product_id_out)
+      await db.transaction(async (trx) => {
+        const rows: any = await trx('wm_products').where('wm_product_id', data.wm_product_id).forUpdate();
+        if (!rows.length) {
+          throw new Error('ไม่พบรายการสินค้าในคลัง');
+        }
+        const row = rows[0];
+        let lotTime = row.lot_time;
+        if ((newData.lot_no || '') !== (row.lot_no || '')) {
+          // lot ใหม่ + lot_time เดิมชนแถวอื่น (PK) ให้ต่อท้าย lot_time ของ lot ใหม่
+          const dup: any = await trx('wm_products')
+            .where('warehouse_id', row.warehouse_id).where('product_id', row.product_id)
+            .where('lot_no', newData.lot_no).where('lot_time', lotTime)
+            .whereNot('wm_product_id', row.wm_product_id);
+          if (dup.length) {
+            const mx: any = await trx('wm_products').max('lot_time as m')
+              .where('warehouse_id', row.warehouse_id).where('product_id', row.product_id).where('lot_no', newData.lot_no);
+            lotTime = (+mx[0].m || 0) + 1;
+          }
+        }
+        await warehouseModel.insertProductHistory(trx, history);
+        await trx('wm_products').where('wm_product_id', row.wm_product_id)
+          .update({ lot_no: newData.lot_no, expired_date: newData.expired_date, lot_time: lotTime });
+        await trx('wm_stock_card')
+          .where(function () {
+            this.where('wm_product_id_in', row.wm_product_id).orWhere('wm_product_id_out', row.wm_product_id);
+          })
+          .update({ lot_no: newData.lot_no, expired_date: newData.expired_date, lot_time: lotTime });
+      });
 
       res.send({ ok: true });
     } catch (error) {

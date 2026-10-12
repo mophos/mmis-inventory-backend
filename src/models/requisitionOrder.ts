@@ -1082,7 +1082,7 @@ export class RequisitionOrderModel {
 
   getUnpaidItemsForImport(knex: Knex, confirmUnpaidId: any) {
     let sql = `
-    select rcui.*, ro.wm_requisition, ro.wm_withdraw, ro.requisition_code, 
+    select rcui.*, ro.requisition_order_id, ro.wm_requisition, ro.wm_withdraw, ro.requisition_code, 
     wm.price, wm.cost, wm.lot_no, wm.expired_date, wm.unit_generic_id, wm.product_id
     from wm_requisition_confirm_unpaid_items as rcui 
     inner join wm_requisition_confirm_unpaids as rcu on rcu.confirm_unpaid_id=rcui.confirm_unpaid_id

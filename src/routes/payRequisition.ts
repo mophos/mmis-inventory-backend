@@ -304,8 +304,17 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
         if (isClose) {
           res.send({ ok: false, error: 'บัญชีถูกปิดแล้ว' });
         } else {
-          await orderModel.saveApproveConfirmOrder(db, confirmId, approveData);
-          let sc: any = await orderModel.getRequisitionOrderItem(db, confirmId);
+          // ทั้งใบใน transaction เดียว ล้มกลางทางย้อนกลับหมด และบันทึกอนุมัติเป็นขั้นตอนสุดท้าย
+          // เดิมบันทึกอนุมัติก่อนแล้วค่อยตัดสต๊อกทีละรายการ ล้มกลางทาง = ใบอนุมัติแล้วแต่สต๊อกลงไม่ครบ กดซ้ำไม่ได้
+          await db.transaction(async (trx) => {
+            const lockRow: any = await trx('wm_requisition_confirms').where('confirm_id', confirmId).forUpdate();
+            if (!lockRow.length) {
+              throw new Error('ไม่พบใบยืนยันการจ่าย');
+            }
+            if (lockRow[0].is_approve === 'Y') {
+              throw new Error('ใบนี้อนุมัติไปแล้ว');
+            }
+          let sc: any = await orderModel.getRequisitionOrderItem(trx, confirmId);
           for (let s of sc[0]) {
             let id = uuid();
             let obj: any = {
@@ -323,15 +332,17 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
               people_user_id: req.decoded.people_user_id,
               created_at: moment().format('YYYY-MM-DD HH:mm:ss')
             };
-            let wmProductIdOut;
-            const checkSrc = await requisitionModel.checkProductToSave(db, s.src_warehouse, s.product_id, s.lot_no, s.lot_time);
-            if (checkSrc.length) {
-              wmProductIdOut = checkSrc[0].wm_product_id;
-              await productModel.updateMinusStock(db, obj, checkSrc[0].wm_product_id)
-            } else {
-              wmProductIdOut = obj.wm_product_id;
-              await productModel.insertStock(db, obj)
+            // ตัดจากแถวที่ระบุในใบยืนยันจ่ายตรงๆ (lock แถว)
+            // เดิมหาแถวด้วย lot + lot_time ถ้าไม่เจอจะ insert แถวใหม่ที่จำนวน "บวก" ลงคลังต้นทาง (ของงอก)
+            const srcRow: any = await trx('wm_products').where('wm_product_id', s.wm_product_id).forUpdate();
+            if (!srcRow.length || +srcRow[0].warehouse_id !== +s.src_warehouse) {
+              throw new Error(`ไม่พบรายการคงคลังต้นทางของ ${s.product_id} lot ${s.lot_no} ยังไม่ได้ตัดสต๊อก`);
             }
+            if (+srcRow[0].qty < +s.confirm_qty) {
+              throw new Error(`คงคลังไม่พอ ${s.product_id} lot ${s.lot_no} (คงเหลือ ${srcRow[0].qty} จะจ่าย ${s.confirm_qty}) ยังไม่ได้ตัดสต๊อก`);
+            }
+            const wmProductIdOut = srcRow[0].wm_product_id;
+            await productModel.updateMinusStock(trx, obj, wmProductIdOut);
 
             let objDst: any = {
               wm_product_id: id,
@@ -349,20 +360,20 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
               created_at: moment().format('YYYY-MM-DD HH:mm:ss')
             };
             let wmProductIdIn;
-            const checkDst = await requisitionModel.checkProductToSave(db, s.dst_warehouse, s.product_id, s.lot_no, s.lot_time);
+            const checkDst = await requisitionModel.checkProductToSave(trx, s.dst_warehouse, s.product_id, s.lot_no, s.lot_time);
             if (checkDst.length) {
               wmProductIdIn = checkDst[0].wm_product_id;
-              await productModel.updatePlusStock(db, objDst, checkDst[0].wm_product_id)
+              await productModel.updatePlusStock(trx, objDst, checkDst[0].wm_product_id)
             } else {
               wmProductIdIn = objDst.wm_product_id;
-              const s = await productModel.insertStock(db, objDst);
+              const s = await productModel.insertStock(trx, objDst);
             }
 
 
-            let srcBalance = await productModel.getBalance(db, s.product_id, s.src_warehouse, s.lot_no, s.lot_time);
+            let srcBalance = await productModel.getBalance(trx, s.product_id, s.src_warehouse, s.lot_no, s.lot_time);
             srcBalance = srcBalance[0];
 
-            let dstBalance = await productModel.getBalance(db, s.product_id, s.dst_warehouse, s.lot_no, s.lot_time);
+            let dstBalance = await productModel.getBalance(trx, s.product_id, s.dst_warehouse, s.lot_no, s.lot_time);
             dstBalance = dstBalance[0];
 
             let objStockcardOut: any = {}
@@ -413,10 +424,12 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
             objStockcardIn.comment = 'เบิก';
             objStockcardIn.wm_product_id_in = wmProductIdIn;
 
-            await orderModel.saveStockCard(db, objStockcardIn);
-            await orderModel.saveStockCard(db, objStockcardOut);
+            await orderModel.saveStockCard(trx, objStockcardIn);
+            await orderModel.saveStockCard(trx, objStockcardOut);
           }
 
+            await orderModel.saveApproveConfirmOrder(trx, confirmId, approveData);
+          });
           res.send({ ok: true });
         }
       } else {

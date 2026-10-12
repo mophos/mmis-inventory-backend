@@ -1187,8 +1187,13 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
               }
             }
             if (underZero) {
-              await orderModel.saveApproveConfirmOrder(db, confirmId, approveData);
-              let sc: any = await orderModel.getRequisitionOrderItem(db, confirmId);
+              // ทั้งใบใน transaction เดียว และบันทึกอนุมัติเป็นขั้นตอนสุดท้าย
+              await db.transaction(async (trx) => {
+                const lockRow: any = await trx('wm_requisition_confirms').where('confirm_id', confirmId).forUpdate();
+                if (!lockRow.length || lockRow[0].is_approve === 'Y') {
+                  throw new Error('ใบนี้อนุมัติไปแล้ว หรือไม่พบใบยืนยันการจ่าย');
+                }
+              let sc: any = await orderModel.getRequisitionOrderItem(trx, confirmId);
               for (let s of sc[0]) {
                 let id = uuid();
                 let obj: any = {
@@ -1207,13 +1212,13 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
                   created_at: moment().format('YYYY-MM-DD HH:mm:ss')
                 };
                 let wmProductIdIn;
-                const checkSrc = await requisitionModel.checkProductToSave(db, requisitionWarehouseId, s.product_id, s.lot_no, s.lot_time);
+                const checkSrc = await requisitionModel.checkProductToSave(trx, requisitionWarehouseId, s.product_id, s.lot_no, s.lot_time);
                 if (checkSrc.length) {
                   wmProductIdIn = checkSrc[0].wm_product_id;
-                  await productModel.updatePlusStock(db, obj, checkSrc[0].wm_product_id)
+                  await productModel.updatePlusStock(trx, obj, checkSrc[0].wm_product_id)
                 } else {
                   wmProductIdIn = obj.wm_product_id;
-                  await productModel.insertStock(db, obj)
+                  await productModel.insertStock(trx, obj)
                 }
 
                 let objDst: any = {
@@ -1231,21 +1236,23 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
                   people_user_id: req.decoded.people_user_id,
                   created_at: moment().format('YYYY-MM-DD HH:mm:ss')
                 };
-                let wmProductIdOut;
-                const checkDst = await requisitionModel.checkProductToSave(db, withdrawWarehouseId, s.product_id, s.lot_no, s.lot_time);
-                if (checkDst.length) {
-                  wmProductIdOut = checkDst[0].wm_product_id;
-                  await productModel.updateMinusStock(db, objDst, checkDst[0].wm_product_id)
-                } else {
-                  wmProductIdOut = objDst.wm_product_id;
-                  const s = await productModel.insertStock(db, objDst);
+                // ตัดจากแถวที่ระบุในใบยืนยันจ่ายตรงๆ (lock แถว)
+                // เดิมหาด้วย lot + lot_time ถ้าไม่เจอจะ insert แถวที่จำนวน "บวก" ลงคลังต้นทาง (ของงอก)
+                const srcRow: any = await trx('wm_products').where('wm_product_id', s.wm_product_id).forUpdate();
+                if (!srcRow.length || +srcRow[0].warehouse_id !== +withdrawWarehouseId) {
+                  throw new Error(`ไม่พบรายการคงคลังต้นทางของ ${s.product_id} lot ${s.lot_no} ยังไม่ได้ตัดสต๊อก`);
                 }
+                if (+srcRow[0].qty < +s.confirm_qty) {
+                  throw new Error(`คงคลังไม่พอ ${s.product_id} lot ${s.lot_no} (คงเหลือ ${srcRow[0].qty} จะจ่าย ${s.confirm_qty}) ยังไม่ได้ตัดสต๊อก`);
+                }
+                const wmProductIdOut = srcRow[0].wm_product_id;
+                await productModel.updateMinusStock(trx, objDst, wmProductIdOut);
 
 
-                let srcBalance = await productModel.getBalance(db, s.product_id, s.src_warehouse, s.lot_no, s.lot_time);
+                let srcBalance = await productModel.getBalance(trx, s.product_id, s.src_warehouse, s.lot_no, s.lot_time);
                 srcBalance = srcBalance[0];
 
-                let dstBalance = await productModel.getBalance(db, s.product_id, s.dst_warehouse, s.lot_no, s.lot_time);
+                let dstBalance = await productModel.getBalance(trx, s.product_id, s.dst_warehouse, s.lot_no, s.lot_time);
                 dstBalance = dstBalance[0];
 
                 let objStockcardOut: any = {}
@@ -1296,9 +1303,11 @@ router.put('/orders/confirm/approve/:confirmId', async (req, res, next) => {
                 objStockcardIn.comment = 'เบิก';
                 objStockcardIn.wm_product_id_in = wmProductIdIn;
 
-                await orderModel.saveStockCard(db, objStockcardOut);
-                await orderModel.saveStockCard(db, objStockcardIn);
+                await orderModel.saveStockCard(trx, objStockcardOut);
+                await orderModel.saveStockCard(trx, objStockcardIn);
               }
+                await orderModel.saveApproveConfirmOrder(trx, confirmId, approveData);
+              });
               // save stock card
               // // save true data
               // await productModel.saveProducts(db, products);
@@ -1345,165 +1354,83 @@ router.post('/unpaid/confirm', async (req, res, next) => {
   try {
     const checkApprove = await orderModel.checkDuplicatedApproveUnpaid(db, unpaidId);
     if (checkApprove[0].total == 0) {
-      let rsSummary: any = await orderModel.saveConfirmUnpaid(db, objSummary);
-      let orderUnpaidId = rsSummary[0];
-
-      let _items: any = [];
-      items.forEach(v => {
-        let obj: any = {
-          confirm_unpaid_id: orderUnpaidId,
-          confirm_qty: v.confirm_qty,
-          generic_id: v.generic_id,
-          wm_product_id: v.wm_product_id,
+      // ทั้งใบใน transaction เดียว
+      // เดิม: แถวปลายทาง insert ใหม่ทุกครั้งโดยไม่มี lot_time, stock card ไม่มี lot/lot_time/wm_product_id
+      // และ document_ref_id เป็นรหัสใบ (ไม่ใช่ id) ทำให้จ่ายต่อจากคลังปลายทางหาแถวไม่เจอ
+      await db.transaction(async (trx) => {
+        // ล็อกใบค้างจ่าย กันจ่ายซ้ำ (checkDuplicatedApproveUnpaid ด้านบนเทียบคอลัมน์ผิด confirm_unpaid_id จึงกันไม่ได้)
+        const unpaidRow: any = await trx('wm_requisition_order_unpaids').where('requisition_order_unpaid_id', unpaidId).forUpdate().first();
+        if (!unpaidRow) {
+          throw new Error('ไม่พบรายการค้างจ่าย');
         }
+        if (unpaidRow.is_paid === 'Y') {
+          throw new Error('รายการค้างจ่ายนี้จ่ายไปแล้ว กรุณารีเฟรชหน้าจอ');
+        }
+        let rsSummary: any = await orderModel.saveConfirmUnpaid(trx, objSummary);
+        let orderUnpaidId = rsSummary[0];
+        let _items: any = [];
+        items.forEach(v => {
+          _items.push({
+            confirm_unpaid_id: orderUnpaidId,
+            confirm_qty: v.confirm_qty,
+            generic_id: v.generic_id,
+            wm_product_id: v.wm_product_id,
+          });
+        });
+        await orderModel.setPaidStatus(trx, unpaidId);
+        await orderModel.saveConfirmUnpaidItems(trx, _items);
 
-        _items.push(obj);
+        const rsUnpaid: any = await orderModel.getUnpaidItemsForImport(trx, orderUnpaidId);
+        for (const v of rsUnpaid[0]) {
+          if (!(+v.confirm_qty > 0)) continue;
+          const srcRow: any = await trx('wm_products').where('wm_product_id', v.wm_product_id).forUpdate();
+          if (!srcRow.length || +srcRow[0].warehouse_id !== +v.wm_withdraw) {
+            throw new Error(`ไม่พบรายการคงคลังต้นทางของ ${v.product_id} lot ${v.lot_no} ยังไม่ได้ตัดสต๊อก`);
+          }
+          if (+srcRow[0].qty < +v.confirm_qty) {
+            throw new Error(`คงคลังไม่พอ ${v.product_id} lot ${v.lot_no} (คงเหลือ ${srcRow[0].qty} จะจ่าย ${v.confirm_qty}) ยังไม่ได้ตัดสต๊อก`);
+          }
+          const src = srcRow[0];
+          const expiredDate = moment(src.expired_date).isValid() ? moment(src.expired_date).format('YYYY-MM-DD') : null;
+          const obj: any = {
+            wm_product_id: uuid(), warehouse_id: v.wm_requisition, product_id: src.product_id,
+            qty: +v.confirm_qty, price: src.cost, cost: src.cost, lot_no: src.lot_no, lot_time: src.lot_time,
+            expired_date: expiredDate, unit_generic_id: src.unit_generic_id, location_id: src.location_id || 0,
+            people_user_id: req.decoded.people_user_id, created_at: moment().format('YYYY-MM-DD HH:mm:ss')
+          };
+          await productModel.updateMinusStock(trx, obj, src.wm_product_id);
+          let wmProductIdIn;
+          const dst: any = await trx('wm_products').where('warehouse_id', v.wm_requisition).where('product_id', src.product_id)
+            .whereRaw('lot_no <=> ?', [src.lot_no]).where('lot_time', src.lot_time);
+          if (dst.length) {
+            wmProductIdIn = dst[0].wm_product_id;
+            await productModel.updatePlusStock(trx, obj, wmProductIdIn);
+          } else {
+            wmProductIdIn = obj.wm_product_id;
+            await productModel.insertStock(trx, obj);
+          }
+          let srcBalance = await productModel.getBalance(trx, src.product_id, v.wm_withdraw, src.lot_no, src.lot_time);
+          srcBalance = srcBalance[0];
+          let dstBalance = await productModel.getBalance(trx, src.product_id, v.wm_requisition, src.lot_no, src.lot_time);
+          dstBalance = dstBalance[0];
+          const base = {
+            stock_date: moment().format('YYYY-MM-DD HH:mm:ss'), product_id: src.product_id, generic_id: v.generic_id,
+            unit_generic_id: src.unit_generic_id, document_ref_id: v.requisition_order_id, document_ref: v.requisition_code,
+            lot_no: src.lot_no, lot_time: src.lot_time, expired_date: expiredDate
+          };
+          await orderModel.saveStockCard(trx, [{
+            ...base, transaction_type: 'REQ_OUT', in_qty: 0, in_unit_cost: 0, out_qty: v.confirm_qty, out_unit_cost: src.cost,
+            balance_lot_qty: srcBalance.length ? srcBalance[0].balance_lot : 0, balance_qty: srcBalance.length ? srcBalance[0].balance : 0,
+            balance_generic_qty: srcBalance.length ? srcBalance[0].balance_generic : 0, balance_unit_cost: src.cost,
+            ref_src: v.wm_withdraw, ref_dst: v.wm_requisition, comment: 'ให้เบิก', wm_product_id_out: src.wm_product_id
+          }, {
+            ...base, transaction_type: 'REQ_IN', in_qty: v.confirm_qty, in_unit_cost: src.cost, out_qty: 0, out_unit_cost: 0,
+            balance_lot_qty: dstBalance.length ? dstBalance[0].balance_lot : 0, balance_qty: dstBalance.length ? dstBalance[0].balance : 0,
+            balance_generic_qty: dstBalance.length ? dstBalance[0].balance_generic : 0, balance_unit_cost: src.cost,
+            ref_src: v.wm_requisition, ref_dst: v.wm_withdraw, comment: 'เบิก', wm_product_id_in: wmProductIdIn
+          }]);
+        }
       });
-
-      // console.log(_items);
-      await orderModel.setPaidStatus(db, unpaidId);
-      await orderModel.saveConfirmUnpaidItems(db, _items);
-
-      // get product for update 
-
-      let rsUnpaid: any = await orderModel.getUnpaidItemsForImport(db, orderUnpaidId);
-      let products = rsUnpaid[0];
-
-      let dstProducts = [];
-      let wmProducts = [];
-      products.forEach(v => {
-        dstProducts.push({
-          qty: v.confirm_qty,
-          wm_product_id: v.wm_product_id,
-          warehouse_id: v.wm_withdraw
-        });
-
-        let id = uuid();
-        let obj: any = {
-          wm_product_id: id,
-          warehouse_id: v.wm_requisition,
-          product_id: v.product_id,
-          qty: v.confirm_qty,
-          price: v.price,
-          cost: v.cost,
-          lot_no: v.lot_no,
-          expired_date: moment(v.expired_date, 'YYYY-MM-DD').isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null,
-          unit_generic_id: v.unit_generic_id,
-          // location_id: +v.location_id,
-          people_user_id: req.decoded.people_user_id,
-          created_at: moment().format('YYYY-MM-DD HH:mm:ss')
-        };
-
-        wmProducts.push(obj);
-      });
-
-
-      let balances = [];
-      let stockCard = [];
-      console.log('products', products);
-      let sc: any = await orderModel.getRequisitionOrderUnpaidItem(db, orderUnpaidId);
-      for (let s of sc[0]) {
-        let srcObjBalance: any = {};
-        let dstObjBalance: any = {};
-        let srcBalance = await orderModel.getBalance(db, s.product_id, s.wm_withdraw);
-        console.log('srcBalance', srcBalance[0]);
-
-        srcBalance[0].forEach(v => {
-          srcObjBalance.product_id = v.product_id;
-          srcObjBalance.warehouse_id = v.warehouse_id;
-          srcObjBalance.balance_qty = v.balance;
-          srcObjBalance.balance_generic_qty = v.balance_generic;
-          balances.push(srcObjBalance);
-        });
-        let dstBalance = await orderModel.getBalance(db, s.product_id, s.wm_requisition);
-        console.log('dstBalance', dstBalance[0]);
-
-        dstBalance[0].forEach(v => {
-          dstObjBalance.product_id = v.product_id;
-          dstObjBalance.warehouse_id = v.warehouse_id;
-          dstObjBalance.balance_qty = v.balance;
-          dstObjBalance.balance_generic_qty = v.balance_generic;
-          balances.push(dstObjBalance);
-        });
-      }
-      console.log('balances', balances);
-
-      products.forEach(v => {
-        let objStockcardOut: any = {}
-        let objStockcardIn: any = {}
-        objStockcardOut.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-        objStockcardOut.product_id = v.product_id;
-        objStockcardOut.generic_id = v.generic_id;
-        objStockcardOut.unit_generic_id = v.unit_generic_id;
-        objStockcardOut.transaction_type = 'REQ_OUT';
-        objStockcardOut.document_ref_id = v.requisition_code;
-        objStockcardOut.in_qty = 0;
-        objStockcardOut.in_unit_cost = 0;
-        objStockcardOut.out_qty = v.confirm_qty;
-        objStockcardOut.out_unit_cost = v.cost;
-
-        let srcBalance = 0;
-        let srcBalanceGeneric = 0;
-        let srcIdx = _.findIndex(balances, {
-          product_id: v.product_id,
-          warehouse_id: v.wm_withdraw,
-        });
-        if (srcIdx > -1) {
-          srcBalance = balances[srcIdx].balance_qty;
-          balances[srcIdx].balance_qty -= v.qty;
-          srcBalanceGeneric = balances[srcIdx].balance_generic_qty;
-          balances[srcIdx].balance_generic_qty -= v.qty;
-        }
-        objStockcardOut.balance_qty = +srcBalance - +v.confirm_qty;
-        objStockcardOut.balance_generic_qty = +srcBalanceGeneric - +v.confirm_qty;
-
-
-        objStockcardOut.balance_unit_cost = v.cost;
-        objStockcardOut.ref_src = v.wm_withdraw;
-        objStockcardOut.ref_dst = v.wm_requisition;
-        objStockcardOut.comment = 'ให้เบิก';
-        stockCard.push(objStockcardOut);
-
-        objStockcardIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
-        objStockcardIn.product_id = v.product_id;
-        objStockcardIn.generic_id = v.generic_id;
-        objStockcardIn.unit_generic_id = v.unit_generic_id;
-        objStockcardIn.transaction_type = 'REQ_IN';
-        objStockcardIn.document_ref_id = v.requisition_code;
-        objStockcardIn.in_qty = v.confirm_qty;
-        objStockcardIn.in_unit_cost = v.cost;
-        objStockcardIn.out_qty = 0
-        objStockcardIn.out_unit_cost = 0
-
-        let dstBalance = 0;
-        let dstBalanceGeneric = 0;
-        let dstIdx = _.findIndex(balances, {
-          product_id: v.product_id,
-          warehouse_id: v.wm_requisition,
-        });
-        if (dstIdx > -1) {
-          dstBalance = balances[dstIdx].balance_qty;
-          balances[dstIdx].balance_qty += v.qty;
-          dstBalanceGeneric = balances[dstIdx].balance_generic_qty;
-          balances[dstIdx].balance_generic_qty += v.qty;
-        }
-        objStockcardIn.balance_qty = +dstBalance + +v.confirm_qty;
-        objStockcardIn.balance_generic_qty = +dstBalanceGeneric + +v.confirm_qty;
-        objStockcardIn.balance_unit_cost = v.cost;
-        objStockcardIn.ref_src = v.wm_withdraw;
-        objStockcardIn.ref_dst = v.wm_requisition;
-        objStockcardIn.comment = 'เบิก';
-        stockCard.push(objStockcardIn);
-      })
-      console.log('stockCard', stockCard);
-
-      // save stock card
-      await orderModel.saveStockCard(db, stockCard);
-
-
-      // save true data
-      await productModel.saveProducts(db, wmProducts);
-      await orderModel.decreaseQty(db, dstProducts);
 
       res.send({ ok: true });
     } else {

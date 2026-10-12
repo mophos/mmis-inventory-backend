@@ -193,6 +193,18 @@ export class HisTransactionModel {
             .orderBy('wp.expired_date', 'ASC');
     }
 
+    // ตัดแบบลบจากยอดปัจจุบัน (ไม่ตั้งค่าสัมบูรณ์จากยอดที่อ่านไว้ก่อน) และต้องพอ ไม่พอ throw
+    async cutProductQty(db: Knex, id: any, qty: any) {
+        const n: any = await db('wm_products')
+            .where('wm_product_id', id)
+            .where('qty', '>=', qty)
+            .update({ qty: db.raw('qty - ?', [qty]) });
+        if (n !== 1) {
+            throw new Error(`คงคลังไม่พอสำหรับตัดจ่าย (${id})`);
+        }
+        return n;
+    }
+
     decreaseProductQty(db: Knex, id: any, qty: any) {
         return db('wm_products')
             .update('qty', qty)
@@ -406,17 +418,19 @@ export class HisTransactionModel {
     }
 
 
+    // รวมยอดราย generic (เดิม join mm_products แล้ว group by สินค้า: ยาที่มี N สินค้า ทุกแถวได้ยอดรวมทั้ง generic → ตัดเกิน N เท่า)
     getGroupTransaction(db: Knex, hospcode: any, dateServe: any, warehouseId) {
         return db('wm_his_transaction as tt')
-            .select('mp.product_id', 'mp.product_name', 'mp.generic_id', 'mp.generic_id as genericId',
-                db.raw(`sum(tt.qty) as genericQty`), db.raw(`sum(tt.qty) as qty`), 'tt.transaction_id')
-            .join('wm_his_mappings as ht', 'ht.his', 'tt.drug_code')
-            .join('mm_products as mp', 'mp.generic_id', 'ht.mmis')
+            .select('ht.mmis as generic_id', 'ht.mmis as genericId',
+                db.raw(`sum(tt.qty) as genericQty`), db.raw(`sum(tt.qty) as qty`), db.raw(`GROUP_CONCAT(tt.transaction_id) as transaction_id`))
+            .join('wm_his_mappings as ht', function () {
+                this.on('ht.his', 'tt.drug_code').andOn('ht.hospcode', 'tt.hospcode');
+            })
             .where('ht.hospcode', hospcode)
             .where('tt.mmis_warehouse', warehouseId)
             .where('tt.date_serv', dateServe)
             .where('tt.is_cut_stock', 'N')
-            .groupBy('mp.product_id');
+            .groupBy('ht.mmis');
     }
 
     getGroupTransactionFromTransactionId(db: Knex, transactions: any) {

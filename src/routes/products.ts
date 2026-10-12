@@ -782,18 +782,28 @@ router.post('/mapping/tmt/upload', upload.single('file'), async (req, res, next)
 
 
 router.post('/save-repackage', async (req, res, next) => {
+  const db = req.db;
   try {
-    const db = req.db;
+   // ทั้งคำขอใน transaction เดียว ล้มกลางทางย้อนกลับหมด (เดิมเขียนทีละคำสั่ง ล้มแล้วข้อมูลลงไม่ครบ)
+   // ส่งผลหลัง commit (เดิม res.send อยู่ใน transaction ผู้ใช้ได้คำตอบก่อนข้อมูล commit)
+   const txResult: any = await db.transaction(async (trx) => {
     const product = req.body.product;
     const peopleUserId = req.decoded.people_user_id
     // wm_product
     let newProducts: any = [];
     let stockCard = []; // รายการ StockCard
-    let wmProduct = await productModel.getLotBalance(db, product.wm_product_id, product.warehouse_id);
-    wmProduct = wmProduct[0]
-    let newLotTime = await productModel.getLastLotTime(db, wmProduct.product_id, wmProduct.warehouse_id, wmProduct.lot_no)
+    // ล็อกแถวต้นทาง (เดิมไม่ล็อก) และต้องเป็นของคลังที่ส่งมา
+    let wmProduct: any = await trx('wm_products').where('wm_product_id', product.wm_product_id).where('warehouse_id', product.warehouse_id).forUpdate().first();
+    if (!wmProduct) {
+      throw new Error('ไม่พบรายการสินค้าในคลัง');
+    }
+    // lot_time ใหม่ = สูงสุดของ lot ปลายทาง + 1 (เดิมใช้จำนวนแถวของ lot เดิม +1 อาจชนแถวที่มีอยู่แล้ว → ON DUPLICATE ไปบวกเข้าแถวอื่น
+    // และถ้าเปลี่ยนเป็น lot ใหม่ที่ยังไม่มีแถว จะ crash)
+    const mxLot: any = await trx('wm_products').max('lot_time as m')
+      .where('warehouse_id', wmProduct.warehouse_id).where('product_id', wmProduct.product_id).whereRaw('lot_no <=> ?', [product.lot_no]);
+    const newLotTimeValue = (+mxLot[0].m || 0) + 1;
     let wm_productIdNew = await uuid()
-    if (wmProduct.qty >= product.qty) {
+    if (+product.qty > 0 && +wmProduct.qty >= +product.qty) {
       newProducts = [{
         wm_product_id: wm_productIdNew,
         warehouse_id: wmProduct.warehouse_id,
@@ -802,7 +812,7 @@ router.post('/save-repackage', async (req, res, next) => {
         price: wmProduct.cost,
         cost: wmProduct.cost,
         lot_no: product.lot_no,
-        lot_time: +newLotTime[0].lot_time + 1,
+        lot_time: newLotTimeValue,
         expired_date: moment(wmProduct.expired_date, 'YYYY-MM-DD').isValid() ? moment(wmProduct.expired_date).format('YYYY-MM-DD') : null,
         location_id: wmProduct.location_id,
         unit_generic_id: product.unit_generic_id,
@@ -811,7 +821,7 @@ router.post('/save-repackage', async (req, res, next) => {
       }]
 
       // stock card
-      let srcBalances = await productModel.getBalance(db, wmProduct.product_id, wmProduct.warehouse_id, wmProduct.lot_no, wmProduct.lot_time);
+      let srcBalances = await productModel.getBalance(trx, wmProduct.product_id, wmProduct.warehouse_id, wmProduct.lot_no, wmProduct.lot_time);
       srcBalances = Object.assign({}, srcBalances[0][0])
 
       let objStockcardOut: IStockcardItem = {}
@@ -829,8 +839,11 @@ router.post('/save-repackage', async (req, res, next) => {
       objStockcardOut.in_qty = 0;
       objStockcardOut.in_unit_cost = 0;
       objStockcardOut.out_qty = product.qty;
-      objStockcardOut.out_unit_cost = product.cost;
+      // ราคาจากแถวคงคลัง (เดิมใช้ product.cost จากหน้าจอ ถ้าไม่ตรงราคาแถว มูลค่าคงคลังกับ stock card เพี้ยน)
+      objStockcardOut.out_unit_cost = wmProduct.cost;
       objStockcardOut.balance_qty = +srcBalances.balance - +product.qty;
+      // ยอดคงเหลือราย lot (เดิมไม่ใส่): ต้นทาง = คงเหลือแถวหลังตัด / ปลายทาง = แถวใหม่ (lot_time ใหม่ มีแถวเดียว)
+      objStockcardOut.balance_lot_qty = +wmProduct.qty - +product.qty;
       objStockcardOut.balance_generic_qty = +srcBalances.balance_generic - +product.qty;
       objStockcardOut.balance_unit_cost = wmProduct.cost;
       objStockcardOut.ref_src = wmProduct.warehouse_id;
@@ -853,13 +866,14 @@ router.post('/save-repackage', async (req, res, next) => {
       objStockcardIn.document_ref_id = null;
       objStockcardIn.document_ref = null;
       objStockcardIn.lot_no = product.lot_no;
-      objStockcardIn.lot_time = newProducts.lot_time;
+      objStockcardIn.lot_time = newLotTimeValue; // เดิม newProducts.lot_time (newProducts เป็น array → undefined)
       objStockcardIn.expired_date = wmProduct.expired_date;
       objStockcardIn.in_qty = product.qty;
-      objStockcardIn.in_unit_cost = product.cost;
+      objStockcardIn.in_unit_cost = wmProduct.cost;
       objStockcardIn.out_qty = 0;
       objStockcardIn.out_unit_cost = 0;
       objStockcardIn.balance_qty = +srcBalances.balance;
+      objStockcardIn.balance_lot_qty = +product.qty;
       objStockcardIn.balance_generic_qty = +srcBalances.balance_generic;
       objStockcardIn.balance_unit_cost = wmProduct.cost;
       objStockcardIn.ref_src = wmProduct.warehouse_id;
@@ -869,14 +883,16 @@ router.post('/save-repackage', async (req, res, next) => {
       stockCard.push(objStockcardIn)
 
       // save stock card
-      await productModel.saveStockCard(db, stockCard);
+      await productModel.saveStockCard(trx, stockCard);
       // // // save true data
-      await productModel.saveProducts(db, newProducts);
-      await productModel.decreaseQty(db, dstProducts);
-      res.send({ ok: true })
+      await productModel.saveProducts(trx, newProducts);
+      await productModel.decreaseQty(trx, dstProducts);
+      return { ok: true };
     } else {
-      res.send({ ok: false, error: 'จำนวนคงเหลือต่ำกว่า' })
+      return { ok: false, error: 'จำนวนคงเหลือต่ำกว่า' };
     }
+   });
+   res.send(txResult);
   } catch (error) {
     res.send({ ok: false, error: error.message })
   }

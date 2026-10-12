@@ -34,6 +34,7 @@ export interface IStockcardItem {
   out_unit_cost?: number,
   balance_generic_qty?: number,
   balance_qty?: number,
+  balance_lot_qty?: number,
   balance_unit_cost?: number,
   ref_src?: any,
   ref_dst?: any,

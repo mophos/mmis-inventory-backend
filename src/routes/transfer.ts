@@ -241,7 +241,7 @@ router.post('/save', co(async (req, res, next) => {
 
         if (approveAuto) {
           await transferModel.changeConfirmStatusIds(db, transferId, peopleUserId);
-          await approve(db, transferId, warehouseId, peopleUserId);
+          await db.transaction((trx) => approve(trx, transferId, warehouseId, peopleUserId));
         }
 
         res.send({ ok: true });
@@ -340,13 +340,14 @@ router.post('/approve-all', co(async (req, res, next) => {
 
     if (isValid && transferIds.length) {
       await transferModel.changeConfirmStatusIds(db, transferIds, peopleUserId);
-      await approve(db, transferIds, warehouseId, peopleUserId);
+      await db.transaction((trx) => approve(trx, transferIds, warehouseId, peopleUserId));
       res.send({ ok: true });
     } else {
       res.send({ ok: false, error: 'ไม่สามารถทำรายการได้เนื่องจากสถานะบางรายการมีการเปลี่ยนแปลง กรุณารีเฟรชหน้าจอและทำรายการใหม่' });
     }
   } catch (error) {
-    throw error;
+    // ส่งข้อความ error ให้หน้าจอ (เดิม throw ต่อ ผู้ใช้ได้ error: {} ว่าง เช่นกรณีคงคลังไม่พอ / อนุมัติซ้ำ)
+    res.send({ ok: false, error: error.message });
   } finally {
     db.destroy();
   }
@@ -388,6 +389,11 @@ router.get('/product-warehouse-lots/:productId/:warehouseId', co(async (req, res
 }));
 
 const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUserId: any) => {
+  // ล็อกเอกสารกันอนุมัติซ้อน (ต้องเรียกใน transaction)
+  const lockDocs: any = await db('wm_transfer').whereIn('transfer_id', transferIds).forUpdate();
+  if (lockDocs.some((d: any) => d.approved === 'Y')) {
+    throw new Error('มีเอกสารที่อนุมัติไปแล้ว กรุณารีเฟรชหน้าจอ');
+  }
   let results = await transferModel.getProductListIds(db, transferIds);
   for (let v of results) {
     if (+v.product_qty != 0) {
@@ -419,10 +425,26 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
 
         wmProductIdIn = objIn.wm_product_id;
         if (checkDstL.length) {
+          // stock card ต้องอ้างแถวที่ถูกบวกยอดจริง เดิมอ้าง uuid ใหม่ที่ไม่ได้ insert จึงชี้ไปแถวที่ไม่มีอยู่
+          wmProductIdIn = checkDstL[0].wm_product_id;
           await productModel.updatePlusStock(db, objIn, checkDstL[0].wm_product_id)
         } else {
-          objIn.lot_time = v.lot_time + 10000;
-          await productModel.insertStock(db, objIn)
+          // วันหมดอายุไม่ตรงแถวเดิม: มีแถว lot + วันหมดอายุตรงอยู่แล้ว (lot_time อื่น) รวมเข้าแถวนั้น
+          // ไม่มีจึงสร้างแถวใหม่ต่อ lot_time ปกติของ lot นั้น (เดิม + 10000 แต่ stock card ลง lot_time เดิม)
+          const sameExp: any = await db('wm_products')
+            .where('warehouse_id', v.dst_warehouse_id).where('product_id', v.product_id)
+            .whereRaw('lot_no <=> ?', [v.lot_no]).whereRaw('expired_date <=> ?', [expiredDate])
+            .orderBy('lot_time', 'desc').forUpdate();
+          if (sameExp.length) {
+            wmProductIdIn = sameExp[0].wm_product_id;
+            objIn.lot_time = sameExp[0].lot_time;
+            await productModel.updatePlusStock(db, objIn, wmProductIdIn);
+          } else {
+            const mx: any = await db('wm_products').max('lot_time as m')
+              .where('warehouse_id', v.dst_warehouse_id).where('product_id', v.product_id).whereRaw('lot_no <=> ?', [v.lot_no]);
+            objIn.lot_time = (+mx[0].m || 0) + 1;
+            await productModel.insertStock(db, objIn)
+          }
         }
       } else {
         wmProductIdIn = objIn.wm_product_id;
@@ -443,17 +465,19 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
       objOut.people_user_id = v.people_user_id;
       objOut.created_at = moment().format('YYYY-MM-DD HH:mm:ss');
 
-      let wmProductIdOut;
-      const checkSrc = await productModel.checkProductToSave(db, v.src_warehouse_id, v.product_id, v.lot_no, v.lot_time, expiredDate);
-      if (checkSrc.length) {
-        wmProductIdOut = checkSrc[0].wm_product_id;
-        await productModel.updateMinusStock(db, objIn, checkSrc[0].wm_product_id)
-      } else {
-        wmProductIdOut = objIn.wm_product_id;
-        await productModel.insertStock(db, objIn)
+      // ตัดจากแถวที่ระบุในเอกสารตรงๆ (lock แถว)
+      // เดิมหาด้วย lot + lot_time ถ้าไม่เจอจะ insert แถวที่จำนวน "บวก" ลงคลังต้นทาง (ของงอก / ใบโอนกลายเป็นเพิ่มปลายทางซ้ำ)
+      const srcRow: any = await db('wm_products').where('wm_product_id', v.wm_product_id).forUpdate();
+      if (!srcRow.length || +srcRow[0].warehouse_id !== +v.src_warehouse_id) {
+        throw new Error(`ไม่พบรายการคงคลังต้นทางของ ${v.product_id} lot ${v.lot_no} ยังไม่ได้ทำรายการ`);
       }
+      if (+srcRow[0].qty < +v.product_qty) {
+        throw new Error(`คงคลังไม่พอ ${v.product_id} lot ${v.lot_no} (คงเหลือ ${srcRow[0].qty} ต้องการ ${v.product_qty}) ยังไม่ได้ทำรายการ`);
+      }
+      const wmProductIdOut = srcRow[0].wm_product_id;
+      await productModel.updateMinusStock(db, objIn, wmProductIdOut);
       // =================================== STOCK IN ========================
-      let remain_dst = await productModel.getBalance(db, v.product_id, v.dst_warehouse_id, v.lot_no, v.lot_time);
+      let remain_dst = await productModel.getBalance(db, v.product_id, v.dst_warehouse_id, v.lot_no, objIn.lot_time);
       remain_dst = remain_dst[0]
       let stockIn: any = {};
       stockIn.stock_date = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -472,7 +496,7 @@ const approve = (async (db: Knex, transferIds: any[], warehouseId: any, peopleUs
       stockIn.ref_src = v.src_warehouse_id;
       stockIn.ref_dst = v.dst_warehouse_id;
       stockIn.lot_no = v.lot_no;
-      stockIn.lot_time = v.lot_time;
+      stockIn.lot_time = objIn.lot_time;
       stockIn.expired_date = moment(v.expired_date).isValid() ? moment(v.expired_date).format('YYYY-MM-DD') : null;;
       stockIn.comment = 'รับโอน';
       stockIn.wm_product_id_in = wmProductIdIn;

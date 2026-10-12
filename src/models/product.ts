@@ -1180,8 +1180,40 @@ group by mpp.product_id
     return knex('wm_products')
       .where('wm_product_id', wmProductId)
       .update({
-        cost: cost
+        cost: cost,
+        price: cost
       });
+  }
+
+  getWmProductById(knex: Knex, wmProductId: any) {
+    return knex('wm_products')
+      .where('wm_product_id', wmProductId)
+      .forUpdate();
+  }
+
+  // รายการใน stock card ที่รับเข้าแถวนี้ / จ่ายออกจากแถวนี้ ใช้ตรวจก่อนเปลี่ยนราคา
+  getStockcardInByWmProduct(knex: Knex, wmProductId: any) {
+    return knex('wm_stock_card')
+      .select('stock_card_id', 'in_qty', 'in_unit_cost')
+      .where('wm_product_id_in', wmProductId)
+      .where('in_qty', '>', 0);
+  }
+
+  countStockcardOutByWmProduct(knex: Knex, wmProductId: any) {
+    return knex('wm_stock_card')
+      .count('* as total')
+      .where('wm_product_id_out', wmProductId)
+      .where('out_qty', '>', 0);
+  }
+
+  changeStockcardInCost(knex: Knex, stockCardId: any, cost: number) {
+    return knex('wm_stock_card')
+      .where('stock_card_id', stockCardId)
+      .update({ in_unit_cost: cost, balance_unit_cost: cost });
+  }
+
+  saveStockcardLog(knex: Knex, data: any) {
+    return knex('wm_stock_card_logs').insert(data);
   }
 
   getLotBalance(db: Knex, wpId, warehouseId) {
@@ -1398,21 +1430,19 @@ group by mpp.product_id
     sql += `'${data.unit_generic_id}', ${data.people_user_id}, '${data.created_at}')`;
     return knex.raw(sql);
   }
+  // เฉลี่ยราคากับแถวเดิม ถ้ายอดรวมหลังบวกเป็น 0 (แถวเดิมติดลบ) คงราคาเดิม เดิมหารด้วย 0 → error / ราคา NULL
+  // ลำดับสำคัญ: cost คำนวณจาก qty เดิมก่อน qty ถูกบวก (MySQL ประเมิน SET จากซ้ายไปขวา)
   updatePlusStock(knex: Knex, data: any, wmProductId) {
-    let sql = `update wm_products as wp
-      join(select wm_product_id, (sum(w.qty * w.cost) + (${data.cost} * ${data.qty})) / (sum(w.qty) + ${data.qty}) as cost from wm_products as w
-      where w.wm_product_id = '${wmProductId}') as w on wp.wm_product_id = wp.wm_product_id
-      set wp.qty = wp.qty + ${+data.qty}, wp.cost = w.cost, wp.price = w.cost
-      where wp.wm_product_id = '${wmProductId}'`;
-    return knex.raw(sql);
+    const qty = +data.qty;
+    const cost = +data.cost || 0;
+    return knex.raw(`update wm_products
+      set cost = IF(qty + ? = 0, cost, (qty * cost + ?) / (qty + ?)), price = cost, qty = qty + ?
+      where wm_product_id = ?`, [qty, cost * qty, qty, qty, wmProductId]);
   }
+  // ตัดออกเปลี่ยนแค่จำนวน ราคาต้องคงเดิม
+  // เดิมใช้สูตรเฉลี่ยแบบรับเข้า (บวก data.cost * data.qty) ถ้าผู้เรียกส่งราคาไม่ตรงกับแถว ราคาของที่เหลือจะเพี้ยนโดยไม่มี stock card
   updateMinusStock(knex: Knex, data: any, wmProductId) {
-    let sql = `update wm_products as wp
-      join(select wm_product_id, (sum(w.qty * w.cost) + (${data.cost} * ${data.qty})) / (sum(w.qty) + ${data.qty}) as cost from wm_products as w
-      where w.wm_product_id = '${wmProductId}') as w on wp.wm_product_id = wp.wm_product_id
-      set wp.qty = wp.qty - ${+data.qty}, wp.cost = w.cost, wp.price = w.cost
-      where wp.wm_product_id = '${wmProductId}'`;
-    return knex.raw(sql);
+    return knex.raw(`update wm_products set qty = qty - ? where wm_product_id = ?`, [+data.qty, wmProductId]);
   }
 
   checkProductToSave(knex: Knex, warehouseId, productId, lotNo, lotTime, expireDate = null) {
